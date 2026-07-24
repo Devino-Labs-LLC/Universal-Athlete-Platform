@@ -90,6 +90,20 @@ public class Account {
 				version);
 	}
 
+	public void verifyEmail(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (status == AccountStatus.DISABLED) {
+			throw new IllegalStateException("Disabled account cannot be verified");
+		}
+		if (status == AccountStatus.LOCKED) {
+			throw new IllegalStateException("Locked account cannot be verified");
+		}
+		Instant now = Instant.now(clock);
+		this.status = AccountStatus.ACTIVE;
+		this.emailVerifiedAt = now;
+		this.updatedAt = now;
+	}
+
 	public AccountId id() {
 		return id;
 	}
