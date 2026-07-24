@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.devinolabs.uap.athlete.application.AthleteArchivedException;
 import com.devinolabs.uap.athlete.application.AthleteGoalDeleteRequiresCancelledException;
 import com.devinolabs.uap.athlete.application.AthleteGoalNotFoundException;
+import com.devinolabs.uap.athlete.application.AthleteMeasurementNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteProfileNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteSportNotFoundException;
 import com.devinolabs.uap.athlete.application.DuplicateAthleteGoalException;
@@ -24,14 +25,22 @@ import com.devinolabs.uap.athlete.application.DuplicateAthleteSportException;
 import com.devinolabs.uap.athlete.application.InvalidAthleteGoalStatusTransitionException;
 import com.devinolabs.uap.athlete.application.InvalidAthleteGoalTargetException;
 import com.devinolabs.uap.athlete.application.InvalidCustomGoalNameException;
+import com.devinolabs.uap.athlete.application.InvalidCustomMeasurementNameException;
+import com.devinolabs.uap.athlete.application.InvalidCustomMeasurementUnitException;
 import com.devinolabs.uap.athlete.application.InvalidGoalTargetDateException;
+import com.devinolabs.uap.athlete.application.InvalidMeasurementDateRangeException;
+import com.devinolabs.uap.athlete.application.InvalidMeasurementTimestampException;
+import com.devinolabs.uap.athlete.application.InvalidMeasurementTypeUnitCombinationException;
+import com.devinolabs.uap.athlete.application.InvalidMeasurementUnitException;
+import com.devinolabs.uap.athlete.application.InvalidMeasurementValueException;
 import com.devinolabs.uap.athlete.application.PrimaryAthleteSportConflictException;
 import com.devinolabs.uap.athlete.application.TerminalAthleteGoalModificationException;
 
 @RestControllerAdvice(basePackageClasses = {
 		AthleteProfileController.class,
 		AthleteSportController.class,
-		AthleteGoalController.class
+		AthleteGoalController.class,
+		AthleteMeasurementController.class
 })
 class AthleteExceptionHandler {
 
@@ -89,9 +98,16 @@ class AthleteExceptionHandler {
 				.body(error("ATHLETE_GOAL_NOT_FOUND", "Athlete goal was not found", request, List.of()));
 	}
 
+	@ExceptionHandler(AthleteMeasurementNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleMeasurementNotFound(
+			AthleteMeasurementNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("ATHLETE_MEASUREMENT_NOT_FOUND", "Athlete measurement was not found", request, List.of()));
+	}
+
 	@ExceptionHandler(AthleteArchivedException.class)
 	ResponseEntity<ApiErrorResponse> handleArchived(AthleteArchivedException ex, HttpServletRequest request) {
-		// Shared with profile/sports; goals map to the same archived-modification rejection concept.
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("ARCHIVED_ATHLETE_MODIFICATION_REJECTED", "Archived athlete cannot be modified", request, List.of()));
 	}
@@ -120,6 +136,62 @@ class AthleteExceptionHandler {
 	ResponseEntity<ApiErrorResponse> handleInvalidTargetDate(InvalidGoalTargetDateException ex, HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("INVALID_TARGET_DATE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMeasurementValueException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidMeasurementValue(
+			InvalidMeasurementValueException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MEASUREMENT_VALUE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMeasurementUnitException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidMeasurementUnit(
+			InvalidMeasurementUnitException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MEASUREMENT_UNIT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMeasurementTypeUnitCombinationException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTypeUnit(
+			InvalidMeasurementTypeUnitCombinationException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MEASUREMENT_TYPE_UNIT_COMBINATION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidCustomMeasurementNameException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidCustomMeasurementName(
+			InvalidCustomMeasurementNameException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_CUSTOM_MEASUREMENT_NAME", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidCustomMeasurementUnitException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidCustomMeasurementUnit(
+			InvalidCustomMeasurementUnitException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_CUSTOM_MEASUREMENT_UNIT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMeasurementTimestampException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTimestamp(
+			InvalidMeasurementTimestampException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MEASUREMENT_TIMESTAMP", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMeasurementDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidDateRange(
+			InvalidMeasurementDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MEASUREMENT_DATE_RANGE", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(TerminalAthleteGoalModificationException.class)
