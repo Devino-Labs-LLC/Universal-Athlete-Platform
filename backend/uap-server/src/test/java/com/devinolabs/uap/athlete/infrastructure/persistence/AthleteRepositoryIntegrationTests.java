@@ -70,6 +70,8 @@ class AthleteRepositoryIntegrationTests {
 		assertThat(reloaded.createdAt()).isEqualTo(athlete.createdAt());
 		assertThat(reloaded.updatedAt()).isEqualTo(athlete.updatedAt());
 		assertThat(athleteRepository.findByAccountId(accountId)).isPresent();
+		assertThat(athleteRepository.existsByAccountId(accountId)).isTrue();
+		assertThat(athleteRepository.existsByAccountId(AccountId.generate())).isFalse();
 	}
 
 	@Test

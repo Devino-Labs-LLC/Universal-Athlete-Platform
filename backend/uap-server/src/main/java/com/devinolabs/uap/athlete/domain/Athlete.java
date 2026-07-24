@@ -163,6 +163,18 @@ public class Athlete {
 		touch(clock);
 	}
 
+	public void updateDominantHand(DominantHand dominantHand, Clock clock) {
+		requireMutable(clock);
+		this.dominantHand = Objects.requireNonNull(dominantHand, "Athlete dominantHand must not be null");
+		touch(clock);
+	}
+
+	public void updateDominantFoot(DominantFoot dominantFoot, Clock clock) {
+		requireMutable(clock);
+		this.dominantFoot = Objects.requireNonNull(dominantFoot, "Athlete dominantFoot must not be null");
+		touch(clock);
+	}
+
 	public void archive(Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		if (status == AthleteStatus.ARCHIVED) {

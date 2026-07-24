@@ -9,4 +9,6 @@ interface AthleteJpaRepository extends JpaRepository<AthleteJpaEntity, UUID> {
 
 	Optional<AthleteJpaEntity> findByAccountId(UUID accountId);
 
+	boolean existsByAccountId(UUID accountId);
+
 }

@@ -14,4 +14,6 @@ public interface AthleteRepository {
 
 	Optional<Athlete> findByAccountId(AccountId accountId);
 
+	boolean existsByAccountId(AccountId accountId);
+
 }

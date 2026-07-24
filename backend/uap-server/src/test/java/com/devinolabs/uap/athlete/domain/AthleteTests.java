@@ -109,9 +109,13 @@ class AthleteTests {
 
 		athlete.updateHeight(Height.ofFeetInches(6, 0), LATER_CLOCK);
 		athlete.updateWeight(Weight.ofPounds(170), LATER_CLOCK);
+		athlete.updateDominantHand(DominantHand.LEFT, LATER_CLOCK);
+		athlete.updateDominantFoot(DominantFoot.BOTH, LATER_CLOCK);
 
 		assertThat(athlete.height()).isEqualTo(Height.ofFeetInches(6, 0));
 		assertThat(athlete.weight()).isEqualTo(Weight.ofPounds(170));
+		assertThat(athlete.dominantHand()).isEqualTo(DominantHand.LEFT);
+		assertThat(athlete.dominantFoot()).isEqualTo(DominantFoot.BOTH);
 		assertThat(athlete.updatedAt()).isEqualTo(Instant.parse("2026-07-24T16:00:00Z"));
 		assertThatThrownBy(() -> athlete.updateHeight(null, LATER_CLOCK))
 				.isInstanceOf(NullPointerException.class);

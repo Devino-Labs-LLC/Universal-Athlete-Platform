@@ -34,7 +34,7 @@ uap:
         header-name: ${UAP_CSRF_HEADER_NAME:X-XSRF-TOKEN}
       cors:
         allowed-origins: ${UAP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
-        allowed-methods: GET,POST,PATCH,OPTIONS
+        allowed-methods: GET,POST,OPTIONS
         allowed-headers: Authorization,Content-Type,X-XSRF-TOKEN,X-Requested-With
         allow-credentials: true
       rate-limit:
