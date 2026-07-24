@@ -13,9 +13,16 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.devinolabs.uap.athlete.application.AssessmentCompletionRequiresMeasurementsException;
 import com.devinolabs.uap.athlete.application.AssessmentDeleteNotAllowedException;
+import com.devinolabs.uap.athlete.application.AssessmentMeasurementModificationNotAllowedException;
+import com.devinolabs.uap.athlete.application.AssessmentMeasurementNotFoundException;
 import com.devinolabs.uap.athlete.application.AssessmentNotFoundException;
+import com.devinolabs.uap.athlete.application.AssessmentSnapshotFailedException;
 import com.devinolabs.uap.athlete.application.AthleteArchivedException;
+import com.devinolabs.uap.athlete.application.AthleteMeasurementInUseByAssessmentException;
+import com.devinolabs.uap.athlete.application.DuplicateAssessmentMeasurementException;
+import com.devinolabs.uap.athlete.application.InvalidAssessmentMeasurementOrderException;
 import com.devinolabs.uap.athlete.application.AthleteGoalDeleteRequiresCancelledException;
 import com.devinolabs.uap.athlete.application.AthleteGoalNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteMeasurementNotFoundException;
@@ -47,7 +54,8 @@ import com.devinolabs.uap.athlete.application.TerminalAthleteGoalModificationExc
 		AthleteSportController.class,
 		AthleteGoalController.class,
 		AthleteMeasurementController.class,
-		AssessmentController.class
+		AssessmentController.class,
+		AssessmentMeasurementController.class
 })
 class AthleteExceptionHandler {
 
@@ -161,6 +169,68 @@ class AthleteExceptionHandler {
 						"Only PLANNED or CANCELLED assessments may be deleted",
 						request,
 						List.of()));
+	}
+
+	@ExceptionHandler(AssessmentMeasurementNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentMeasurementNotFound(
+			AssessmentMeasurementNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("ASSESSMENT_MEASUREMENT_NOT_FOUND", "Assessment measurement was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateAssessmentMeasurementException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateAssessmentMeasurement(
+			DuplicateAssessmentMeasurementException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_ASSESSMENT_MEASUREMENT",
+						"Measurement is already attached to this assessment",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(AssessmentMeasurementModificationNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentMeasurementModificationNotAllowed(
+			AssessmentMeasurementModificationNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ASSESSMENT_MEASUREMENT_MODIFICATION_NOT_ALLOWED",
+						ex.getMessage(),
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(AssessmentCompletionRequiresMeasurementsException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentCompletionRequiresMeasurements(
+			AssessmentCompletionRequiresMeasurementsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("ASSESSMENT_COMPLETION_REQUIRES_MEASUREMENTS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AssessmentSnapshotFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentSnapshotFailed(
+			AssessmentSnapshotFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ASSESSMENT_SNAPSHOT_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidAssessmentMeasurementOrderException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidAssessmentMeasurementOrder(
+			InvalidAssessmentMeasurementOrderException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_ASSESSMENT_MEASUREMENT_ORDER", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AthleteMeasurementInUseByAssessmentException.class)
+	ResponseEntity<ApiErrorResponse> handleMeasurementInUseByAssessment(
+			AthleteMeasurementInUseByAssessmentException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ATHLETE_MEASUREMENT_IN_USE_BY_ASSESSMENT", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteArchivedException.class)

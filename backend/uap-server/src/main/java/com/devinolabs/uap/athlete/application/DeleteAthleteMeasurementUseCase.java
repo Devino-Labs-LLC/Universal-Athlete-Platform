@@ -15,12 +15,15 @@ public class DeleteAthleteMeasurementUseCase {
 
 	private final AthleteRepository athleteRepository;
 	private final AthleteMeasurementRepository measurementRepository;
+	private final AssessmentMeasurementRepository assessmentMeasurementRepository;
 
 	public DeleteAthleteMeasurementUseCase(
 			AthleteRepository athleteRepository,
-			AthleteMeasurementRepository measurementRepository) {
+			AthleteMeasurementRepository measurementRepository,
+			AssessmentMeasurementRepository assessmentMeasurementRepository) {
 		this.athleteRepository = Objects.requireNonNull(athleteRepository);
 		this.measurementRepository = Objects.requireNonNull(measurementRepository);
+		this.assessmentMeasurementRepository = Objects.requireNonNull(assessmentMeasurementRepository);
 	}
 
 	@Transactional
@@ -28,6 +31,9 @@ public class DeleteAthleteMeasurementUseCase {
 		Athlete athlete = AthleteMeasurementSupport.requireMutableAthlete(athleteRepository, accountId);
 		AthleteMeasurement measurement = measurementRepository.findByIdAndAthleteId(measurementId, athlete.id())
 				.orElseThrow(AthleteMeasurementNotFoundException::new);
+		if (assessmentMeasurementRepository.existsActiveAttachmentBySourceMeasurementId(measurement.id())) {
+			throw new AthleteMeasurementInUseByAssessmentException();
+		}
 		measurementRepository.delete(measurement);
 	}
 
