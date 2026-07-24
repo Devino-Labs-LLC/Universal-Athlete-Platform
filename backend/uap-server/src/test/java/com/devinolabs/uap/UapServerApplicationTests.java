@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create email verification tokens");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("create refresh sessions");
 	}
 
 	@Test
@@ -65,6 +65,23 @@ class UapServerApplicationTests {
 						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '3'")) {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create email verification tokens");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesRefreshSessionsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet tables = connection.getMetaData().getTables(null, null, "refresh_sessions",
+						new String[] { "TABLE" })) {
+			assertThat(tables.next()).isTrue();
+		}
+
+		try (Connection connection = dataSource.getConnection();
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '4'")) {
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create refresh sessions");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

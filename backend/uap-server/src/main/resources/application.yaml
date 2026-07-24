@@ -10,3 +10,12 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+
+uap:
+  identity:
+    auth:
+      access-token-secret: ${UAP_IDENTITY_ACCESS_TOKEN_SECRET}
+      access-token-ttl: ${UAP_IDENTITY_ACCESS_TOKEN_TTL:15m}
+      refresh-token-ttl: ${UAP_IDENTITY_REFRESH_TOKEN_TTL:30d}
+      max-failed-attempts: ${UAP_IDENTITY_MAX_FAILED_ATTEMPTS:5}
+      lockout-duration: ${UAP_IDENTITY_LOCKOUT_DURATION:15m}

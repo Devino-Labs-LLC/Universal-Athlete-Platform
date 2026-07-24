@@ -1,0 +1,8 @@
+uap:
+  identity:
+    auth:
+      access-token-secret: test-access-token-secret-value-32chars-min
+      access-token-ttl: 15m
+      refresh-token-ttl: 30d
+      max-failed-attempts: 5
+      lockout-duration: 15m

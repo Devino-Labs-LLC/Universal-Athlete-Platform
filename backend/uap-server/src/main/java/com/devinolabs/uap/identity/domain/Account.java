@@ -44,6 +44,19 @@ public class Account {
 			throw new IllegalArgumentException("Version must not be negative");
 		}
 		this.version = version;
+		enforceLockStateInvariants();
+	}
+
+	private void enforceLockStateInvariants() {
+		if (status == AccountStatus.LOCKED) {
+			if (lockedUntil == null) {
+				throw new IllegalArgumentException("LOCKED account requires lockedUntil");
+			}
+			return;
+		}
+		if (lockedUntil != null) {
+			throw new IllegalArgumentException(status + " account cannot retain lockedUntil");
+		}
 	}
 
 	public static Account register(AccountId id, EmailAddress email, PasswordCredential passwordCredential) {
@@ -101,6 +114,60 @@ public class Account {
 		Instant now = Instant.now(clock);
 		this.status = AccountStatus.ACTIVE;
 		this.emailVerifiedAt = now;
+		this.updatedAt = now;
+	}
+
+	public boolean isCurrentlyLocked(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		return status == AccountStatus.LOCKED
+				&& lockedUntil != null
+				&& Instant.now(clock).isBefore(lockedUntil);
+	}
+
+	public void clearExpiredLock(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (status != AccountStatus.LOCKED || lockedUntil == null) {
+			return;
+		}
+		if (Instant.now(clock).isBefore(lockedUntil)) {
+			return;
+		}
+		Instant now = Instant.now(clock);
+		this.status = AccountStatus.ACTIVE;
+		this.lockedUntil = null;
+		this.failedLoginAttempts = 0;
+		this.updatedAt = now;
+	}
+
+	public void recordFailedAuthentication(LockoutPolicy lockoutPolicy, Clock clock) {
+		Objects.requireNonNull(lockoutPolicy, "LockoutPolicy must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (status == AccountStatus.DISABLED || status == AccountStatus.PENDING_VERIFICATION) {
+			return;
+		}
+		clearExpiredLock(clock);
+		if (isCurrentlyLocked(clock)) {
+			return;
+		}
+
+		Instant now = Instant.now(clock);
+		this.failedLoginAttempts += 1;
+		if (this.failedLoginAttempts >= lockoutPolicy.maxFailedAttempts()) {
+			this.status = AccountStatus.LOCKED;
+			this.lockedUntil = now.plus(lockoutPolicy.lockDuration());
+		}
+		this.updatedAt = now;
+	}
+
+	public void recordSuccessfulAuthentication(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		clearExpiredLock(clock);
+		Instant now = Instant.now(clock);
+		this.failedLoginAttempts = 0;
+		this.lockedUntil = null;
+		if (this.status == AccountStatus.LOCKED) {
+			this.status = AccountStatus.ACTIVE;
+		}
 		this.updatedAt = now;
 	}
 
