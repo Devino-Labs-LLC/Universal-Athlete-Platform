@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("9");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create assessments");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("10");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("create assessment measurements");
 	}
 
 	@Test
@@ -178,6 +178,26 @@ class UapServerApplicationTests {
 			assertThat(columns.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create assessments");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesAssessmentMeasurementsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet tables = connection.getMetaData().getTables(null, null, "assessment_measurements",
+						new String[] { "TABLE" })) {
+			assertThat(tables.next()).isTrue();
+		}
+
+		try (Connection connection = dataSource.getConnection();
+				ResultSet columns = connection.getMetaData().getColumns(null, null, "assessment_measurements",
+						"snapshot_value");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '10'")) {
+			assertThat(columns.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create assessment measurements");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

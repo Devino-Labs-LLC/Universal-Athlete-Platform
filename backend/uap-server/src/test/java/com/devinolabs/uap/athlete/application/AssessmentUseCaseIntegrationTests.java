@@ -3,6 +3,7 @@ package com.devinolabs.uap.athlete.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,6 +30,9 @@ import com.devinolabs.uap.athlete.domain.DominantHand;
 import com.devinolabs.uap.athlete.domain.GoalPriority;
 import com.devinolabs.uap.athlete.domain.GoalType;
 import com.devinolabs.uap.athlete.domain.Height;
+import com.devinolabs.uap.athlete.domain.MeasurementSource;
+import com.devinolabs.uap.athlete.domain.MeasurementType;
+import com.devinolabs.uap.athlete.domain.MeasurementUnit;
 import com.devinolabs.uap.athlete.domain.ParticipationLevel;
 import com.devinolabs.uap.athlete.domain.SeasonStatus;
 import com.devinolabs.uap.athlete.domain.Sex;
@@ -67,6 +71,12 @@ class AssessmentUseCaseIntegrationTests {
 
 	@Autowired
 	private DeleteAssessmentUseCase deleteAssessmentUseCase;
+
+	@Autowired
+	private RecordAthleteMeasurementUseCase recordAthleteMeasurementUseCase;
+
+	@Autowired
+	private AttachMeasurementToAssessmentUseCase attachMeasurementToAssessmentUseCase;
 
 	@Autowired
 	private AthleteRepository athleteRepository;
@@ -159,6 +169,16 @@ class AssessmentUseCaseIntegrationTests {
 
 		assertThatThrownBy(() -> deleteAssessmentUseCase.execute(accountId, created.id()))
 				.isInstanceOf(AssessmentDeleteNotAllowedException.class);
+
+		assertThatThrownBy(() -> changeAssessmentStatusUseCase.execute(
+				accountId, created.id(), AssessmentStatusAction.COMPLETE))
+				.isInstanceOf(AssessmentCompletionRequiresMeasurementsException.class);
+
+		AthleteMeasurementResult measurement = recordAthleteMeasurementUseCase.execute(
+				accountId, MeasurementType.BODY_WEIGHT, null, new BigDecimal("80.0000"), MeasurementUnit.KILOGRAM,
+				null, MeasurementSource.MANUAL, null, Instant.parse("2026-07-20T10:00:00Z"), null, null);
+		attachMeasurementToAssessmentUseCase.execute(
+				accountId, created.id(), measurement.id(), null, null, null);
 
 		AssessmentResult completed = changeAssessmentStatusUseCase.execute(
 				accountId, created.id(), AssessmentStatusAction.COMPLETE);
