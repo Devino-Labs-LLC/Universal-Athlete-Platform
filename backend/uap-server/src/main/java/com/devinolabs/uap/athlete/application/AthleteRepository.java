@@ -14,6 +14,12 @@ public interface AthleteRepository {
 
 	Optional<Athlete> findByAccountId(AccountId accountId);
 
+	/**
+	 * Loads the athlete row with a pessimistic write lock for concurrency-safe
+	 * goal creation and other athlete-scoped mutations that require serialization.
+	 */
+	Optional<Athlete> findByAccountIdForUpdate(AccountId accountId);
+
 	boolean existsByAccountId(AccountId accountId);
 
 }

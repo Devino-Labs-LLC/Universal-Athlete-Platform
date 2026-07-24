@@ -37,6 +37,11 @@ class JpaAthleteRepository implements AthleteRepository {
 	}
 
 	@Override
+	public Optional<Athlete> findByAccountIdForUpdate(AccountId accountId) {
+		return jpaRepository.findByAccountIdForUpdate(accountId.value()).map(AthletePersistenceMapper::toDomain);
+	}
+
+	@Override
 	public boolean existsByAccountId(AccountId accountId) {
 		return jpaRepository.existsByAccountId(accountId.value());
 	}
