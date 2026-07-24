@@ -49,6 +49,7 @@ class IdentitySecurityConfiguration {
 	static final String LOGOUT_ALL_PATH = "/api/v1/identity/logout-all";
 	static final String IDENTITY_ME_PATH = "/api/v1/identity/me";
 	static final String ATHLETES_API = "/api/v1/athletes/**";
+	static final String TRAINING_API = "/api/v1/training/**";
 
 	@Bean
 	AuthTokenTransport authTokenTransport(IdentityHttpProperties httpProperties, IdentityAuthProperties authProperties) {
@@ -115,6 +116,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, IDENTITY_ME_PATH).authenticated()
 						.requestMatchers(HttpMethod.POST, LOGOUT_PATH, LOGOUT_ALL_PATH).authenticated()
 						.requestMatchers(ATHLETES_API).authenticated()
+						.requestMatchers(TRAINING_API).authenticated()
 						.anyRequest().denyAll())
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);
