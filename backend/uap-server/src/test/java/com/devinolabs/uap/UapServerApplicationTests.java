@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("5");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create athletes");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("6");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("create athlete sports");
 	}
 
 	@Test
@@ -100,6 +100,25 @@ class UapServerApplicationTests {
 			assertThat(columns.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create athletes");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesAthleteSportsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet tables = connection.getMetaData().getTables(null, null, "athlete_sports",
+						new String[] { "TABLE" })) {
+			assertThat(tables.next()).isTrue();
+		}
+
+		try (Connection connection = dataSource.getConnection();
+				ResultSet columns = connection.getMetaData().getColumns(null, null, "athlete_sports", "sport_identity");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '6'")) {
+			assertThat(columns.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create athlete sports");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
