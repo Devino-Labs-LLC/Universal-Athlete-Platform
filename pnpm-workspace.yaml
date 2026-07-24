@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  '@ampproject/toolbox-optimizer': true
+  es5-ext: true
+  fsevents: true
+  sharp: set this to true or false
+  unrs-resolver: true
