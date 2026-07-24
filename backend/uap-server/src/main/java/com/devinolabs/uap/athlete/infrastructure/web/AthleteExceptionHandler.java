@@ -13,17 +13,23 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.devinolabs.uap.athlete.application.AssessmentDeleteNotAllowedException;
+import com.devinolabs.uap.athlete.application.AssessmentNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteArchivedException;
 import com.devinolabs.uap.athlete.application.AthleteGoalDeleteRequiresCancelledException;
 import com.devinolabs.uap.athlete.application.AthleteGoalNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteMeasurementNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteProfileNotFoundException;
 import com.devinolabs.uap.athlete.application.AthleteSportNotFoundException;
+import com.devinolabs.uap.athlete.application.DuplicateAssessmentException;
 import com.devinolabs.uap.athlete.application.DuplicateAthleteGoalException;
 import com.devinolabs.uap.athlete.application.DuplicateAthleteProfileException;
 import com.devinolabs.uap.athlete.application.DuplicateAthleteSportException;
+import com.devinolabs.uap.athlete.application.InvalidAssessmentDateException;
+import com.devinolabs.uap.athlete.application.InvalidAssessmentStatusException;
 import com.devinolabs.uap.athlete.application.InvalidAthleteGoalStatusTransitionException;
 import com.devinolabs.uap.athlete.application.InvalidAthleteGoalTargetException;
+import com.devinolabs.uap.athlete.application.InvalidCustomAssessmentTypeException;
 import com.devinolabs.uap.athlete.application.InvalidCustomGoalNameException;
 import com.devinolabs.uap.athlete.application.InvalidCustomMeasurementNameException;
 import com.devinolabs.uap.athlete.application.InvalidCustomMeasurementUnitException;
@@ -40,7 +46,8 @@ import com.devinolabs.uap.athlete.application.TerminalAthleteGoalModificationExc
 		AthleteProfileController.class,
 		AthleteSportController.class,
 		AthleteGoalController.class,
-		AthleteMeasurementController.class
+		AthleteMeasurementController.class,
+		AssessmentController.class
 })
 class AthleteExceptionHandler {
 
@@ -104,6 +111,56 @@ class AthleteExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("ATHLETE_MEASUREMENT_NOT_FOUND", "Athlete measurement was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(AssessmentNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentNotFound(AssessmentNotFoundException ex, HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("ASSESSMENT_NOT_FOUND", "Assessment was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateAssessmentException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateAssessment(DuplicateAssessmentException ex, HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_ASSESSMENT",
+						"A matching non-cancelled assessment already exists",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(InvalidAssessmentStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidAssessmentStatus(
+			InvalidAssessmentStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_ASSESSMENT_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidAssessmentDateException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidAssessmentDate(
+			InvalidAssessmentDateException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_ASSESSMENT_DATE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidCustomAssessmentTypeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidCustomAssessmentType(
+			InvalidCustomAssessmentTypeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_CUSTOM_ASSESSMENT_TYPE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AssessmentDeleteNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleAssessmentDeleteNotAllowed(
+			AssessmentDeleteNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ASSESSMENT_DELETE_NOT_ALLOWED",
+						"Only PLANNED or CANCELLED assessments may be deleted",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(AthleteArchivedException.class)

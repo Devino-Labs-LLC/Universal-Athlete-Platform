@@ -1,0 +1,19 @@
+package com.devinolabs.uap.athlete.domain;
+
+public enum AssessmentType {
+	GENERAL_BASELINE,
+	BODY_COMPOSITION,
+	STRENGTH,
+	POWER,
+	VERTICAL_JUMP,
+	SPEED,
+	AGILITY,
+	ENDURANCE,
+	MOBILITY,
+	FLEXIBILITY,
+	BALANCE,
+	CARDIO,
+	SPORT_SPECIFIC,
+	RETURN_TO_PLAY,
+	OTHER
+}
