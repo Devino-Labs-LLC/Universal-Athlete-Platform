@@ -18,13 +18,22 @@ import com.devinolabs.uap.athlete.api.AthleteGoalNotOwnedException;
 import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.athlete.api.AthleteSportNotOwnedException;
 import com.devinolabs.uap.training.application.DuplicateTrainingPlanException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutDayException;
 import com.devinolabs.uap.training.application.InvalidCustomTrainingPlanTypeException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanDatesException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
+import com.devinolabs.uap.training.application.InvalidWorkoutDayStatusException;
+import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedException;
+import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
 
-@RestControllerAdvice(basePackageClasses = TrainingPlanController.class)
+@RestControllerAdvice(basePackageClasses = {
+		TrainingPlanController.class,
+		WorkoutDayController.class
+})
 class TrainingExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -78,6 +87,52 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("TRAINING_PLAN_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingPlanArchivedException.class)
+	ResponseEntity<ApiErrorResponse> handlePlanArchived(TrainingPlanArchivedException ex, HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_PLAN_ARCHIVED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutDayNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutDayNotFound(
+			WorkoutDayNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_DAY_NOT_FOUND", "Workout day was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateWorkoutDayException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutDay(
+			DuplicateWorkoutDayException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_WORKOUT_DAY", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutDayStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutDayStatus(
+			InvalidWorkoutDayStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_DAY_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutDayOrderException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutDayOrder(
+			InvalidWorkoutDayOrderException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_DAY_ORDER", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutDayDeleteNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutDayDeleteNotAllowed(
+			WorkoutDayDeleteNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_DAY_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteNotFoundException.class)
