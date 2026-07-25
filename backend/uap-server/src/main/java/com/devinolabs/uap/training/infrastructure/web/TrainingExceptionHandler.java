@@ -19,20 +19,26 @@ import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.athlete.api.AthleteSportNotOwnedException;
 import com.devinolabs.uap.training.application.DuplicateTrainingPlanException;
 import com.devinolabs.uap.training.application.DuplicateWorkoutDayException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseException;
 import com.devinolabs.uap.training.application.InvalidCustomTrainingPlanTypeException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanDatesException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanStatusException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutExerciseOrderException;
+import com.devinolabs.uap.training.application.InvalidWorkoutExerciseStatusException;
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutExerciseDeleteNotAllowedException;
+import com.devinolabs.uap.training.application.WorkoutExerciseNotFoundException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
-		WorkoutDayController.class
+		WorkoutDayController.class,
+		WorkoutExerciseController.class
 })
 class TrainingExceptionHandler {
 
@@ -133,6 +139,46 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("WORKOUT_DAY_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseNotFound(
+			WorkoutExerciseNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_EXERCISE_NOT_FOUND", "Workout exercise was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateWorkoutExerciseException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutExercise(
+			DuplicateWorkoutExerciseException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_WORKOUT_EXERCISE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutExerciseStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutExerciseStatus(
+			InvalidWorkoutExerciseStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_EXERCISE_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutExerciseOrderException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutExerciseOrder(
+			InvalidWorkoutExerciseOrderException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_EXERCISE_ORDER", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseDeleteNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseDeleteNotAllowed(
+			WorkoutExerciseDeleteNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteNotFoundException.class)
