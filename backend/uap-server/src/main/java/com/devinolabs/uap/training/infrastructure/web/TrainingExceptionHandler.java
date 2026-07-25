@@ -27,6 +27,7 @@ import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayStatusException;
 import com.devinolabs.uap.training.application.InvalidWorkoutExerciseOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutExerciseStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutSessionStatusException;
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
@@ -34,11 +35,14 @@ import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedExcepti
 import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutExerciseDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutExerciseNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutSessionAlreadyExistsException;
+import com.devinolabs.uap.training.application.WorkoutSessionNotFoundException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
 		WorkoutDayController.class,
-		WorkoutExerciseController.class
+		WorkoutExerciseController.class,
+		WorkoutSessionController.class
 })
 class TrainingExceptionHandler {
 
@@ -179,6 +183,30 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("WORKOUT_EXERCISE_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionNotFound(
+			WorkoutSessionNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_SESSION_NOT_FOUND", "Workout session was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutSessionStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutSessionStatus(
+			InvalidWorkoutSessionStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_SESSION_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionAlreadyExistsException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionAlreadyExists(
+			WorkoutSessionAlreadyExistsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_SESSION_ALREADY_EXISTS", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteNotFoundException.class)
