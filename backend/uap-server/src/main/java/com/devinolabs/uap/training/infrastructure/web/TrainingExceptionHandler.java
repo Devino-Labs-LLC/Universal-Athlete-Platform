@@ -27,7 +27,8 @@ import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayStatusException;
 import com.devinolabs.uap.training.application.InvalidWorkoutExerciseOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutExerciseStatusException;
-import com.devinolabs.uap.training.application.InvalidWorkoutSessionStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutExerciseExecutionStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutOccurrenceStatusException;
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
@@ -35,14 +36,20 @@ import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedExcepti
 import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutExerciseDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutExerciseNotFoundException;
-import com.devinolabs.uap.training.application.WorkoutSessionAlreadyExistsException;
-import com.devinolabs.uap.training.application.WorkoutSessionNotFoundException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseExecutionException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutOccurrenceException;
+import com.devinolabs.uap.training.application.WorkoutExerciseExecutionNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceDeleteNotAllowedException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceHasIncompleteExercisesException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceRequiresExercisesException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
 		WorkoutDayController.class,
 		WorkoutExerciseController.class,
-		WorkoutSessionController.class
+		WorkoutOccurrenceController.class,
+		WorkoutExerciseExecutionController.class
 })
 class TrainingExceptionHandler {
 
@@ -185,28 +192,79 @@ class TrainingExceptionHandler {
 				.body(error("WORKOUT_EXERCISE_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
 	}
 
-	@ExceptionHandler(WorkoutSessionNotFoundException.class)
-	ResponseEntity<ApiErrorResponse> handleWorkoutSessionNotFound(
-			WorkoutSessionNotFoundException ex,
+	@ExceptionHandler(WorkoutOccurrenceNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceNotFound(
+			WorkoutOccurrenceNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("WORKOUT_SESSION_NOT_FOUND", "Workout session was not found", request, List.of()));
+				.body(error("WORKOUT_OCCURRENCE_NOT_FOUND", "Workout occurrence was not found", request, List.of()));
 	}
 
-	@ExceptionHandler(InvalidWorkoutSessionStatusException.class)
-	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutSessionStatus(
-			InvalidWorkoutSessionStatusException ex,
-			HttpServletRequest request) {
-		return ResponseEntity.badRequest()
-				.body(error("INVALID_WORKOUT_SESSION_STATUS", ex.getMessage(), request, List.of()));
-	}
-
-	@ExceptionHandler(WorkoutSessionAlreadyExistsException.class)
-	ResponseEntity<ApiErrorResponse> handleWorkoutSessionAlreadyExists(
-			WorkoutSessionAlreadyExistsException ex,
+	@ExceptionHandler(DuplicateWorkoutOccurrenceException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutOccurrence(
+			DuplicateWorkoutOccurrenceException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("WORKOUT_SESSION_ALREADY_EXISTS", ex.getMessage(), request, List.of()));
+				.body(error("DUPLICATE_WORKOUT_OCCURRENCE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutOccurrenceStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutOccurrenceStatus(
+			InvalidWorkoutOccurrenceStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_OCCURRENCE_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceHasIncompleteExercisesException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceHasIncompleteExercises(
+			WorkoutOccurrenceHasIncompleteExercisesException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_HAS_INCOMPLETE_EXERCISES", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceDeleteNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceDeleteNotAllowed(
+			WorkoutOccurrenceDeleteNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceRequiresExercisesException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceRequiresExercises(
+			WorkoutOccurrenceRequiresExercisesException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_REQUIRES_EXERCISES", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseExecutionNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseExecutionNotFound(
+			WorkoutExerciseExecutionNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_EXERCISE_EXECUTION_NOT_FOUND",
+						"Workout exercise execution was not found",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutExerciseExecutionStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutExerciseExecutionStatus(
+			InvalidWorkoutExerciseExecutionStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_EXERCISE_EXECUTION_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateWorkoutExerciseExecutionException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutExerciseExecution(
+			DuplicateWorkoutExerciseExecutionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_WORKOUT_EXERCISE_EXECUTION", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteNotFoundException.class)
