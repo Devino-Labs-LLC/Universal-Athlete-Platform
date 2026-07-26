@@ -3,7 +3,6 @@ package com.devinolabs.uap.training.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,7 +20,7 @@ class WorkoutOccurrenceTests {
 
 	@Test
 	void createsScheduledOccurrenceWithOptionalDetails() {
-		WorkoutOccurrence occurrence = WorkoutOccurrence.create(
+		WorkoutOccurrence occurrence = WorkoutOccurrence.createManual(
 				WorkoutOccurrenceId.generate(),
 				TrainingPlanId.generate(),
 				WorkoutDayId.generate(),
@@ -37,6 +36,31 @@ class WorkoutOccurrenceTests {
 		assertThat(occurrence.athleteNotes()).isEqualTo("Focus on tempo");
 		assertThat(occurrence.startedAt()).isNull();
 		assertThat(occurrence.completedAt()).isNull();
+		assertThat(occurrence.origin()).isEqualTo(WorkoutOccurrenceOrigin.MANUAL);
+		assertThat(occurrence.generationKey()).isNull();
+		assertThat(occurrence.manuallyRescheduled()).isFalse();
+		assertThat(occurrence.originalScheduledDate()).isNull();
+	}
+
+	@Test
+	void createsGeneratedOccurrenceCarryingItsGenerationKey() {
+		TrainingPlanId planId = TrainingPlanId.generate();
+		WorkoutDayId dayId = WorkoutDayId.generate();
+		WorkoutGenerationKey key = WorkoutGenerationKey.of(planId, dayId, DATE, 1);
+
+		WorkoutOccurrence occurrence = WorkoutOccurrence.createGenerated(
+				WorkoutOccurrenceId.generate(),
+				planId,
+				dayId,
+				AthleteId.of(UUID.randomUUID()),
+				DATE,
+				LocalTime.of(6, 0),
+				key,
+				CLOCK);
+
+		assertThat(occurrence.origin()).isEqualTo(WorkoutOccurrenceOrigin.GENERATED);
+		assertThat(occurrence.generationKey()).isEqualTo(key);
+		assertThat(occurrence.status()).isEqualTo(WorkoutOccurrenceStatus.SCHEDULED);
 	}
 
 	@Test
@@ -86,6 +110,42 @@ class WorkoutOccurrenceTests {
 	}
 
 	@Test
+	void rescheduleRecordsOriginalDateOnceAndKeepsGenerationKey() {
+		TrainingPlanId planId = TrainingPlanId.generate();
+		WorkoutDayId dayId = WorkoutDayId.generate();
+		WorkoutGenerationKey key = WorkoutGenerationKey.of(planId, dayId, DATE, 1);
+		WorkoutOccurrence occurrence = WorkoutOccurrence.createGenerated(
+				WorkoutOccurrenceId.generate(),
+				planId,
+				dayId,
+				AthleteId.of(UUID.randomUUID()),
+				DATE,
+				LocalTime.of(6, 0),
+				key,
+				CLOCK);
+
+		occurrence.reschedule(DATE.plusDays(1), LocalTime.of(7, 0), LATER);
+		assertThat(occurrence.scheduledDate()).isEqualTo(DATE.plusDays(1));
+		assertThat(occurrence.plannedStartTime()).isEqualTo(LocalTime.of(7, 0));
+		assertThat(occurrence.manuallyRescheduled()).isTrue();
+		assertThat(occurrence.originalScheduledDate()).isEqualTo(DATE);
+		assertThat(occurrence.generationKey()).isEqualTo(key);
+
+		occurrence.reschedule(DATE.plusDays(3), null, LATER);
+		assertThat(occurrence.scheduledDate()).isEqualTo(DATE.plusDays(3));
+		assertThat(occurrence.plannedStartTime()).isNull();
+		assertThat(occurrence.originalScheduledDate()).isEqualTo(DATE);
+	}
+
+	@Test
+	void rescheduleRejectedOutsideScheduledStatus() {
+		WorkoutOccurrence occurrence = createScheduled();
+		occurrence.start(CLOCK);
+		assertThatThrownBy(() -> occurrence.reschedule(DATE.plusDays(1), null, LATER))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
 	void rejectsInvalidTransitionsAndUpdatesAfterTerminalState() {
 		WorkoutOccurrence occurrence = createScheduled();
 		assertThatThrownBy(() -> occurrence.complete(LATER))
@@ -99,7 +159,7 @@ class WorkoutOccurrenceTests {
 		assertThatThrownBy(() -> completed.updateDetails(null, "x", LATER))
 				.isInstanceOf(IllegalStateException.class);
 
-		assertThatThrownBy(() -> WorkoutOccurrence.create(
+		assertThatThrownBy(() -> WorkoutOccurrence.createManual(
 				WorkoutOccurrenceId.generate(),
 				TrainingPlanId.generate(),
 				WorkoutDayId.generate(),
@@ -112,7 +172,7 @@ class WorkoutOccurrenceTests {
 	}
 
 	private static WorkoutOccurrence createScheduled() {
-		return WorkoutOccurrence.create(
+		return WorkoutOccurrence.createManual(
 				WorkoutOccurrenceId.generate(),
 				TrainingPlanId.generate(),
 				WorkoutDayId.generate(),

@@ -11,7 +11,8 @@ import jakarta.validation.constraints.Size;
 public record CreateWorkoutDayRequest(
 		@NotBlank @Size(max = 160) String title,
 		@Size(max = 2000) String description,
-		@NotNull DayOfWeek scheduledDay,
+		@NotNull @Min(1) Integer planWeekNumber,
+		@NotNull DayOfWeek scheduledDayOfWeek,
 		LocalTime plannedStartTime,
 		@Min(1) Integer expectedDurationMinutes,
 		@Min(0) Integer displayOrder) {

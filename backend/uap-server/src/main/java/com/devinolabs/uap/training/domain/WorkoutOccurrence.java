@@ -20,6 +20,10 @@ public class WorkoutOccurrence {
 	private Instant completedAt;
 	private WorkoutOccurrenceStatus status;
 	private String athleteNotes;
+	private final WorkoutOccurrenceOrigin origin;
+	private final WorkoutGenerationKey generationKey;
+	private LocalDate originalScheduledDate;
+	private boolean manuallyRescheduled;
 	private final Instant createdAt;
 	private Instant updatedAt;
 	private long version;
@@ -35,6 +39,10 @@ public class WorkoutOccurrence {
 			Instant completedAt,
 			WorkoutOccurrenceStatus status,
 			String athleteNotes,
+			WorkoutOccurrenceOrigin origin,
+			WorkoutGenerationKey generationKey,
+			LocalDate originalScheduledDate,
+			boolean manuallyRescheduled,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -48,6 +56,10 @@ public class WorkoutOccurrence {
 		this.completedAt = normalizeCompletedAt(completedAt, status);
 		this.status = Objects.requireNonNull(status, "status must not be null");
 		this.athleteNotes = normalizeAthleteNotes(athleteNotes);
+		this.origin = Objects.requireNonNull(origin, "origin must not be null");
+		this.generationKey = normalizeGenerationKey(origin, generationKey);
+		this.originalScheduledDate = originalScheduledDate;
+		this.manuallyRescheduled = manuallyRescheduled;
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
 		if (version < 0) {
@@ -56,7 +68,7 @@ public class WorkoutOccurrence {
 		this.version = version;
 	}
 
-	public static WorkoutOccurrence create(
+	public static WorkoutOccurrence createManual(
 			WorkoutOccurrenceId id,
 			TrainingPlanId trainingPlanId,
 			WorkoutDayId workoutDayId,
@@ -78,6 +90,42 @@ public class WorkoutOccurrence {
 				null,
 				WorkoutOccurrenceStatus.SCHEDULED,
 				athleteNotes,
+				WorkoutOccurrenceOrigin.MANUAL,
+				null,
+				null,
+				false,
+				now,
+				now,
+				0L);
+	}
+
+	public static WorkoutOccurrence createGenerated(
+			WorkoutOccurrenceId id,
+			TrainingPlanId trainingPlanId,
+			WorkoutDayId workoutDayId,
+			AthleteId athleteId,
+			LocalDate scheduledDate,
+			LocalTime plannedStartTime,
+			WorkoutGenerationKey generationKey,
+			Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		Objects.requireNonNull(generationKey, "generationKey must not be null");
+		Instant now = Instant.now(clock);
+		return new WorkoutOccurrence(
+				id,
+				trainingPlanId,
+				workoutDayId,
+				athleteId,
+				scheduledDate,
+				plannedStartTime,
+				null,
+				null,
+				WorkoutOccurrenceStatus.SCHEDULED,
+				null,
+				WorkoutOccurrenceOrigin.GENERATED,
+				generationKey,
+				null,
+				false,
 				now,
 				now,
 				0L);
@@ -94,6 +142,10 @@ public class WorkoutOccurrence {
 			Instant completedAt,
 			WorkoutOccurrenceStatus status,
 			String athleteNotes,
+			WorkoutOccurrenceOrigin origin,
+			WorkoutGenerationKey generationKey,
+			LocalDate originalScheduledDate,
+			boolean manuallyRescheduled,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -108,6 +160,10 @@ public class WorkoutOccurrence {
 				completedAt,
 				status,
 				athleteNotes,
+				origin,
+				generationKey,
+				originalScheduledDate,
+				manuallyRescheduled,
 				createdAt,
 				updatedAt,
 				version);
@@ -182,6 +238,25 @@ public class WorkoutOccurrence {
 		touch(clock);
 	}
 
+	/**
+	 * Moves an untouched occurrence to a new slot. The generation key is preserved so the generator
+	 * recognises the placement as already materialised and does not recreate it at the original date.
+	 */
+	public void reschedule(LocalDate newScheduledDate, LocalTime newPlannedStartTime, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		LocalDate target = requireScheduledDate(newScheduledDate);
+		if (status != WorkoutOccurrenceStatus.SCHEDULED) {
+			throw new IllegalStateException("Only SCHEDULED workout occurrences can be rescheduled");
+		}
+		if (originalScheduledDate == null) {
+			this.originalScheduledDate = this.scheduledDate;
+		}
+		this.scheduledDate = target;
+		this.plannedStartTime = newPlannedStartTime;
+		this.manuallyRescheduled = true;
+		touch(clock);
+	}
+
 	private void requireMutable() {
 		if (status != WorkoutOccurrenceStatus.SCHEDULED && status != WorkoutOccurrenceStatus.IN_PROGRESS) {
 			throw new IllegalStateException(
@@ -196,6 +271,15 @@ public class WorkoutOccurrence {
 	private static LocalDate requireScheduledDate(LocalDate scheduledDate) {
 		Objects.requireNonNull(scheduledDate, "scheduledDate must not be null");
 		return scheduledDate;
+	}
+
+	private static WorkoutGenerationKey normalizeGenerationKey(
+			WorkoutOccurrenceOrigin origin,
+			WorkoutGenerationKey generationKey) {
+		if (origin == WorkoutOccurrenceOrigin.MANUAL && generationKey != null) {
+			throw new IllegalArgumentException("generationKey is only allowed for GENERATED occurrences");
+		}
+		return generationKey;
 	}
 
 	private static Instant normalizeCompletedAt(Instant completedAt, WorkoutOccurrenceStatus status) {
@@ -261,6 +345,22 @@ public class WorkoutOccurrence {
 
 	public String athleteNotes() {
 		return athleteNotes;
+	}
+
+	public WorkoutOccurrenceOrigin origin() {
+		return origin;
+	}
+
+	public WorkoutGenerationKey generationKey() {
+		return generationKey;
+	}
+
+	public LocalDate originalScheduledDate() {
+		return originalScheduledDate;
+	}
+
+	public boolean manuallyRescheduled() {
+		return manuallyRescheduled;
 	}
 
 	public Instant createdAt() {

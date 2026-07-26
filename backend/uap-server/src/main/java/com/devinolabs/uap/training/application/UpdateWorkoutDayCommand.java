@@ -8,12 +8,19 @@ public record UpdateWorkoutDayCommand(
 		boolean titlePresent,
 		String description,
 		boolean descriptionPresent,
-		DayOfWeek scheduledDay,
-		boolean scheduledDayPresent,
+		Integer planWeekNumber,
+		boolean planWeekNumberPresent,
+		DayOfWeek scheduledDayOfWeek,
+		boolean scheduledDayOfWeekPresent,
 		LocalTime plannedStartTime,
 		boolean plannedStartTimePresent,
 		Integer expectedDurationMinutes,
 		boolean expectedDurationMinutesPresent,
 		Integer displayOrder,
 		boolean displayOrderPresent) {
+
+	public boolean touchesPlacement() {
+		return planWeekNumberPresent || scheduledDayOfWeekPresent || plannedStartTimePresent;
+	}
+
 }

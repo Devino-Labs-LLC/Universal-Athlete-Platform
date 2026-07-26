@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 interface WorkoutOccurrenceJpaRepository extends JpaRepository<WorkoutOccurrenceJpaEntity, UUID> {
@@ -23,6 +24,12 @@ interface WorkoutOccurrenceJpaRepository extends JpaRepository<WorkoutOccurrence
 			UUID athleteId,
 			LocalDate scheduledDate,
 			WorkoutOccurrenceStatus status);
+
+	Optional<WorkoutOccurrenceJpaEntity> findByGenerationKey(String generationKey);
+
+	boolean existsByGenerationKey(String generationKey);
+
+	boolean existsByWorkoutDayIdAndOrigin(UUID workoutDayId, WorkoutOccurrenceOrigin origin);
 
 	@Query("""
 			select o from WorkoutOccurrenceJpaEntity o
@@ -39,5 +46,24 @@ interface WorkoutOccurrenceJpaRepository extends JpaRepository<WorkoutOccurrence
 			@Param("status") WorkoutOccurrenceStatus status,
 			@Param("scheduledFrom") LocalDate scheduledFrom,
 			@Param("scheduledTo") LocalDate scheduledTo);
+
+	@Query("""
+			select o from WorkoutOccurrenceJpaEntity o
+			where o.athleteId = :athleteId
+			and o.scheduledDate >= :from
+			and o.scheduledDate <= :to
+			and (:status is null or o.status = :status)
+			and (:trainingPlanId is null or o.trainingPlanId = :trainingPlanId)
+			order by o.scheduledDate asc,
+				case when o.plannedStartTime is null then 1 else 0 end asc,
+				o.plannedStartTime asc,
+				o.createdAt asc
+			""")
+	List<WorkoutOccurrenceJpaEntity> findCalendarRange(
+			@Param("athleteId") UUID athleteId,
+			@Param("from") LocalDate from,
+			@Param("to") LocalDate to,
+			@Param("status") WorkoutOccurrenceStatus status,
+			@Param("trainingPlanId") UUID trainingPlanId);
 
 }

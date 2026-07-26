@@ -57,6 +57,14 @@ final class TrainingPlanSupport {
 				plan.endDate(),
 				plan.athleteSportId(),
 				plan.athleteGoalId(),
+				plan.scheduleStartDate(),
+				plan.scheduleEndDate(),
+				plan.scheduleTimezone(),
+				plan.scheduleStatus(),
+				plan.recurrenceMode(),
+				plan.scheduleGeneratedThrough(),
+				plan.scheduleActivatedAt(),
+				plan.schedulePausedAt(),
 				plan.createdAt(),
 				plan.updatedAt());
 	}

@@ -3,6 +3,7 @@ package com.devinolabs.uap.training.infrastructure.persistence;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
+import com.devinolabs.uap.training.domain.WorkoutGenerationKey;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
@@ -23,6 +24,10 @@ final class WorkoutOccurrencePersistenceMapper {
 				occurrence.completedAt(),
 				occurrence.status(),
 				occurrence.athleteNotes(),
+				occurrence.origin(),
+				occurrence.generationKey() == null ? null : occurrence.generationKey().value(),
+				occurrence.originalScheduledDate(),
+				occurrence.manuallyRescheduled(),
 				occurrence.createdAt(),
 				occurrence.updatedAt(),
 				occurrence.version(),
@@ -41,6 +46,10 @@ final class WorkoutOccurrencePersistenceMapper {
 				entity.getCompletedAt(),
 				entity.getStatus(),
 				entity.getAthleteNotes(),
+				entity.getOrigin(),
+				WorkoutGenerationKey.ofNullable(entity.getGenerationKey()),
+				entity.getOriginalScheduledDate(),
+				entity.isManuallyRescheduled(),
 				entity.getCreatedAt(),
 				entity.getUpdatedAt(),
 				entity.getVersion());

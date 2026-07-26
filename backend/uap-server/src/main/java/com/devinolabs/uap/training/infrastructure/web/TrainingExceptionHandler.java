@@ -20,9 +20,20 @@ import com.devinolabs.uap.athlete.api.AthleteSportNotOwnedException;
 import com.devinolabs.uap.training.application.DuplicateTrainingPlanException;
 import com.devinolabs.uap.training.application.DuplicateWorkoutDayException;
 import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutDayPlacementException;
 import com.devinolabs.uap.training.application.InvalidCustomTrainingPlanTypeException;
+import com.devinolabs.uap.training.application.InvalidTimezoneException;
+import com.devinolabs.uap.training.application.InvalidTrainingCalendarRangeException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanDatesException;
+import com.devinolabs.uap.training.application.InvalidTrainingPlanScheduleDatesException;
+import com.devinolabs.uap.training.application.InvalidTrainingPlanScheduleStatusException;
 import com.devinolabs.uap.training.application.InvalidTrainingPlanStatusException;
+import com.devinolabs.uap.training.application.InvalidWorkoutOccurrenceGenerationRangeException;
+import com.devinolabs.uap.training.application.TrainingPlanSchedulePlacementLockedException;
+import com.devinolabs.uap.training.application.TrainingPlanScheduleNotConfiguredException;
+import com.devinolabs.uap.training.application.TrainingPlanScheduleRequiresWorkoutDaysException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceGenerationConflictException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceRescheduleNotAllowedException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayStatusException;
 import com.devinolabs.uap.training.application.InvalidWorkoutExerciseOrderException;
@@ -43,13 +54,26 @@ import com.devinolabs.uap.training.application.WorkoutOccurrenceDeleteNotAllowed
 import com.devinolabs.uap.training.application.WorkoutOccurrenceHasIncompleteExercisesException;
 import com.devinolabs.uap.training.application.WorkoutOccurrenceNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutOccurrenceRequiresExercisesException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseSetOrderException;
+import com.devinolabs.uap.training.application.InvalidWorkoutExerciseSetMembershipException;
+import com.devinolabs.uap.training.application.InvalidWorkoutExerciseSetStatusException;
+import com.devinolabs.uap.training.application.WorkoutExerciseExecutionActualsAreSetDerivedException;
+import com.devinolabs.uap.training.application.WorkoutExerciseExecutionHasIncompleteSetsException;
+import com.devinolabs.uap.training.application.WorkoutExerciseExecutionRequiresSetException;
+import com.devinolabs.uap.training.application.WorkoutExerciseSetDeleteNotAllowedException;
+import com.devinolabs.uap.training.application.WorkoutExerciseSetLimitExceededException;
+import com.devinolabs.uap.training.application.WorkoutExerciseSetNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutExerciseSetReorderNotAllowedException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
 		WorkoutDayController.class,
 		WorkoutExerciseController.class,
 		WorkoutOccurrenceController.class,
-		WorkoutExerciseExecutionController.class
+		WorkoutExerciseExecutionController.class,
+		TrainingPlanScheduleController.class,
+		TrainingCalendarController.class,
+		WorkoutExerciseSetController.class
 })
 class TrainingExceptionHandler {
 
@@ -265,6 +289,174 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("DUPLICATE_WORKOUT_EXERCISE_EXECUTION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingPlanScheduleStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidScheduleStatus(
+			InvalidTrainingPlanScheduleStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_PLAN_SCHEDULE_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingPlanScheduleDatesException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidScheduleDates(
+			InvalidTrainingPlanScheduleDatesException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_PLAN_SCHEDULE_DATES", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTimezoneException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTimezone(InvalidTimezoneException ex, HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TIMEZONE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingPlanScheduleNotConfiguredException.class)
+	ResponseEntity<ApiErrorResponse> handleScheduleNotConfigured(
+			TrainingPlanScheduleNotConfiguredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_PLAN_SCHEDULE_NOT_CONFIGURED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingPlanScheduleRequiresWorkoutDaysException.class)
+	ResponseEntity<ApiErrorResponse> handleScheduleRequiresWorkoutDays(
+			TrainingPlanScheduleRequiresWorkoutDaysException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_PLAN_SCHEDULE_REQUIRES_WORKOUT_DAYS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingPlanSchedulePlacementLockedException.class)
+	ResponseEntity<ApiErrorResponse> handleSchedulePlacementLocked(
+			TrainingPlanSchedulePlacementLockedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_PLAN_SCHEDULE_PLACEMENT_LOCKED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateWorkoutDayPlacementException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutDayPlacement(
+			DuplicateWorkoutDayPlacementException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_WORKOUT_DAY_PLACEMENT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutOccurrenceGenerationRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidGenerationRange(
+			InvalidWorkoutOccurrenceGenerationRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_OCCURRENCE_GENERATION_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceGenerationConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleGenerationConflict(
+			WorkoutOccurrenceGenerationConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_GENERATION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceRescheduleNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleRescheduleNotAllowed(
+			WorkoutOccurrenceRescheduleNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_RESCHEDULE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingCalendarRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidCalendarRange(
+			InvalidTrainingCalendarRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_CALENDAR_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSetNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSetNotFound(
+			WorkoutExerciseSetNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_EXERCISE_SET_NOT_FOUND", "Workout exercise set was not found", request,
+						List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutExerciseSetStatusException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutExerciseSetStatus(
+			InvalidWorkoutExerciseSetStatusException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_EXERCISE_SET_STATUS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSetLimitExceededException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSetLimitExceeded(
+			WorkoutExerciseSetLimitExceededException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_SET_LIMIT_EXCEEDED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSetDeleteNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSetDeleteNotAllowed(
+			WorkoutExerciseSetDeleteNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_SET_DELETE_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSetReorderNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSetReorderNotAllowed(
+			WorkoutExerciseSetReorderNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_SET_REORDER_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutExerciseSetMembershipException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutExerciseSetMembership(
+			InvalidWorkoutExerciseSetMembershipException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_EXERCISE_SET_MEMBERSHIP", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateWorkoutExerciseSetOrderException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateWorkoutExerciseSetOrder(
+			DuplicateWorkoutExerciseSetOrderException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_WORKOUT_EXERCISE_SET_ORDER", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseExecutionRequiresSetException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseExecutionRequiresSet(
+			WorkoutExerciseExecutionRequiresSetException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_EXECUTION_REQUIRES_SET", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseExecutionHasIncompleteSetsException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseExecutionHasIncompleteSets(
+			WorkoutExerciseExecutionHasIncompleteSetsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_EXECUTION_HAS_INCOMPLETE_SETS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseExecutionActualsAreSetDerivedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseExecutionActualsAreSetDerived(
+			WorkoutExerciseExecutionActualsAreSetDerivedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("WORKOUT_EXERCISE_EXECUTION_ACTUALS_ARE_SET_DERIVED", ex.getMessage(), request,
+						List.of()));
 	}
 
 	@ExceptionHandler(AthleteNotFoundException.class)

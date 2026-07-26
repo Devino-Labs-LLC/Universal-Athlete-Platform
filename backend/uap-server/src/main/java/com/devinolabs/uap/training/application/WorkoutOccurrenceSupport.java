@@ -95,6 +95,9 @@ final class WorkoutOccurrenceSupport {
 				occurrence.completedAt(),
 				occurrence.status(),
 				occurrence.athleteNotes(),
+				occurrence.origin(),
+				occurrence.originalScheduledDate(),
+				occurrence.manuallyRescheduled(),
 				occurrence.createdAt(),
 				occurrence.updatedAt());
 	}

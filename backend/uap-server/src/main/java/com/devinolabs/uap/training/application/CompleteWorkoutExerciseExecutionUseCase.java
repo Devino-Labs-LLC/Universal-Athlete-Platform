@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.application;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSet;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
@@ -27,6 +29,7 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
+	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final Clock clock;
 
 	public CompleteWorkoutExerciseExecutionUseCase(
@@ -35,12 +38,14 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
+			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
+		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -63,13 +68,26 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 		WorkoutExerciseExecutionSupport.requireExecutionWritable(occurrence);
 		WorkoutExerciseExecution execution = WorkoutExerciseExecutionSupport.requireOwnedExecution(
 				workoutExerciseExecutionRepository, executionId, occurrenceId, day.id(), athleteId);
+
+		List<WorkoutExerciseSet> sets = workoutExerciseSetRepository.findAllByExecutionIdAndAthleteId(
+				execution.id(), athleteId);
+		if (sets.stream().anyMatch(set -> set.status().isActive())) {
+			throw new WorkoutExerciseExecutionHasIncompleteSetsException();
+		}
+
 		try {
+			// Executions created before Phase 7G have no sets; they complete with their stored actuals.
+			if (!sets.isEmpty()) {
+				WorkoutExerciseSetSupport.applyDerivedActuals(
+						execution, WorkoutExerciseSetSupport.deriveActuals(sets), clock);
+			}
 			execution.complete(clock);
 		}
 		catch (IllegalStateException ex) {
 			throw WorkoutExerciseExecutionSupport.translateStatus(ex);
 		}
-		return WorkoutExerciseExecutionSupport.toResult(workoutExerciseExecutionRepository.save(execution));
+		return WorkoutExerciseExecutionSupport.toResult(
+				workoutExerciseExecutionRepository.save(execution), workoutExerciseSetRepository, athleteId);
 	}
 
 }

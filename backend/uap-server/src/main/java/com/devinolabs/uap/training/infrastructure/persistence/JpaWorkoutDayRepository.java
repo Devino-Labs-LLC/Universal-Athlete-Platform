@@ -1,5 +1,7 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -10,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.training.application.DuplicateWorkoutDayException;
+import com.devinolabs.uap.training.application.DuplicateWorkoutDayPlacementException;
 import com.devinolabs.uap.training.application.InvalidWorkoutDayOrderException;
 import com.devinolabs.uap.training.application.WorkoutDayRepository;
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -79,6 +82,47 @@ class JpaWorkoutDayRepository implements WorkoutDayRepository {
 	}
 
 	@Override
+	public List<WorkoutDay> findAllByTrainingPlanIdAndAthleteIdOrderedByPlacement(
+			TrainingPlanId trainingPlanId,
+			AthleteId athleteId) {
+		return jpaRepository
+				.findAllOrderedByPlacement(trainingPlanId.value(), athleteId.value())
+				.stream()
+				.map(WorkoutDayPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public List<WorkoutDay> findAllByIdInAndAthleteId(Collection<WorkoutDayId> ids, AthleteId athleteId) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository
+				.findAllByIdInAndAthleteId(ids.stream().map(WorkoutDayId::value).toList(), athleteId.value())
+				.stream()
+				.map(WorkoutDayPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public boolean existsDuplicatePlacement(
+			TrainingPlanId trainingPlanId,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
+			LocalTime plannedStartTime,
+			WorkoutDayId excludingId) {
+		if (planWeekNumber == null || scheduledDayOfWeek == null) {
+			return false;
+		}
+		return jpaRepository.existsDuplicatePlacement(
+				trainingPlanId.value(),
+				planWeekNumber,
+				scheduledDayOfWeek,
+				plannedStartTime,
+				excludingId == null ? null : excludingId.value());
+	}
+
+	@Override
 	public boolean existsByTrainingPlanIdAndNormalizedTitle(TrainingPlanId trainingPlanId, String normalizedTitle) {
 		return jpaRepository.existsByTrainingPlanIdAndNormalizedTitle(trainingPlanId.value(), normalizedTitle);
 	}
@@ -122,6 +166,9 @@ class JpaWorkoutDayRepository implements WorkoutDayRepository {
 		String lower = message == null ? "" : message.toLowerCase();
 		if (lower.contains("uq_workout_days_plan_title")) {
 			return new DuplicateWorkoutDayException();
+		}
+		if (lower.contains("uq_workout_days_plan_placement")) {
+			return new DuplicateWorkoutDayPlacementException();
 		}
 		if (lower.contains("uq_workout_days_plan_order")) {
 			return new InvalidWorkoutDayOrderException("displayOrder conflicts with an existing workout day");

@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("15");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create workout occurrences and execution history");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("17");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("create workout exercise sets");
 	}
 
 	@Test
@@ -287,6 +287,65 @@ class UapServerApplicationTests {
 			assertThat(executionColumns.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create workout occurrences and execution history");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesTrainingScheduleAndCalendarGenerationMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet scheduleStatus = connection.getMetaData().getColumns(null, null, "training_plans",
+						"schedule_status");
+				ResultSet recurrenceMode = connection.getMetaData().getColumns(null, null, "training_plans",
+						"recurrence_mode");
+				ResultSet planWeekNumber = connection.getMetaData().getColumns(null, null, "workout_days",
+						"plan_week_number");
+				ResultSet scheduledDayOfWeek = connection.getMetaData().getColumns(null, null, "workout_days",
+						"scheduled_day_of_week");
+				ResultSet legacyScheduledDay = connection.getMetaData().getColumns(null, null, "workout_days",
+						"scheduled_day");
+				ResultSet placementKey = connection.getMetaData().getColumns(null, null, "workout_days",
+						"placement_key");
+				ResultSet origin = connection.getMetaData().getColumns(null, null, "workout_occurrences", "origin");
+				ResultSet generationKey = connection.getMetaData().getColumns(null, null, "workout_occurrences",
+						"generation_key");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '16'")) {
+			assertThat(scheduleStatus.next()).isTrue();
+			assertThat(recurrenceMode.next()).isTrue();
+			assertThat(planWeekNumber.next()).isTrue();
+			assertThat(scheduledDayOfWeek.next()).isTrue();
+			assertThat(legacyScheduledDay.next()).isFalse();
+			assertThat(placementKey.next()).isTrue();
+			assertThat(origin.next()).isTrue();
+			assertThat(generationKey.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("add training schedule and calendar generation");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesWorkoutExerciseSetsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet tables = connection.getMetaData().getTables(null, null, "workout_exercise_sets",
+						new String[] { "TABLE" });
+				ResultSet setNumber = connection.getMetaData().getColumns(null, null, "workout_exercise_sets",
+						"set_number");
+				ResultSet setStatus = connection.getMetaData().getColumns(null, null, "workout_exercise_sets",
+						"status");
+				ResultSet executionRpe = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "actual_rpe");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '17'")) {
+			assertThat(tables.next()).isTrue();
+			assertThat(setNumber.next()).isTrue();
+			assertThat(setStatus.next()).isTrue();
+			assertThat(executionRpe.next()).isTrue();
+			assertThat(executionRpe.getString("TYPE_NAME")).containsIgnoringCase("decimal");
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create workout exercise sets");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

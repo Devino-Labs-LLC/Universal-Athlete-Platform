@@ -128,8 +128,8 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 	@Column(name = "actual_rest_seconds")
 	private Integer actualRestSeconds;
 
-	@Column(name = "actual_rpe")
-	private Integer actualRpe;
+	@Column(name = "actual_rpe", precision = 12, scale = 2)
+	private BigDecimal actualRpe;
 
 	@Column(name = "started_at")
 	private Instant startedAt;
@@ -186,7 +186,7 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Instant startedAt,
 			Instant completedAt,
 			String athleteNotes,
@@ -361,7 +361,7 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		return actualRestSeconds;
 	}
 
-	Integer getActualRpe() {
+	BigDecimal getActualRpe() {
 		return actualRpe;
 	}
 
@@ -425,7 +425,7 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		this.actualRestSeconds = actualRestSeconds;
 	}
 
-	void setActualRpe(Integer actualRpe) {
+	void setActualRpe(BigDecimal actualRpe) {
 		this.actualRpe = actualRpe;
 	}
 

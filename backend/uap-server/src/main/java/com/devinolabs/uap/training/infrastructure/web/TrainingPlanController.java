@@ -143,7 +143,7 @@ class TrainingPlanController {
 		return principal;
 	}
 
-	private static TrainingPlanResponse toResponse(TrainingPlanResult result) {
+	static TrainingPlanResponse toResponse(TrainingPlanResult result) {
 		return new TrainingPlanResponse(
 				result.id().value(),
 				result.type(),
@@ -155,6 +155,14 @@ class TrainingPlanController {
 				result.endDate(),
 				result.athleteSportId() == null ? null : result.athleteSportId().value(),
 				result.athleteGoalId() == null ? null : result.athleteGoalId().value(),
+				result.scheduleStartDate(),
+				result.scheduleEndDate(),
+				result.scheduleTimezone(),
+				result.scheduleStatus(),
+				result.recurrenceMode(),
+				result.scheduleGeneratedThrough(),
+				result.scheduleActivatedAt(),
+				result.schedulePausedAt(),
 				result.createdAt(),
 				result.updatedAt());
 	}

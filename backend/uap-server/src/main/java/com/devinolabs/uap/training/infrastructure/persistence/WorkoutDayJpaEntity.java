@@ -51,9 +51,12 @@ class WorkoutDayJpaEntity implements Persistable<UUID> {
 	@Column(name = "description", length = 2000)
 	private String description;
 
+	@Column(name = "plan_week_number")
+	private Integer planWeekNumber;
+
 	@Enumerated(EnumType.STRING)
-	@Column(name = "scheduled_day", nullable = false, length = 16)
-	private DayOfWeek scheduledDay;
+	@Column(name = "scheduled_day_of_week", nullable = false, length = 16)
+	private DayOfWeek scheduledDayOfWeek;
 
 	@Column(name = "planned_start_time")
 	private LocalTime plannedStartTime;
@@ -89,7 +92,8 @@ class WorkoutDayJpaEntity implements Persistable<UUID> {
 			String title,
 			String normalizedTitle,
 			String description,
-			DayOfWeek scheduledDay,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
 			LocalTime plannedStartTime,
 			Integer expectedDurationMinutes,
 			WorkoutDayStatus status,
@@ -104,7 +108,8 @@ class WorkoutDayJpaEntity implements Persistable<UUID> {
 		this.title = title;
 		this.normalizedTitle = normalizedTitle;
 		this.description = description;
-		this.scheduledDay = scheduledDay;
+		this.planWeekNumber = planWeekNumber;
+		this.scheduledDayOfWeek = scheduledDayOfWeek;
 		this.plannedStartTime = plannedStartTime;
 		this.expectedDurationMinutes = expectedDurationMinutes;
 		this.status = status;
@@ -154,8 +159,12 @@ class WorkoutDayJpaEntity implements Persistable<UUID> {
 		return description;
 	}
 
-	DayOfWeek getScheduledDay() {
-		return scheduledDay;
+	Integer getPlanWeekNumber() {
+		return planWeekNumber;
+	}
+
+	DayOfWeek getScheduledDayOfWeek() {
+		return scheduledDayOfWeek;
 	}
 
 	LocalTime getPlannedStartTime() {

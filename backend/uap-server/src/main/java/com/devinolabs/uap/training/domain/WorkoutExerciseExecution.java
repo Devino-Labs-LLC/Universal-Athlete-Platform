@@ -38,7 +38,7 @@ public class WorkoutExerciseExecution {
 	private BigDecimal actualDistance;
 	private DistanceUnit distanceUnit;
 	private Integer actualRestSeconds;
-	private Integer actualRpe;
+	private BigDecimal actualRpe;
 	private Instant startedAt;
 	private Instant completedAt;
 	private String athleteNotes;
@@ -76,7 +76,7 @@ public class WorkoutExerciseExecution {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Instant startedAt,
 			Instant completedAt,
 			String athleteNotes,
@@ -216,7 +216,7 @@ public class WorkoutExerciseExecution {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Instant startedAt,
 			Instant completedAt,
 			String athleteNotes,
@@ -303,7 +303,11 @@ public class WorkoutExerciseExecution {
 		touch(clock);
 	}
 
-	public void updateExecution(
+	/**
+	 * Replaces the summary aggregates with values derived from the execution's completed sets.
+	 * Actuals are never written directly by clients; see Phase 7G set-level logging.
+	 */
+	public void applyDerivedActuals(
 			Integer actualSets,
 			Integer actualReps,
 			BigDecimal actualWeight,
@@ -312,7 +316,7 @@ public class WorkoutExerciseExecution {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		Execution execution = normalizeExecution(
@@ -367,7 +371,7 @@ public class WorkoutExerciseExecution {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Instant startedAt,
 			Instant completedAt,
 			String athleteNotes,
@@ -396,7 +400,8 @@ public class WorkoutExerciseExecution {
 		if (actualRestSeconds != null && actualRestSeconds < 0) {
 			throw new IllegalArgumentException("actualRestSeconds must be >= 0");
 		}
-		if (actualRpe != null && (actualRpe < 0 || actualRpe > 10)) {
+		if (actualRpe != null
+				&& (actualRpe.compareTo(BigDecimal.ZERO) < 0 || actualRpe.compareTo(BigDecimal.TEN) > 0)) {
 			throw new IllegalArgumentException("actualRpe must be between 0 and 10");
 		}
 		if (status == WorkoutExerciseExecutionStatus.COMPLETED && completedAt == null) {
@@ -441,7 +446,7 @@ public class WorkoutExerciseExecution {
 			BigDecimal actualDistance,
 			DistanceUnit distanceUnit,
 			Integer actualRestSeconds,
-			Integer actualRpe,
+			BigDecimal actualRpe,
 			Instant startedAt,
 			Instant completedAt,
 			String athleteNotes) {
@@ -563,7 +568,7 @@ public class WorkoutExerciseExecution {
 		return actualRestSeconds;
 	}
 
-	public Integer actualRpe() {
+	public BigDecimal actualRpe() {
 		return actualRpe;
 	}
 

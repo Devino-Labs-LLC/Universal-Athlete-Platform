@@ -26,6 +26,7 @@ class WorkoutDayTests {
 				0,
 				"  Lower   Body  ",
 				"  Squats focus  ",
+				1,
 				DayOfWeek.MONDAY,
 				LocalTime.of(9, 0),
 				60,
@@ -35,7 +36,9 @@ class WorkoutDayTests {
 		assertThat(day.normalizedTitle()).isEqualTo("lower body");
 		assertThat(day.description()).isEqualTo("Squats focus");
 		assertThat(day.status()).isEqualTo(WorkoutDayStatus.PLANNED);
-		assertThat(day.scheduledDay()).isEqualTo(DayOfWeek.MONDAY);
+		assertThat(day.planWeekNumber()).isEqualTo(1);
+		assertThat(day.scheduledDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+		assertThat(day.hasSchedulablePlacement()).isTrue();
 		assertThat(day.expectedDurationMinutes()).isEqualTo(60);
 	}
 
@@ -43,18 +46,38 @@ class WorkoutDayTests {
 	void rejectsInvalidTitleOrderAndDuration() {
 		assertThatThrownBy(() -> WorkoutDay.create(
 				WorkoutDayId.generate(), TrainingPlanId.generate(), AthleteId.of(UUID.randomUUID()),
-				-1, "Title", null, DayOfWeek.TUESDAY, null, null, CLOCK))
+				-1, "Title", null, 1, DayOfWeek.TUESDAY, null, null, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		assertThatThrownBy(() -> WorkoutDay.create(
 				WorkoutDayId.generate(), TrainingPlanId.generate(), AthleteId.of(UUID.randomUUID()),
-				0, "  ", null, DayOfWeek.TUESDAY, null, null, CLOCK))
+				0, "  ", null, 1, DayOfWeek.TUESDAY, null, null, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		assertThatThrownBy(() -> WorkoutDay.create(
 				WorkoutDayId.generate(), TrainingPlanId.generate(), AthleteId.of(UUID.randomUUID()),
-				0, "Title", null, DayOfWeek.TUESDAY, null, 0, CLOCK))
+				0, "Title", null, 1, DayOfWeek.TUESDAY, null, 0, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void rejectsNonPositivePlanWeekNumber() {
+		assertThatThrownBy(() -> WorkoutDay.create(
+				WorkoutDayId.generate(), TrainingPlanId.generate(), AthleteId.of(UUID.randomUUID()),
+				0, "Title", null, 0, DayOfWeek.TUESDAY, null, null, CLOCK))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void changesPlacementFields() {
+		WorkoutDay day = createPlanned();
+		day.changePlanWeekNumber(3, LATER);
+		day.changeScheduledDayOfWeek(DayOfWeek.FRIDAY, LATER);
+		day.changePlannedStartTime(LocalTime.of(7, 30), LATER);
+
+		assertThat(day.planWeekNumber()).isEqualTo(3);
+		assertThat(day.scheduledDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
+		assertThat(day.plannedStartTime()).isEqualTo(LocalTime.of(7, 30));
 	}
 
 	@Test
@@ -91,6 +114,7 @@ class WorkoutDayTests {
 				0,
 				"Lower Body",
 				null,
+				1,
 				DayOfWeek.MONDAY,
 				null,
 				null,

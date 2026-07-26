@@ -295,7 +295,7 @@ class WorkoutExerciseHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"Lower Body","scheduledDay":"MONDAY"}
+								{"title":"Lower Body","planWeekNumber":1,"scheduledDayOfWeek":"MONDAY"}
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();

@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 public record WorkoutOccurrenceResult(
@@ -17,6 +18,9 @@ public record WorkoutOccurrenceResult(
 		Instant completedAt,
 		WorkoutOccurrenceStatus status,
 		String athleteNotes,
+		WorkoutOccurrenceOrigin origin,
+		LocalDate originalScheduledDate,
+		boolean manuallyRescheduled,
 		Instant createdAt,
 		Instant updatedAt) {
 }

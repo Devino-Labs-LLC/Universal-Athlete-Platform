@@ -20,6 +20,7 @@ import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExercise;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSet;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
@@ -32,6 +33,7 @@ public class CreateWorkoutOccurrenceUseCase {
 	private final WorkoutExerciseRepository workoutExerciseRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
+	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final Clock clock;
 
 	public CreateWorkoutOccurrenceUseCase(
@@ -41,6 +43,7 @@ public class CreateWorkoutOccurrenceUseCase {
 			WorkoutExerciseRepository workoutExerciseRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
+			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
@@ -48,6 +51,7 @@ public class CreateWorkoutOccurrenceUseCase {
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
+		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -73,7 +77,7 @@ public class CreateWorkoutOccurrenceUseCase {
 				workoutOccurrenceRepository, day.id(), athleteId, scheduledDate, null);
 
 		WorkoutOccurrenceId occurrenceId = WorkoutOccurrenceId.generate();
-		WorkoutOccurrence occurrence = WorkoutOccurrence.create(
+		WorkoutOccurrence occurrence = WorkoutOccurrence.createManual(
 				occurrenceId,
 				plan.id(),
 				day.id(),
@@ -90,9 +94,14 @@ public class CreateWorkoutOccurrenceUseCase {
 
 		WorkoutOccurrence saved = workoutOccurrenceRepository.save(occurrence);
 		List<WorkoutExerciseExecution> savedExecutions = workoutExerciseExecutionRepository.saveAll(executions);
+		List<WorkoutExerciseSet> sets = new ArrayList<>();
+		for (WorkoutExerciseExecution execution : savedExecutions) {
+			sets.addAll(WorkoutExerciseSetSupport.createInitialSets(execution, clock));
+		}
+		workoutExerciseSetRepository.saveAll(sets);
 		return WorkoutOccurrenceSupport.toDetailResult(
 				saved,
-				WorkoutExerciseExecutionSupport.toResults(savedExecutions));
+				WorkoutExerciseExecutionSupport.toResults(savedExecutions, workoutExerciseSetRepository, athleteId));
 	}
 
 }

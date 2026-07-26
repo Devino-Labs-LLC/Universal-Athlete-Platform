@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -121,14 +123,39 @@ class WorkoutOccurrenceHttpIntegrationTests {
 						.content("""
 								{"actualSets":4,"actualReps":5,"actualWeight":100,"weightUnit":"KILOGRAM"}
 								"""))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.actualWeight").value(100));
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("WORKOUT_EXERCISE_EXECUTION_ACTUALS_ARE_SET_DERIVED"));
+
+		String setsBase = exercisesBase + "/" + executionId + "/sets";
+		List<String> setIds = JsonPath.read(
+				mockMvc.perform(get(setsBase).with(accountAuth(accountId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$", hasSize(4)))
+						.andReturn().getResponse().getContentAsString(),
+				"$[*].id");
+		for (String setId : setIds) {
+			mockMvc.perform(patch(setsBase + "/" + setId)
+							.with(accountAuth(accountId))
+							.with(csrf())
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("""
+									{"actualReps":5,"actualWeight":100,"actualWeightUnit":"KILOGRAM"}
+									"""))
+					.andExpect(status().isOk());
+			mockMvc.perform(post(setsBase + "/" + setId + "/complete")
+							.with(accountAuth(accountId))
+							.with(csrf()))
+					.andExpect(status().isOk());
+		}
 
 		mockMvc.perform(post(exercisesBase + "/" + executionId + "/complete")
 						.with(accountAuth(accountId))
 						.with(csrf()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("COMPLETED"));
+				.andExpect(jsonPath("$.status").value("COMPLETED"))
+				.andExpect(jsonPath("$.actualSets").value(4))
+				.andExpect(jsonPath("$.actualReps").value(20))
+				.andExpect(jsonPath("$.actualWeight").value(100));
 
 		mockMvc.perform(post(base + "/" + occurrenceId + "/complete")
 						.with(accountAuth(accountId))
@@ -314,7 +341,7 @@ class WorkoutOccurrenceHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"%s","scheduledDay":"%s"}
+								{"title":"%s","planWeekNumber":1,"scheduledDayOfWeek":"%s"}
 								""".formatted(title, scheduledDay)))
 				.andExpect(status().isCreated())
 				.andReturn();

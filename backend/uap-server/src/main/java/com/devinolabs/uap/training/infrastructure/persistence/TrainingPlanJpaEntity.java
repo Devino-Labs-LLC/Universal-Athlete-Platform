@@ -19,6 +19,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
+import com.devinolabs.uap.training.domain.TrainingPlanRecurrenceMode;
+import com.devinolabs.uap.training.domain.TrainingPlanScheduleStatus;
 import com.devinolabs.uap.training.domain.TrainingPlanStatus;
 import com.devinolabs.uap.training.domain.TrainingPlanType;
 
@@ -69,6 +71,32 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 	@Column(name = "end_date", nullable = false)
 	private LocalDate endDate;
 
+	@Column(name = "schedule_start_date")
+	private LocalDate scheduleStartDate;
+
+	@Column(name = "schedule_end_date")
+	private LocalDate scheduleEndDate;
+
+	@Column(name = "schedule_timezone", length = 64)
+	private String scheduleTimezone;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "schedule_status", nullable = false, length = 20)
+	private TrainingPlanScheduleStatus scheduleStatus;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "recurrence_mode", length = 20)
+	private TrainingPlanRecurrenceMode recurrenceMode;
+
+	@Column(name = "schedule_generated_through")
+	private LocalDate scheduleGeneratedThrough;
+
+	@Column(name = "schedule_activated_at")
+	private Instant scheduleActivatedAt;
+
+	@Column(name = "schedule_paused_at")
+	private Instant schedulePausedAt;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -98,6 +126,14 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 			TrainingPlanStatus status,
 			LocalDate startDate,
 			LocalDate endDate,
+			LocalDate scheduleStartDate,
+			LocalDate scheduleEndDate,
+			String scheduleTimezone,
+			TrainingPlanScheduleStatus scheduleStatus,
+			TrainingPlanRecurrenceMode recurrenceMode,
+			LocalDate scheduleGeneratedThrough,
+			Instant scheduleActivatedAt,
+			Instant schedulePausedAt,
 			Instant createdAt,
 			Instant updatedAt,
 			long version,
@@ -114,6 +150,14 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 		this.status = status;
 		this.startDate = startDate;
 		this.endDate = endDate;
+		this.scheduleStartDate = scheduleStartDate;
+		this.scheduleEndDate = scheduleEndDate;
+		this.scheduleTimezone = scheduleTimezone;
+		this.scheduleStatus = scheduleStatus;
+		this.recurrenceMode = recurrenceMode;
+		this.scheduleGeneratedThrough = scheduleGeneratedThrough;
+		this.scheduleActivatedAt = scheduleActivatedAt;
+		this.schedulePausedAt = schedulePausedAt;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.version = version;
@@ -178,6 +222,38 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 
 	LocalDate getEndDate() {
 		return endDate;
+	}
+
+	LocalDate getScheduleStartDate() {
+		return scheduleStartDate;
+	}
+
+	LocalDate getScheduleEndDate() {
+		return scheduleEndDate;
+	}
+
+	String getScheduleTimezone() {
+		return scheduleTimezone;
+	}
+
+	TrainingPlanScheduleStatus getScheduleStatus() {
+		return scheduleStatus;
+	}
+
+	TrainingPlanRecurrenceMode getRecurrenceMode() {
+		return recurrenceMode;
+	}
+
+	LocalDate getScheduleGeneratedThrough() {
+		return scheduleGeneratedThrough;
+	}
+
+	Instant getScheduleActivatedAt() {
+		return scheduleActivatedAt;
+	}
+
+	Instant getSchedulePausedAt() {
+		return schedulePausedAt;
 	}
 
 	Instant getCreatedAt() {

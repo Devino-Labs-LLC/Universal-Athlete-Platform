@@ -19,7 +19,8 @@ public class WorkoutDay {
 	private String title;
 	private String normalizedTitle;
 	private String description;
-	private DayOfWeek scheduledDay;
+	private Integer planWeekNumber;
+	private DayOfWeek scheduledDayOfWeek;
 	private LocalTime plannedStartTime;
 	private Integer expectedDurationMinutes;
 	private WorkoutDayStatus status;
@@ -35,7 +36,8 @@ public class WorkoutDay {
 			String title,
 			String normalizedTitle,
 			String description,
-			DayOfWeek scheduledDay,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
 			LocalTime plannedStartTime,
 			Integer expectedDurationMinutes,
 			WorkoutDayStatus status,
@@ -49,7 +51,8 @@ public class WorkoutDay {
 		this.title = requireTitle(title);
 		this.normalizedTitle = Objects.requireNonNull(normalizedTitle, "normalizedTitle must not be null");
 		this.description = normalizeDescription(description);
-		this.scheduledDay = Objects.requireNonNull(scheduledDay, "scheduledDay must not be null");
+		this.planWeekNumber = normalizePlanWeekNumber(planWeekNumber);
+		this.scheduledDayOfWeek = Objects.requireNonNull(scheduledDayOfWeek, "scheduledDayOfWeek must not be null");
 		this.plannedStartTime = plannedStartTime;
 		this.expectedDurationMinutes = normalizeDuration(expectedDurationMinutes);
 		this.status = Objects.requireNonNull(status, "status must not be null");
@@ -68,7 +71,8 @@ public class WorkoutDay {
 			int displayOrder,
 			String title,
 			String description,
-			DayOfWeek scheduledDay,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
 			LocalTime plannedStartTime,
 			Integer expectedDurationMinutes,
 			Clock clock) {
@@ -82,7 +86,8 @@ public class WorkoutDay {
 				title,
 				normalizeTitle(title),
 				description,
-				scheduledDay,
+				planWeekNumber,
+				scheduledDayOfWeek,
 				plannedStartTime,
 				expectedDurationMinutes,
 				WorkoutDayStatus.PLANNED,
@@ -99,7 +104,8 @@ public class WorkoutDay {
 			String title,
 			String normalizedTitle,
 			String description,
-			DayOfWeek scheduledDay,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
 			LocalTime plannedStartTime,
 			Integer expectedDurationMinutes,
 			WorkoutDayStatus status,
@@ -114,7 +120,8 @@ public class WorkoutDay {
 				title,
 				normalizedTitle,
 				description,
-				scheduledDay,
+				planWeekNumber,
+				scheduledDayOfWeek,
 				plannedStartTime,
 				expectedDurationMinutes,
 				status,
@@ -142,9 +149,16 @@ public class WorkoutDay {
 		touch(clock);
 	}
 
-	public void changeScheduledDay(DayOfWeek scheduledDay, Clock clock) {
+	public void changePlanWeekNumber(Integer planWeekNumber, Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
-		this.scheduledDay = Objects.requireNonNull(scheduledDay, "scheduledDay must not be null");
+		this.planWeekNumber = normalizePlanWeekNumber(planWeekNumber);
+		touch(clock);
+	}
+
+	public void changeScheduledDayOfWeek(DayOfWeek scheduledDayOfWeek, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.scheduledDayOfWeek = Objects.requireNonNull(
+				scheduledDayOfWeek, "scheduledDayOfWeek must not be null");
 		touch(clock);
 	}
 
@@ -205,6 +219,10 @@ public class WorkoutDay {
 		}
 	}
 
+	public boolean hasSchedulablePlacement() {
+		return planWeekNumber != null && scheduledDayOfWeek != null;
+	}
+
 	public static String normalizeTitle(String title) {
 		return collapseWhitespace(requireTitle(title)).toLowerCase(Locale.ROOT);
 	}
@@ -218,6 +236,16 @@ public class WorkoutDay {
 			throw new IllegalArgumentException("displayOrder must not be negative");
 		}
 		return displayOrder;
+	}
+
+	private static Integer normalizePlanWeekNumber(Integer planWeekNumber) {
+		if (planWeekNumber == null) {
+			return null;
+		}
+		if (planWeekNumber < 1) {
+			throw new IllegalArgumentException("planWeekNumber must be at least 1");
+		}
+		return planWeekNumber;
 	}
 
 	private static String requireTitle(String title) {
@@ -284,8 +312,12 @@ public class WorkoutDay {
 		return description;
 	}
 
-	public DayOfWeek scheduledDay() {
-		return scheduledDay;
+	public Integer planWeekNumber() {
+		return planWeekNumber;
+	}
+
+	public DayOfWeek scheduledDayOfWeek() {
+		return scheduledDayOfWeek;
 	}
 
 	public LocalTime plannedStartTime() {

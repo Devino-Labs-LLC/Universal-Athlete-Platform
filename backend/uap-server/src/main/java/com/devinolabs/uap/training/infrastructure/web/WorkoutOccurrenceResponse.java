@@ -12,6 +12,7 @@ import com.devinolabs.uap.training.domain.ExerciseCategory;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 public record WorkoutOccurrenceResponse(
@@ -23,6 +24,9 @@ public record WorkoutOccurrenceResponse(
 		Instant completedAt,
 		WorkoutOccurrenceStatus status,
 		String athleteNotes,
+		WorkoutOccurrenceOrigin origin,
+		LocalDate originalScheduledDate,
+		boolean manuallyRescheduled,
 		Instant createdAt,
 		Instant updatedAt) {
 }
@@ -36,6 +40,9 @@ record WorkoutOccurrenceDetailResponse(
 		Instant completedAt,
 		WorkoutOccurrenceStatus status,
 		String athleteNotes,
+		WorkoutOccurrenceOrigin origin,
+		LocalDate originalScheduledDate,
+		boolean manuallyRescheduled,
 		Instant createdAt,
 		Instant updatedAt,
 		List<WorkoutExerciseExecutionResponse> executions) {
@@ -69,10 +76,15 @@ record WorkoutExerciseExecutionResponse(
 		BigDecimal actualDistance,
 		DistanceUnit distanceUnit,
 		Integer actualRestSeconds,
-		Integer actualRpe,
+		BigDecimal actualRpe,
 		Instant startedAt,
 		Instant completedAt,
 		String athleteNotes,
 		Instant createdAt,
-		Instant updatedAt) {
+		Instant updatedAt,
+		int setCount,
+		int notStartedSetCount,
+		int inProgressSetCount,
+		int completedSetCount,
+		int skippedSetCount) {
 }

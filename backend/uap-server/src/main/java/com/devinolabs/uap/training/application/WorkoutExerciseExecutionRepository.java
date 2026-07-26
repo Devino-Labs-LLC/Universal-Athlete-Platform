@@ -31,4 +31,8 @@ public interface WorkoutExerciseExecutionRepository {
 			WorkoutOccurrenceId occurrenceId,
 			AthleteId athleteId);
 
+	List<WorkoutExerciseExecutionStatusCount> countByStatusForOccurrences(
+			Collection<WorkoutOccurrenceId> occurrenceIds,
+			AthleteId athleteId);
+
 }

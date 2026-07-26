@@ -1,6 +1,8 @@
 package com.devinolabs.uap.training.application;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -17,6 +19,7 @@ import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.TrainingPlanStatus;
 import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 
 final class WorkoutDaySupport {
 
@@ -62,6 +65,38 @@ final class WorkoutDaySupport {
 				: repository.existsByTrainingPlanIdAndNormalizedTitleExcluding(planId, normalized, excludingId);
 		if (exists) {
 			throw new DuplicateWorkoutDayException();
+		}
+	}
+
+	static void assertUniquePlacement(
+			WorkoutDayRepository repository,
+			TrainingPlanId planId,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
+			LocalTime plannedStartTime,
+			WorkoutDayId excludingId) {
+		if (planWeekNumber == null || scheduledDayOfWeek == null) {
+			return;
+		}
+		if (repository.existsDuplicatePlacement(
+				planId, planWeekNumber, scheduledDayOfWeek, plannedStartTime, excludingId)) {
+			throw new DuplicateWorkoutDayPlacementException();
+		}
+	}
+
+	/**
+	 * Placement fields feed deterministic generation keys, so they are frozen once an ACTIVE
+	 * schedule has materialised occurrences for the day.
+	 */
+	static void assertPlacementUnlocked(
+			WorkoutOccurrenceRepository occurrenceRepository,
+			TrainingPlan plan,
+			WorkoutDayId dayId) {
+		if (!plan.isScheduleActive()) {
+			return;
+		}
+		if (occurrenceRepository.existsByWorkoutDayIdAndOrigin(dayId, WorkoutOccurrenceOrigin.GENERATED)) {
+			throw new TrainingPlanSchedulePlacementLockedException();
 		}
 	}
 
@@ -127,7 +162,8 @@ final class WorkoutDaySupport {
 				day.displayOrder(),
 				day.title(),
 				day.description(),
-				day.scheduledDay(),
+				day.planWeekNumber(),
+				day.scheduledDayOfWeek(),
 				day.plannedStartTime(),
 				day.expectedDurationMinutes(),
 				day.status(),

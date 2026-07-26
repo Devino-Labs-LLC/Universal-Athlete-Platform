@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,16 +85,61 @@ class WorkoutExerciseExecutionHttpIntegrationTests {
 						.content("""
 								{"actualSets":3,"actualReps":8,"actualRpe":7,"athleteNotes":"Smooth"}
 								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("WORKOUT_EXERCISE_EXECUTION_ACTUALS_ARE_SET_DERIVED"));
+
+		mockMvc.perform(patch(base + "/" + executionId)
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"athleteNotes":"Smooth"}
+								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.actualRpe").value(7))
 				.andExpect(jsonPath("$.athleteNotes").value("Smooth"));
+
+		mockMvc.perform(post(base + "/" + executionId + "/complete")
+						.with(accountAuth(accountId))
+						.with(csrf()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("WORKOUT_EXERCISE_EXECUTION_HAS_INCOMPLETE_SETS"));
+
+		String setsBase = base + "/" + executionId + "/sets";
+		List<String> setIds = JsonPath.read(
+				mockMvc.perform(get(setsBase).with(accountAuth(accountId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$", hasSize(3)))
+						.andReturn().getResponse().getContentAsString(),
+				"$[*].id");
+		for (String setId : setIds) {
+			mockMvc.perform(patch(setsBase + "/" + setId)
+							.with(accountAuth(accountId))
+							.with(csrf())
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("""
+									{"actualReps":8,"actualRestSeconds":90,"actualRpe":7.5}
+									"""))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+			mockMvc.perform(post(setsBase + "/" + setId + "/complete")
+							.with(accountAuth(accountId))
+							.with(csrf()))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("COMPLETED"));
+		}
 
 		mockMvc.perform(post(base + "/" + executionId + "/complete")
 						.with(accountAuth(accountId))
 						.with(csrf()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("COMPLETED"))
-				.andExpect(jsonPath("$.completedAt").isNotEmpty());
+				.andExpect(jsonPath("$.completedAt").isNotEmpty())
+				.andExpect(jsonPath("$.actualSets").value(3))
+				.andExpect(jsonPath("$.actualReps").value(24))
+				.andExpect(jsonPath("$.actualRestSeconds").value(90))
+				.andExpect(jsonPath("$.actualRpe").value(7.5))
+				.andExpect(jsonPath("$.completedSetCount").value(3))
+				.andExpect(jsonPath("$.setCount").value(3));
 
 		mockMvc.perform(post(base + "/" + executionId + "/start")
 						.with(accountAuth(accountId))
@@ -173,7 +220,7 @@ class WorkoutExerciseExecutionHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"Lower Body","scheduledDay":"MONDAY"}
+								{"title":"Lower Body","planWeekNumber":1,"scheduledDayOfWeek":"MONDAY"}
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();

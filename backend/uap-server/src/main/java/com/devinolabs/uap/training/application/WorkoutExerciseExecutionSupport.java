@@ -2,6 +2,7 @@ package com.devinolabs.uap.training.application;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -104,7 +105,31 @@ final class WorkoutExerciseExecutionSupport {
 				.orElseThrow(WorkoutExerciseExecutionNotFoundException::new);
 	}
 
-	static WorkoutExerciseExecutionResult toResult(WorkoutExerciseExecution execution) {
+	static WorkoutExerciseExecutionResult toResult(
+			WorkoutExerciseExecution execution,
+			WorkoutExerciseSetRepository setRepository,
+			AthleteId athleteId) {
+		return toResult(execution, WorkoutExerciseSetSupport
+				.countsByExecution(setRepository, List.of(execution.id()), athleteId)
+				.getOrDefault(execution.id(), WorkoutExerciseSetCounts.none()));
+	}
+
+	static List<WorkoutExerciseExecutionResult> toResults(
+			List<WorkoutExerciseExecution> executions,
+			WorkoutExerciseSetRepository setRepository,
+			AthleteId athleteId) {
+		Map<WorkoutExerciseExecutionId, WorkoutExerciseSetCounts> counts = WorkoutExerciseSetSupport
+				.countsByExecution(setRepository, executions.stream().map(WorkoutExerciseExecution::id).toList(),
+						athleteId);
+		return executions.stream()
+				.map(execution -> toResult(
+						execution, counts.getOrDefault(execution.id(), WorkoutExerciseSetCounts.none())))
+				.toList();
+	}
+
+	static WorkoutExerciseExecutionResult toResult(
+			WorkoutExerciseExecution execution,
+			WorkoutExerciseSetCounts counts) {
 		return new WorkoutExerciseExecutionResult(
 				execution.id(),
 				execution.sourceWorkoutExerciseId(),
@@ -138,11 +163,8 @@ final class WorkoutExerciseExecutionSupport {
 				execution.completedAt(),
 				execution.athleteNotes(),
 				execution.createdAt(),
-				execution.updatedAt());
-	}
-
-	static List<WorkoutExerciseExecutionResult> toResults(List<WorkoutExerciseExecution> executions) {
-		return executions.stream().map(WorkoutExerciseExecutionSupport::toResult).toList();
+				execution.updatedAt(),
+				counts);
 	}
 
 	static RuntimeException translateStatus(IllegalStateException ex) {

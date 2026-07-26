@@ -70,18 +70,18 @@ class WorkoutDayUseCaseIntegrationTests {
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 
 		WorkoutDayResult monday = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "  Lower   Body  ", "Squats", DayOfWeek.MONDAY,
+				accountId, plan.id(), "  Lower   Body  ", "Squats", 1, DayOfWeek.MONDAY,
 				LocalTime.of(9, 0), 60, null);
 		assertThat(monday.displayOrder()).isZero();
 		assertThat(monday.title()).isEqualTo("Lower   Body");
 		assertThat(monday.status()).isEqualTo(WorkoutDayStatus.PLANNED);
 
 		WorkoutDayResult wednesday = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Upper Body", null, DayOfWeek.WEDNESDAY, null, null, null);
+				accountId, plan.id(), "Upper Body", null, 1, DayOfWeek.WEDNESDAY, null, null, null);
 		assertThat(wednesday.displayOrder()).isEqualTo(1);
 
 		WorkoutDayResult inserted = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Conditioning", null, DayOfWeek.TUESDAY, null, 45, 1);
+				accountId, plan.id(), "Conditioning", null, 1, DayOfWeek.TUESDAY, null, 45, 1);
 		assertThat(inserted.displayOrder()).isEqualTo(1);
 
 		List<WorkoutDayResult> listed = listWorkoutDaysUseCase.execute(accountId, plan.id());
@@ -90,7 +90,7 @@ class WorkoutDayUseCaseIntegrationTests {
 		assertThat(listed).extracting(WorkoutDayResult::displayOrder).containsExactly(0, 1, 2);
 
 		assertThatThrownBy(() -> createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "lower body", null, DayOfWeek.FRIDAY, null, null, null))
+				accountId, plan.id(), "lower body", null, 1, DayOfWeek.FRIDAY, null, null, null))
 				.isInstanceOf(DuplicateWorkoutDayException.class);
 
 		List<WorkoutDayResult> reordered = reorderWorkoutDaysUseCase.execute(
@@ -108,13 +108,15 @@ class WorkoutDayUseCaseIntegrationTests {
 				new UpdateWorkoutDayCommand(
 						"Lower Body Power", true,
 						null, true,
+						2, true,
 						DayOfWeek.THURSDAY, true,
 						null, true,
 						75, true,
 						0, true));
 		assertThat(updated.title()).isEqualTo("Lower Body Power");
 		assertThat(updated.description()).isNull();
-		assertThat(updated.scheduledDay()).isEqualTo(DayOfWeek.THURSDAY);
+		assertThat(updated.planWeekNumber()).isEqualTo(2);
+		assertThat(updated.scheduledDayOfWeek()).isEqualTo(DayOfWeek.THURSDAY);
 		assertThat(updated.plannedStartTime()).isNull();
 		assertThat(updated.expectedDurationMinutes()).isEqualTo(75);
 
@@ -144,7 +146,7 @@ class WorkoutDayUseCaseIntegrationTests {
 				owner, TrainingPlanType.GENERAL, null, "General", null,
 				LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				owner, plan.id(), "Skills", null, DayOfWeek.SATURDAY, null, null, null);
+				owner, plan.id(), "Skills", null, 1, DayOfWeek.SATURDAY, null, null, null);
 
 		assertThatThrownBy(() -> changeWorkoutDayStatusUseCase.execute(
 				owner, plan.id(), day.id(), WorkoutDayStatusAction.COMPLETE))
@@ -157,7 +159,7 @@ class WorkoutDayUseCaseIntegrationTests {
 
 		changeTrainingPlanStatusUseCase.execute(owner, plan.id(), TrainingPlanStatusAction.ARCHIVE);
 		assertThatThrownBy(() -> createWorkoutDayUseCase.execute(
-				owner, plan.id(), "New Day", null, DayOfWeek.SUNDAY, null, null, null))
+				owner, plan.id(), "New Day", null, 1, DayOfWeek.SUNDAY, null, null, null))
 				.isInstanceOf(TrainingPlanArchivedException.class);
 
 		assertThatThrownBy(() -> reorderWorkoutDaysUseCase.execute(

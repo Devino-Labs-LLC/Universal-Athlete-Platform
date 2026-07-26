@@ -1,5 +1,7 @@
 package com.devinolabs.uap.training.application;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,20 @@ public interface WorkoutDayRepository {
 			AthleteId athleteId);
 
 	List<WorkoutDay> findAllByTrainingPlanIdAndAthleteId(TrainingPlanId trainingPlanId, AthleteId athleteId);
+
+	/** Ordered by plan week, then weekday, then planned start time (nulls first), then display order. */
+	List<WorkoutDay> findAllByTrainingPlanIdAndAthleteIdOrderedByPlacement(
+			TrainingPlanId trainingPlanId,
+			AthleteId athleteId);
+
+	List<WorkoutDay> findAllByIdInAndAthleteId(Collection<WorkoutDayId> ids, AthleteId athleteId);
+
+	boolean existsDuplicatePlacement(
+			TrainingPlanId trainingPlanId,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
+			LocalTime plannedStartTime,
+			WorkoutDayId excludingId);
 
 	boolean existsByTrainingPlanIdAndNormalizedTitle(TrainingPlanId trainingPlanId, String normalizedTitle);
 

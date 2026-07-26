@@ -75,7 +75,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 				accountId, TrainingPlanType.STRENGTH, null, "Strength", null,
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Lower Body", null, DayOfWeek.MONDAY, null, 60, null);
+				accountId, plan.id(), "Lower Body", null, 1, DayOfWeek.MONDAY, null, 60, null);
 
 		WorkoutExerciseResult squat = createWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), day.id(),
@@ -177,7 +177,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 				owner, TrainingPlanType.GENERAL, null, "General", null,
 				LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				owner, plan.id(), "Skills", null, DayOfWeek.SATURDAY, null, null, null);
+				owner, plan.id(), "Skills", null, 1, DayOfWeek.SATURDAY, null, null, null);
 		WorkoutExerciseResult exercise = createWorkoutExerciseUseCase.execute(
 				owner, plan.id(), day.id(),
 				"Layup Drill", ExerciseCategory.SPORT_SKILL, ExerciseType.SPORT,

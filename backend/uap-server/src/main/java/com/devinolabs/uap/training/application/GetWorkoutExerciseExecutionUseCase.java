@@ -24,18 +24,21 @@ public class GetWorkoutExerciseExecutionUseCase {
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
+	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 
 	public GetWorkoutExerciseExecutionUseCase(
 			AthleteContextPort athleteContextPort,
 			TrainingPlanRepository trainingPlanRepository,
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
-			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository) {
+			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
+			WorkoutExerciseSetRepository workoutExerciseSetRepository) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
+		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 	}
 
 	@Transactional(readOnly = true)
@@ -54,7 +57,9 @@ public class GetWorkoutExerciseExecutionUseCase {
 				workoutOccurrenceRepository, occurrenceId, day.id(), athleteId);
 		return WorkoutExerciseExecutionSupport.toResult(
 				WorkoutExerciseExecutionSupport.requireOwnedExecution(
-						workoutExerciseExecutionRepository, executionId, occurrenceId, day.id(), athleteId));
+						workoutExerciseExecutionRepository, executionId, occurrenceId, day.id(), athleteId),
+				workoutExerciseSetRepository,
+				athleteId);
 	}
 
 }

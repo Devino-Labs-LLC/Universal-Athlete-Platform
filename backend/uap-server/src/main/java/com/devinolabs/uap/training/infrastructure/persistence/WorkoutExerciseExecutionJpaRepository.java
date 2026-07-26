@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,6 +50,17 @@ interface WorkoutExerciseExecutionJpaRepository extends JpaRepository<WorkoutExe
 	Optional<WorkoutExerciseExecutionJpaEntity> findByIdAndOccurrenceIdAndAthleteId(
 			@Param("id") UUID id,
 			@Param("occurrenceId") UUID occurrenceId,
+			@Param("athleteId") UUID athleteId);
+
+	@Query("""
+			select e.workoutOccurrenceId, e.status, count(e)
+			from WorkoutExerciseExecutionJpaEntity e
+			where e.workoutOccurrenceId in :occurrenceIds
+			and e.athleteId = :athleteId
+			group by e.workoutOccurrenceId, e.status
+			""")
+	List<Object[]> countByStatusForOccurrences(
+			@Param("occurrenceIds") Collection<UUID> occurrenceIds,
 			@Param("athleteId") UUID athleteId);
 
 }

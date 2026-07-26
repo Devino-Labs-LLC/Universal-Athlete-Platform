@@ -53,7 +53,7 @@ class WorkoutDayHttpIntegrationTests {
 						.with(accountAuth(accountId))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"Lower Body","scheduledDay":"MONDAY"}
+								{"title":"Lower Body","planWeekNumber":1,"scheduledDayOfWeek":"MONDAY"}
 								"""))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
@@ -66,13 +66,16 @@ class WorkoutDayHttpIntegrationTests {
 								{
 								  "title":"Lower Body",
 								  "description":"Squats",
-								  "scheduledDay":"MONDAY",
+								  "planWeekNumber":1,
+								  "scheduledDayOfWeek":"MONDAY",
 								  "plannedStartTime":"09:00:00",
 								  "expectedDurationMinutes":60
 								}
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.title").value("Lower Body"))
+				.andExpect(jsonPath("$.planWeekNumber").value(1))
+				.andExpect(jsonPath("$.scheduledDayOfWeek").value("MONDAY"))
 				.andExpect(jsonPath("$.displayOrder").value(0))
 				.andExpect(jsonPath("$.status").value("PLANNED"))
 				.andExpect(jsonPath("$.athleteId").doesNotExist())
@@ -85,7 +88,7 @@ class WorkoutDayHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"Upper Body","scheduledDay":"WEDNESDAY"}
+								{"title":"Upper Body","planWeekNumber":1,"scheduledDayOfWeek":"WEDNESDAY"}
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();
@@ -163,7 +166,7 @@ class WorkoutDayHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"Lower Body","scheduledDay":"MONDAY"}
+								{"title":"Lower Body","planWeekNumber":1,"scheduledDayOfWeek":"MONDAY"}
 								"""))
 				.andExpect(status().isCreated())
 				.andReturn();
@@ -174,7 +177,7 @@ class WorkoutDayHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"lower body","scheduledDay":"TUESDAY"}
+								{"title":"lower body","planWeekNumber":1,"scheduledDayOfWeek":"TUESDAY"}
 								"""))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("DUPLICATE_WORKOUT_DAY"));
@@ -203,7 +206,7 @@ class WorkoutDayHttpIntegrationTests {
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"title":"New Day","scheduledDay":"FRIDAY"}
+								{"title":"New Day","planWeekNumber":1,"scheduledDayOfWeek":"FRIDAY"}
 								"""))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("TRAINING_PLAN_ARCHIVED"));

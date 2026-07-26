@@ -39,10 +39,11 @@ public record WorkoutExerciseExecutionResult(
 		BigDecimal actualDistance,
 		DistanceUnit distanceUnit,
 		Integer actualRestSeconds,
-		Integer actualRpe,
+		BigDecimal actualRpe,
 		Instant startedAt,
 		Instant completedAt,
 		String athleteNotes,
 		Instant createdAt,
-		Instant updatedAt) {
+		Instant updatedAt,
+		WorkoutExerciseSetCounts setCounts) {
 }

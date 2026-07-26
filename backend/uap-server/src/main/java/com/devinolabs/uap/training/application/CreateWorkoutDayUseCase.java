@@ -42,7 +42,8 @@ public class CreateWorkoutDayUseCase {
 			TrainingPlanId planId,
 			String title,
 			String description,
-			DayOfWeek scheduledDay,
+			Integer planWeekNumber,
+			DayOfWeek scheduledDayOfWeek,
 			LocalTime plannedStartTime,
 			Integer expectedDurationMinutes,
 			Integer displayOrder) {
@@ -50,7 +51,13 @@ public class CreateWorkoutDayUseCase {
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
 		TrainingPlan plan = WorkoutDaySupport.requireMutablePlan(trainingPlanRepository, athleteId, planId);
 
+		if (planWeekNumber == null || planWeekNumber < 1) {
+			throw new IllegalArgumentException("planWeekNumber must be at least 1");
+		}
+
 		WorkoutDaySupport.assertUniqueTitle(workoutDayRepository, plan.id(), title, null);
+		WorkoutDaySupport.assertUniquePlacement(
+				workoutDayRepository, plan.id(), planWeekNumber, scheduledDayOfWeek, plannedStartTime, null);
 
 		int order;
 		int max = workoutDayRepository.findMaxDisplayOrder(plan.id(), athleteId);
@@ -76,7 +83,8 @@ public class CreateWorkoutDayUseCase {
 					order,
 					title,
 					description,
-					scheduledDay,
+					planWeekNumber,
+					scheduledDayOfWeek,
 					plannedStartTime,
 					expectedDurationMinutes,
 					clock);

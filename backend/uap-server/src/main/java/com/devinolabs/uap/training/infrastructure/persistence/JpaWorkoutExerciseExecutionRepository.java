@@ -5,16 +5,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseExecutionException;
 import com.devinolabs.uap.training.application.WorkoutExerciseExecutionRepository;
+import com.devinolabs.uap.training.application.WorkoutExerciseExecutionStatusCount;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
+import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
 @Repository
@@ -86,6 +89,25 @@ class JpaWorkoutExerciseExecutionRepository implements WorkoutExerciseExecutionR
 		return jpaRepository
 				.findOwned(id.value(), occurrenceId.value(), dayId.value(), athleteId.value())
 				.map(WorkoutExerciseExecutionPersistenceMapper::toDomain);
+	}
+
+	@Override
+	public List<WorkoutExerciseExecutionStatusCount> countByStatusForOccurrences(
+			Collection<WorkoutOccurrenceId> occurrenceIds,
+			AthleteId athleteId) {
+		if (occurrenceIds.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository
+				.countByStatusForOccurrences(
+						occurrenceIds.stream().map(WorkoutOccurrenceId::value).toList(),
+						athleteId.value())
+				.stream()
+				.map(row -> new WorkoutExerciseExecutionStatusCount(
+						WorkoutOccurrenceId.of((UUID) row[0]),
+						(WorkoutExerciseExecutionStatus) row[1],
+						((Number) row[2]).longValue()))
+				.toList();
 	}
 
 	private static RuntimeException mapConstraint(DataIntegrityViolationException ex) {

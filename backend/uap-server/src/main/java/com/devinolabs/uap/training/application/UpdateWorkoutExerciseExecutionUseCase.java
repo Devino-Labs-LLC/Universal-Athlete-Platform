@@ -1,6 +1,5 @@
 package com.devinolabs.uap.training.application;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.Objects;
 
@@ -11,10 +10,8 @@ import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
-import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
-import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
@@ -30,6 +27,7 @@ public class UpdateWorkoutExerciseExecutionUseCase {
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
+	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final Clock clock;
 
 	public UpdateWorkoutExerciseExecutionUseCase(
@@ -38,12 +36,14 @@ public class UpdateWorkoutExerciseExecutionUseCase {
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
+			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
+		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -67,56 +67,28 @@ public class UpdateWorkoutExerciseExecutionUseCase {
 		WorkoutExerciseExecutionSupport.requireExecutionWritable(occurrence);
 		WorkoutExerciseExecution execution = WorkoutExerciseExecutionSupport.requireOwnedExecution(
 				workoutExerciseExecutionRepository, executionId, occurrenceId, day.id(), athleteId);
-
-		Integer actualSets = command.actualSetsPresent() ? command.actualSets() : execution.actualSets();
-		Integer actualReps = command.actualRepsPresent() ? command.actualReps() : execution.actualReps();
-		BigDecimal actualWeight = command.actualWeightPresent() ? command.actualWeight() : execution.actualWeight();
-		WeightUnit weightUnit = command.weightUnitPresent() ? command.weightUnit() : execution.weightUnit();
-		Integer actualDurationSeconds = command.actualDurationSecondsPresent()
-				? command.actualDurationSeconds()
-				: execution.actualDurationSeconds();
-		BigDecimal actualDistance = command.actualDistancePresent()
-				? command.actualDistance()
-				: execution.actualDistance();
-		DistanceUnit distanceUnit = command.distanceUnitPresent()
-				? command.distanceUnit()
-				: execution.distanceUnit();
-		Integer actualRestSeconds = command.actualRestSecondsPresent()
-				? command.actualRestSeconds()
-				: execution.actualRestSeconds();
-		Integer actualRpe = command.actualRpePresent() ? command.actualRpe() : execution.actualRpe();
-
-		try {
-			if (command.actualSetsPresent()
-					|| command.actualRepsPresent()
-					|| command.actualWeightPresent()
-					|| command.weightUnitPresent()
-					|| command.actualDurationSecondsPresent()
-					|| command.actualDistancePresent()
-					|| command.distanceUnitPresent()
-					|| command.actualRestSecondsPresent()
-					|| command.actualRpePresent()) {
-				execution.updateExecution(
-						actualSets,
-						actualReps,
-						actualWeight,
-						weightUnit,
-						actualDurationSeconds,
-						actualDistance,
-						distanceUnit,
-						actualRestSeconds,
-						actualRpe,
-						clock);
-			}
-			if (command.athleteNotesPresent()) {
-				execution.updateNotes(command.athleteNotes(), clock);
-			}
-		}
-		catch (IllegalArgumentException ex) {
-			throw ex;
+		if (touchesActuals(command)) {
+			throw new WorkoutExerciseExecutionActualsAreSetDerivedException();
 		}
 
-		return WorkoutExerciseExecutionSupport.toResult(workoutExerciseExecutionRepository.save(execution));
+		if (command.athleteNotesPresent()) {
+			execution.updateNotes(command.athleteNotes(), clock);
+		}
+
+		return WorkoutExerciseExecutionSupport.toResult(
+				workoutExerciseExecutionRepository.save(execution), workoutExerciseSetRepository, athleteId);
+	}
+
+	private static boolean touchesActuals(UpdateWorkoutExerciseExecutionCommand command) {
+		return command.actualSetsPresent()
+				|| command.actualRepsPresent()
+				|| command.actualWeightPresent()
+				|| command.weightUnitPresent()
+				|| command.actualDurationSecondsPresent()
+				|| command.actualDistancePresent()
+				|| command.distanceUnitPresent()
+				|| command.actualRestSecondsPresent()
+				|| command.actualRpePresent();
 	}
 
 }

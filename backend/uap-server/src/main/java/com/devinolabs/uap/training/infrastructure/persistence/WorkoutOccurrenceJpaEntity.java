@@ -20,6 +20,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 @Entity
@@ -62,6 +63,19 @@ class WorkoutOccurrenceJpaEntity implements Persistable<UUID> {
 	@Column(name = "athlete_notes", length = 4000)
 	private String athleteNotes;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "origin", nullable = false, length = 20, updatable = false)
+	private WorkoutOccurrenceOrigin origin;
+
+	@Column(name = "generation_key", length = 200, updatable = false)
+	private String generationKey;
+
+	@Column(name = "original_scheduled_date")
+	private LocalDate originalScheduledDate;
+
+	@Column(name = "manually_rescheduled", nullable = false)
+	private boolean manuallyRescheduled;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -89,6 +103,10 @@ class WorkoutOccurrenceJpaEntity implements Persistable<UUID> {
 			Instant completedAt,
 			WorkoutOccurrenceStatus status,
 			String athleteNotes,
+			WorkoutOccurrenceOrigin origin,
+			String generationKey,
+			LocalDate originalScheduledDate,
+			boolean manuallyRescheduled,
 			Instant createdAt,
 			Instant updatedAt,
 			long version,
@@ -103,6 +121,10 @@ class WorkoutOccurrenceJpaEntity implements Persistable<UUID> {
 		this.completedAt = completedAt;
 		this.status = status;
 		this.athleteNotes = athleteNotes;
+		this.origin = origin;
+		this.generationKey = generationKey;
+		this.originalScheduledDate = originalScheduledDate;
+		this.manuallyRescheduled = manuallyRescheduled;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.version = version;
@@ -161,6 +183,22 @@ class WorkoutOccurrenceJpaEntity implements Persistable<UUID> {
 		return athleteNotes;
 	}
 
+	WorkoutOccurrenceOrigin getOrigin() {
+		return origin;
+	}
+
+	String getGenerationKey() {
+		return generationKey;
+	}
+
+	LocalDate getOriginalScheduledDate() {
+		return originalScheduledDate;
+	}
+
+	boolean isManuallyRescheduled() {
+		return manuallyRescheduled;
+	}
+
 	Instant getCreatedAt() {
 		return createdAt;
 	}
@@ -195,6 +233,14 @@ class WorkoutOccurrenceJpaEntity implements Persistable<UUID> {
 
 	void setAthleteNotes(String athleteNotes) {
 		this.athleteNotes = athleteNotes;
+	}
+
+	void setOriginalScheduledDate(LocalDate originalScheduledDate) {
+		this.originalScheduledDate = originalScheduledDate;
+	}
+
+	void setManuallyRescheduled(boolean manuallyRescheduled) {
+		this.manuallyRescheduled = manuallyRescheduled;
 	}
 
 	void setUpdatedAt(Instant updatedAt) {

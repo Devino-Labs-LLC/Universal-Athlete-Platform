@@ -23,10 +23,14 @@ import com.devinolabs.uap.athlete.domain.Weight;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
 import com.devinolabs.uap.training.domain.ExerciseType;
+import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.TrainingPlanStatusAction;
 import com.devinolabs.uap.training.domain.TrainingPlanType;
 import com.devinolabs.uap.training.domain.WeightUnit;
+import com.devinolabs.uap.training.domain.WorkoutDayId;
+import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 @SpringBootTest
@@ -84,6 +88,15 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 	@Autowired
 	private DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase;
 
+	@Autowired
+	private ListWorkoutExerciseSetsUseCase listWorkoutExerciseSetsUseCase;
+
+	@Autowired
+	private UpdateWorkoutExerciseSetUseCase updateWorkoutExerciseSetUseCase;
+
+	@Autowired
+	private CompleteWorkoutExerciseSetUseCase completeWorkoutExerciseSetUseCase;
+
 	@Test
 	void preservesHistoricalSnapshotWhenSourceExerciseChanges() {
 		AccountId accountId = AccountId.generate();
@@ -92,7 +105,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				accountId, TrainingPlanType.STRENGTH, null, "Strength", null,
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Lower Body", null, DayOfWeek.MONDAY, null, 60, null);
+				accountId, plan.id(), "Lower Body", null, 1, DayOfWeek.MONDAY, null, 60, null);
 		WorkoutExerciseResult squat = createWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), day.id(),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
@@ -132,7 +145,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		startWorkoutOccurrenceUseCase.execute(accountId, plan.id(), day.id(), occurrence.occurrence().id());
 		startWorkoutExerciseExecutionUseCase.execute(
 				accountId, plan.id(), day.id(), occurrence.occurrence().id(), execution.id());
-		updateWorkoutExerciseExecutionUseCase.execute(
+		assertThatThrownBy(() -> updateWorkoutExerciseExecutionUseCase.execute(
 				accountId,
 				plan.id(),
 				day.id(),
@@ -148,7 +161,16 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 						null, false,
 						null, false,
 						null, false,
-						null, false));
+						null, false)))
+				.isInstanceOf(WorkoutExerciseExecutionActualsAreSetDerivedException.class);
+		logAndCompleteSets(
+				accountId,
+				plan.id(),
+				day.id(),
+				occurrence.occurrence().id(),
+				execution.id(),
+				1,
+				new BigDecimal("225"));
 		completeWorkoutExerciseExecutionUseCase.execute(
 				accountId, plan.id(), day.id(), occurrence.occurrence().id(), execution.id());
 		WorkoutOccurrenceDetailResult completed = completeWorkoutOccurrenceUseCase.execute(
@@ -160,7 +182,9 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		assertThat(historical.prescribedMaximumReps()).isEqualTo(5);
 		assertThat(historical.prescribedTargetWeight()).isEqualByComparingTo("225");
 		assertThat(historical.actualSets()).isEqualTo(5);
+		assertThat(historical.actualReps()).isEqualTo(5);
 		assertThat(historical.actualWeight()).isEqualByComparingTo("225");
+		assertThat(historical.weightUnit()).isEqualTo(WeightUnit.POUND);
 		assertThat(completed.occurrence().status()).isEqualTo(WorkoutOccurrenceStatus.COMPLETED);
 	}
 
@@ -172,7 +196,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				accountId, TrainingPlanType.STRENGTH, null, "Strength", null,
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 		WorkoutDayResult emptyDay = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Rest", null, DayOfWeek.TUESDAY, null, null, null);
+				accountId, plan.id(), "Rest", null, 1, DayOfWeek.TUESDAY, null, null, null);
 		LocalDate date = LocalDate.of(2026, 7, 29);
 
 		assertThatThrownBy(() -> createWorkoutOccurrenceUseCase.execute(
@@ -180,7 +204,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				.isInstanceOf(WorkoutOccurrenceRequiresExercisesException.class);
 
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Upper", null, DayOfWeek.WEDNESDAY, null, null, null);
+				accountId, plan.id(), "Upper", null, 1, DayOfWeek.WEDNESDAY, null, null, null);
 		WorkoutExerciseResult bench = createWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), day.id(),
 				"Bench Press", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
@@ -213,6 +237,8 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 			if (execution.id().equals(afterDelete.executions().getFirst().id())) {
 				startWorkoutExerciseExecutionUseCase.execute(
 						accountId, plan.id(), day.id(), first.occurrence().id(), execution.id());
+				logAndCompleteSets(
+						accountId, plan.id(), day.id(), first.occurrence().id(), execution.id(), 8, null);
 				completeWorkoutExerciseExecutionUseCase.execute(
 						accountId, plan.id(), day.id(), first.occurrence().id(), execution.id());
 			}
@@ -227,7 +253,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				accountId, TrainingPlanType.GENERAL, null, "Archived Plan", null,
 				LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1), null, null);
 		WorkoutDayResult archivedDay = createWorkoutDayUseCase.execute(
-				accountId, archivedPlan.id(), "Day", null, DayOfWeek.FRIDAY, null, null, null);
+				accountId, archivedPlan.id(), "Day", null, 1, DayOfWeek.FRIDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
 				accountId, archivedPlan.id(), archivedDay.id(),
 				"Push Up", ExerciseCategory.STRENGTH, ExerciseType.BODYWEIGHT,
@@ -238,7 +264,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				.isInstanceOf(TrainingPlanArchivedException.class);
 
 		WorkoutDayResult deletableDay = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Temp", null, DayOfWeek.THURSDAY, null, null, null);
+				accountId, plan.id(), "Temp", null, 1, DayOfWeek.THURSDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), deletableDay.id(),
 				"Curl", ExerciseCategory.STRENGTH, ExerciseType.DUMBBELL,
@@ -249,6 +275,39 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				accountId, plan.id(), deletableDay.id(), scheduled.occurrence().id());
 		assertThat(listWorkoutOccurrencesUseCase.execute(
 				accountId, plan.id(), deletableDay.id(), null, null, null)).isEmpty();
+	}
+
+	private void logAndCompleteSets(
+			AccountId accountId,
+			TrainingPlanId planId,
+			WorkoutDayId dayId,
+			WorkoutOccurrenceId occurrenceId,
+			WorkoutExerciseExecutionId executionId,
+			Integer reps,
+			BigDecimal weight) {
+		for (WorkoutExerciseSetResult set : listWorkoutExerciseSetsUseCase.execute(
+				accountId, planId, dayId, occurrenceId, executionId)) {
+			updateWorkoutExerciseSetUseCase.execute(
+					accountId,
+					planId,
+					dayId,
+					occurrenceId,
+					executionId,
+					set.id(),
+					new UpdateWorkoutExerciseSetCommand(
+							null, false,
+							reps, true,
+							weight, weight != null,
+							weight == null ? null : WeightUnit.POUND, weight != null,
+							null, false,
+							null, false,
+							null, false,
+							null, false,
+							null, false,
+							null, false));
+			completeWorkoutExerciseSetUseCase.execute(
+					accountId, planId, dayId, occurrenceId, executionId, set.id());
+		}
 	}
 
 	private void createAthlete(AccountId accountId) {

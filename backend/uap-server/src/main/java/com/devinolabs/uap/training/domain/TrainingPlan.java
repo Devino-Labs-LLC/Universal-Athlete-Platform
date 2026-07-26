@@ -6,6 +6,14 @@ import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Objects;
 
+/**
+ * A training plan owned by an athlete.
+ *
+ * <p>Two independent lifecycles live on this aggregate. {@link TrainingPlanStatus} governs
+ * ownership and content (draft, active, completed, archived), while
+ * {@link TrainingPlanScheduleStatus} governs calendar activation: whether placements may be
+ * materialised into dated occurrences.
+ */
 public class TrainingPlan {
 
 	private static final int MAX_NAME_LENGTH = 160;
@@ -24,6 +32,14 @@ public class TrainingPlan {
 	private TrainingPlanStatus status;
 	private LocalDate startDate;
 	private LocalDate endDate;
+	private LocalDate scheduleStartDate;
+	private LocalDate scheduleEndDate;
+	private String scheduleTimezone;
+	private TrainingPlanScheduleStatus scheduleStatus;
+	private TrainingPlanRecurrenceMode recurrenceMode;
+	private LocalDate scheduleGeneratedThrough;
+	private Instant scheduleActivatedAt;
+	private Instant schedulePausedAt;
 	private final Instant createdAt;
 	private Instant updatedAt;
 	private long version;
@@ -41,6 +57,14 @@ public class TrainingPlan {
 			TrainingPlanStatus status,
 			LocalDate startDate,
 			LocalDate endDate,
+			LocalDate scheduleStartDate,
+			LocalDate scheduleEndDate,
+			String scheduleTimezone,
+			TrainingPlanScheduleStatus scheduleStatus,
+			TrainingPlanRecurrenceMode recurrenceMode,
+			LocalDate scheduleGeneratedThrough,
+			Instant scheduleActivatedAt,
+			Instant schedulePausedAt,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -57,6 +81,15 @@ public class TrainingPlan {
 		enforceDateRange(this.startDate, this.endDate);
 		this.athleteSportId = athleteSportId;
 		this.athleteGoalId = athleteGoalId;
+		this.scheduleStartDate = scheduleStartDate;
+		this.scheduleEndDate = scheduleEndDate;
+		this.scheduleTimezone = scheduleTimezone;
+		this.scheduleStatus = Objects.requireNonNull(scheduleStatus, "scheduleStatus must not be null");
+		this.recurrenceMode = recurrenceMode;
+		this.scheduleGeneratedThrough = scheduleGeneratedThrough;
+		this.scheduleActivatedAt = scheduleActivatedAt;
+		this.schedulePausedAt = schedulePausedAt;
+		enforceScheduleDateRange(scheduleStartDate, scheduleEndDate);
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
 		if (version < 0) {
@@ -92,6 +125,14 @@ public class TrainingPlan {
 				TrainingPlanStatus.DRAFT,
 				startDate,
 				endDate,
+				null,
+				null,
+				null,
+				TrainingPlanScheduleStatus.DRAFT,
+				null,
+				null,
+				null,
+				null,
 				now,
 				now,
 				0L);
@@ -110,6 +151,14 @@ public class TrainingPlan {
 			TrainingPlanStatus status,
 			LocalDate startDate,
 			LocalDate endDate,
+			LocalDate scheduleStartDate,
+			LocalDate scheduleEndDate,
+			String scheduleTimezone,
+			TrainingPlanScheduleStatus scheduleStatus,
+			TrainingPlanRecurrenceMode recurrenceMode,
+			LocalDate scheduleGeneratedThrough,
+			Instant scheduleActivatedAt,
+			Instant schedulePausedAt,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -126,6 +175,14 @@ public class TrainingPlan {
 				status,
 				startDate,
 				endDate,
+				scheduleStartDate,
+				scheduleEndDate,
+				scheduleTimezone,
+				scheduleStatus,
+				recurrenceMode,
+				scheduleGeneratedThrough,
+				scheduleActivatedAt,
+				schedulePausedAt,
 				createdAt,
 				updatedAt,
 				version);
@@ -227,6 +284,97 @@ public class TrainingPlan {
 		}
 	}
 
+	public void activateSchedule(
+			LocalDate scheduleStartDate,
+			LocalDate scheduleEndDate,
+			String scheduleTimezone,
+			TrainingPlanRecurrenceMode recurrenceMode,
+			Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		Objects.requireNonNull(scheduleStartDate, "scheduleStartDate must not be null");
+		Objects.requireNonNull(recurrenceMode, "recurrenceMode must not be null");
+		if (scheduleTimezone == null || scheduleTimezone.isBlank()) {
+			throw new IllegalArgumentException("scheduleTimezone must not be blank");
+		}
+		if (scheduleStatus != TrainingPlanScheduleStatus.DRAFT) {
+			throw new IllegalStateException("Only DRAFT schedules can be activated");
+		}
+		enforceScheduleDateRange(scheduleStartDate, scheduleEndDate);
+		this.scheduleStartDate = scheduleStartDate;
+		this.scheduleEndDate = scheduleEndDate;
+		this.scheduleTimezone = scheduleTimezone.trim();
+		this.recurrenceMode = recurrenceMode;
+		this.scheduleStatus = TrainingPlanScheduleStatus.ACTIVE;
+		this.scheduleActivatedAt = Instant.now(clock);
+		this.schedulePausedAt = null;
+		touch(clock);
+	}
+
+	public void pauseSchedule(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (scheduleStatus == TrainingPlanScheduleStatus.PAUSED) {
+			return;
+		}
+		if (scheduleStatus != TrainingPlanScheduleStatus.ACTIVE) {
+			throw new IllegalStateException("Only ACTIVE schedules can be paused");
+		}
+		this.scheduleStatus = TrainingPlanScheduleStatus.PAUSED;
+		this.schedulePausedAt = Instant.now(clock);
+		touch(clock);
+	}
+
+	public void resumeSchedule(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (scheduleStatus == TrainingPlanScheduleStatus.ACTIVE) {
+			return;
+		}
+		if (scheduleStatus != TrainingPlanScheduleStatus.PAUSED) {
+			throw new IllegalStateException("Only PAUSED schedules can be resumed");
+		}
+		this.scheduleStatus = TrainingPlanScheduleStatus.ACTIVE;
+		this.schedulePausedAt = null;
+		touch(clock);
+	}
+
+	public void completeSchedule(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (scheduleStatus == TrainingPlanScheduleStatus.COMPLETED) {
+			return;
+		}
+		if (scheduleStatus != TrainingPlanScheduleStatus.ACTIVE
+				&& scheduleStatus != TrainingPlanScheduleStatus.PAUSED) {
+			throw new IllegalStateException("Only ACTIVE or PAUSED schedules can be completed");
+		}
+		this.scheduleStatus = TrainingPlanScheduleStatus.COMPLETED;
+		touch(clock);
+	}
+
+	/**
+	 * Moves the generation watermark forward, clamped to {@code scheduleEndDate} and to
+	 * {@code maximumDate} (the last placement date a FINITE plan can ever produce). The watermark
+	 * never moves backwards.
+	 */
+	public void advanceGeneratedThrough(LocalDate candidate, LocalDate maximumDate, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		Objects.requireNonNull(candidate, "candidate must not be null");
+		LocalDate effective = candidate;
+		if (scheduleEndDate != null && effective.isAfter(scheduleEndDate)) {
+			effective = scheduleEndDate;
+		}
+		if (maximumDate != null && effective.isAfter(maximumDate)) {
+			effective = maximumDate;
+		}
+		if (scheduleGeneratedThrough != null && !effective.isAfter(scheduleGeneratedThrough)) {
+			return;
+		}
+		this.scheduleGeneratedThrough = effective;
+		touch(clock);
+	}
+
+	public boolean isScheduleActive() {
+		return scheduleStatus == TrainingPlanScheduleStatus.ACTIVE;
+	}
+
 	public boolean isDuplicateCandidate() {
 		return status != TrainingPlanStatus.ARCHIVED;
 	}
@@ -242,6 +390,12 @@ public class TrainingPlan {
 	private static void enforceDateRange(LocalDate startDate, LocalDate endDate) {
 		if (endDate.isBefore(startDate)) {
 			throw new IllegalArgumentException("endDate must not be before startDate");
+		}
+	}
+
+	private static void enforceScheduleDateRange(LocalDate scheduleStartDate, LocalDate scheduleEndDate) {
+		if (scheduleStartDate != null && scheduleEndDate != null && scheduleEndDate.isBefore(scheduleStartDate)) {
+			throw new IllegalArgumentException("scheduleEndDate must not be before scheduleStartDate");
 		}
 	}
 
@@ -335,6 +489,38 @@ public class TrainingPlan {
 
 	public LocalDate endDate() {
 		return endDate;
+	}
+
+	public LocalDate scheduleStartDate() {
+		return scheduleStartDate;
+	}
+
+	public LocalDate scheduleEndDate() {
+		return scheduleEndDate;
+	}
+
+	public String scheduleTimezone() {
+		return scheduleTimezone;
+	}
+
+	public TrainingPlanScheduleStatus scheduleStatus() {
+		return scheduleStatus;
+	}
+
+	public TrainingPlanRecurrenceMode recurrenceMode() {
+		return recurrenceMode;
+	}
+
+	public LocalDate scheduleGeneratedThrough() {
+		return scheduleGeneratedThrough;
+	}
+
+	public Instant scheduleActivatedAt() {
+		return scheduleActivatedAt;
+	}
+
+	public Instant schedulePausedAt() {
+		return schedulePausedAt;
 	}
 
 	public Instant createdAt() {

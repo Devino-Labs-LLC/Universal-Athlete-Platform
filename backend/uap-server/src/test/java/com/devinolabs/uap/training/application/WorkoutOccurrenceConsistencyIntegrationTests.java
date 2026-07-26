@@ -100,6 +100,15 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 	private SkipWorkoutExerciseExecutionUseCase skipWorkoutExerciseExecutionUseCase;
 
 	@Autowired
+	private ListWorkoutExerciseSetsUseCase listWorkoutExerciseSetsUseCase;
+
+	@Autowired
+	private CompleteWorkoutExerciseSetUseCase completeWorkoutExerciseSetUseCase;
+
+	@Autowired
+	private WorkoutExerciseSetRepository workoutExerciseSetRepository;
+
+	@Autowired
 	private AthleteRepository athleteRepository;
 
 	@Autowired
@@ -167,6 +176,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 
 		startWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first.id());
+		completeAllSets(fixture, first.id());
 		completeWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first.id());
 		skipWorkoutExerciseExecutionUseCase.execute(
@@ -209,6 +219,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				workoutDayRepository,
 				workoutOccurrenceRepository,
 				failing,
+				workoutExerciseSetRepository,
 				clock);
 
 		assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> failingSkip.execute(
@@ -329,6 +340,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 
 		startWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first);
+		completeAllSets(fixture, first);
 		completeWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first);
 		skipWorkoutExerciseExecutionUseCase.execute(
@@ -385,7 +397,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 		AthleteId athleteId = athleteId(fixture.accountId());
 		LocalDate conflictingDate = LocalDate.of(2026, 8, 19);
 
-		WorkoutOccurrence collidingCreate = WorkoutOccurrence.create(
+		WorkoutOccurrence collidingCreate = WorkoutOccurrence.createManual(
 				com.devinolabs.uap.training.domain.WorkoutOccurrenceId.generate(),
 				fixture.planId(),
 				fixture.dayId(),
@@ -425,7 +437,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				accountId, TrainingPlanType.STRENGTH, null, "Strength", null,
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Day", null, DayOfWeek.MONDAY, null, null, null);
+				accountId, plan.id(), "Day", null, 1, DayOfWeek.MONDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), day.id(),
 				"Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
@@ -439,6 +451,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				workoutExerciseRepository,
 				workoutOccurrenceRepository,
 				failingSaveAllRepository(),
+				workoutExerciseSetRepository,
 				clock);
 
 		LocalDate scheduledDate = LocalDate.of(2026, 8, 21);
@@ -480,6 +493,10 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				loaded.completedAt(),
 				loaded.status(),
 				"stale",
+				loaded.origin(),
+				loaded.generationKey(),
+				loaded.originalScheduledDate(),
+				loaded.manuallyRescheduled(),
 				loaded.createdAt(),
 				loaded.updatedAt(),
 				0L);
@@ -595,6 +612,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 		WorkoutExerciseExecutionId executionId = fixture.occurrence().executions().getFirst().id();
 		startWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), executionId);
+		completeAllSets(fixture, executionId);
 		completeWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), executionId);
 		completeWorkoutOccurrenceUseCase.execute(
@@ -629,7 +647,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				accountId, TrainingPlanType.STRENGTH, null, "Strength", null,
 				LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), null, null);
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
-				accountId, plan.id(), "Day-" + scheduledDate, null, DayOfWeek.MONDAY, null, null, null);
+				accountId, plan.id(), "Day-" + scheduledDate, null, 1, DayOfWeek.MONDAY, null, null, null);
 		for (int i = 0; i < exerciseCount; i++) {
 			createWorkoutExerciseUseCase.execute(
 					accountId, plan.id(), day.id(),
@@ -678,7 +696,27 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 					AthleteId athleteId) {
 				return delegate.findByIdAndWorkoutDayIdAndAthleteId(id, dayId, occurrenceId, athleteId);
 			}
+
+			@Override
+			public List<WorkoutExerciseExecutionStatusCount> countByStatusForOccurrences(
+					Collection<com.devinolabs.uap.training.domain.WorkoutOccurrenceId> occurrenceIds,
+					AthleteId athleteId) {
+				return delegate.countByStatusForOccurrences(occurrenceIds, athleteId);
+			}
 		};
+	}
+
+	private void completeAllSets(Fixture fixture, WorkoutExerciseExecutionId executionId) {
+		for (WorkoutExerciseSetResult set : listWorkoutExerciseSetsUseCase.execute(
+				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), executionId)) {
+			completeWorkoutExerciseSetUseCase.execute(
+					fixture.accountId(),
+					fixture.planId(),
+					fixture.dayId(),
+					fixture.occurrenceId(),
+					executionId,
+					set.id());
+		}
 	}
 
 	private static WorkoutExerciseExecutionResult byId(

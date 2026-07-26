@@ -63,10 +63,12 @@ class WorkoutExerciseExecutionTests {
 		assertThat(execution.status()).isEqualTo(WorkoutExerciseExecutionStatus.IN_PROGRESS);
 		assertThat(execution.startedAt()).isEqualTo(CLOCK.instant());
 
-		execution.updateExecution(5, 5, new BigDecimal("225"), WeightUnit.POUND, null, null, null, 90, 8, LATER);
+		execution.applyDerivedActuals(
+				5, 5, new BigDecimal("225"), WeightUnit.POUND, null, null, null, 90, new BigDecimal("8.00"), LATER);
 		assertThat(execution.actualSets()).isEqualTo(5);
 		assertThat(execution.actualReps()).isEqualTo(5);
 		assertThat(execution.actualWeight()).isEqualByComparingTo("225");
+		assertThat(execution.actualRpe()).isEqualByComparingTo("8.00");
 
 		execution.updateNotes("  Strong set  ", LATER);
 		assertThat(execution.athleteNotes()).isEqualTo("Strong set");
@@ -89,12 +91,12 @@ class WorkoutExerciseExecutionTests {
 		assertThat(inProgress.completedAt()).isNull();
 
 		WorkoutExerciseExecution updating = fromSampleExercise();
-		assertThatThrownBy(() -> updating.updateExecution(
+		assertThatThrownBy(() -> updating.applyDerivedActuals(
 				-1, null, null, null, null, null, null, null, null, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("actualSets");
 
-		assertThatThrownBy(() -> updating.updateExecution(
+		assertThatThrownBy(() -> updating.applyDerivedActuals(
 				null, null, new BigDecimal("10"), null, null, null, null, null, null, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("weightUnit");

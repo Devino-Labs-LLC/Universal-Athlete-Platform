@@ -27,6 +27,7 @@ import com.devinolabs.uap.training.application.CreateWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.DeleteWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.GetWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.ListWorkoutOccurrencesUseCase;
+import com.devinolabs.uap.training.application.RescheduleWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.SkipWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.StartWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.UpdateWorkoutOccurrenceCommand;
@@ -55,6 +56,7 @@ class WorkoutOccurrenceController {
 	private final SkipWorkoutOccurrenceUseCase skipWorkoutOccurrenceUseCase;
 	private final CancelWorkoutOccurrenceUseCase cancelWorkoutOccurrenceUseCase;
 	private final DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase;
+	private final RescheduleWorkoutOccurrenceUseCase rescheduleWorkoutOccurrenceUseCase;
 
 	WorkoutOccurrenceController(
 			CreateWorkoutOccurrenceUseCase createWorkoutOccurrenceUseCase,
@@ -65,7 +67,8 @@ class WorkoutOccurrenceController {
 			CompleteWorkoutOccurrenceUseCase completeWorkoutOccurrenceUseCase,
 			SkipWorkoutOccurrenceUseCase skipWorkoutOccurrenceUseCase,
 			CancelWorkoutOccurrenceUseCase cancelWorkoutOccurrenceUseCase,
-			DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase) {
+			DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase,
+			RescheduleWorkoutOccurrenceUseCase rescheduleWorkoutOccurrenceUseCase) {
 		this.createWorkoutOccurrenceUseCase = Objects.requireNonNull(createWorkoutOccurrenceUseCase);
 		this.listWorkoutOccurrencesUseCase = Objects.requireNonNull(listWorkoutOccurrencesUseCase);
 		this.getWorkoutOccurrenceUseCase = Objects.requireNonNull(getWorkoutOccurrenceUseCase);
@@ -75,6 +78,7 @@ class WorkoutOccurrenceController {
 		this.skipWorkoutOccurrenceUseCase = Objects.requireNonNull(skipWorkoutOccurrenceUseCase);
 		this.cancelWorkoutOccurrenceUseCase = Objects.requireNonNull(cancelWorkoutOccurrenceUseCase);
 		this.deleteWorkoutOccurrenceUseCase = Objects.requireNonNull(deleteWorkoutOccurrenceUseCase);
+		this.rescheduleWorkoutOccurrenceUseCase = Objects.requireNonNull(rescheduleWorkoutOccurrenceUseCase);
 	}
 
 	@PostMapping
@@ -147,6 +151,22 @@ class WorkoutOccurrenceController {
 				WorkoutDayId.of(dayId),
 				WorkoutOccurrenceId.of(occurrenceId),
 				command));
+	}
+
+	@PostMapping("/{occurrenceId}/reschedule")
+	WorkoutOccurrenceDetailResponse reschedule(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@Valid @RequestBody RescheduleWorkoutOccurrenceRequest request,
+			Authentication authentication) {
+		return toDetailResponse(rescheduleWorkoutOccurrenceUseCase.execute(
+				accountId(authentication),
+				TrainingPlanId.of(planId),
+				WorkoutDayId.of(dayId),
+				WorkoutOccurrenceId.of(occurrenceId),
+				request.scheduledDate(),
+				request.plannedStartTime()));
 	}
 
 	@PostMapping("/{occurrenceId}/start")
@@ -237,6 +257,9 @@ class WorkoutOccurrenceController {
 				result.completedAt(),
 				result.status(),
 				result.athleteNotes(),
+				result.origin(),
+				result.originalScheduledDate(),
+				result.manuallyRescheduled(),
 				result.createdAt(),
 				result.updatedAt());
 	}
@@ -251,6 +274,9 @@ class WorkoutOccurrenceController {
 				detail.occurrence().completedAt(),
 				detail.occurrence().status(),
 				detail.occurrence().athleteNotes(),
+				detail.occurrence().origin(),
+				detail.occurrence().originalScheduledDate(),
+				detail.occurrence().manuallyRescheduled(),
 				detail.occurrence().createdAt(),
 				detail.occurrence().updatedAt(),
 				detail.executions().stream().map(WorkoutOccurrenceController::toExecutionResponse).toList());
@@ -290,7 +316,12 @@ class WorkoutOccurrenceController {
 				result.completedAt(),
 				result.athleteNotes(),
 				result.createdAt(),
-				result.updatedAt());
+				result.updatedAt(),
+				result.setCounts().setCount(),
+				result.setCounts().notStartedSetCount(),
+				result.setCounts().inProgressSetCount(),
+				result.setCounts().completedSetCount(),
+				result.setCounts().skippedSetCount());
 	}
 
 }

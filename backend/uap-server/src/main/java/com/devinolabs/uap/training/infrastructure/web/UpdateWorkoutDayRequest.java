@@ -6,7 +6,8 @@ import java.time.LocalTime;
 public record UpdateWorkoutDayRequest(
 		PatchValue<String> title,
 		PatchValue<String> description,
-		PatchValue<DayOfWeek> scheduledDay,
+		PatchValue<Integer> planWeekNumber,
+		PatchValue<DayOfWeek> scheduledDayOfWeek,
 		PatchValue<LocalTime> plannedStartTime,
 		PatchValue<Integer> expectedDurationMinutes,
 		PatchValue<Integer> displayOrder) {
