@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("14");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create workout sessions");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("15");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("create workout occurrences and execution history");
 	}
 
 	@Test
@@ -263,21 +263,30 @@ class UapServerApplicationTests {
 	}
 
 	@Test
-	void flywayAppliesWorkoutSessionsMigration() throws Exception {
+	void flywayAppliesWorkoutOccurrencesMigration() throws Exception {
 		try (Connection connection = dataSource.getConnection();
-				ResultSet tables = connection.getMetaData().getTables(null, null, "workout_sessions",
+				ResultSet tables = connection.getMetaData().getTables(null, null, "workout_occurrences",
 						new String[] { "TABLE" })) {
 			assertThat(tables.next()).isTrue();
 		}
 
 		try (Connection connection = dataSource.getConnection();
-				ResultSet columns = connection.getMetaData().getColumns(null, null, "workout_sessions",
-						"workout_exercise_id");
+				ResultSet executionTables = connection.getMetaData().getTables(null, null,
+						"workout_exercise_executions", new String[] { "TABLE" });
+				ResultSet sessionTables = connection.getMetaData().getTables(null, null, "workout_sessions",
+						new String[] { "TABLE" });
+				ResultSet columns = connection.getMetaData().getColumns(null, null, "workout_occurrences",
+						"active_scheduled_date");
+				ResultSet executionColumns = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "exercise_name_snapshot");
 				ResultSet versions = connection.createStatement()
-						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '14'")) {
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '15'")) {
+			assertThat(executionTables.next()).isTrue();
+			assertThat(sessionTables.next()).isFalse();
 			assertThat(columns.next()).isTrue();
+			assertThat(executionColumns.next()).isTrue();
 			assertThat(versions.next()).isTrue();
-			assertThat(versions.getString("description")).isEqualTo("create workout sessions");
+			assertThat(versions.getString("description")).isEqualTo("create workout occurrences and execution history");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
