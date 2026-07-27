@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
@@ -355,6 +356,7 @@ class WorkoutOccurrenceHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Back Squat",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -362,7 +364,7 @@ class WorkoutOccurrenceHttpIntegrationTests {
 								  "minimumReps":5,
 								  "maximumReps":5
 								}
-								"""))
+								""".formatted(SystemExerciseDefinitions.BACK_SQUAT)))
 				.andExpect(status().isCreated())
 				.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");

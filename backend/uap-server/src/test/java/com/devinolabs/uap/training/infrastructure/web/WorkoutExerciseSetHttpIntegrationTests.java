@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
@@ -377,6 +378,7 @@ class WorkoutExerciseSetHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Back Squat",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -385,7 +387,7 @@ class WorkoutExerciseSetHttpIntegrationTests {
 								  "maximumReps":10,
 								  "targetRestSeconds":120
 								}
-								"""))
+								""".formatted(SystemExerciseDefinitions.BACK_SQUAT)))
 				.andExpect(status().isCreated());
 	}
 

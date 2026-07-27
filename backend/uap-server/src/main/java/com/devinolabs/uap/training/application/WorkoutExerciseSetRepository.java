@@ -31,6 +31,13 @@ public interface WorkoutExerciseSetRepository {
 			WorkoutOccurrenceId occurrenceId,
 			AthleteId athleteId);
 
+	/**
+	 * Batch variant used when metrics are derived for several executions at once.
+	 */
+	List<WorkoutExerciseSet> findAllByExecutionIdsAndAthleteId(
+			Collection<WorkoutExerciseExecutionId> executionIds,
+			AthleteId athleteId);
+
 	List<WorkoutExerciseSetStatusCount> countByStatusForExecutions(
 			Collection<WorkoutExerciseExecutionId> executionIds,
 			AthleteId athleteId);

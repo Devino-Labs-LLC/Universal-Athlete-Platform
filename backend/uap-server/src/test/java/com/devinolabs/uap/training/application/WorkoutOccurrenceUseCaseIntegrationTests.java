@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.ExerciseDefinitionFixtures;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
 import com.devinolabs.uap.athlete.domain.DominantFoot;
@@ -51,6 +52,9 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 
 	@Autowired
 	private CreateWorkoutExerciseUseCase createWorkoutExerciseUseCase;
+
+	@Autowired
+	private ExerciseDefinitionFixtures exerciseDefinitions;
 
 	@Autowired
 	private UpdateWorkoutExerciseUseCase updateWorkoutExerciseUseCase;
@@ -107,7 +111,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Lower Body", null, 1, DayOfWeek.MONDAY, null, 60, null);
 		WorkoutExerciseResult squat = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Back Squat"),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				5, 5, 5, new BigDecimal("225"), WeightUnit.POUND,
 				null, null, null, 120, 8, null, null, null);
@@ -125,6 +129,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 				day.id(),
 				squat.id(),
 				new UpdateWorkoutExerciseCommand(
+						null, false,
 						null, false,
 						null, false,
 						null, false,
@@ -206,12 +211,12 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Upper", null, 1, DayOfWeek.WEDNESDAY, null, null, null);
 		WorkoutExerciseResult bench = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Bench Press"),
 				"Bench Press", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 8, 8, new BigDecimal("135"), WeightUnit.POUND,
 				null, null, null, null, null, null, null, null);
 		WorkoutExerciseResult row = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Barbell Row"),
 				"Barbell Row", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 10, 10, null, null, null, null, null, null, null, null, null, null);
 
@@ -255,7 +260,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		WorkoutDayResult archivedDay = createWorkoutDayUseCase.execute(
 				accountId, archivedPlan.id(), "Day", null, 1, DayOfWeek.FRIDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
-				accountId, archivedPlan.id(), archivedDay.id(),
+				accountId, archivedPlan.id(), archivedDay.id(), exerciseDefinitions.idFor(accountId, "Push Up"),
 				"Push Up", ExerciseCategory.STRENGTH, ExerciseType.BODYWEIGHT,
 				3, 10, 10, null, null, null, null, null, null, null, null, null, null);
 		changeTrainingPlanStatusUseCase.execute(accountId, archivedPlan.id(), TrainingPlanStatusAction.ARCHIVE);
@@ -266,7 +271,7 @@ class WorkoutOccurrenceUseCaseIntegrationTests {
 		WorkoutDayResult deletableDay = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Temp", null, 1, DayOfWeek.THURSDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), deletableDay.id(),
+				accountId, plan.id(), deletableDay.id(), exerciseDefinitions.idFor(accountId, "Curl"),
 				"Curl", ExerciseCategory.STRENGTH, ExerciseType.DUMBBELL,
 				2, 12, 12, null, null, null, null, null, null, null, null, null, null);
 		WorkoutOccurrenceDetailResult scheduled = createWorkoutOccurrenceUseCase.execute(

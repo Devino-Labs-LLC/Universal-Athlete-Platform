@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -64,6 +65,23 @@ import com.devinolabs.uap.training.application.WorkoutExerciseSetDeleteNotAllowe
 import com.devinolabs.uap.training.application.WorkoutExerciseSetLimitExceededException;
 import com.devinolabs.uap.training.application.WorkoutExerciseSetNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutExerciseSetReorderNotAllowedException;
+import com.devinolabs.uap.training.application.ExercisePerformanceKeyNotFoundException;
+import com.devinolabs.uap.training.application.InvalidTrainingPerformanceRangeException;
+import com.devinolabs.uap.training.application.PersonalRecordRebuildConflictException;
+import com.devinolabs.uap.training.application.TrainingMetricsRecomputationConflictException;
+import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedExecutionException;
+import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedSetsException;
+import com.devinolabs.uap.training.application.DuplicateExerciseDefinitionException;
+import com.devinolabs.uap.training.application.ExerciseDefinitionArchivedException;
+import com.devinolabs.uap.training.application.ExerciseDefinitionNotAccessibleException;
+import com.devinolabs.uap.training.application.ExerciseDefinitionNotFoundException;
+import com.devinolabs.uap.training.application.InvalidExerciseDefinitionQueryException;
+import com.devinolabs.uap.training.domain.ExercisePerformanceIdentityConflictException;
+import com.devinolabs.uap.training.domain.InvalidExerciseDefinitionNameException;
+import com.devinolabs.uap.training.domain.InvalidPerformanceMeasurementException;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitionModificationNotAllowedException;
+import com.devinolabs.uap.training.domain.UnsupportedDistanceUnitException;
+import com.devinolabs.uap.training.domain.UnsupportedWeightUnitException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
@@ -73,7 +91,10 @@ import com.devinolabs.uap.training.application.WorkoutExerciseSetReorderNotAllow
 		WorkoutExerciseExecutionController.class,
 		TrainingPlanScheduleController.class,
 		TrainingCalendarController.class,
-		WorkoutExerciseSetController.class
+		WorkoutExerciseSetController.class,
+		TrainingPerformanceController.class,
+		WorkoutOccurrencePerformanceController.class,
+		ExerciseDefinitionController.class
 })
 class TrainingExceptionHandler {
 
@@ -459,6 +480,152 @@ class TrainingExceptionHandler {
 						List.of()));
 	}
 
+	@ExceptionHandler(ExercisePerformanceKeyNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleExercisePerformanceKeyNotFound(
+			ExercisePerformanceKeyNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("EXERCISE_PERFORMANCE_KEY_NOT_FOUND",
+						"No training history exists for this exercise",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(TrainingMetricsRequireCompletedExecutionException.class)
+	ResponseEntity<ApiErrorResponse> handleMetricsRequireCompletedExecution(
+			TrainingMetricsRequireCompletedExecutionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_METRICS_REQUIRE_COMPLETED_EXECUTION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingMetricsRequireCompletedSetsException.class)
+	ResponseEntity<ApiErrorResponse> handleMetricsRequireCompletedSets(
+			TrainingMetricsRequireCompletedSetsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_METRICS_REQUIRE_COMPLETED_SETS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(UnsupportedWeightUnitException.class)
+	ResponseEntity<ApiErrorResponse> handleUnsupportedWeightUnit(
+			UnsupportedWeightUnitException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TRAINING_METRICS_UNSUPPORTED_WEIGHT_UNIT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(UnsupportedDistanceUnitException.class)
+	ResponseEntity<ApiErrorResponse> handleUnsupportedDistanceUnit(
+			UnsupportedDistanceUnitException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TRAINING_METRICS_UNSUPPORTED_DISTANCE_UNIT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidPerformanceMeasurementException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidPerformanceMeasurement(
+			InvalidPerformanceMeasurementException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TRAINING_METRICS_INVALID_MEASUREMENT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingMetricsRecomputationConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleMetricsRecomputationConflict(
+			TrainingMetricsRecomputationConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_METRICS_RECOMPUTATION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(PersonalRecordRebuildConflictException.class)
+	ResponseEntity<ApiErrorResponse> handlePersonalRecordRebuildConflict(
+			PersonalRecordRebuildConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("PERSONAL_RECORD_REBUILD_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingPerformanceRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingPerformanceRange(
+			InvalidTrainingPerformanceRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_PERFORMANCE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseDefinitionNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseDefinitionNotFound(
+			ExerciseDefinitionNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("EXERCISE_DEFINITION_NOT_FOUND", "Exercise definition was not found", request,
+						List.of()));
+	}
+
+	/**
+	 * Another athlete's custom definition is reported as missing rather than forbidden: confirming it
+	 * exists would leak that athlete's data.
+	 */
+	@ExceptionHandler(ExerciseDefinitionNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseDefinitionNotAccessible(
+			ExerciseDefinitionNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("EXERCISE_DEFINITION_NOT_ACCESSIBLE", "Exercise definition was not found", request,
+						List.of()));
+	}
+
+	@ExceptionHandler(ExerciseDefinitionArchivedException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseDefinitionArchived(
+			ExerciseDefinitionArchivedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("EXERCISE_DEFINITION_ARCHIVED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateExerciseDefinitionException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateExerciseDefinition(
+			DuplicateExerciseDefinitionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_EXERCISE_DEFINITION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidExerciseDefinitionNameException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseDefinitionName(
+			InvalidExerciseDefinitionNameException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_EXERCISE_DEFINITION_NAME", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidExerciseDefinitionQueryException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseDefinitionQuery(
+			InvalidExerciseDefinitionQueryException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_EXERCISE_DEFINITION_QUERY", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(SystemExerciseDefinitionModificationNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleSystemExerciseDefinitionModification(
+			SystemExerciseDefinitionModificationNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(error("SYSTEM_EXERCISE_DEFINITION_MODIFICATION_NOT_ALLOWED", ex.getMessage(), request,
+						List.of()));
+	}
+
+	@ExceptionHandler(ExercisePerformanceIdentityConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleExercisePerformanceIdentityConflict(
+			ExercisePerformanceIdentityConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("EXERCISE_PERFORMANCE_IDENTITY_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
 	@ExceptionHandler(AthleteNotFoundException.class)
 	ResponseEntity<ApiErrorResponse> handleAthleteNotFound(AthleteNotFoundException ex, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -484,6 +651,37 @@ class TrainingExceptionHandler {
 	ResponseEntity<ApiErrorResponse> handleGoalNotOwned(AthleteGoalNotOwnedException ex, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("ATHLETE_GOAL_NOT_FOUND", "Athlete goal was not found", request, List.of()));
+	}
+
+	/**
+	 * Last line of defence for the unique active-name indexes: two concurrent creates can both pass
+	 * the pre-check, and the loser should read as a duplicate rather than a server error.
+	 */
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
+			DataIntegrityViolationException ex,
+			HttpServletRequest request) {
+		if (!indicatesDuplicateExerciseDefinition(ex)) {
+			throw ex;
+		}
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_EXERCISE_DEFINITION",
+						"An active exercise definition with this name already exists",
+						request,
+						List.of()));
+	}
+
+	private static boolean indicatesDuplicateExerciseDefinition(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("uq_exercise_definitions")) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)

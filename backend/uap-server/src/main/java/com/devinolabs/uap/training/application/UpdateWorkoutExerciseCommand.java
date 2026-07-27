@@ -4,10 +4,13 @@ import java.math.BigDecimal;
 
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 
 public record UpdateWorkoutExerciseCommand(
+		ExerciseDefinitionId exerciseDefinitionId,
+		boolean exerciseDefinitionIdPresent,
 		String exerciseName,
 		boolean exerciseNamePresent,
 		ExerciseCategory category,

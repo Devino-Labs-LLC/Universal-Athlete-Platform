@@ -14,6 +14,7 @@ import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.DistanceUnit;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WeightUnit;
@@ -29,6 +30,7 @@ public class UpdateWorkoutExerciseUseCase {
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutExerciseRepository workoutExerciseRepository;
+	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final Clock clock;
 
 	public UpdateWorkoutExerciseUseCase(
@@ -36,11 +38,13 @@ public class UpdateWorkoutExerciseUseCase {
 			TrainingPlanRepository trainingPlanRepository,
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutExerciseRepository workoutExerciseRepository,
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
+		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -68,6 +72,11 @@ public class UpdateWorkoutExerciseUseCase {
 		}
 
 		try {
+			if (command.exerciseDefinitionIdPresent()) {
+				ExerciseDefinition definition = WorkoutExerciseSupport.requireSelectableDefinition(
+						exerciseDefinitionRepository, athleteId, command.exerciseDefinitionId());
+				exercise.reassignDefinition(definition.id(), clock);
+			}
 			if (command.exerciseNamePresent()) {
 				exercise.rename(command.exerciseName(), clock);
 			}

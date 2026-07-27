@@ -11,6 +11,7 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseStatus;
 
 public record WorkoutExerciseResponse(
 		java.util.UUID id,
+		java.util.UUID exerciseDefinitionId,
 		int displayOrder,
 		String exerciseName,
 		ExerciseCategory category,

@@ -12,6 +12,8 @@ public class WorkoutExerciseExecution {
 	private final WorkoutExerciseExecutionId id;
 	private final WorkoutOccurrenceId workoutOccurrenceId;
 	private final WorkoutExerciseId sourceWorkoutExerciseId;
+	private final ExerciseDefinitionId exerciseDefinitionId;
+	private final ExercisePerformanceKey exercisePerformanceKey;
 	private final AthleteId athleteId;
 	private final int displayOrder;
 	private final String exerciseName;
@@ -50,6 +52,8 @@ public class WorkoutExerciseExecution {
 			WorkoutExerciseExecutionId id,
 			WorkoutOccurrenceId workoutOccurrenceId,
 			WorkoutExerciseId sourceWorkoutExerciseId,
+			ExerciseDefinitionId exerciseDefinitionId,
+			ExercisePerformanceKey exercisePerformanceKey,
 			AthleteId athleteId,
 			int displayOrder,
 			String exerciseName,
@@ -87,6 +91,14 @@ public class WorkoutExerciseExecution {
 		this.workoutOccurrenceId = Objects.requireNonNull(workoutOccurrenceId, "workoutOccurrenceId must not be null");
 		this.sourceWorkoutExerciseId = Objects.requireNonNull(
 				sourceWorkoutExerciseId, "sourceWorkoutExerciseId must not be null");
+		this.exerciseDefinitionId = Objects.requireNonNull(
+				exerciseDefinitionId, "exerciseDefinitionId must not be null");
+		this.exercisePerformanceKey = Objects.requireNonNull(
+				exercisePerformanceKey, "exercisePerformanceKey must not be null");
+		if (!this.exercisePerformanceKey.equals(ExercisePerformanceKey.of(this.exerciseDefinitionId))) {
+			throw new ExercisePerformanceIdentityConflictException(
+					"exercisePerformanceKey must be derived from exerciseDefinitionId");
+		}
 		this.athleteId = Objects.requireNonNull(athleteId, "athleteId must not be null");
 		this.displayOrder = requireDisplayOrder(displayOrder);
 		this.exerciseName = Objects.requireNonNull(exerciseName, "exerciseName must not be null");
@@ -151,6 +163,8 @@ public class WorkoutExerciseExecution {
 				WorkoutExerciseExecutionId.generate(),
 				occurrenceId,
 				exercise.id(),
+				exercise.exerciseDefinitionId(),
+				ExercisePerformanceKey.of(exercise.exerciseDefinitionId()),
 				exercise.athleteId(),
 				exercise.displayOrder(),
 				exercise.exerciseName(),
@@ -190,6 +204,8 @@ public class WorkoutExerciseExecution {
 			WorkoutExerciseExecutionId id,
 			WorkoutOccurrenceId workoutOccurrenceId,
 			WorkoutExerciseId sourceWorkoutExerciseId,
+			ExerciseDefinitionId exerciseDefinitionId,
+			ExercisePerformanceKey exercisePerformanceKey,
 			AthleteId athleteId,
 			int displayOrder,
 			String exerciseName,
@@ -227,6 +243,8 @@ public class WorkoutExerciseExecution {
 				id,
 				workoutOccurrenceId,
 				sourceWorkoutExerciseId,
+				exerciseDefinitionId,
+				exercisePerformanceKey,
 				athleteId,
 				displayOrder,
 				exerciseName,
@@ -462,6 +480,21 @@ public class WorkoutExerciseExecution {
 
 	public WorkoutExerciseId sourceWorkoutExerciseId() {
 		return sourceWorkoutExerciseId;
+	}
+
+	/**
+	 * Canonical movement snapshotted from the prescription at generation time.
+	 */
+	public ExerciseDefinitionId exerciseDefinitionId() {
+		return exerciseDefinitionId;
+	}
+
+	/**
+	 * Identity this execution's results are aggregated under for history and personal records,
+	 * always derived from {@link #exerciseDefinitionId()}.
+	 */
+	public ExercisePerformanceKey exercisePerformanceKey() {
+		return exercisePerformanceKey;
 	}
 
 	public AthleteId athleteId() {

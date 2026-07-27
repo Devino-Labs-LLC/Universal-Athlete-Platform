@@ -235,6 +235,7 @@ class WorkoutExerciseSetTests {
 				WorkoutExerciseId.generate(),
 				WorkoutDayId.generate(),
 				AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.BACK_SQUAT,
 				0,
 				"Back Squat",
 				ExerciseCategory.STRENGTH,

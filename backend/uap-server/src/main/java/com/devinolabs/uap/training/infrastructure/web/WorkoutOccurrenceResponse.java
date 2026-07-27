@@ -51,6 +51,8 @@ record WorkoutOccurrenceDetailResponse(
 record WorkoutExerciseExecutionResponse(
 		UUID id,
 		UUID sourceWorkoutExerciseId,
+		UUID exerciseDefinitionId,
+		UUID exercisePerformanceKey,
 		int displayOrder,
 		String exerciseName,
 		ExerciseCategory category,

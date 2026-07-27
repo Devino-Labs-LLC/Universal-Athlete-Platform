@@ -105,6 +105,22 @@ class JpaWorkoutExerciseSetRepository implements WorkoutExerciseSetRepository {
 	}
 
 	@Override
+	public List<WorkoutExerciseSet> findAllByExecutionIdsAndAthleteId(
+			Collection<WorkoutExerciseExecutionId> executionIds,
+			AthleteId athleteId) {
+		if (executionIds.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository
+				.findAllForExecutions(
+						executionIds.stream().map(WorkoutExerciseExecutionId::value).toList(),
+						athleteId.value())
+				.stream()
+				.map(WorkoutExerciseSetPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
 	public List<WorkoutExerciseSetStatusCount> countByStatusForExecutions(
 			Collection<WorkoutExerciseExecutionId> executionIds,
 			AthleteId athleteId) {

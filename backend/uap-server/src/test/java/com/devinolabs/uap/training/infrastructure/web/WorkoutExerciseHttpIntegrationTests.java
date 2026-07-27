@@ -29,12 +29,17 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class WorkoutExerciseHttpIntegrationTests {
+
+	private static final String BACK_SQUAT = SystemExerciseDefinitions.BACK_SQUAT.toString();
+	private static final String FRONT_SQUAT = SystemExerciseDefinitions.FRONT_SQUAT.toString();
+	private static final String ROMANIAN_DEADLIFT = SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString();
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -55,8 +60,9 @@ class WorkoutExerciseHttpIntegrationTests {
 						.with(accountAuth(accountId))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"exerciseName":"Back Squat","category":"STRENGTH","type":"BARBELL","sets":3}
-								"""))
+								{"exerciseDefinitionId":"%s","exerciseName":"Back Squat",
+								"category":"STRENGTH","type":"BARBELL","sets":3}
+								""".formatted(BACK_SQUAT)))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
 
@@ -66,6 +72,7 @@ class WorkoutExerciseHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Back Squat",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -79,9 +86,10 @@ class WorkoutExerciseHttpIntegrationTests {
 								  "tempo":"3-0-1",
 								  "coachingNotes":"Brace hard"
 								}
-								"""))
+								""".formatted(BACK_SQUAT)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.exerciseName").value("Back Squat"))
+				.andExpect(jsonPath("$.exerciseDefinitionId").value(BACK_SQUAT))
 				.andExpect(jsonPath("$.displayOrder").value(0))
 				.andExpect(jsonPath("$.status").value("PLANNED"))
 				.andExpect(jsonPath("$.athleteId").doesNotExist())
@@ -95,6 +103,7 @@ class WorkoutExerciseHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Romanian Deadlift",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -102,7 +111,7 @@ class WorkoutExerciseHttpIntegrationTests {
 								  "minimumReps":8,
 								  "maximumReps":10
 								}
-								"""))
+								""".formatted(ROMANIAN_DEADLIFT)))
 				.andExpect(status().isCreated())
 				.andReturn();
 		String exerciseId2 = JsonPath.read(second.getResponse().getContentAsString(), "$.id");
@@ -183,6 +192,7 @@ class WorkoutExerciseHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Back Squat",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -190,7 +200,7 @@ class WorkoutExerciseHttpIntegrationTests {
 								  "minimumReps":5,
 								  "maximumReps":5
 								}
-								"""))
+								""".formatted(BACK_SQUAT)))
 				.andExpect(status().isCreated())
 				.andReturn();
 		String exerciseId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
@@ -201,12 +211,13 @@ class WorkoutExerciseHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"back squat",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
 								  "sets":3
 								}
-								"""))
+								""".formatted(BACK_SQUAT)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("DUPLICATE_WORKOUT_EXERCISE"));
 
@@ -235,12 +246,13 @@ class WorkoutExerciseHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"New Lift",
 								  "category":"STRENGTH",
 								  "type":"DUMBBELL",
 								  "sets":2
 								}
-								"""))
+								""".formatted(FRONT_SQUAT)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("TRAINING_PLAN_ARCHIVED"));
 

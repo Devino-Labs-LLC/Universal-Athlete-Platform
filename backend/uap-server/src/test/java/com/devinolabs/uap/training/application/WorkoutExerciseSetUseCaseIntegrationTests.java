@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.ExerciseDefinitionFixtures;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.AthleteRepository;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
@@ -55,6 +56,9 @@ class WorkoutExerciseSetUseCaseIntegrationTests {
 
 	@Autowired
 	private CreateWorkoutExerciseUseCase createWorkoutExerciseUseCase;
+
+	@Autowired
+	private ExerciseDefinitionFixtures exerciseDefinitions;
 
 	@Autowired
 	private UpdateWorkoutExerciseUseCase updateWorkoutExerciseUseCase;
@@ -431,6 +435,7 @@ class WorkoutExerciseSetUseCaseIntegrationTests {
 		Fixture fixture = fixture(LocalDate.of(2026, 9, 17), 2);
 		createWorkoutExerciseUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(),
+				exerciseDefinitions.idFor(fixture.accountId(), "Second Exercise"),
 				"Second Exercise", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				2, 8, 8, new BigDecimal("50"), WeightUnit.KILOGRAM,
 				null, null, null, null, null, null, null, null);
@@ -483,7 +488,7 @@ class WorkoutExerciseSetUseCaseIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Squat Day", null, 1, DayOfWeek.MONDAY, null, null, null);
 		WorkoutExerciseResult squat = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Back Squat"),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				5, 5, 5, new BigDecimal("225"), WeightUnit.POUND,
 				null, null, null, 180, 8, null, null, null);
@@ -522,6 +527,7 @@ class WorkoutExerciseSetUseCaseIntegrationTests {
 		updateWorkoutExerciseUseCase.execute(
 				accountId, plan.id(), day.id(), squat.id(),
 				new UpdateWorkoutExerciseCommand(
+						null, false,
 						null, false,
 						null, false,
 						null, false,
@@ -643,7 +649,7 @@ class WorkoutExerciseSetUseCaseIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Day-" + scheduledDate, null, 1, DayOfWeek.MONDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Squat"),
 				"Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				prescribedSets, 8, 8, new BigDecimal("100"), WeightUnit.KILOGRAM,
 				null, null, null, null, null, null, null, null);

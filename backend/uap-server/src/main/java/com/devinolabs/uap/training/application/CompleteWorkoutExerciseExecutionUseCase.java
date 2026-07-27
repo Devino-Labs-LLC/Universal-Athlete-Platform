@@ -30,6 +30,7 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
+	private final ExerciseMetricProcessor exerciseMetricProcessor;
 	private final Clock clock;
 
 	public CompleteWorkoutExerciseExecutionUseCase(
@@ -39,6 +40,7 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
+			ExerciseMetricProcessor exerciseMetricProcessor,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
@@ -46,6 +48,7 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
+		this.exerciseMetricProcessor = Objects.requireNonNull(exerciseMetricProcessor);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -86,8 +89,13 @@ public class CompleteWorkoutExerciseExecutionUseCase {
 		catch (IllegalStateException ex) {
 			throw WorkoutExerciseExecutionSupport.translateStatus(ex);
 		}
+		WorkoutExerciseExecution completed = workoutExerciseExecutionRepository.save(execution);
+		// Metrics share the completion transaction: if a personal record cannot be written the
+		// execution does not stay completed either.
+		exerciseMetricProcessor.process(
+				athleteId, completed, occurrence.status(), occurrence.scheduledDate(), sets);
 		return WorkoutExerciseExecutionSupport.toResult(
-				workoutExerciseExecutionRepository.save(execution), workoutExerciseSetRepository, athleteId);
+				completed, workoutExerciseSetRepository, athleteId);
 	}
 
 }

@@ -5,6 +5,8 @@ import java.time.Instant;
 
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
+import com.devinolabs.uap.training.domain.ExercisePerformanceKey;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
@@ -14,6 +16,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseId;
 public record WorkoutExerciseExecutionResult(
 		WorkoutExerciseExecutionId id,
 		WorkoutExerciseId sourceWorkoutExerciseId,
+		ExerciseDefinitionId exerciseDefinitionId,
+		ExercisePerformanceKey exercisePerformanceKey,
 		int displayOrder,
 		String exerciseName,
 		ExerciseCategory category,

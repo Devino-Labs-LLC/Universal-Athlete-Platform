@@ -22,6 +22,7 @@ class WorkoutExerciseTests {
 				WorkoutExerciseId.generate(),
 				WorkoutDayId.generate(),
 				AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.BACK_SQUAT,
 				0,
 				"  Back   Squat  ",
 				ExerciseCategory.STRENGTH,
@@ -75,6 +76,7 @@ class WorkoutExerciseTests {
 
 		assertThatThrownBy(() -> WorkoutExercise.create(
 				WorkoutExerciseId.generate(), WorkoutDayId.generate(), AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.RUNNING,
 				0, "  ", ExerciseCategory.CARDIO, ExerciseType.RUN, 1,
 				null, null, null, null, null, null, null, null, null, null, null, CLOCK))
 				.isInstanceOf(IllegalArgumentException.class);
@@ -120,6 +122,7 @@ class WorkoutExerciseTests {
 				WorkoutExerciseId.generate(),
 				WorkoutDayId.generate(),
 				AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.BACK_SQUAT,
 				0,
 				"Back Squat",
 				ExerciseCategory.STRENGTH,

@@ -43,6 +43,14 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 	private UUID sourceWorkoutExerciseId;
 
 	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "exercise_definition_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
+	private UUID exerciseDefinitionId;
+
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "exercise_performance_key", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
+	private UUID exercisePerformanceKey;
+
+	@JdbcTypeCode(SqlTypes.UUID)
 	@Column(name = "athlete_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
 	private UUID athleteId;
 
@@ -160,6 +168,8 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 			UUID id,
 			UUID workoutOccurrenceId,
 			UUID sourceWorkoutExerciseId,
+			UUID exerciseDefinitionId,
+			UUID exercisePerformanceKey,
 			UUID athleteId,
 			int displayOrder,
 			String exerciseName,
@@ -197,6 +207,8 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		this.id = id;
 		this.workoutOccurrenceId = workoutOccurrenceId;
 		this.sourceWorkoutExerciseId = sourceWorkoutExerciseId;
+		this.exerciseDefinitionId = exerciseDefinitionId;
+		this.exercisePerformanceKey = exercisePerformanceKey;
 		this.athleteId = athleteId;
 		this.displayOrder = displayOrder;
 		this.exerciseName = exerciseName;
@@ -255,6 +267,14 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 
 	UUID getSourceWorkoutExerciseId() {
 		return sourceWorkoutExerciseId;
+	}
+
+	UUID getExerciseDefinitionId() {
+		return exerciseDefinitionId;
+	}
+
+	UUID getExercisePerformanceKey() {
+		return exercisePerformanceKey;
 	}
 
 	UUID getAthleteId() {

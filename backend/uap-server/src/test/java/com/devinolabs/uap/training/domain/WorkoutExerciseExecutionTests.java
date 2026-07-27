@@ -22,6 +22,7 @@ class WorkoutExerciseExecutionTests {
 				WorkoutExerciseId.generate(),
 				WorkoutDayId.generate(),
 				AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.BACK_SQUAT,
 				0,
 				"Back Squat",
 				ExerciseCategory.STRENGTH,
@@ -46,6 +47,10 @@ class WorkoutExerciseExecutionTests {
 				CLOCK);
 
 		assertThat(execution.status()).isEqualTo(WorkoutExerciseExecutionStatus.NOT_STARTED);
+		assertThat(execution.exerciseDefinitionId()).isEqualTo(SystemExerciseDefinitions.BACK_SQUAT);
+		assertThat(execution.exercisePerformanceKey())
+				.isEqualTo(ExercisePerformanceKey.of(SystemExerciseDefinitions.BACK_SQUAT));
+		assertThat(execution.exercisePerformanceKey().value()).isNotEqualTo(exercise.id().value());
 		assertThat(execution.prescribedSets()).isEqualTo(5);
 		assertThat(execution.prescribedMinimumReps()).isEqualTo(5);
 		assertThat(execution.prescribedMaximumReps()).isEqualTo(5);
@@ -107,6 +112,7 @@ class WorkoutExerciseExecutionTests {
 				WorkoutExerciseId.generate(),
 				WorkoutDayId.generate(),
 				AthleteId.of(UUID.randomUUID()),
+				SystemExerciseDefinitions.BACK_SQUAT,
 				0,
 				"Back Squat",
 				ExerciseCategory.STRENGTH,

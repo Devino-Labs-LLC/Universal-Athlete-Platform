@@ -286,6 +286,8 @@ class WorkoutOccurrenceController {
 		return new WorkoutExerciseExecutionResponse(
 				result.id().value(),
 				result.sourceWorkoutExerciseId().value(),
+				result.exerciseDefinitionId().value(),
+				result.exercisePerformanceKey().value(),
 				result.displayOrder(),
 				result.exerciseName(),
 				result.category(),

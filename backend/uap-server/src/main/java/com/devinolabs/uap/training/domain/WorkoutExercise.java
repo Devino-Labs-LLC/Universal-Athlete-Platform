@@ -3,7 +3,6 @@ package com.devinolabs.uap.training.domain;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Objects;
 
 public class WorkoutExercise {
@@ -15,6 +14,7 @@ public class WorkoutExercise {
 	private final WorkoutExerciseId id;
 	private final WorkoutDayId workoutDayId;
 	private final AthleteId athleteId;
+	private ExerciseDefinitionId exerciseDefinitionId;
 	private int displayOrder;
 	private String exerciseName;
 	private String normalizedExerciseName;
@@ -41,6 +41,7 @@ public class WorkoutExercise {
 			WorkoutExerciseId id,
 			WorkoutDayId workoutDayId,
 			AthleteId athleteId,
+			ExerciseDefinitionId exerciseDefinitionId,
 			int displayOrder,
 			String exerciseName,
 			String normalizedExerciseName,
@@ -65,6 +66,8 @@ public class WorkoutExercise {
 		this.id = Objects.requireNonNull(id, "id must not be null");
 		this.workoutDayId = Objects.requireNonNull(workoutDayId, "workoutDayId must not be null");
 		this.athleteId = Objects.requireNonNull(athleteId, "athleteId must not be null");
+		this.exerciseDefinitionId = Objects.requireNonNull(
+				exerciseDefinitionId, "exerciseDefinitionId must not be null");
 		this.displayOrder = requireDisplayOrder(displayOrder);
 		this.exerciseName = requireExerciseName(exerciseName);
 		this.normalizedExerciseName = Objects.requireNonNull(
@@ -108,6 +111,7 @@ public class WorkoutExercise {
 			WorkoutExerciseId id,
 			WorkoutDayId workoutDayId,
 			AthleteId athleteId,
+			ExerciseDefinitionId exerciseDefinitionId,
 			int displayOrder,
 			String exerciseName,
 			ExerciseCategory category,
@@ -131,6 +135,7 @@ public class WorkoutExercise {
 				id,
 				workoutDayId,
 				athleteId,
+				exerciseDefinitionId,
 				displayOrder,
 				exerciseName,
 				normalizeExerciseName(exerciseName),
@@ -158,6 +163,7 @@ public class WorkoutExercise {
 			WorkoutExerciseId id,
 			WorkoutDayId workoutDayId,
 			AthleteId athleteId,
+			ExerciseDefinitionId exerciseDefinitionId,
 			int displayOrder,
 			String exerciseName,
 			String normalizedExerciseName,
@@ -183,6 +189,7 @@ public class WorkoutExercise {
 				id,
 				workoutDayId,
 				athleteId,
+				exerciseDefinitionId,
 				displayOrder,
 				exerciseName,
 				normalizedExerciseName,
@@ -209,6 +216,17 @@ public class WorkoutExercise {
 	public void changeDisplayOrder(int displayOrder, Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		this.displayOrder = requireDisplayOrder(displayOrder);
+		touch(clock);
+	}
+
+	/**
+	 * Points the prescription at a different canonical movement. Executions already generated keep
+	 * the definition they snapshotted, so past history is never re-keyed.
+	 */
+	public void reassignDefinition(ExerciseDefinitionId exerciseDefinitionId, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.exerciseDefinitionId = Objects.requireNonNull(
+				exerciseDefinitionId, "exerciseDefinitionId must not be null");
 		touch(clock);
 	}
 
@@ -467,7 +485,7 @@ public class WorkoutExercise {
 	}
 
 	public static String normalizeExerciseName(String exerciseName) {
-		return collapseWhitespace(requireExerciseName(exerciseName)).toLowerCase(Locale.ROOT);
+		return ExerciseNameNormalizer.normalize(requireExerciseName(exerciseName));
 	}
 
 	private void touch(Clock clock) {
@@ -500,10 +518,6 @@ public class WorkoutExercise {
 			throw new IllegalArgumentException("sets must be >= 1");
 		}
 		return sets;
-	}
-
-	private static String collapseWhitespace(String value) {
-		return value.replaceAll("\\s+", " ");
 	}
 
 	private static Prescription normalizePrescription(
@@ -601,6 +615,13 @@ public class WorkoutExercise {
 
 	public AthleteId athleteId() {
 		return athleteId;
+	}
+
+	/**
+	 * Canonical movement this prescription trains; the identity its results are aggregated under.
+	 */
+	public ExerciseDefinitionId exerciseDefinitionId() {
+		return exerciseDefinitionId;
 	}
 
 	public int displayOrder() {

@@ -1,6 +1,8 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
+import com.devinolabs.uap.training.domain.ExercisePerformanceKey;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseId;
@@ -16,6 +18,8 @@ final class WorkoutExerciseExecutionPersistenceMapper {
 				execution.id().value(),
 				execution.workoutOccurrenceId().value(),
 				execution.sourceWorkoutExerciseId().value(),
+				execution.exerciseDefinitionId().value(),
+				execution.exercisePerformanceKey().value(),
 				execution.athleteId().value(),
 				execution.displayOrder(),
 				execution.exerciseName(),
@@ -57,6 +61,8 @@ final class WorkoutExerciseExecutionPersistenceMapper {
 				WorkoutExerciseExecutionId.of(entity.getId()),
 				WorkoutOccurrenceId.of(entity.getWorkoutOccurrenceId()),
 				WorkoutExerciseId.of(entity.getSourceWorkoutExerciseId()),
+				ExerciseDefinitionId.of(entity.getExerciseDefinitionId()),
+				ExercisePerformanceKey.of(entity.getExercisePerformanceKey()),
 				AthleteId.of(entity.getAthleteId()),
 				entity.getDisplayOrder(),
 				entity.getExerciseName(),

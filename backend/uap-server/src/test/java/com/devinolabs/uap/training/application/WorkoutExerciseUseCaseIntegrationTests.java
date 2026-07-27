@@ -23,7 +23,9 @@ import com.devinolabs.uap.athlete.domain.Sex;
 import com.devinolabs.uap.athlete.domain.Weight;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseType;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
 import com.devinolabs.uap.training.domain.TrainingPlanStatusAction;
 import com.devinolabs.uap.training.domain.TrainingPlanType;
 import com.devinolabs.uap.training.domain.WeightUnit;
@@ -48,6 +50,9 @@ class WorkoutExerciseUseCaseIntegrationTests {
 
 	@Autowired
 	private CreateWorkoutExerciseUseCase createWorkoutExerciseUseCase;
+
+	@Autowired
+	private CreateAthleteExerciseDefinitionUseCase createAthleteExerciseDefinitionUseCase;
 
 	@Autowired
 	private ListWorkoutExercisesUseCase listWorkoutExercisesUseCase;
@@ -78,22 +83,23 @@ class WorkoutExerciseUseCaseIntegrationTests {
 				accountId, plan.id(), "Lower Body", null, 1, DayOfWeek.MONDAY, null, 60, null);
 
 		WorkoutExerciseResult squat = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), SystemExerciseDefinitions.BACK_SQUAT,
 				"  Back   Squat  ", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				4, 5, 5, new BigDecimal("100"), WeightUnit.KILOGRAM,
 				null, null, null, 120, 8, "3-0-1", "Brace hard", null);
 		assertThat(squat.displayOrder()).isZero();
 		assertThat(squat.exerciseName()).isEqualTo("Back   Squat");
+		assertThat(squat.exerciseDefinitionId()).isEqualTo(SystemExerciseDefinitions.BACK_SQUAT);
 		assertThat(squat.status()).isEqualTo(WorkoutExerciseStatus.PLANNED);
 
 		WorkoutExerciseResult rdl = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), SystemExerciseDefinitions.ROMANIAN_DEADLIFT,
 				"Romanian Deadlift", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 8, 10, null, null, null, null, null, 90, null, null, null, null);
 		assertThat(rdl.displayOrder()).isEqualTo(1);
 
 		WorkoutExerciseResult inserted = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), customDefinition(accountId, "Leg Press"),
 				"Leg Press", ExerciseCategory.STRENGTH, ExerciseType.MACHINE,
 				3, 10, 12, null, null, null, null, null, null, null, null, null, 1);
 		assertThat(inserted.displayOrder()).isEqualTo(1);
@@ -104,7 +110,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 		assertThat(listed).extracting(WorkoutExerciseResult::displayOrder).containsExactly(0, 1, 2);
 
 		assertThatThrownBy(() -> createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), SystemExerciseDefinitions.BACK_SQUAT,
 				"back squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 5, 5, null, null, null, null, null, null, null, null, null, null))
 				.isInstanceOf(DuplicateWorkoutExerciseException.class);
@@ -124,6 +130,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 				day.id(),
 				squat.id(),
 				new UpdateWorkoutExerciseCommand(
+						null, false,
 						"Back Squat Heavy", true,
 						null, false,
 						null, false,
@@ -179,7 +186,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				owner, plan.id(), "Skills", null, 1, DayOfWeek.SATURDAY, null, null, null);
 		WorkoutExerciseResult exercise = createWorkoutExerciseUseCase.execute(
-				owner, plan.id(), day.id(),
+				owner, plan.id(), day.id(), customDefinition(owner, "Layup Drill"),
 				"Layup Drill", ExerciseCategory.SPORT_SKILL, ExerciseType.SPORT,
 				3, 10, 10, null, null, 60, null, null, null, null, null, null, null);
 
@@ -194,7 +201,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 
 		changeTrainingPlanStatusUseCase.execute(owner, plan.id(), TrainingPlanStatusAction.ARCHIVE);
 		assertThatThrownBy(() -> createWorkoutExerciseUseCase.execute(
-				owner, plan.id(), day.id(),
+				owner, plan.id(), day.id(), customDefinition(owner, "New Drill"),
 				"New Drill", ExerciseCategory.SPORT_SKILL, ExerciseType.SPORT,
 				2, 8, 8, null, null, null, null, null, null, null, null, null, null))
 				.isInstanceOf(TrainingPlanArchivedException.class);
@@ -202,6 +209,10 @@ class WorkoutExerciseUseCaseIntegrationTests {
 		assertThatThrownBy(() -> reorderWorkoutExercisesUseCase.execute(
 				owner, plan.id(), day.id(), List.of(exercise.id().value(), UUID.randomUUID())))
 				.isInstanceOf(TrainingPlanArchivedException.class);
+	}
+
+	private ExerciseDefinitionId customDefinition(AccountId accountId, String canonicalName) {
+		return createAthleteExerciseDefinitionUseCase.execute(accountId, canonicalName).id();
 	}
 
 	private void createAthlete(AccountId accountId) {

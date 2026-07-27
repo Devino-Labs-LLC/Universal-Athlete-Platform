@@ -21,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.devinolabs.uap.ExerciseDefinitionFixtures;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.application.AthleteRepository;
@@ -59,6 +60,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 
 	@Autowired
 	private CreateWorkoutExerciseUseCase createWorkoutExerciseUseCase;
+
+	@Autowired
+	private ExerciseDefinitionFixtures exerciseDefinitions;
 
 	@Autowired
 	private CreateWorkoutOccurrenceUseCase createWorkoutOccurrenceUseCase;
@@ -439,7 +443,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 		WorkoutDayResult day = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Day", null, 1, DayOfWeek.MONDAY, null, null, null);
 		createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), day.id(),
+				accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Squat"),
 				"Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 5, 5, new BigDecimal("100"), WeightUnit.KILOGRAM,
 				null, null, null, null, null, null, null, null);
@@ -515,6 +519,8 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				execution.id(),
 				execution.workoutOccurrenceId(),
 				execution.sourceWorkoutExerciseId(),
+				execution.exerciseDefinitionId(),
+				execution.exercisePerformanceKey(),
 				execution.athleteId(),
 				execution.displayOrder(),
 				execution.exerciseName(),
@@ -650,7 +656,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				accountId, plan.id(), "Day-" + scheduledDate, null, 1, DayOfWeek.MONDAY, null, null, null);
 		for (int i = 0; i < exerciseCount; i++) {
 			createWorkoutExerciseUseCase.execute(
-					accountId, plan.id(), day.id(),
+					accountId, plan.id(), day.id(), exerciseDefinitions.idFor(accountId, "Exercise " + i),
 					"Exercise " + i, ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 					3, 8, 8, new BigDecimal("100"), WeightUnit.KILOGRAM,
 					null, null, null, null, null, null, null, null);

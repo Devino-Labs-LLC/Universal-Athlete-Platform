@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.ExerciseDefinitionFixtures;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
 import com.devinolabs.uap.athlete.domain.DominantFoot;
@@ -58,6 +59,9 @@ class TrainingScheduleUseCaseIntegrationTests {
 
 	@Autowired
 	private CreateWorkoutExerciseUseCase createWorkoutExerciseUseCase;
+
+	@Autowired
+	private ExerciseDefinitionFixtures exerciseDefinitions;
 
 	@Autowired
 	private UpdateWorkoutExerciseUseCase updateWorkoutExerciseUseCase;
@@ -315,6 +319,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 				fixture.weekOneDayId(),
 				fixture.weekOneExerciseId(),
 				new UpdateWorkoutExerciseCommand(
+						null, false,
 						"Front Squat", true,
 						null, false, null, false,
 						9, true,
@@ -573,7 +578,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 		WorkoutDayResult weekOne = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Lower Body Strength", null, 1, DayOfWeek.MONDAY, null, 60, null);
 		WorkoutExerciseResult weekOneSquat = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), weekOne.id(),
+				accountId, plan.id(), weekOne.id(), exerciseDefinitions.idFor(accountId, "Back Squat"),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				5, 5, 5, new BigDecimal("225"), WeightUnit.POUND,
 				null, null, null, null, null, null, null, null);
@@ -582,7 +587,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 				accountId, plan.id(), "Lower Body Strength Progression", null, 2, DayOfWeek.MONDAY, null, 60,
 				null);
 		WorkoutExerciseResult weekTwoSquat = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), weekTwo.id(),
+				accountId, plan.id(), weekTwo.id(), exerciseDefinitions.idFor(accountId, "Back Squat"),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				5, 5, 5, new BigDecimal("225"), WeightUnit.POUND,
 				null, null, null, null, null, null, null, null);
@@ -624,6 +629,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 				weekTwo.id(),
 				weekTwoSquat.id(),
 				new UpdateWorkoutExerciseCommand(
+						null, false,
 						null, false, null, false, null, false,
 						4, true, 8, true, 8, true,
 						new BigDecimal("185"), true, WeightUnit.POUND, true,
@@ -739,7 +745,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 		WorkoutDayResult weekOne = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Week One", null, 1, DayOfWeek.MONDAY, null, 60, null);
 		WorkoutExerciseResult weekOneExercise = createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), weekOne.id(),
+				accountId, plan.id(), weekOne.id(), exerciseDefinitions.idFor(accountId, "Back Squat"),
 				"Back Squat", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 5, 5, new BigDecimal("100"), WeightUnit.KILOGRAM,
 				null, null, null, null, null, null, null, null);
@@ -747,7 +753,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 		WorkoutDayResult weekTwo = createWorkoutDayUseCase.execute(
 				accountId, plan.id(), "Week Two", null, 2, DayOfWeek.FRIDAY, null, 60, null);
 		createWorkoutExerciseUseCase.execute(
-				accountId, plan.id(), weekTwo.id(),
+				accountId, plan.id(), weekTwo.id(), exerciseDefinitions.idFor(accountId, "Bench Press"),
 				"Bench Press", ExerciseCategory.STRENGTH, ExerciseType.BARBELL,
 				3, 8, 8, new BigDecimal("80"), WeightUnit.KILOGRAM,
 				null, null, null, null, null, null, null, null);

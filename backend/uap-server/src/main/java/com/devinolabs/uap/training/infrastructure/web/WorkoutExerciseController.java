@@ -30,6 +30,7 @@ import com.devinolabs.uap.training.application.UpdateWorkoutExerciseCommand;
 import com.devinolabs.uap.training.application.UpdateWorkoutExerciseUseCase;
 import com.devinolabs.uap.training.application.WorkoutExerciseResult;
 import com.devinolabs.uap.training.domain.AccountId;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseId;
@@ -74,6 +75,7 @@ class WorkoutExerciseController {
 				accountId(authentication),
 				TrainingPlanId.of(planId),
 				WorkoutDayId.of(dayId),
+				ExerciseDefinitionId.of(request.exerciseDefinitionId()),
 				request.exerciseName(),
 				request.category(),
 				request.type(),
@@ -125,6 +127,10 @@ class WorkoutExerciseController {
 			@Valid @RequestBody UpdateWorkoutExerciseRequest request,
 			Authentication authentication) {
 		UpdateWorkoutExerciseCommand command = new UpdateWorkoutExerciseCommand(
+				request.exerciseDefinitionId() == null || request.exerciseDefinitionId().value() == null
+						? null
+						: ExerciseDefinitionId.of(request.exerciseDefinitionId().value()),
+				request.exerciseDefinitionId() != null,
 				request.exerciseName() == null ? null : request.exerciseName().value(),
 				request.exerciseName() != null,
 				request.category() == null ? null : request.category().value(),
@@ -226,6 +232,7 @@ class WorkoutExerciseController {
 	private static WorkoutExerciseResponse toResponse(WorkoutExerciseResult result) {
 		return new WorkoutExerciseResponse(
 				result.id().value(),
+				result.exerciseDefinitionId().value(),
 				result.displayOrder(),
 				result.exerciseName(),
 				result.category(),

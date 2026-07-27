@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDay;
@@ -54,6 +56,26 @@ final class WorkoutExerciseSupport {
 		return workoutDayRepository
 				.findByIdAndTrainingPlanIdAndAthleteId(dayId, planId, athleteId)
 				.orElseThrow(WorkoutDayNotFoundException::new);
+	}
+
+	/**
+	 * Resolves the canonical movement a prescription may point at: it must exist, be visible to the
+	 * athlete, and still be active, since archived definitions must not gain new prescriptions.
+	 */
+	static ExerciseDefinition requireSelectableDefinition(
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
+			AthleteId athleteId,
+			ExerciseDefinitionId exerciseDefinitionId) {
+		if (exerciseDefinitionId == null) {
+			throw new ExerciseDefinitionNotFoundException();
+		}
+		ExerciseDefinition definition = ExerciseDefinitionSupport.requireAccessible(
+				exerciseDefinitionRepository, athleteId, exerciseDefinitionId);
+		if (!definition.active()) {
+			throw new ExerciseDefinitionArchivedException(
+					"Archived exercise definitions cannot be prescribed");
+		}
+		return definition;
 	}
 
 	static void assertUniqueName(
@@ -128,6 +150,7 @@ final class WorkoutExerciseSupport {
 	static WorkoutExerciseResult toResult(WorkoutExercise exercise) {
 		return new WorkoutExerciseResult(
 				exercise.id(),
+				exercise.exerciseDefinitionId(),
 				exercise.displayOrder(),
 				exercise.exerciseName(),
 				exercise.category(),

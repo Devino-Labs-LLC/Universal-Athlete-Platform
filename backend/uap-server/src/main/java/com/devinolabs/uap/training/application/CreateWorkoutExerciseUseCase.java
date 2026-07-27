@@ -13,6 +13,8 @@ import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
@@ -29,6 +31,7 @@ public class CreateWorkoutExerciseUseCase {
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutExerciseRepository workoutExerciseRepository;
+	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final Clock clock;
 
 	public CreateWorkoutExerciseUseCase(
@@ -36,11 +39,13 @@ public class CreateWorkoutExerciseUseCase {
 			TrainingPlanRepository trainingPlanRepository,
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutExerciseRepository workoutExerciseRepository,
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
+		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -49,6 +54,7 @@ public class CreateWorkoutExerciseUseCase {
 			AccountId accountId,
 			TrainingPlanId planId,
 			WorkoutDayId dayId,
+			ExerciseDefinitionId exerciseDefinitionId,
 			String exerciseName,
 			ExerciseCategory category,
 			ExerciseType type,
@@ -69,8 +75,13 @@ public class CreateWorkoutExerciseUseCase {
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
 		TrainingPlan plan = WorkoutExerciseSupport.requireMutablePlan(trainingPlanRepository, athleteId, planId);
 		WorkoutDay day = WorkoutExerciseSupport.requireOwnedDay(workoutDayRepository, plan.id(), athleteId, dayId);
+		ExerciseDefinition definition = WorkoutExerciseSupport.requireSelectableDefinition(
+				exerciseDefinitionRepository, athleteId, exerciseDefinitionId);
 
-		WorkoutExerciseSupport.assertUniqueName(workoutExerciseRepository, day.id(), exerciseName, null);
+		String displayName = exerciseName == null || exerciseName.isBlank()
+				? definition.canonicalName()
+				: exerciseName;
+		WorkoutExerciseSupport.assertUniqueName(workoutExerciseRepository, day.id(), displayName, null);
 
 		int order;
 		int max = workoutExerciseRepository.findMaxDisplayOrder(day.id(), athleteId);
@@ -93,8 +104,9 @@ public class CreateWorkoutExerciseUseCase {
 					WorkoutExerciseId.generate(),
 					day.id(),
 					athleteId,
+					definition.id(),
 					order,
-					exerciseName,
+					displayName,
 					category,
 					type,
 					sets,

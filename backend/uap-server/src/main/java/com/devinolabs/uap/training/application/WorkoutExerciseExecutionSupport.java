@@ -133,6 +133,8 @@ final class WorkoutExerciseExecutionSupport {
 		return new WorkoutExerciseExecutionResult(
 				execution.id(),
 				execution.sourceWorkoutExerciseId(),
+				execution.exerciseDefinitionId(),
+				execution.exercisePerformanceKey(),
 				execution.displayOrder(),
 				execution.exerciseName(),
 				execution.category(),

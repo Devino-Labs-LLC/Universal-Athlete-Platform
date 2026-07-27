@@ -30,8 +30,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("17");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("create workout exercise sets");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("19");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("add canonical exercise definitions");
 	}
 
 	@Test
@@ -347,6 +347,79 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create workout exercise sets");
 			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesTrainingPerformanceMetricsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet personalRecords = connection.getMetaData().getTables(null, null,
+						"athlete_exercise_personal_records", new String[] { "TABLE" });
+				ResultSet personalRecordHistory = connection.getMetaData().getTables(null, null,
+						"athlete_exercise_personal_record_history", new String[] { "TABLE" });
+				ResultSet performanceKey = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "exercise_performance_key");
+				ResultSet qualifierKey = connection.getMetaData().getColumns(null, null,
+						"athlete_exercise_personal_records", "record_qualifier_key");
+				ResultSet supersededAt = connection.getMetaData().getColumns(null, null,
+						"athlete_exercise_personal_record_history", "superseded_at");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '18'")) {
+			assertThat(personalRecords.next()).isTrue();
+			assertThat(personalRecordHistory.next()).isTrue();
+			assertThat(performanceKey.next()).isTrue();
+			assertThat(performanceKey.getInt("NULLABLE")).isZero();
+			assertThat(qualifierKey.next()).isTrue();
+			assertThat(supersededAt.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add training performance metrics");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesCanonicalExerciseDefinitionsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet definitions = connection.getMetaData().getTables(null, null, "exercise_definitions",
+						new String[] { "TABLE" });
+				ResultSet normalizedName = connection.getMetaData().getColumns(null, null, "exercise_definitions",
+						"normalized_name");
+				ResultSet prescriptionDefinition = connection.getMetaData().getColumns(null, null,
+						"workout_exercises", "exercise_definition_id");
+				ResultSet executionDefinition = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "exercise_definition_id");
+				ResultSet recordDefinition = connection.getMetaData().getColumns(null, null,
+						"athlete_exercise_personal_records", "exercise_definition_id");
+				ResultSet historyDefinition = connection.getMetaData().getColumns(null, null,
+						"athlete_exercise_personal_record_history", "exercise_definition_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '19'")) {
+			assertThat(definitions.next()).isTrue();
+			assertThat(normalizedName.next()).isTrue();
+			assertThat(prescriptionDefinition.next()).isTrue();
+			assertThat(prescriptionDefinition.getInt("NULLABLE")).isZero();
+			assertThat(executionDefinition.next()).isTrue();
+			assertThat(executionDefinition.getInt("NULLABLE")).isZero();
+			assertThat(recordDefinition.next()).isTrue();
+			assertThat(historyDefinition.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add canonical exercise definitions");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywaySeedsSystemExerciseDefinitions() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet seeds = connection.createStatement().executeQuery(
+						"SELECT BIN_TO_UUID(id) AS id, canonical_name FROM exercise_definitions"
+								+ " WHERE scope = 'SYSTEM' ORDER BY canonical_name")) {
+			int count = 0;
+			while (seeds.next()) {
+				count++;
+				assertThat(seeds.getString("id")).startsWith("11111111-1111-1111-1111-1111111111");
+			}
+			assertThat(count).isEqualTo(8);
 		}
 	}
 

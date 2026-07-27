@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
@@ -234,6 +235,7 @@ class WorkoutExerciseExecutionHttpIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "exerciseDefinitionId":"%s",
 								  "exerciseName":"Romanian Deadlift",
 								  "category":"STRENGTH",
 								  "type":"BARBELL",
@@ -241,7 +243,7 @@ class WorkoutExerciseExecutionHttpIntegrationTests {
 								  "minimumReps":8,
 								  "maximumReps":10
 								}
-								"""))
+								""".formatted(SystemExerciseDefinitions.ROMANIAN_DEADLIFT)))
 				.andExpect(status().isCreated());
 	}
 

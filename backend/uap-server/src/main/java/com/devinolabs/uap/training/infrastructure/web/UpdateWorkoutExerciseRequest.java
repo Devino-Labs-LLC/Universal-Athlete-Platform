@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.infrastructure.web;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
@@ -8,6 +9,7 @@ import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 
 public record UpdateWorkoutExerciseRequest(
+		PatchValue<UUID> exerciseDefinitionId,
 		PatchValue<String> exerciseName,
 		PatchValue<ExerciseCategory> category,
 		PatchValue<ExerciseType> type,

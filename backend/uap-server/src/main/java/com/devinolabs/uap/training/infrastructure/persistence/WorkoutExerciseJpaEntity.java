@@ -42,6 +42,10 @@ class WorkoutExerciseJpaEntity implements Persistable<UUID> {
 	@Column(name = "athlete_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
 	private UUID athleteId;
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "exercise_definition_id", nullable = false, columnDefinition = "BINARY(16)")
+	private UUID exerciseDefinitionId;
+
 	@Column(name = "display_order", nullable = false)
 	private int displayOrder;
 
@@ -121,6 +125,7 @@ class WorkoutExerciseJpaEntity implements Persistable<UUID> {
 			UUID id,
 			UUID workoutDayId,
 			UUID athleteId,
+			UUID exerciseDefinitionId,
 			int displayOrder,
 			String exerciseName,
 			String normalizedExerciseName,
@@ -146,6 +151,7 @@ class WorkoutExerciseJpaEntity implements Persistable<UUID> {
 		this.id = id;
 		this.workoutDayId = workoutDayId;
 		this.athleteId = athleteId;
+		this.exerciseDefinitionId = exerciseDefinitionId;
 		this.displayOrder = displayOrder;
 		this.exerciseName = exerciseName;
 		this.normalizedExerciseName = normalizedExerciseName;
@@ -192,6 +198,10 @@ class WorkoutExerciseJpaEntity implements Persistable<UUID> {
 
 	UUID getAthleteId() {
 		return athleteId;
+	}
+
+	UUID getExerciseDefinitionId() {
+		return exerciseDefinitionId;
 	}
 
 	int getDisplayOrder() {

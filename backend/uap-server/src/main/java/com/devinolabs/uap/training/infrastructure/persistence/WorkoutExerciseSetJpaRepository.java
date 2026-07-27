@@ -33,6 +33,16 @@ interface WorkoutExerciseSetJpaRepository extends JpaRepository<WorkoutExerciseS
 					UUID athleteId);
 
 	@Query("""
+			select s from WorkoutExerciseSetJpaEntity s
+			where s.workoutExerciseExecutionId in :executionIds
+			and s.athleteId = :athleteId
+			order by s.workoutExerciseExecutionId asc, s.displayOrder asc, s.setNumber asc, s.id asc
+			""")
+	List<WorkoutExerciseSetJpaEntity> findAllForExecutions(
+			@Param("executionIds") Collection<UUID> executionIds,
+			@Param("athleteId") UUID athleteId);
+
+	@Query("""
 			select s.workoutExerciseExecutionId, s.status, count(s)
 			from WorkoutExerciseSetJpaEntity s
 			where s.workoutExerciseExecutionId in :executionIds
