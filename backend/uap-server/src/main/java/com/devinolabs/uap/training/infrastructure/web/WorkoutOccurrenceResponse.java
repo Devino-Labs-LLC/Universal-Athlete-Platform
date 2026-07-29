@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
@@ -51,8 +52,15 @@ record WorkoutOccurrenceDetailResponse(
 record WorkoutExerciseExecutionResponse(
 		UUID id,
 		UUID sourceWorkoutExerciseId,
-		UUID exerciseDefinitionId,
+		UUID prescribedExerciseDefinitionId,
+		String prescribedExerciseName,
+		UUID performedExerciseDefinitionId,
+		String performedExerciseName,
 		UUID exercisePerformanceKey,
+		boolean substituted,
+		ExerciseSubstitutionReason substitutionReason,
+		String substitutionNotes,
+		Instant substitutedAt,
 		int displayOrder,
 		String exerciseName,
 		ExerciseCategory category,

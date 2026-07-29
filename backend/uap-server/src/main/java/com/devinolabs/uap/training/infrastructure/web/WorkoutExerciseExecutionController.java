@@ -21,12 +21,16 @@ import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 import com.devinolabs.uap.training.application.CompleteWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.GetWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.ListWorkoutExerciseExecutionsUseCase;
+import com.devinolabs.uap.training.application.ListWorkoutExerciseSubstitutionHistoryUseCase;
+import com.devinolabs.uap.training.application.RevertWorkoutExerciseExecutionSubstitutionUseCase;
 import com.devinolabs.uap.training.application.SkipWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.StartWorkoutExerciseExecutionUseCase;
+import com.devinolabs.uap.training.application.SubstituteWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.UpdateWorkoutExerciseExecutionCommand;
 import com.devinolabs.uap.training.application.UpdateWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.WorkoutExerciseExecutionResult;
 import com.devinolabs.uap.training.domain.AccountId;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
@@ -42,6 +46,10 @@ class WorkoutExerciseExecutionController {
 	private final UpdateWorkoutExerciseExecutionUseCase updateWorkoutExerciseExecutionUseCase;
 	private final CompleteWorkoutExerciseExecutionUseCase completeWorkoutExerciseExecutionUseCase;
 	private final SkipWorkoutExerciseExecutionUseCase skipWorkoutExerciseExecutionUseCase;
+	private final SubstituteWorkoutExerciseExecutionUseCase substituteWorkoutExerciseExecutionUseCase;
+	private final RevertWorkoutExerciseExecutionSubstitutionUseCase
+			revertWorkoutExerciseExecutionSubstitutionUseCase;
+	private final ListWorkoutExerciseSubstitutionHistoryUseCase listWorkoutExerciseSubstitutionHistoryUseCase;
 
 	WorkoutExerciseExecutionController(
 			ListWorkoutExerciseExecutionsUseCase listWorkoutExerciseExecutionsUseCase,
@@ -49,13 +57,22 @@ class WorkoutExerciseExecutionController {
 			StartWorkoutExerciseExecutionUseCase startWorkoutExerciseExecutionUseCase,
 			UpdateWorkoutExerciseExecutionUseCase updateWorkoutExerciseExecutionUseCase,
 			CompleteWorkoutExerciseExecutionUseCase completeWorkoutExerciseExecutionUseCase,
-			SkipWorkoutExerciseExecutionUseCase skipWorkoutExerciseExecutionUseCase) {
+			SkipWorkoutExerciseExecutionUseCase skipWorkoutExerciseExecutionUseCase,
+			SubstituteWorkoutExerciseExecutionUseCase substituteWorkoutExerciseExecutionUseCase,
+			RevertWorkoutExerciseExecutionSubstitutionUseCase revertWorkoutExerciseExecutionSubstitutionUseCase,
+			ListWorkoutExerciseSubstitutionHistoryUseCase listWorkoutExerciseSubstitutionHistoryUseCase) {
 		this.listWorkoutExerciseExecutionsUseCase = Objects.requireNonNull(listWorkoutExerciseExecutionsUseCase);
 		this.getWorkoutExerciseExecutionUseCase = Objects.requireNonNull(getWorkoutExerciseExecutionUseCase);
 		this.startWorkoutExerciseExecutionUseCase = Objects.requireNonNull(startWorkoutExerciseExecutionUseCase);
 		this.updateWorkoutExerciseExecutionUseCase = Objects.requireNonNull(updateWorkoutExerciseExecutionUseCase);
 		this.completeWorkoutExerciseExecutionUseCase = Objects.requireNonNull(completeWorkoutExerciseExecutionUseCase);
 		this.skipWorkoutExerciseExecutionUseCase = Objects.requireNonNull(skipWorkoutExerciseExecutionUseCase);
+		this.substituteWorkoutExerciseExecutionUseCase = Objects.requireNonNull(
+				substituteWorkoutExerciseExecutionUseCase);
+		this.revertWorkoutExerciseExecutionSubstitutionUseCase = Objects.requireNonNull(
+				revertWorkoutExerciseExecutionSubstitutionUseCase);
+		this.listWorkoutExerciseSubstitutionHistoryUseCase = Objects.requireNonNull(
+				listWorkoutExerciseSubstitutionHistoryUseCase);
 	}
 
 	@GetMapping
@@ -172,6 +189,62 @@ class WorkoutExerciseExecutionController {
 				WorkoutDayId.of(dayId),
 				WorkoutOccurrenceId.of(occurrenceId),
 				WorkoutExerciseExecutionId.of(executionId)));
+	}
+
+	@PostMapping("/{executionId}/substitute")
+	WorkoutExerciseExecutionResponse substitute(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@PathVariable UUID executionId,
+			@Valid @RequestBody SubstituteWorkoutExerciseExecutionRequest request,
+			Authentication authentication) {
+		return WorkoutOccurrenceController.toExecutionResponse(substituteWorkoutExerciseExecutionUseCase.execute(
+				accountId(authentication),
+				TrainingPlanId.of(planId),
+				WorkoutDayId.of(dayId),
+				WorkoutOccurrenceId.of(occurrenceId),
+				WorkoutExerciseExecutionId.of(executionId),
+				ExerciseDefinitionId.of(request.exerciseDefinitionId()),
+				request.reason(),
+				request.notes()));
+	}
+
+	@PostMapping("/{executionId}/substitute/revert")
+	WorkoutExerciseExecutionResponse revertSubstitution(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@PathVariable UUID executionId,
+			@Valid @RequestBody(required = false) RevertWorkoutExerciseExecutionSubstitutionRequest request,
+			Authentication authentication) {
+		return WorkoutOccurrenceController.toExecutionResponse(
+				revertWorkoutExerciseExecutionSubstitutionUseCase.execute(
+						accountId(authentication),
+						TrainingPlanId.of(planId),
+						WorkoutDayId.of(dayId),
+						WorkoutOccurrenceId.of(occurrenceId),
+						WorkoutExerciseExecutionId.of(executionId),
+						request == null ? null : request.notes()));
+	}
+
+	@GetMapping("/{executionId}/substitutions")
+	List<WorkoutExerciseSubstitutionResponse> substitutions(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@PathVariable UUID executionId,
+			Authentication authentication) {
+		return listWorkoutExerciseSubstitutionHistoryUseCase
+				.execute(
+						accountId(authentication),
+						TrainingPlanId.of(planId),
+						WorkoutDayId.of(dayId),
+						WorkoutOccurrenceId.of(occurrenceId),
+						WorkoutExerciseExecutionId.of(executionId))
+				.stream()
+				.map(WorkoutExerciseSubstitutionResponse::from)
+				.toList();
 	}
 
 	private static AccountId accountId(Authentication authentication) {

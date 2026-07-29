@@ -15,6 +15,9 @@ import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSet;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSetStatus;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistory;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
@@ -133,8 +136,15 @@ final class WorkoutExerciseExecutionSupport {
 		return new WorkoutExerciseExecutionResult(
 				execution.id(),
 				execution.sourceWorkoutExerciseId(),
-				execution.exerciseDefinitionId(),
+				execution.prescribedExerciseDefinitionId(),
+				execution.prescribedExerciseNameSnapshot(),
+				execution.performedExerciseDefinitionId(),
+				execution.performedExerciseNameSnapshot(),
 				execution.exercisePerformanceKey(),
+				execution.isSubstituted(),
+				execution.substitutionReason(),
+				execution.substitutionNotes(),
+				execution.substitutedAt(),
 				execution.displayOrder(),
 				execution.exerciseName(),
 				execution.category(),
@@ -167,6 +177,42 @@ final class WorkoutExerciseExecutionSupport {
 				execution.createdAt(),
 				execution.updatedAt(),
 				counts);
+	}
+
+	/**
+	 * Substitution rewrites what every set of the execution means, so it is only allowed while the
+	 * execution is still open and no set has been touched. A single started, completed or skipped
+	 * set would otherwise end up filed under a movement it was not performed for.
+	 */
+	static void requireSubstitutable(WorkoutExerciseExecution execution, List<WorkoutExerciseSet> sets) {
+		if (!execution.isSubstitutable()) {
+			throw new InvalidWorkoutExerciseExecutionStatusException(
+					"Workout exercise executions cannot be substituted when the execution is "
+							+ execution.status());
+		}
+		if (sets.stream().anyMatch(set -> set.status() != WorkoutExerciseSetStatus.NOT_STARTED)) {
+			throw new WorkoutExerciseSubstitutionLockedException();
+		}
+	}
+
+	static WorkoutExerciseSubstitutionResult toSubstitutionResult(WorkoutExerciseSubstitutionHistory entry) {
+		return new WorkoutExerciseSubstitutionResult(
+				entry.id(),
+				entry.workoutOccurrenceId(),
+				entry.workoutExerciseExecutionId(),
+				entry.fromExerciseDefinitionId(),
+				entry.fromExerciseNameSnapshot(),
+				entry.toExerciseDefinitionId(),
+				entry.toExerciseNameSnapshot(),
+				entry.reason(),
+				entry.notes(),
+				entry.reverted(),
+				entry.changedAt());
+	}
+
+	static List<WorkoutExerciseSubstitutionResult> toSubstitutionResults(
+			List<WorkoutExerciseSubstitutionHistory> entries) {
+		return entries.stream().map(WorkoutExerciseExecutionSupport::toSubstitutionResult).toList();
 	}
 
 	static RuntimeException translateStatus(IllegalStateException ex) {

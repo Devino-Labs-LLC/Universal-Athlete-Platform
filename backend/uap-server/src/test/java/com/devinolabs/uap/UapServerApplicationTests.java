@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
+
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class UapServerApplicationTests {
@@ -30,8 +32,8 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("19");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("add canonical exercise definitions");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20");
+		assertThat(flyway.info().current().getDescription()).isEqualTo("add workout exercise substitutions");
 	}
 
 	@Test
@@ -278,7 +280,7 @@ class UapServerApplicationTests {
 				ResultSet columns = connection.getMetaData().getColumns(null, null, "workout_occurrences",
 						"active_scheduled_date");
 				ResultSet executionColumns = connection.getMetaData().getColumns(null, null,
-						"workout_exercise_executions", "exercise_name_snapshot");
+						"workout_exercise_executions", "performed_exercise_name_snapshot");
 				ResultSet versions = connection.createStatement()
 						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '15'")) {
 			assertThat(executionTables.next()).isTrue();
@@ -386,8 +388,6 @@ class UapServerApplicationTests {
 						"normalized_name");
 				ResultSet prescriptionDefinition = connection.getMetaData().getColumns(null, null,
 						"workout_exercises", "exercise_definition_id");
-				ResultSet executionDefinition = connection.getMetaData().getColumns(null, null,
-						"workout_exercise_executions", "exercise_definition_id");
 				ResultSet recordDefinition = connection.getMetaData().getColumns(null, null,
 						"athlete_exercise_personal_records", "exercise_definition_id");
 				ResultSet historyDefinition = connection.getMetaData().getColumns(null, null,
@@ -398,12 +398,55 @@ class UapServerApplicationTests {
 			assertThat(normalizedName.next()).isTrue();
 			assertThat(prescriptionDefinition.next()).isTrue();
 			assertThat(prescriptionDefinition.getInt("NULLABLE")).isZero();
-			assertThat(executionDefinition.next()).isTrue();
-			assertThat(executionDefinition.getInt("NULLABLE")).isZero();
 			assertThat(recordDefinition.next()).isTrue();
 			assertThat(historyDefinition.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add canonical exercise definitions");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesWorkoutExerciseSubstitutionsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet substitutionHistory = connection.getMetaData().getTables(null, null,
+						"workout_exercise_substitution_history", new String[] { "TABLE" });
+				ResultSet prescribedDefinition = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "prescribed_exercise_definition_id");
+				ResultSet prescribedName = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "prescribed_exercise_name_snapshot");
+				ResultSet performedDefinition = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "performed_exercise_definition_id");
+				ResultSet performedName = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "performed_exercise_name_snapshot");
+				ResultSet substitutionReason = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "substitution_reason");
+				ResultSet substitutedAt = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "substituted_at");
+				ResultSet droppedDefinition = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "exercise_definition_id");
+				ResultSet legacyName = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "exercise_name_snapshot");
+				ResultSet reverted = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_substitution_history", "reverted");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '20'")) {
+			assertThat(substitutionHistory.next()).isTrue();
+			assertThat(prescribedDefinition.next()).isTrue();
+			assertThat(prescribedDefinition.getInt("NULLABLE")).isZero();
+			assertThat(prescribedName.next()).isTrue();
+			assertThat(prescribedName.getInt("NULLABLE")).isZero();
+			assertThat(performedDefinition.next()).isTrue();
+			assertThat(performedDefinition.getInt("NULLABLE")).isZero();
+			assertThat(performedName.next()).isTrue();
+			assertThat(performedName.getInt("NULLABLE")).isZero();
+			assertThat(substitutionReason.next()).isTrue();
+			assertThat(substitutedAt.next()).isTrue();
+			assertThat(droppedDefinition.next()).isFalse();
+			assertThat(legacyName.next()).isFalse();
+			assertThat(reverted.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add workout exercise substitutions");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
@@ -419,7 +462,7 @@ class UapServerApplicationTests {
 				count++;
 				assertThat(seeds.getString("id")).startsWith("11111111-1111-1111-1111-1111111111");
 			}
-			assertThat(count).isEqualTo(8);
+			assertThat(count).isEqualTo(SystemExerciseDefinitions.all().size());
 		}
 	}
 

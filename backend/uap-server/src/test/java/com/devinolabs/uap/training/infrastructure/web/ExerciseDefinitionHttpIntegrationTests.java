@@ -142,7 +142,7 @@ class ExerciseDefinitionHttpIntegrationTests {
 
 		mockMvc.perform(get(BASE).param("scope", "SYSTEM").with(accountAuth(accountId)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.totalElements").value(8))
+				.andExpect(jsonPath("$.totalElements").value(SystemExerciseDefinitions.all().size()))
 				.andExpect(jsonPath("$.definitions[0].scope").value("SYSTEM"));
 
 		mockMvc.perform(patch(BASE + "/" + SystemExerciseDefinitions.BACK_SQUAT)

@@ -5,18 +5,33 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * One movement as it is actually trained on one occurrence.
+ *
+ * <p>The execution carries two identities. The prescribed one is snapshotted from the plan at
+ * generation time and never changes, so the plan can always be compared with what happened. The
+ * performed one starts equal to it and moves when the athlete substitutes another movement; it is
+ * the identity results are aggregated under, which is why {@link #exercisePerformanceKey()} is
+ * always derived from it.
+ */
 public class WorkoutExerciseExecution {
 
 	private static final int MAX_ATHLETE_NOTES_LENGTH = 4000;
+	private static final int MAX_SUBSTITUTION_NOTES_LENGTH = 2000;
 
 	private final WorkoutExerciseExecutionId id;
 	private final WorkoutOccurrenceId workoutOccurrenceId;
 	private final WorkoutExerciseId sourceWorkoutExerciseId;
-	private final ExerciseDefinitionId exerciseDefinitionId;
-	private final ExercisePerformanceKey exercisePerformanceKey;
+	private final ExerciseDefinitionId prescribedExerciseDefinitionId;
+	private final String prescribedExerciseNameSnapshot;
+	private ExerciseDefinitionId performedExerciseDefinitionId;
+	private String performedExerciseNameSnapshot;
+	private ExercisePerformanceKey exercisePerformanceKey;
+	private ExerciseSubstitutionReason substitutionReason;
+	private String substitutionNotes;
+	private Instant substitutedAt;
 	private final AthleteId athleteId;
 	private final int displayOrder;
-	private final String exerciseName;
 	private final ExerciseCategory category;
 	private final ExerciseType type;
 	private final Integer prescribedSets;
@@ -52,11 +67,16 @@ public class WorkoutExerciseExecution {
 			WorkoutExerciseExecutionId id,
 			WorkoutOccurrenceId workoutOccurrenceId,
 			WorkoutExerciseId sourceWorkoutExerciseId,
-			ExerciseDefinitionId exerciseDefinitionId,
+			ExerciseDefinitionId prescribedExerciseDefinitionId,
+			String prescribedExerciseNameSnapshot,
+			ExerciseDefinitionId performedExerciseDefinitionId,
+			String performedExerciseNameSnapshot,
 			ExercisePerformanceKey exercisePerformanceKey,
+			ExerciseSubstitutionReason substitutionReason,
+			String substitutionNotes,
+			Instant substitutedAt,
 			AthleteId athleteId,
 			int displayOrder,
-			String exerciseName,
 			ExerciseCategory category,
 			ExerciseType type,
 			Integer prescribedSets,
@@ -91,17 +111,28 @@ public class WorkoutExerciseExecution {
 		this.workoutOccurrenceId = Objects.requireNonNull(workoutOccurrenceId, "workoutOccurrenceId must not be null");
 		this.sourceWorkoutExerciseId = Objects.requireNonNull(
 				sourceWorkoutExerciseId, "sourceWorkoutExerciseId must not be null");
-		this.exerciseDefinitionId = Objects.requireNonNull(
-				exerciseDefinitionId, "exerciseDefinitionId must not be null");
+		this.prescribedExerciseDefinitionId = Objects.requireNonNull(
+				prescribedExerciseDefinitionId, "prescribedExerciseDefinitionId must not be null");
+		this.prescribedExerciseNameSnapshot = Objects.requireNonNull(
+				prescribedExerciseNameSnapshot, "prescribedExerciseNameSnapshot must not be null");
+		this.performedExerciseDefinitionId = Objects.requireNonNull(
+				performedExerciseDefinitionId, "performedExerciseDefinitionId must not be null");
+		this.performedExerciseNameSnapshot = Objects.requireNonNull(
+				performedExerciseNameSnapshot, "performedExerciseNameSnapshot must not be null");
 		this.exercisePerformanceKey = Objects.requireNonNull(
 				exercisePerformanceKey, "exercisePerformanceKey must not be null");
-		if (!this.exercisePerformanceKey.equals(ExercisePerformanceKey.of(this.exerciseDefinitionId))) {
-			throw new ExercisePerformanceIdentityConflictException(
-					"exercisePerformanceKey must be derived from exerciseDefinitionId");
-		}
+		requirePerformedIdentity(this.performedExerciseDefinitionId, this.exercisePerformanceKey);
+		this.substitutionReason = substitutionReason;
+		this.substitutionNotes = normalizeSubstitutionNotes(substitutionNotes);
+		this.substitutedAt = substitutedAt;
+		requireSubstitutionState(
+				this.prescribedExerciseDefinitionId,
+				this.performedExerciseDefinitionId,
+				this.substitutionReason,
+				this.substitutionNotes,
+				this.substitutedAt);
 		this.athleteId = Objects.requireNonNull(athleteId, "athleteId must not be null");
 		this.displayOrder = requireDisplayOrder(displayOrder);
-		this.exerciseName = Objects.requireNonNull(exerciseName, "exerciseName must not be null");
 		this.category = Objects.requireNonNull(category, "category must not be null");
 		this.type = Objects.requireNonNull(type, "type must not be null");
 		this.prescribedSets = Objects.requireNonNull(prescribedSets, "prescribedSets must not be null");
@@ -164,10 +195,15 @@ public class WorkoutExerciseExecution {
 				occurrenceId,
 				exercise.id(),
 				exercise.exerciseDefinitionId(),
+				exercise.exerciseName(),
+				exercise.exerciseDefinitionId(),
+				exercise.exerciseName(),
 				ExercisePerformanceKey.of(exercise.exerciseDefinitionId()),
+				null,
+				null,
+				null,
 				exercise.athleteId(),
 				exercise.displayOrder(),
-				exercise.exerciseName(),
 				exercise.category(),
 				exercise.type(),
 				exercise.sets(),
@@ -204,11 +240,16 @@ public class WorkoutExerciseExecution {
 			WorkoutExerciseExecutionId id,
 			WorkoutOccurrenceId workoutOccurrenceId,
 			WorkoutExerciseId sourceWorkoutExerciseId,
-			ExerciseDefinitionId exerciseDefinitionId,
+			ExerciseDefinitionId prescribedExerciseDefinitionId,
+			String prescribedExerciseNameSnapshot,
+			ExerciseDefinitionId performedExerciseDefinitionId,
+			String performedExerciseNameSnapshot,
 			ExercisePerformanceKey exercisePerformanceKey,
+			ExerciseSubstitutionReason substitutionReason,
+			String substitutionNotes,
+			Instant substitutedAt,
 			AthleteId athleteId,
 			int displayOrder,
-			String exerciseName,
 			ExerciseCategory category,
 			ExerciseType type,
 			Integer prescribedSets,
@@ -243,11 +284,16 @@ public class WorkoutExerciseExecution {
 				id,
 				workoutOccurrenceId,
 				sourceWorkoutExerciseId,
-				exerciseDefinitionId,
+				prescribedExerciseDefinitionId,
+				prescribedExerciseNameSnapshot,
+				performedExerciseDefinitionId,
+				performedExerciseNameSnapshot,
 				exercisePerformanceKey,
+				substitutionReason,
+				substitutionNotes,
+				substitutedAt,
 				athleteId,
 				displayOrder,
-				exerciseName,
 				category,
 				type,
 				prescribedSets,
@@ -278,6 +324,72 @@ public class WorkoutExerciseExecution {
 				createdAt,
 				updatedAt,
 				version);
+	}
+
+	/**
+	 * Records that another movement is performed in place of the prescribed one.
+	 *
+	 * <p>Only the performed identity moves: the prescription and every prescribed snapshot stay as
+	 * the plan wrote them, so the deviation is visible rather than hidden. Substituting back to the
+	 * prescribed movement is accepted and simply leaves the execution unsubstituted again.
+	 */
+	public void substitute(
+			ExerciseDefinition target,
+			ExerciseSubstitutionReason reason,
+			String notes,
+			Clock clock) {
+		Objects.requireNonNull(target, "target must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (reason == null) {
+			throw new InvalidExerciseSubstitutionReasonException("substitutionReason is required");
+		}
+		if (reason == ExerciseSubstitutionReason.REVERSION) {
+			throw new InvalidExerciseSubstitutionReasonException(
+					"REVERSION is reserved for undoing a substitution");
+		}
+		if (target.id().equals(performedExerciseDefinitionId)) {
+			throw new WorkoutExerciseAlreadyUsesDefinitionException();
+		}
+		String normalizedNotes = normalizeSubstitutionNotes(notes);
+		boolean backToPrescription = target.id().equals(prescribedExerciseDefinitionId);
+		this.performedExerciseDefinitionId = target.id();
+		this.performedExerciseNameSnapshot = target.canonicalName();
+		this.exercisePerformanceKey = ExercisePerformanceKey.of(target.id());
+		this.substitutionReason = backToPrescription ? null : reason;
+		this.substitutionNotes = backToPrescription ? null : normalizedNotes;
+		this.substitutedAt = backToPrescription ? null : Instant.now(clock);
+		touch(clock);
+	}
+
+	/**
+	 * Puts the execution back on the prescribed movement. The substitution itself is not erased: the
+	 * caller appends the reversion to the substitution log before this returns.
+	 */
+	public void revertSubstitution(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (!isSubstituted()) {
+			throw new WorkoutExerciseNotSubstitutedException();
+		}
+		this.performedExerciseDefinitionId = prescribedExerciseDefinitionId;
+		this.performedExerciseNameSnapshot = prescribedExerciseNameSnapshot;
+		this.exercisePerformanceKey = ExercisePerformanceKey.of(prescribedExerciseDefinitionId);
+		this.substitutionReason = null;
+		this.substitutionNotes = null;
+		this.substitutedAt = null;
+		touch(clock);
+	}
+
+	public boolean isSubstituted() {
+		return !performedExerciseDefinitionId.equals(prescribedExerciseDefinitionId);
+	}
+
+	/**
+	 * Substitution changes what the logged results mean, so it is only offered while the execution
+	 * has not yet reached a terminal state. Callers additionally require every set to be untouched.
+	 */
+	public boolean isSubstitutable() {
+		return status == WorkoutExerciseExecutionStatus.NOT_STARTED
+				|| status == WorkoutExerciseExecutionStatus.IN_PROGRESS;
 	}
 
 	public void start(Clock clock) {
@@ -380,6 +492,32 @@ public class WorkoutExerciseExecution {
 		return displayOrder;
 	}
 
+	private static void requirePerformedIdentity(
+			ExerciseDefinitionId performedExerciseDefinitionId,
+			ExercisePerformanceKey exercisePerformanceKey) {
+		if (!exercisePerformanceKey.equals(ExercisePerformanceKey.of(performedExerciseDefinitionId))) {
+			throw new ExercisePerformanceIdentityConflictException(
+					"exercisePerformanceKey must be derived from performedExerciseDefinitionId");
+		}
+	}
+
+	private static void requireSubstitutionState(
+			ExerciseDefinitionId prescribedExerciseDefinitionId,
+			ExerciseDefinitionId performedExerciseDefinitionId,
+			ExerciseSubstitutionReason substitutionReason,
+			String substitutionNotes,
+			Instant substitutedAt) {
+		boolean substituted = !performedExerciseDefinitionId.equals(prescribedExerciseDefinitionId);
+		if (substituted && (substitutionReason == null || substitutedAt == null)) {
+			throw new WorkoutExerciseSubstitutionIdentityConflictException(
+					"A substituted execution requires a substitution reason and timestamp");
+		}
+		if (!substituted && (substitutionReason != null || substitutionNotes != null || substitutedAt != null)) {
+			throw new WorkoutExerciseSubstitutionIdentityConflictException(
+					"Substitution details are only allowed while an execution performs a substitute movement");
+		}
+	}
+
 	private static Execution normalizeExecution(
 			Integer actualSets,
 			Integer actualReps,
@@ -455,6 +593,18 @@ public class WorkoutExerciseExecution {
 		return trimmed;
 	}
 
+	static String normalizeSubstitutionNotes(String substitutionNotes) {
+		if (substitutionNotes == null || substitutionNotes.isBlank()) {
+			return null;
+		}
+		String trimmed = substitutionNotes.trim();
+		if (trimmed.length() > MAX_SUBSTITUTION_NOTES_LENGTH) {
+			throw new IllegalArgumentException(
+					"substitutionNotes must not exceed " + MAX_SUBSTITUTION_NOTES_LENGTH + " characters");
+		}
+		return trimmed;
+	}
+
 	private record Execution(
 			Integer actualSets,
 			Integer actualReps,
@@ -483,18 +633,53 @@ public class WorkoutExerciseExecution {
 	}
 
 	/**
-	 * Canonical movement snapshotted from the prescription at generation time.
+	 * Canonical movement the plan asked for, snapshotted at generation time and never rewritten.
 	 */
-	public ExerciseDefinitionId exerciseDefinitionId() {
-		return exerciseDefinitionId;
+	public ExerciseDefinitionId prescribedExerciseDefinitionId() {
+		return prescribedExerciseDefinitionId;
+	}
+
+	public String prescribedExerciseNameSnapshot() {
+		return prescribedExerciseNameSnapshot;
+	}
+
+	/**
+	 * Canonical movement actually trained; equal to the prescribed one until a substitution.
+	 */
+	public ExerciseDefinitionId performedExerciseDefinitionId() {
+		return performedExerciseDefinitionId;
+	}
+
+	public String performedExerciseNameSnapshot() {
+		return performedExerciseNameSnapshot;
+	}
+
+	/**
+	 * Convenience alias for {@link #performedExerciseNameSnapshot()}: results are described by what
+	 * the athlete actually did.
+	 */
+	public String exerciseName() {
+		return performedExerciseNameSnapshot;
 	}
 
 	/**
 	 * Identity this execution's results are aggregated under for history and personal records,
-	 * always derived from {@link #exerciseDefinitionId()}.
+	 * always derived from {@link #performedExerciseDefinitionId()}.
 	 */
 	public ExercisePerformanceKey exercisePerformanceKey() {
 		return exercisePerformanceKey;
+	}
+
+	public ExerciseSubstitutionReason substitutionReason() {
+		return substitutionReason;
+	}
+
+	public String substitutionNotes() {
+		return substitutionNotes;
+	}
+
+	public Instant substitutedAt() {
+		return substitutedAt;
 	}
 
 	public AthleteId athleteId() {
@@ -503,10 +688,6 @@ public class WorkoutExerciseExecution {
 
 	public int displayOrder() {
 		return displayOrder;
-	}
-
-	public String exerciseName() {
-		return exerciseName;
 	}
 
 	public ExerciseCategory category() {

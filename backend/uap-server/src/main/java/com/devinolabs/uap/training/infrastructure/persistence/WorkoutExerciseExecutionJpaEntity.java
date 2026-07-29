@@ -21,6 +21,7 @@ import org.springframework.data.domain.Persistable;
 
 import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
@@ -43,12 +44,38 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 	private UUID sourceWorkoutExerciseId;
 
 	@JdbcTypeCode(SqlTypes.UUID)
-	@Column(name = "exercise_definition_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
-	private UUID exerciseDefinitionId;
+	@Column(name = "prescribed_exercise_definition_id", nullable = false, updatable = false,
+			columnDefinition = "BINARY(16)")
+	private UUID prescribedExerciseDefinitionId;
+
+	@Column(name = "prescribed_exercise_name_snapshot", nullable = false, updatable = false, length = 160)
+	private String prescribedExerciseNameSnapshot;
+
+	/**
+	 * Performed identity, the performance key and the substitution details are the only movement
+	 * columns that stay writable: a substitution moves them together while the prescribed snapshot
+	 * above records what the plan asked for.
+	 */
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "performed_exercise_definition_id", nullable = false, columnDefinition = "BINARY(16)")
+	private UUID performedExerciseDefinitionId;
+
+	@Column(name = "performed_exercise_name_snapshot", nullable = false, length = 160)
+	private String performedExerciseNameSnapshot;
 
 	@JdbcTypeCode(SqlTypes.UUID)
-	@Column(name = "exercise_performance_key", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
+	@Column(name = "exercise_performance_key", nullable = false, columnDefinition = "BINARY(16)")
 	private UUID exercisePerformanceKey;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "substitution_reason", length = 32)
+	private ExerciseSubstitutionReason substitutionReason;
+
+	@Column(name = "substitution_notes", length = 2000)
+	private String substitutionNotes;
+
+	@Column(name = "substituted_at")
+	private Instant substitutedAt;
 
 	@JdbcTypeCode(SqlTypes.UUID)
 	@Column(name = "athlete_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
@@ -56,9 +83,6 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 
 	@Column(name = "display_order", nullable = false, updatable = false)
 	private int displayOrder;
-
-	@Column(name = "exercise_name_snapshot", nullable = false, updatable = false, length = 160)
-	private String exerciseName;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "exercise_category_snapshot", nullable = false, updatable = false, length = 32)
@@ -168,11 +192,16 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 			UUID id,
 			UUID workoutOccurrenceId,
 			UUID sourceWorkoutExerciseId,
-			UUID exerciseDefinitionId,
+			UUID prescribedExerciseDefinitionId,
+			String prescribedExerciseNameSnapshot,
+			UUID performedExerciseDefinitionId,
+			String performedExerciseNameSnapshot,
 			UUID exercisePerformanceKey,
+			ExerciseSubstitutionReason substitutionReason,
+			String substitutionNotes,
+			Instant substitutedAt,
 			UUID athleteId,
 			int displayOrder,
-			String exerciseName,
 			ExerciseCategory category,
 			ExerciseType type,
 			Integer prescribedSets,
@@ -207,11 +236,16 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		this.id = id;
 		this.workoutOccurrenceId = workoutOccurrenceId;
 		this.sourceWorkoutExerciseId = sourceWorkoutExerciseId;
-		this.exerciseDefinitionId = exerciseDefinitionId;
+		this.prescribedExerciseDefinitionId = prescribedExerciseDefinitionId;
+		this.prescribedExerciseNameSnapshot = prescribedExerciseNameSnapshot;
+		this.performedExerciseDefinitionId = performedExerciseDefinitionId;
+		this.performedExerciseNameSnapshot = performedExerciseNameSnapshot;
 		this.exercisePerformanceKey = exercisePerformanceKey;
+		this.substitutionReason = substitutionReason;
+		this.substitutionNotes = substitutionNotes;
+		this.substitutedAt = substitutedAt;
 		this.athleteId = athleteId;
 		this.displayOrder = displayOrder;
-		this.exerciseName = exerciseName;
 		this.category = category;
 		this.type = type;
 		this.prescribedSets = prescribedSets;
@@ -269,12 +303,36 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		return sourceWorkoutExerciseId;
 	}
 
-	UUID getExerciseDefinitionId() {
-		return exerciseDefinitionId;
+	UUID getPrescribedExerciseDefinitionId() {
+		return prescribedExerciseDefinitionId;
+	}
+
+	String getPrescribedExerciseNameSnapshot() {
+		return prescribedExerciseNameSnapshot;
+	}
+
+	UUID getPerformedExerciseDefinitionId() {
+		return performedExerciseDefinitionId;
+	}
+
+	String getPerformedExerciseNameSnapshot() {
+		return performedExerciseNameSnapshot;
 	}
 
 	UUID getExercisePerformanceKey() {
 		return exercisePerformanceKey;
+	}
+
+	ExerciseSubstitutionReason getSubstitutionReason() {
+		return substitutionReason;
+	}
+
+	String getSubstitutionNotes() {
+		return substitutionNotes;
+	}
+
+	Instant getSubstitutedAt() {
+		return substitutedAt;
 	}
 
 	UUID getAthleteId() {
@@ -283,10 +341,6 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 
 	int getDisplayOrder() {
 		return displayOrder;
-	}
-
-	String getExerciseName() {
-		return exerciseName;
 	}
 
 	ExerciseCategory getCategory() {

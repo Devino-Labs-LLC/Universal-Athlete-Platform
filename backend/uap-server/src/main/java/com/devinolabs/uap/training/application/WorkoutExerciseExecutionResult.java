@@ -7,17 +7,29 @@ import com.devinolabs.uap.training.domain.DistanceUnit;
 import com.devinolabs.uap.training.domain.ExerciseCategory;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExercisePerformanceKey;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 import com.devinolabs.uap.training.domain.ExerciseType;
 import com.devinolabs.uap.training.domain.WeightUnit;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
 import com.devinolabs.uap.training.domain.WorkoutExerciseId;
 
+/**
+ * {@code exerciseName} is kept as an alias for {@code performedExerciseName} so existing clients
+ * keep reading the movement that was actually trained.
+ */
 public record WorkoutExerciseExecutionResult(
 		WorkoutExerciseExecutionId id,
 		WorkoutExerciseId sourceWorkoutExerciseId,
-		ExerciseDefinitionId exerciseDefinitionId,
+		ExerciseDefinitionId prescribedExerciseDefinitionId,
+		String prescribedExerciseName,
+		ExerciseDefinitionId performedExerciseDefinitionId,
+		String performedExerciseName,
 		ExercisePerformanceKey exercisePerformanceKey,
+		boolean substituted,
+		ExerciseSubstitutionReason substitutionReason,
+		String substitutionNotes,
+		Instant substitutedAt,
 		int displayOrder,
 		String exerciseName,
 		ExerciseCategory category,

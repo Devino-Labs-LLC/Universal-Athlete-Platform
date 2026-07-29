@@ -76,12 +76,17 @@ import com.devinolabs.uap.training.application.ExerciseDefinitionArchivedExcepti
 import com.devinolabs.uap.training.application.ExerciseDefinitionNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseDefinitionNotFoundException;
 import com.devinolabs.uap.training.application.InvalidExerciseDefinitionQueryException;
+import com.devinolabs.uap.training.application.WorkoutExerciseSubstitutionLockedException;
 import com.devinolabs.uap.training.domain.ExercisePerformanceIdentityConflictException;
 import com.devinolabs.uap.training.domain.InvalidExerciseDefinitionNameException;
+import com.devinolabs.uap.training.domain.InvalidExerciseSubstitutionReasonException;
 import com.devinolabs.uap.training.domain.InvalidPerformanceMeasurementException;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitionModificationNotAllowedException;
 import com.devinolabs.uap.training.domain.UnsupportedDistanceUnitException;
 import com.devinolabs.uap.training.domain.UnsupportedWeightUnitException;
+import com.devinolabs.uap.training.domain.WorkoutExerciseAlreadyUsesDefinitionException;
+import com.devinolabs.uap.training.domain.WorkoutExerciseNotSubstitutedException;
+import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityConflictException;
 
 @RestControllerAdvice(basePackageClasses = {
 		TrainingPlanController.class,
@@ -616,6 +621,46 @@ class TrainingExceptionHandler {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.body(error("SYSTEM_EXERCISE_DEFINITION_MODIFICATION_NOT_ALLOWED", ex.getMessage(), request,
 						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSubstitutionLockedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSubstitutionLocked(
+			WorkoutExerciseSubstitutionLockedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_SUBSTITUTION_LOCKED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseAlreadyUsesDefinitionException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseAlreadyUsesDefinition(
+			WorkoutExerciseAlreadyUsesDefinitionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_ALREADY_USES_DEFINITION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseNotSubstitutedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseNotSubstituted(
+			WorkoutExerciseNotSubstitutedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_NOT_SUBSTITUTED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutExerciseSubstitutionIdentityConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutExerciseSubstitutionIdentityConflict(
+			WorkoutExerciseSubstitutionIdentityConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_EXERCISE_SUBSTITUTION_IDENTITY_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidExerciseSubstitutionReasonException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseSubstitutionReason(
+			InvalidExerciseSubstitutionReasonException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_EXERCISE_SUBSTITUTION_REASON", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(ExercisePerformanceIdentityConflictException.class)

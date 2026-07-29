@@ -150,6 +150,121 @@ class WorkoutExerciseExecutionHttpIntegrationTests {
 	}
 
 	@Test
+	void substituteRevertAndHistoryExposePrescribedVersusPerformedIdentity() throws Exception {
+		AccountId accountId = AccountId.generate();
+		createProfile(accountId);
+		String planId = createPlan(accountId);
+		String dayId = createDay(accountId, planId);
+		createExercise(accountId, planId, dayId);
+		String occurrenceId = createOccurrence(accountId, planId, dayId);
+		String base = "/api/v1/training/plans/" + planId + "/days/" + dayId
+				+ "/occurrences/" + occurrenceId + "/exercises";
+		String executionId = JsonPath.read(
+				mockMvc.perform(get(base).with(accountAuth(accountId)))
+						.andExpect(status().isOk())
+						.andExpect(jsonPath("$[0].prescribedExerciseDefinitionId")
+								.value(SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString()))
+						.andExpect(jsonPath("$[0].performedExerciseDefinitionId")
+								.value(SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString()))
+						.andExpect(jsonPath("$[0].substituted").value(false))
+						.andReturn().getResponse().getContentAsString(),
+				"$[0].id");
+
+		mockMvc.perform(post(base + "/" + executionId + "/substitute")
+						.with(accountAuth(accountId)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+
+		mockMvc.perform(post(base + "/" + executionId + "/substitute")
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "exerciseDefinitionId":"%s",
+								  "reason":"EQUIPMENT_UNAVAILABLE",
+								  "notes":"Only dumbbells"
+								}
+								""".formatted(SystemExerciseDefinitions.GOBLET_SQUAT)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.prescribedExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString()))
+				.andExpect(jsonPath("$.prescribedExerciseName").value("Romanian Deadlift"))
+				.andExpect(jsonPath("$.performedExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.GOBLET_SQUAT.toString()))
+				.andExpect(jsonPath("$.performedExerciseName").value("Goblet Squat"))
+				.andExpect(jsonPath("$.exerciseName").value("Goblet Squat"))
+				.andExpect(jsonPath("$.exercisePerformanceKey")
+						.value(SystemExerciseDefinitions.GOBLET_SQUAT.toString()))
+				.andExpect(jsonPath("$.substituted").value(true))
+				.andExpect(jsonPath("$.substitutionReason").value("EQUIPMENT_UNAVAILABLE"))
+				.andExpect(jsonPath("$.substitutionNotes").value("Only dumbbells"))
+				.andExpect(jsonPath("$.substitutedAt").isNotEmpty());
+
+		mockMvc.perform(post(base + "/" + executionId + "/substitute")
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "exerciseDefinitionId":"%s",
+								  "reason":"EQUIPMENT_UNAVAILABLE"
+								}
+								""".formatted(SystemExerciseDefinitions.GOBLET_SQUAT)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("WORKOUT_EXERCISE_ALREADY_USES_DEFINITION"));
+
+		mockMvc.perform(post(base + "/" + executionId + "/substitute")
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "exerciseDefinitionId":"%s",
+								  "reason":"FATIGUE_MANAGEMENT"
+								}
+								""".formatted(SystemExerciseDefinitions.LEG_PRESS)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.performedExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.LEG_PRESS.toString()));
+
+		mockMvc.perform(post(base + "/" + executionId + "/substitute/revert")
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"notes":"Rack free"}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.substituted").value(false))
+				.andExpect(jsonPath("$.performedExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString()))
+				.andExpect(jsonPath("$.substitutionReason").doesNotExist())
+				.andExpect(jsonPath("$.substitutedAt").doesNotExist());
+
+		mockMvc.perform(get(base + "/" + executionId + "/substitutions")
+						.with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(3)))
+				.andExpect(jsonPath("$[0].fromExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.ROMANIAN_DEADLIFT.toString()))
+				.andExpect(jsonPath("$[0].toExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.GOBLET_SQUAT.toString()))
+				.andExpect(jsonPath("$[0].reverted").value(false))
+				.andExpect(jsonPath("$[1].toExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.LEG_PRESS.toString()))
+				.andExpect(jsonPath("$[2].reason").value("REVERSION"))
+				.andExpect(jsonPath("$[2].reverted").value(true))
+				.andExpect(jsonPath("$[2].notes").value("Rack free"));
+
+		AccountId other = AccountId.generate();
+		createProfile(other);
+		mockMvc.perform(get(base + "/" + executionId + "/substitutions").with(accountAuth(other)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TRAINING_PLAN_NOT_FOUND"));
+	}
+
+	@Test
 	void skipExecutionAndCrossAccountAccess() throws Exception {
 		AccountId accountId = AccountId.generate();
 		createProfile(accountId);

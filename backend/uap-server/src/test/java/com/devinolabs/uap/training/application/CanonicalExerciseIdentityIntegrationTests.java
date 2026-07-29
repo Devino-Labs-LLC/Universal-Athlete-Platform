@@ -249,7 +249,7 @@ class CanonicalExerciseIdentityIntegrationTests {
 		ExerciseDefinitionPageResult systemDefinitions = listAccessibleExerciseDefinitionsUseCase.execute(
 				accountId, null, ExerciseDefinitionScope.SYSTEM, null, null);
 
-		assertThat(systemDefinitions.totalElements()).isEqualTo(8);
+		assertThat(systemDefinitions.totalElements()).isEqualTo(SystemExerciseDefinitions.all().size());
 		assertThat(systemDefinitions.definitions()).extracting(ExerciseDefinitionResult::canonicalName)
 				.contains(BACK_SQUAT, "Front Squat", "Bench Press", "Romanian Deadlift");
 		assertThat(systemDefinitions.definitions()).allSatisfy(definition -> {
