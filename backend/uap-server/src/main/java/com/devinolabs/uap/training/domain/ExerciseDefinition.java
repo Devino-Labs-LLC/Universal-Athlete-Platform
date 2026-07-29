@@ -9,8 +9,8 @@ import java.util.Objects;
  *
  * <p>An athlete's performance history and personal records are aggregated under this id, so the id
  * must survive renames and must be shared by every prescription of the same movement across every
- * plan. Renaming a definition therefore never rewrites history: executions keep their own name
- * snapshot while future work is still grouped under the same id.
+ * plan. Catalogue metadata (category, equipment, muscles, …) describes the movement factually and
+ * never rewrites historical executions or personal-record grouping.
  */
 public class ExerciseDefinition {
 
@@ -22,6 +22,7 @@ public class ExerciseDefinition {
 	private final AthleteId athleteId;
 	private String canonicalName;
 	private String normalizedName;
+	private ExerciseDefinitionMetadata metadata;
 	private boolean active;
 	private Instant archivedAt;
 	private final Instant createdAt;
@@ -34,6 +35,7 @@ public class ExerciseDefinition {
 			AthleteId athleteId,
 			String canonicalName,
 			String normalizedName,
+			ExerciseDefinitionMetadata metadata,
 			boolean active,
 			Instant archivedAt,
 			Instant createdAt,
@@ -50,6 +52,7 @@ public class ExerciseDefinition {
 		this.athleteId = athleteId;
 		this.canonicalName = requireCanonicalName(canonicalName);
 		this.normalizedName = Objects.requireNonNull(normalizedName, "normalizedName must not be null");
+		this.metadata = Objects.requireNonNull(metadata, "metadata must not be null");
 		if (!active && archivedAt == null) {
 			throw new IllegalArgumentException("archivedAt is required when an exercise definition is inactive");
 		}
@@ -69,6 +72,7 @@ public class ExerciseDefinition {
 	public static ExerciseDefinition createSystem(
 			ExerciseDefinitionId id,
 			String canonicalName,
+			ExerciseDefinitionMetadata metadata,
 			Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		Instant now = Instant.now(clock);
@@ -78,6 +82,7 @@ public class ExerciseDefinition {
 				null,
 				canonicalName,
 				normalizeName(canonicalName),
+				metadata,
 				true,
 				null,
 				now,
@@ -89,6 +94,7 @@ public class ExerciseDefinition {
 			ExerciseDefinitionId id,
 			AthleteId athleteId,
 			String canonicalName,
+			ExerciseDefinitionMetadata metadata,
 			Clock clock) {
 		Objects.requireNonNull(athleteId, "athleteId must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
@@ -99,6 +105,7 @@ public class ExerciseDefinition {
 				athleteId,
 				canonicalName,
 				normalizeName(canonicalName),
+				metadata,
 				true,
 				null,
 				now,
@@ -112,6 +119,7 @@ public class ExerciseDefinition {
 			AthleteId athleteId,
 			String canonicalName,
 			String normalizedName,
+			ExerciseDefinitionMetadata metadata,
 			boolean active,
 			Instant archivedAt,
 			Instant createdAt,
@@ -123,6 +131,7 @@ public class ExerciseDefinition {
 				athleteId,
 				canonicalName,
 				normalizedName,
+				metadata,
 				active,
 				archivedAt,
 				createdAt,
@@ -138,6 +147,17 @@ public class ExerciseDefinition {
 		requireCustom();
 		this.canonicalName = requireCanonicalName(canonicalName);
 		this.normalizedName = normalizeName(canonicalName);
+		touch(clock);
+	}
+
+	/**
+	 * Replaces catalogue metadata without changing identity or historical performance grouping.
+	 */
+	public void updateMetadata(ExerciseDefinitionMetadata metadata, Clock clock) {
+		Objects.requireNonNull(metadata, "metadata must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		requireCustom();
+		this.metadata = metadata;
 		touch(clock);
 	}
 
@@ -212,6 +232,10 @@ public class ExerciseDefinition {
 
 	public String normalizedName() {
 		return normalizedName;
+	}
+
+	public ExerciseDefinitionMetadata metadata() {
+		return metadata;
 	}
 
 	public boolean active() {

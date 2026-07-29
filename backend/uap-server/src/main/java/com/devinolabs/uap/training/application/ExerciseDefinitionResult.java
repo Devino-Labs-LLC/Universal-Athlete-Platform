@@ -16,6 +16,7 @@ public record ExerciseDefinitionResult(
 		ExerciseDefinitionScope scope,
 		String canonicalName,
 		String normalizedName,
+		ExerciseDefinitionMetadataResult metadata,
 		boolean active,
 		Instant archivedAt,
 		Instant createdAt,

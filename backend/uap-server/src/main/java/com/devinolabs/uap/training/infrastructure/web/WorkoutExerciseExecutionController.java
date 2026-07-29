@@ -207,7 +207,11 @@ class WorkoutExerciseExecutionController {
 				WorkoutExerciseExecutionId.of(executionId),
 				ExerciseDefinitionId.of(request.exerciseDefinitionId()),
 				request.reason(),
-				request.notes()));
+				request.notes(),
+				request.substitutionRelationshipId() == null
+						? null
+						: com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId.of(
+								request.substitutionRelationshipId())));
 	}
 
 	@PostMapping("/{executionId}/substitute/revert")

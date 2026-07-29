@@ -9,7 +9,15 @@ import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.EquipmentType;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionCategory;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionScope;
+import com.devinolabs.uap.training.domain.ExerciseDifficulty;
+import com.devinolabs.uap.training.domain.ExerciseLaterality;
+import com.devinolabs.uap.training.domain.ExerciseMetricMode;
+import com.devinolabs.uap.training.domain.ImpactLevel;
+import com.devinolabs.uap.training.domain.MovementPattern;
+import com.devinolabs.uap.training.domain.MuscleGroup;
 
 /**
  * The exercise picker: active SYSTEM definitions plus the athlete's own active custom definitions.
@@ -35,14 +43,32 @@ public class ListAccessibleExerciseDefinitionsUseCase {
 			AccountId accountId,
 			String nameContains,
 			ExerciseDefinitionScope scope,
+			ExerciseDefinitionCategory category,
+			ExerciseMetricMode metricMode,
+			MovementPattern movementPattern,
+			MuscleGroup muscleGroup,
+			EquipmentType equipment,
+			ExerciseLaterality laterality,
+			ImpactLevel impactLevel,
+			ExerciseDifficulty difficulty,
 			Integer page,
 			Integer size) {
 		AthleteRef athlete = ExerciseDefinitionSupport.requireAthlete(athleteContextPort, accountId.value());
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
-		return ExerciseDefinitionSupport.toPageResult(exerciseDefinitionRepository.findAccessibleActive(
-				athleteId,
+		ExerciseDefinitionFilters filters = ExerciseDefinitionFilters.of(
 				ExerciseDefinitionSupport.normalizeNameFilter(nameContains),
 				scope,
+				category,
+				metricMode,
+				movementPattern,
+				muscleGroup,
+				equipment,
+				laterality,
+				impactLevel,
+				difficulty);
+		return ExerciseDefinitionSupport.toPageResult(exerciseDefinitionRepository.findAccessibleActive(
+				athleteId,
+				filters,
 				ExerciseDefinitionSupport.requirePage(page),
 				ExerciseDefinitionSupport.requireSize(size)));
 	}

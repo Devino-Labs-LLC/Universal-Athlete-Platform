@@ -24,10 +24,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import com.devinolabs.uap.ExerciseDefinitionHttpPayloads;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.domain.EquipmentType;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
+import com.devinolabs.uap.training.domain.MovementPattern;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
+import com.devinolabs.uap.training.domain.SystemExerciseSubstitutionRelationships;
 import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
@@ -52,9 +58,7 @@ class ExerciseDefinitionHttpIntegrationTests {
 		mockMvc.perform(post(BASE)
 						.with(accountAuth(accountId))
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"canonicalName":"Sled Push"}
-								"""))
+						.content(ExerciseDefinitionHttpPayloads.createPayload("Sled Push")))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
 
@@ -62,14 +66,13 @@ class ExerciseDefinitionHttpIntegrationTests {
 						.with(accountAuth(accountId))
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"canonicalName":"  Sled Push  "}
-								"""))
+						.content(ExerciseDefinitionHttpPayloads.createPayload("  Sled Push  ")))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.scope").value("ATHLETE_CUSTOM"))
 				.andExpect(jsonPath("$.canonicalName").value("Sled Push"))
 				.andExpect(jsonPath("$.normalizedName").value("sled push"))
-				.andExpect(jsonPath("$.active").value(true))
+				.andExpect(jsonPath("$.metadata.category").value("STRENGTH"))
+				.andExpect(jsonPath("$.metadata.primaryMovementPattern").value("SQUAT"))
 				.andReturn();
 		String definitionId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
@@ -82,9 +85,7 @@ class ExerciseDefinitionHttpIntegrationTests {
 						.with(accountAuth(accountId))
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"canonicalName":"sled   PUSH"}
-								"""))
+						.content(ExerciseDefinitionHttpPayloads.createPayload("sled   PUSH")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("DUPLICATE_EXERCISE_DEFINITION"));
 
@@ -133,9 +134,7 @@ class ExerciseDefinitionHttpIntegrationTests {
 						.with(accountAuth(other))
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"canonicalName":"Zercher Squat"}
-								"""))
+						.content(ExerciseDefinitionHttpPayloads.createPayload("Zercher Squat")))
 				.andExpect(status().isCreated())
 				.andReturn();
 		String foreignId = JsonPath.read(foreign.getResponse().getContentAsString(), "$.id");
@@ -189,9 +188,7 @@ class ExerciseDefinitionHttpIntegrationTests {
 						.with(accountAuth(accountId))
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"canonicalName":"Sandbag Carry"}
-								"""))
+						.content(ExerciseDefinitionHttpPayloads.createPayload("Sandbag Carry")))
 				.andExpect(status().isCreated())
 				.andReturn();
 		String definitionId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
@@ -253,6 +250,37 @@ class ExerciseDefinitionHttpIntegrationTests {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void metadataFiltersAndSubstitutionCandidatesAreExposedOverHttp() throws Exception {
+		AccountId accountId = AccountId.generate();
+		createProfile(accountId);
+
+		mockMvc.perform(get(BASE)
+						.param("movementPattern", MovementPattern.SQUAT.name())
+						.param("equipment", EquipmentType.DUMBBELL.name())
+						.with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.definitions[?(@.canonicalName=='Goblet Squat')]").exists());
+
+		mockMvc.perform(get(BASE + "/" + SystemExerciseDefinitions.BACK_SQUAT + "/substitution-candidates")
+						.param("equipment", EquipmentType.DUMBBELL.name())
+						.param("equipment", EquipmentType.BENCH.name())
+						.with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[?(@.targetCanonicalName=='Goblet Squat')]").exists())
+				.andExpect(jsonPath("$[?(@.targetCanonicalName=='Goblet Squat')].compatibilityLevel")
+						.value(ExerciseSubstitutionCompatibility.HIGH.name()))
+				.andExpect(jsonPath("$[?(@.targetCanonicalName=='Goblet Squat')].relationshipType")
+						.value(ExerciseSubstitutionRelationshipType.EQUIPMENT_ALTERNATIVE.name()));
+
+		mockMvc.perform(get("/api/v1/training/exercise-substitution-relationships/"
+						+ SystemExerciseSubstitutionRelationships.BACK_SQUAT_TO_GOBLET_SQUAT)
+						.with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.sourceExerciseDefinitionId")
+						.value(SystemExerciseDefinitions.BACK_SQUAT.toString()));
 	}
 
 	private void createProfile(AccountId accountId) throws Exception {

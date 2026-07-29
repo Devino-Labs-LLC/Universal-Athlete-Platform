@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.devinolabs.uap.training.application.WorkoutExerciseSubstitutionResult;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
 
 record WorkoutExerciseSubstitutionResponse(
 		UUID id,
@@ -16,6 +18,9 @@ record WorkoutExerciseSubstitutionResponse(
 		String toExerciseName,
 		ExerciseSubstitutionReason reason,
 		String notes,
+		UUID substitutionRelationshipId,
+		ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
+		ExerciseSubstitutionCompatibility compatibilitySnapshot,
 		boolean reverted,
 		Instant changedAt) {
 
@@ -30,6 +35,11 @@ record WorkoutExerciseSubstitutionResponse(
 				result.toExerciseName(),
 				result.reason(),
 				result.notes(),
+				result.substitutionRelationshipId() == null
+						? null
+						: result.substitutionRelationshipId().value(),
+				result.relationshipTypeSnapshot(),
+				result.compatibilitySnapshot(),
 				result.reverted(),
 				result.changedAt());
 	}

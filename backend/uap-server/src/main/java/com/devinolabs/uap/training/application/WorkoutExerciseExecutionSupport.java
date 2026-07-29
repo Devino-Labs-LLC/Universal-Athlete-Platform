@@ -206,6 +206,9 @@ final class WorkoutExerciseExecutionSupport {
 				entry.toExerciseNameSnapshot(),
 				entry.reason(),
 				entry.notes(),
+				entry.substitutionRelationshipId(),
+				entry.relationshipTypeSnapshot(),
+				entry.compatibilitySnapshot(),
 				entry.reverted(),
 				entry.changedAt());
 	}

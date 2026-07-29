@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.application;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -30,13 +31,13 @@ public interface ExerciseDefinitionRepository {
 
 	/**
 	 * Active SYSTEM definitions plus the athlete's own active custom definitions, ordered by
-	 * canonical name then id, optionally narrowed by scope and a case-insensitive name fragment.
+	 * canonical name then id, optionally narrowed by scope, name fragment, and catalogue metadata.
 	 */
-	ExerciseDefinitionPage findAccessibleActive(
-			AthleteId athleteId,
-			String nameContains,
-			ExerciseDefinitionScope scope,
-			int page,
-			int size);
+	ExerciseDefinitionPage findAccessibleActive(AthleteId athleteId, ExerciseDefinitionFilters filters, int page, int size);
+
+	/**
+	 * Loads several definitions by id in one round trip for candidate ordering.
+	 */
+	List<ExerciseDefinition> findAllByIds(List<ExerciseDefinitionId> ids);
 
 }

@@ -17,7 +17,9 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
 
 /**
  * Every column is {@code updatable = false} and the entity carries no version: substitution history
@@ -67,6 +69,18 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 	@Column(name = "notes", updatable = false, length = 2000)
 	private String notes;
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "substitution_relationship_id", updatable = false, columnDefinition = "BINARY(16)")
+	private UUID substitutionRelationshipId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "relationship_type_snapshot", updatable = false, length = 40)
+	private ExerciseSubstitutionRelationshipType relationshipTypeSnapshot;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "compatibility_snapshot", updatable = false, length = 20)
+	private ExerciseSubstitutionCompatibility compatibilitySnapshot;
+
 	@Column(name = "reverted", nullable = false, updatable = false)
 	private boolean reverted;
 
@@ -93,6 +107,9 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 			String toExerciseNameSnapshot,
 			ExerciseSubstitutionReason reason,
 			String notes,
+			UUID substitutionRelationshipId,
+			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
+			ExerciseSubstitutionCompatibility compatibilitySnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt,
@@ -107,6 +124,9 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 		this.toExerciseNameSnapshot = toExerciseNameSnapshot;
 		this.reason = reason;
 		this.notes = notes;
+		this.substitutionRelationshipId = substitutionRelationshipId;
+		this.relationshipTypeSnapshot = relationshipTypeSnapshot;
+		this.compatibilitySnapshot = compatibilitySnapshot;
 		this.reverted = reverted;
 		this.changedAt = changedAt;
 		this.createdAt = createdAt;
@@ -163,6 +183,18 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 
 	String getNotes() {
 		return notes;
+	}
+
+	UUID getSubstitutionRelationshipId() {
+		return substitutionRelationshipId;
+	}
+
+	ExerciseSubstitutionRelationshipType getRelationshipTypeSnapshot() {
+		return relationshipTypeSnapshot;
+	}
+
+	ExerciseSubstitutionCompatibility getCompatibilitySnapshot() {
+		return compatibilitySnapshot;
 	}
 
 	boolean isReverted() {

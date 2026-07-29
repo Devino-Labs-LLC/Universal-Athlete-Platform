@@ -72,13 +72,24 @@ import com.devinolabs.uap.training.application.TrainingMetricsRecomputationConfl
 import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedExecutionException;
 import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedSetsException;
 import com.devinolabs.uap.training.application.DuplicateExerciseDefinitionException;
+import com.devinolabs.uap.training.application.DuplicateExerciseSubstitutionRelationshipException;
+import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipMismatchException;
+import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotAccessibleException;
+import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotFoundException;
+import com.devinolabs.uap.training.application.InvalidExerciseSubstitutionRelationshipOwnershipException;
 import com.devinolabs.uap.training.application.ExerciseDefinitionArchivedException;
 import com.devinolabs.uap.training.application.ExerciseDefinitionNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseDefinitionNotFoundException;
 import com.devinolabs.uap.training.application.InvalidExerciseDefinitionQueryException;
 import com.devinolabs.uap.training.application.WorkoutExerciseSubstitutionLockedException;
 import com.devinolabs.uap.training.domain.ExercisePerformanceIdentityConflictException;
+import com.devinolabs.uap.training.domain.ExerciseEquipmentRequiredOptionalConflictException;
+import com.devinolabs.uap.training.domain.ExerciseMetadataPrimarySecondaryConflictException;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipArchivedException;
+import com.devinolabs.uap.training.domain.InvalidExerciseDefinitionMetadataException;
 import com.devinolabs.uap.training.domain.InvalidExerciseDefinitionNameException;
+import com.devinolabs.uap.training.domain.InvalidExerciseSubstitutionRelationshipException;
+import com.devinolabs.uap.training.domain.SystemExerciseSubstitutionRelationshipModificationNotAllowedException;
 import com.devinolabs.uap.training.domain.InvalidExerciseSubstitutionReasonException;
 import com.devinolabs.uap.training.domain.InvalidPerformanceMeasurementException;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitionModificationNotAllowedException;
@@ -99,7 +110,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		WorkoutExerciseSetController.class,
 		TrainingPerformanceController.class,
 		WorkoutOccurrencePerformanceController.class,
-		ExerciseDefinitionController.class
+		ExerciseDefinitionController.class,
+		ExerciseSubstitutionRelationshipController.class
 })
 class TrainingExceptionHandler {
 
@@ -598,6 +610,99 @@ class TrainingExceptionHandler {
 				.body(error("DUPLICATE_EXERCISE_DEFINITION", ex.getMessage(), request, List.of()));
 	}
 
+	@ExceptionHandler(InvalidExerciseDefinitionMetadataException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseDefinitionMetadata(
+			InvalidExerciseDefinitionMetadataException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_EXERCISE_DEFINITION_METADATA", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseMetadataPrimarySecondaryConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseMetadataPrimarySecondaryConflict(
+			ExerciseMetadataPrimarySecondaryConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("EXERCISE_METADATA_PRIMARY_SECONDARY_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseEquipmentRequiredOptionalConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseEquipmentRequiredOptionalConflict(
+			ExerciseEquipmentRequiredOptionalConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("EXERCISE_EQUIPMENT_REQUIRED_OPTIONAL_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseSubstitutionRelationshipNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseSubstitutionRelationshipNotFound(
+			ExerciseSubstitutionRelationshipNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("EXERCISE_SUBSTITUTION_RELATIONSHIP_NOT_FOUND", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseSubstitutionRelationshipNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseSubstitutionRelationshipNotAccessible(
+			ExerciseSubstitutionRelationshipNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("EXERCISE_SUBSTITUTION_RELATIONSHIP_NOT_ACCESSIBLE", ex.getMessage(), request,
+						List.of()));
+	}
+
+	@ExceptionHandler(ExerciseSubstitutionRelationshipMismatchException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseSubstitutionRelationshipMismatch(
+			ExerciseSubstitutionRelationshipMismatchException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("EXERCISE_SUBSTITUTION_RELATIONSHIP_MISMATCH", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateExerciseSubstitutionRelationshipException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateExerciseSubstitutionRelationship(
+			DuplicateExerciseSubstitutionRelationshipException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_EXERCISE_SUBSTITUTION_RELATIONSHIP", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidExerciseSubstitutionRelationshipOwnershipException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseSubstitutionRelationshipOwnership(
+			InvalidExerciseSubstitutionRelationshipOwnershipException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(error("INVALID_EXERCISE_SUBSTITUTION_RELATIONSHIP_OWNERSHIP", ex.getMessage(), request,
+						List.of()));
+	}
+
+	@ExceptionHandler(InvalidExerciseSubstitutionRelationshipException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidExerciseSubstitutionRelationship(
+			InvalidExerciseSubstitutionRelationshipException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_EXERCISE_SUBSTITUTION_RELATIONSHIP", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ExerciseSubstitutionRelationshipArchivedException.class)
+	ResponseEntity<ApiErrorResponse> handleExerciseSubstitutionRelationshipArchived(
+			ExerciseSubstitutionRelationshipArchivedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("EXERCISE_SUBSTITUTION_RELATIONSHIP_ARCHIVED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(SystemExerciseSubstitutionRelationshipModificationNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleSystemExerciseSubstitutionRelationshipModification(
+			SystemExerciseSubstitutionRelationshipModificationNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(error("SYSTEM_EXERCISE_SUBSTITUTION_RELATIONSHIP_MODIFICATION_NOT_ALLOWED",
+						ex.getMessage(),
+						request,
+						List.of()));
+	}
+
 	@ExceptionHandler(InvalidExerciseDefinitionNameException.class)
 	ResponseEntity<ApiErrorResponse> handleInvalidExerciseDefinitionName(
 			InvalidExerciseDefinitionNameException ex,
@@ -706,20 +811,40 @@ class TrainingExceptionHandler {
 	ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
 			DataIntegrityViolationException ex,
 			HttpServletRequest request) {
-		if (!indicatesDuplicateExerciseDefinition(ex)) {
-			throw ex;
+		if (indicatesDuplicateExerciseSubstitutionRelationship(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("DUPLICATE_EXERCISE_SUBSTITUTION_RELATIONSHIP",
+							"An active substitution relationship with this source, target, and type already exists",
+							request,
+							List.of()));
 		}
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("DUPLICATE_EXERCISE_DEFINITION",
-						"An active exercise definition with this name already exists",
-						request,
-						List.of()));
+		if (indicatesDuplicateExerciseDefinition(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("DUPLICATE_EXERCISE_DEFINITION",
+							"An active exercise definition with this name already exists",
+							request,
+							List.of()));
+		}
+		throw ex;
 	}
 
 	private static boolean indicatesDuplicateExerciseDefinition(Throwable ex) {
 		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
 			String message = cause.getMessage();
 			if (message != null && message.contains("uq_exercise_definitions")) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
+	}
+
+	private static boolean indicatesDuplicateExerciseSubstitutionRelationship(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("uq_ex_sub_rel_active_directed")) {
 				return true;
 			}
 			if (cause.getCause() == cause) {

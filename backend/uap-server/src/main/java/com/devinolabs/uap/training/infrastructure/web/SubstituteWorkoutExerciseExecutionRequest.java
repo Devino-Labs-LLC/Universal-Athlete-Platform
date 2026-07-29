@@ -10,5 +10,6 @@ import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 record SubstituteWorkoutExerciseExecutionRequest(
 		@NotNull UUID exerciseDefinitionId,
 		@NotNull ExerciseSubstitutionReason reason,
+		UUID substitutionRelationshipId,
 		@Size(max = 2000) String notes) {
 }

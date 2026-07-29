@@ -12,6 +12,7 @@ import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionMetadata;
 
 /**
  * Creates a movement the athlete trains but which is not in the shared catalogue.
@@ -36,13 +37,20 @@ public class CreateAthleteExerciseDefinitionUseCase {
 	}
 
 	@Transactional
-	public ExerciseDefinitionResult execute(AccountId accountId, String canonicalName) {
+	public ExerciseDefinitionResult execute(
+			AccountId accountId,
+			String canonicalName,
+			ExerciseDefinitionMetadata metadata) {
 		AthleteRef athlete = ExerciseDefinitionSupport.requireMutableAthlete(athleteContextPort, accountId.value());
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
 		ExerciseDefinitionSupport.assertNoActiveDuplicate(
 				exerciseDefinitionRepository, athleteId, canonicalName, null);
 		ExerciseDefinition definition = ExerciseDefinition.createAthleteCustom(
-				ExerciseDefinitionId.generate(), athleteId, canonicalName, clock);
+				ExerciseDefinitionId.generate(),
+				athleteId,
+				canonicalName,
+				ExerciseDefinitionSupport.requireMetadata(metadata),
+				clock);
 		return ExerciseDefinitionSupport.toResult(exerciseDefinitionRepository.save(definition));
 	}
 

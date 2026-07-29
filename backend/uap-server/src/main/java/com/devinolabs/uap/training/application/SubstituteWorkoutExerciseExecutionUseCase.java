@@ -14,6 +14,8 @@ import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationship;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDay;
@@ -43,6 +45,7 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final WorkoutExerciseSubstitutionHistoryRepository substitutionHistoryRepository;
 	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
+	private final ExerciseSubstitutionRelationshipRepository relationshipRepository;
 	private final Clock clock;
 
 	public SubstituteWorkoutExerciseExecutionUseCase(
@@ -54,6 +57,7 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			WorkoutExerciseSubstitutionHistoryRepository substitutionHistoryRepository,
 			ExerciseDefinitionRepository exerciseDefinitionRepository,
+			ExerciseSubstitutionRelationshipRepository relationshipRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
@@ -63,6 +67,7 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.substitutionHistoryRepository = Objects.requireNonNull(substitutionHistoryRepository);
 		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
+		this.relationshipRepository = Objects.requireNonNull(relationshipRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -75,7 +80,8 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 			WorkoutExerciseExecutionId executionId,
 			ExerciseDefinitionId targetExerciseDefinitionId,
 			ExerciseSubstitutionReason reason,
-			String notes) {
+			String notes,
+			ExerciseSubstitutionRelationshipId substitutionRelationshipId) {
 		Objects.requireNonNull(targetExerciseDefinitionId, "targetExerciseDefinitionId must not be null");
 		AthleteRef athlete = WorkoutExerciseExecutionSupport.requireMutableAthlete(
 				athleteContextPort, accountId.value());
@@ -99,16 +105,48 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 				ExerciseDefinitionSupport.requireAccessible(
 						exerciseDefinitionRepository, athleteId, targetExerciseDefinitionId));
 
+		ExerciseSubstitutionRelationship relationship = resolveRelationship(
+				athleteId, execution, target.id(), substitutionRelationshipId);
+
 		ExerciseDefinitionId previousDefinitionId = execution.performedExerciseDefinitionId();
 		String previousName = execution.performedExerciseNameSnapshot();
 		execution.substitute(target, reason, notes, clock);
 		WorkoutExerciseExecution substituted = workoutExerciseExecutionRepository.save(execution);
-		// The log shares the transaction: an execution never performs a movement its history
-		// cannot explain.
 		substitutionHistoryRepository.append(WorkoutExerciseSubstitutionHistory.substitution(
-				substituted, previousDefinitionId, previousName, reason, notes, clock));
+				substituted, previousDefinitionId, previousName, reason, notes, relationship, clock));
 		return WorkoutExerciseExecutionSupport.toResult(
 				substituted, workoutExerciseSetRepository, athleteId);
+	}
+
+	private ExerciseSubstitutionRelationship resolveRelationship(
+			AthleteId athleteId,
+			WorkoutExerciseExecution execution,
+			ExerciseDefinitionId targetExerciseDefinitionId,
+			ExerciseSubstitutionRelationshipId substitutionRelationshipId) {
+		if (substitutionRelationshipId == null) {
+			return null;
+		}
+		ExerciseSubstitutionRelationship relationship = relationshipRepository
+				.findActiveById(substitutionRelationshipId)
+				.orElseThrow(ExerciseSubstitutionRelationshipNotFoundException::new);
+		if (!ExerciseSubstitutionRelationshipAccessPolicy.isAccessible(athleteId, relationship)) {
+			throw new ExerciseSubstitutionRelationshipNotAccessibleException();
+		}
+		if (!relationship.sourceExerciseDefinitionId().equals(execution.performedExerciseDefinitionId())) {
+			throw new ExerciseSubstitutionRelationshipMismatchException(
+					"Substitution relationship source must match the currently performed exercise");
+		}
+		if (!relationship.targetExerciseDefinitionId().equals(targetExerciseDefinitionId)) {
+			throw new ExerciseSubstitutionRelationshipMismatchException(
+					"Substitution relationship target must match the requested substitute exercise");
+		}
+		ExerciseDefinitionAccessPolicy.requireSelectable(
+				athleteId,
+				ExerciseDefinitionSupport.requireAccessible(
+						exerciseDefinitionRepository,
+						athleteId,
+						relationship.targetExerciseDefinitionId()));
+		return relationship;
 	}
 
 }

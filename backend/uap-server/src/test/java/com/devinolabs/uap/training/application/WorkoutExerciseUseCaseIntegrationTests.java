@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.ExerciseDefinitionMetadataFixtures;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
 import com.devinolabs.uap.athlete.domain.DominantFoot;
@@ -212,7 +213,7 @@ class WorkoutExerciseUseCaseIntegrationTests {
 	}
 
 	private ExerciseDefinitionId customDefinition(AccountId accountId, String canonicalName) {
-		return createAthleteExerciseDefinitionUseCase.execute(accountId, canonicalName).id();
+		return createAthleteExerciseDefinitionUseCase.execute(accountId, canonicalName, ExerciseDefinitionMetadataFixtures.defaultCustom()).id();
 	}
 
 	private void createAthlete(AccountId accountId) {

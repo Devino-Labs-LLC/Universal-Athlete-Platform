@@ -9,8 +9,10 @@ import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionMetadata;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionScope;
 import com.devinolabs.uap.training.domain.ExerciseNameNormalizer;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationship;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitionModificationNotAllowedException;
 
 final class ExerciseDefinitionSupport {
@@ -106,6 +108,10 @@ final class ExerciseDefinitionSupport {
 		return ExerciseNameNormalizer.normalize(trimmed);
 	}
 
+	static ExerciseDefinitionMetadata requireMetadata(ExerciseDefinitionMetadata metadata) {
+		return Objects.requireNonNull(metadata, "metadata must not be null");
+	}
+
 	static ExerciseDefinitionResult toResult(ExerciseDefinition definition) {
 		Objects.requireNonNull(definition, "definition must not be null");
 		return new ExerciseDefinitionResult(
@@ -114,6 +120,7 @@ final class ExerciseDefinitionSupport {
 				definition.scope(),
 				definition.canonicalName(),
 				definition.normalizedName(),
+				ExerciseDefinitionMetadataResult.from(definition.metadata()),
 				definition.active(),
 				definition.archivedAt(),
 				definition.createdAt(),
@@ -131,6 +138,22 @@ final class ExerciseDefinitionSupport {
 				page.size(),
 				page.totalElements(),
 				page.totalPages());
+	}
+
+	static ExerciseSubstitutionRelationshipResult toRelationshipResult(
+			ExerciseSubstitutionRelationship relationship) {
+		return new ExerciseSubstitutionRelationshipResult(
+				relationship.id(),
+				relationship.ownerAthleteId(),
+				relationship.sourceExerciseDefinitionId(),
+				relationship.targetExerciseDefinitionId(),
+				relationship.relationshipType(),
+				relationship.compatibilityLevel(),
+				relationship.rationale(),
+				relationship.active(),
+				relationship.archivedAt(),
+				relationship.createdAt(),
+				relationship.updatedAt());
 	}
 
 }

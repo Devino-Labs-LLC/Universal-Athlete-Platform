@@ -27,7 +27,9 @@ public class ExerciseDefinitionFixtures {
 			"running", SystemExerciseDefinitions.RUNNING,
 			"cycling", SystemExerciseDefinitions.CYCLING,
 			"plank", SystemExerciseDefinitions.PLANK,
-			"box jump", SystemExerciseDefinitions.BOX_JUMP);
+			"box jump", SystemExerciseDefinitions.BOX_JUMP,
+			"goblet squat", SystemExerciseDefinitions.GOBLET_SQUAT,
+			"leg press", SystemExerciseDefinitions.LEG_PRESS);
 
 	private final CreateAthleteExerciseDefinitionUseCase createAthleteExerciseDefinitionUseCase;
 
@@ -46,7 +48,9 @@ public class ExerciseDefinitionFixtures {
 	public ExerciseDefinitionId custom(AccountId accountId, String canonicalName) {
 		String key = accountId.value() + "|" + ExerciseNameNormalizer.normalize(canonicalName);
 		return customByAthleteAndName.computeIfAbsent(
-				key, ignored -> createAthleteExerciseDefinitionUseCase.execute(accountId, canonicalName).id());
+				key,
+				ignored -> createAthleteExerciseDefinitionUseCase.execute(
+						accountId, canonicalName, ExerciseDefinitionMetadataFixtures.defaultCustom()).id());
 	}
 
 }

@@ -10,6 +10,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.devinolabs.uap.ExerciseDefinitionMetadataFixtures;
+
 class ExerciseDefinitionTests {
 
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-04-06T10:15:30Z"), ZoneOffset.UTC);
@@ -19,13 +21,17 @@ class ExerciseDefinitionTests {
 	@Test
 	void systemDefinitionsAreUnownedActiveAndKeyedByTheirOwnId() {
 		ExerciseDefinition definition = ExerciseDefinition.createSystem(
-				SystemExerciseDefinitions.BACK_SQUAT, "Back Squat", CLOCK);
+				SystemExerciseDefinitions.BACK_SQUAT,
+				"Back Squat",
+				ExerciseDefinitionMetadataFixtures.backSquat(),
+				CLOCK);
 
 		assertThat(definition.scope()).isEqualTo(ExerciseDefinitionScope.SYSTEM);
 		assertThat(definition.athleteId()).isNull();
 		assertThat(definition.active()).isTrue();
 		assertThat(definition.archivedAt()).isNull();
 		assertThat(definition.normalizedName()).isEqualTo("back squat");
+		assertThat(definition.metadata().primaryMovementPattern()).isEqualTo(MovementPattern.SQUAT);
 		assertThat(definition.performanceKey())
 				.isEqualTo(ExercisePerformanceKey.of(SystemExerciseDefinitions.BACK_SQUAT));
 	}
@@ -55,6 +61,17 @@ class ExerciseDefinitionTests {
 	}
 
 	@Test
+	void updateMetadataReplacesCatalogueFactsWithoutChangingIdentity() {
+		ExerciseDefinition definition = custom("Bulgarian Split Squat");
+		ExerciseDefinitionId id = definition.id();
+
+		definition.updateMetadata(ExerciseDefinitionMetadataFixtures.gobletSquat(), LATER);
+
+		assertThat(definition.id()).isEqualTo(id);
+		assertThat(definition.metadata().requiredEquipment()).containsExactly(EquipmentType.DUMBBELL);
+	}
+
+	@Test
 	void archivingDeactivatesOnceAndIsSafeToRepeat() {
 		ExerciseDefinition definition = custom("Sled Push");
 
@@ -69,7 +86,10 @@ class ExerciseDefinitionTests {
 	@Test
 	void systemDefinitionsRejectRenamesAndArchiving() {
 		ExerciseDefinition definition = ExerciseDefinition.createSystem(
-				SystemExerciseDefinitions.BENCH_PRESS, "Bench Press", CLOCK);
+				SystemExerciseDefinitions.BENCH_PRESS,
+				"Bench Press",
+				ExerciseDefinitionMetadataFixtures.defaultCustom(),
+				CLOCK);
 
 		assertThatThrownBy(() -> definition.rename("Barbell Bench Press", LATER))
 				.isInstanceOf(SystemExerciseDefinitionModificationNotAllowedException.class);
@@ -91,25 +111,33 @@ class ExerciseDefinitionTests {
 	void scopeAndOwnershipMustAgreeAndArchivedRowsMustCarryATimestamp() {
 		assertThatThrownBy(() -> ExerciseDefinition.rehydrate(
 				ExerciseDefinitionId.generate(), ExerciseDefinitionScope.SYSTEM, AthleteId.of(UUID.randomUUID()),
-				"Back Squat", "back squat", true, null, Instant.EPOCH, Instant.EPOCH, 0L))
+				"Back Squat", "back squat", ExerciseDefinitionMetadataFixtures.backSquat(), true, null,
+				Instant.EPOCH, Instant.EPOCH, 0L))
 				.isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> ExerciseDefinition.rehydrate(
 				ExerciseDefinitionId.generate(), ExerciseDefinitionScope.ATHLETE_CUSTOM, null,
-				"Back Squat", "back squat", true, null, Instant.EPOCH, Instant.EPOCH, 0L))
+				"Back Squat", "back squat", ExerciseDefinitionMetadataFixtures.backSquat(), true, null,
+				Instant.EPOCH, Instant.EPOCH, 0L))
 				.isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> ExerciseDefinition.rehydrate(
 				ExerciseDefinitionId.generate(), ExerciseDefinitionScope.ATHLETE_CUSTOM, AthleteId.of(UUID.randomUUID()),
-				"Back Squat", "back squat", false, null, Instant.EPOCH, Instant.EPOCH, 0L))
+				"Back Squat", "back squat", ExerciseDefinitionMetadataFixtures.backSquat(), false, null,
+				Instant.EPOCH, Instant.EPOCH, 0L))
 				.isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> ExerciseDefinition.rehydrate(
 				ExerciseDefinitionId.generate(), ExerciseDefinitionScope.ATHLETE_CUSTOM, AthleteId.of(UUID.randomUUID()),
-				"Back Squat", "back squat", true, Instant.EPOCH, Instant.EPOCH, Instant.EPOCH, 0L))
+				"Back Squat", "back squat", ExerciseDefinitionMetadataFixtures.backSquat(), true, Instant.EPOCH,
+				Instant.EPOCH, Instant.EPOCH, 0L))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	private static ExerciseDefinition custom(String canonicalName) {
 		return ExerciseDefinition.createAthleteCustom(
-				ExerciseDefinitionId.generate(), AthleteId.of(UUID.randomUUID()), canonicalName, CLOCK);
+				ExerciseDefinitionId.generate(),
+				AthleteId.of(UUID.randomUUID()),
+				canonicalName,
+				ExerciseDefinitionMetadataFixtures.defaultCustom(),
+				CLOCK);
 	}
 
 }

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+import com.devinolabs.uap.ExerciseDefinitionMetadataFixtures;
+import com.devinolabs.uap.training.application.UpdateAthleteExerciseDefinitionCommand;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
 import com.devinolabs.uap.athlete.domain.DominantFoot;
@@ -152,13 +154,14 @@ class CanonicalExerciseIdentityIntegrationTests {
 	void renamingADefinitionKeepsItsIdentityAndTheNamesAlreadyLogged() {
 		AccountId accountId = athlete();
 		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(
-				accountId, "Bulgarian Split Squat");
+				accountId, "Bulgarian Split Squat", ExerciseDefinitionMetadataFixtures.defaultCustom());
 		ExercisePerformanceKey key = ExercisePerformanceKey.of(definition.id());
 		logSession(prescribe(accountId, "Block One", "Legs One", definition.id(), null),
 				LocalDate.of(2026, 4, 6), 8, "40");
 
 		ExerciseDefinitionResult renamed = updateAthleteExerciseDefinitionUseCase.execute(
-				accountId, definition.id(), "Rear Foot Elevated Split Squat");
+				accountId, definition.id(), UpdateAthleteExerciseDefinitionCommand.renameOnly(
+						"Rear Foot Elevated Split Squat"));
 		Prescription afterRename = prescribe(accountId, "Block Two", "Legs Two", definition.id(), null);
 		logSession(afterRename, LocalDate.of(2026, 5, 4), 8, "45");
 
@@ -175,7 +178,8 @@ class CanonicalExerciseIdentityIntegrationTests {
 	@Test
 	void aCustomDefinitionNamedLikeASystemOneKeepsItsOwnHistory() {
 		AccountId accountId = athlete();
-		ExerciseDefinitionResult custom = createAthleteExerciseDefinitionUseCase.execute(accountId, BACK_SQUAT);
+		ExerciseDefinitionResult custom = createAthleteExerciseDefinitionUseCase.execute(
+				accountId, BACK_SQUAT, ExerciseDefinitionMetadataFixtures.defaultCustom());
 		ExercisePerformanceKey systemKey = ExercisePerformanceKey.of(SystemExerciseDefinitions.BACK_SQUAT);
 		ExercisePerformanceKey customKey = ExercisePerformanceKey.of(custom.id());
 
@@ -197,18 +201,22 @@ class CanonicalExerciseIdentityIntegrationTests {
 	@Test
 	void duplicateCustomNamesAreRejectedWhileTheDefinitionIsActive() {
 		AccountId accountId = athlete();
-		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(accountId, "Sled Push");
+		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "Sled Push", ExerciseDefinitionMetadataFixtures.defaultCustom());
 
-		assertThatThrownBy(() -> createAthleteExerciseDefinitionUseCase.execute(accountId, "  sled   PUSH "))
+		assertThatThrownBy(() -> createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "  sled   PUSH ", ExerciseDefinitionMetadataFixtures.defaultCustom()))
 				.isInstanceOf(DuplicateExerciseDefinitionException.class);
-		assertThat(createAthleteExerciseDefinitionUseCase.execute(athlete(), "Sled Push").id())
+		assertThat(createAthleteExerciseDefinitionUseCase.execute(
+				athlete(), "Sled Push", ExerciseDefinitionMetadataFixtures.defaultCustom()).id())
 				.isNotEqualTo(definition.id());
 	}
 
 	@Test
 	void archivingRetiresADefinitionFromSelectionButKeepsItsHistoryReadable() {
 		AccountId accountId = athlete();
-		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(accountId, "Sled Push");
+		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "Sled Push", ExerciseDefinitionMetadataFixtures.defaultCustom());
 		ExercisePerformanceKey key = ExercisePerformanceKey.of(definition.id());
 		logSession(prescribe(accountId, "Block One", "Conditioning", definition.id(), null),
 				LocalDate.of(2026, 4, 6), 6, "80");
@@ -218,12 +226,14 @@ class CanonicalExerciseIdentityIntegrationTests {
 		assertThat(getExerciseDefinitionUseCase.execute(accountId, definition.id()).active()).isFalse();
 		assertThat(getExerciseDefinitionUseCase.execute(accountId, definition.id()).archivedAt()).isNotNull();
 		assertThat(listAccessibleExerciseDefinitionsUseCase
-				.execute(accountId, "sled push", null, null, null).definitions()).isEmpty();
+				.execute(accountId, "sled push", null, null, null, null, null, null, null, null, null, null, null)
+				.definitions()).isEmpty();
 		assertThatThrownBy(() -> prescribe(accountId, "Block Two", "Conditioning Two", definition.id(), null))
 				.isInstanceOf(ExerciseDefinitionArchivedException.class);
 		assertThat(history(accountId, key).totalElements()).isEqualTo(1);
 		assertThat(records(accountId, key).get("HEAVIEST_WEIGHT").normalizedValue()).isEqualByComparingTo("80");
-		assertThat(createAthleteExerciseDefinitionUseCase.execute(accountId, "Sled Push").id())
+		assertThat(createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "Sled Push", ExerciseDefinitionMetadataFixtures.defaultCustom()).id())
 				.isNotEqualTo(definition.id());
 	}
 
@@ -231,7 +241,8 @@ class CanonicalExerciseIdentityIntegrationTests {
 	void anotherAthletesCustomDefinitionIsNeitherReadableNorPrescribable() {
 		AccountId owner = athlete();
 		AccountId intruder = athlete();
-		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(owner, "Zercher Squat");
+		ExerciseDefinitionResult definition = createAthleteExerciseDefinitionUseCase.execute(
+				owner, "Zercher Squat", ExerciseDefinitionMetadataFixtures.defaultCustom());
 
 		assertThatThrownBy(() -> getExerciseDefinitionUseCase.execute(intruder, definition.id()))
 				.isInstanceOf(ExerciseDefinitionNotAccessibleException.class);
@@ -247,7 +258,7 @@ class CanonicalExerciseIdentityIntegrationTests {
 		AccountId accountId = athlete();
 
 		ExerciseDefinitionPageResult systemDefinitions = listAccessibleExerciseDefinitionsUseCase.execute(
-				accountId, null, ExerciseDefinitionScope.SYSTEM, null, null);
+				accountId, null, ExerciseDefinitionScope.SYSTEM, null, null, null, null, null, null, null, null, null, null);
 
 		assertThat(systemDefinitions.totalElements()).isEqualTo(SystemExerciseDefinitions.all().size());
 		assertThat(systemDefinitions.definitions()).extracting(ExerciseDefinitionResult::canonicalName)
@@ -257,7 +268,9 @@ class CanonicalExerciseIdentityIntegrationTests {
 			assertThat(definition.active()).isTrue();
 		});
 		assertThatThrownBy(() -> updateAthleteExerciseDefinitionUseCase.execute(
-				accountId, SystemExerciseDefinitions.BACK_SQUAT, "Barbell Back Squat"))
+				accountId,
+				SystemExerciseDefinitions.BACK_SQUAT,
+				UpdateAthleteExerciseDefinitionCommand.renameOnly("Barbell Back Squat")))
 				.isInstanceOf(SystemExerciseDefinitionModificationNotAllowedException.class);
 		assertThatThrownBy(() -> archiveAthleteExerciseDefinitionUseCase.execute(
 				accountId, SystemExerciseDefinitions.BACK_SQUAT))

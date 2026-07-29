@@ -17,6 +17,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
+import com.devinolabs.uap.ExerciseDefinitionMetadataFixtures;
+import com.devinolabs.uap.training.application.UpdateAthleteExerciseDefinitionCommand;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
@@ -225,14 +227,15 @@ class CanonicalExerciseSubstitutionIntegrationTests {
 	void renamingTheSubstituteAfterTheSessionKeepsTheNameThatWasLogged() {
 		AccountId accountId = athlete();
 		ExerciseDefinitionResult substitute = createAthleteExerciseDefinitionUseCase.execute(
-				accountId, "Hack Squat Machine");
+				accountId, "Hack Squat Machine", ExerciseDefinitionMetadataFixtures.defaultCustom());
 		Prescription prescription = prescribe(accountId, "Block One", "Lower One",
 				SystemExerciseDefinitions.BACK_SQUAT, BACK_SQUAT);
 		Session session = startSession(prescription, LocalDate.of(2026, 4, 6));
 		substitute(session, substitute.id(), ExerciseSubstitutionReason.FACILITY_CONSTRAINT, null);
 		logAndComplete(session, 10, "120");
 
-		updateAthleteExerciseDefinitionUseCase.execute(accountId, substitute.id(), "Hack Squat");
+		updateAthleteExerciseDefinitionUseCase.execute(
+				accountId, substitute.id(), UpdateAthleteExerciseDefinitionCommand.renameOnly("Hack Squat"));
 
 		ExercisePerformanceKey key = ExercisePerformanceKey.of(substitute.id());
 		assertThat(history(accountId, key).entries())
@@ -294,8 +297,10 @@ class CanonicalExerciseSubstitutionIntegrationTests {
 	@Test
 	void anArchivedMovementCannotBeSubstitutedInButAnArchivedPrescriptionStillGenerates() {
 		AccountId accountId = athlete();
-		ExerciseDefinitionResult retired = createAthleteExerciseDefinitionUseCase.execute(accountId, "Sled Push");
-		ExerciseDefinitionResult prescribed = createAthleteExerciseDefinitionUseCase.execute(accountId, "Zercher Squat");
+		ExerciseDefinitionResult retired = createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "Sled Push", ExerciseDefinitionMetadataFixtures.defaultCustom());
+		ExerciseDefinitionResult prescribed = createAthleteExerciseDefinitionUseCase.execute(
+				accountId, "Zercher Squat", ExerciseDefinitionMetadataFixtures.defaultCustom());
 		Prescription prescription = prescribe(accountId, "Block One", "Lower One", prescribed.id(), null);
 		archiveAthleteExerciseDefinitionUseCase.execute(accountId, retired.id());
 		archiveAthleteExerciseDefinitionUseCase.execute(accountId, prescribed.id());
@@ -306,7 +311,8 @@ class CanonicalExerciseSubstitutionIntegrationTests {
 		assertThatThrownBy(() -> substitute(session, retired.id(), ExerciseSubstitutionReason.INJURY, null))
 				.isInstanceOf(ExerciseDefinitionArchivedException.class);
 		AccountId intruder = athlete();
-		ExerciseDefinitionResult theirs = createAthleteExerciseDefinitionUseCase.execute(intruder, "Belt Squat");
+		ExerciseDefinitionResult theirs = createAthleteExerciseDefinitionUseCase.execute(
+				intruder, "Belt Squat", ExerciseDefinitionMetadataFixtures.defaultCustom());
 		assertThatThrownBy(() -> substitute(session, theirs.id(), ExerciseSubstitutionReason.INJURY, null))
 				.isInstanceOf(ExerciseDefinitionNotAccessibleException.class);
 		assertThatThrownBy(() -> substitute(session, ExerciseDefinitionId.generate(),
@@ -383,6 +389,15 @@ class CanonicalExerciseSubstitutionIntegrationTests {
 			ExerciseDefinitionId target,
 			ExerciseSubstitutionReason reason,
 			String notes) {
+		return substitute(session, target, reason, notes, null);
+	}
+
+	private WorkoutExerciseExecutionResult substitute(
+			Session session,
+			ExerciseDefinitionId target,
+			ExerciseSubstitutionReason reason,
+			String notes,
+			com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId relationshipId) {
 		return substituteWorkoutExerciseExecutionUseCase.execute(
 				session.prescription().accountId(),
 				session.prescription().planId(),
@@ -391,7 +406,8 @@ class CanonicalExerciseSubstitutionIntegrationTests {
 				session.executionId(),
 				target,
 				reason,
-				notes);
+				notes,
+				relationshipId);
 	}
 
 	private List<WorkoutExerciseSubstitutionResult> substitutions(Session session) {

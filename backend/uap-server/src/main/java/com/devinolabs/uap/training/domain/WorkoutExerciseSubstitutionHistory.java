@@ -23,6 +23,9 @@ public class WorkoutExerciseSubstitutionHistory {
 	private final String toExerciseNameSnapshot;
 	private final ExerciseSubstitutionReason reason;
 	private final String notes;
+	private final ExerciseSubstitutionRelationshipId substitutionRelationshipId;
+	private final ExerciseSubstitutionRelationshipType relationshipTypeSnapshot;
+	private final ExerciseSubstitutionCompatibility compatibilitySnapshot;
 	private final boolean reverted;
 	private final Instant changedAt;
 	private final Instant createdAt;
@@ -38,6 +41,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			String toExerciseNameSnapshot,
 			ExerciseSubstitutionReason reason,
 			String notes,
+			ExerciseSubstitutionRelationshipId substitutionRelationshipId,
+			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
+			ExerciseSubstitutionCompatibility compatibilitySnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -61,13 +67,16 @@ public class WorkoutExerciseSubstitutionHistory {
 		}
 		this.reason = Objects.requireNonNull(reason, "reason must not be null");
 		this.notes = WorkoutExerciseExecution.normalizeSubstitutionNotes(notes);
+		this.substitutionRelationshipId = substitutionRelationshipId;
+		this.relationshipTypeSnapshot = relationshipTypeSnapshot;
+		this.compatibilitySnapshot = compatibilitySnapshot;
 		this.reverted = reverted;
 		this.changedAt = Objects.requireNonNull(changedAt, "changedAt must not be null");
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 	}
 
 	/**
-	 * Records a move to a substitute movement.
+	 * Records a move to a substitute movement without catalogue relationship provenance.
 	 */
 	public static WorkoutExerciseSubstitutionHistory substitution(
 			WorkoutExerciseExecution execution,
@@ -76,9 +85,32 @@ public class WorkoutExerciseSubstitutionHistory {
 			ExerciseSubstitutionReason reason,
 			String notes,
 			Clock clock) {
+		return substitution(
+				execution, fromExerciseDefinitionId, fromExerciseNameSnapshot, reason, notes, null, clock);
+	}
+
+	/**
+	 * Records a move to a substitute movement, optionally snapshotting an approved relationship.
+	 */
+	public static WorkoutExerciseSubstitutionHistory substitution(
+			WorkoutExerciseExecution execution,
+			ExerciseDefinitionId fromExerciseDefinitionId,
+			String fromExerciseNameSnapshot,
+			ExerciseSubstitutionReason reason,
+			String notes,
+			ExerciseSubstitutionRelationship relationship,
+			Clock clock) {
 		Objects.requireNonNull(execution, "execution must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
 		Instant now = Instant.now(clock);
+		ExerciseSubstitutionRelationshipId relationshipId = null;
+		ExerciseSubstitutionRelationshipType typeSnapshot = null;
+		ExerciseSubstitutionCompatibility compatibilitySnapshot = null;
+		if (relationship != null) {
+			relationshipId = relationship.id();
+			typeSnapshot = relationship.relationshipType();
+			compatibilitySnapshot = relationship.compatibilityLevel();
+		}
 		return new WorkoutExerciseSubstitutionHistory(
 				WorkoutExerciseSubstitutionHistoryId.generate(),
 				execution.athleteId(),
@@ -90,6 +122,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				execution.performedExerciseNameSnapshot(),
 				reason,
 				notes,
+				relationshipId,
+				typeSnapshot,
+				compatibilitySnapshot,
 				execution.performedExerciseDefinitionId().equals(execution.prescribedExerciseDefinitionId()),
 				now,
 				now);
@@ -119,6 +154,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				execution.prescribedExerciseNameSnapshot(),
 				ExerciseSubstitutionReason.REVERSION,
 				notes,
+				null,
+				null,
+				null,
 				true,
 				now,
 				now);
@@ -135,6 +173,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			String toExerciseNameSnapshot,
 			ExerciseSubstitutionReason reason,
 			String notes,
+			ExerciseSubstitutionRelationshipId substitutionRelationshipId,
+			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
+			ExerciseSubstitutionCompatibility compatibilitySnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -149,6 +190,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				toExerciseNameSnapshot,
 				reason,
 				notes,
+				substitutionRelationshipId,
+				relationshipTypeSnapshot,
+				compatibilitySnapshot,
 				reverted,
 				changedAt,
 				createdAt);
@@ -192,6 +236,18 @@ public class WorkoutExerciseSubstitutionHistory {
 
 	public String notes() {
 		return notes;
+	}
+
+	public ExerciseSubstitutionRelationshipId substitutionRelationshipId() {
+		return substitutionRelationshipId;
+	}
+
+	public ExerciseSubstitutionRelationshipType relationshipTypeSnapshot() {
+		return relationshipTypeSnapshot;
+	}
+
+	public ExerciseSubstitutionCompatibility compatibilitySnapshot() {
+		return compatibilitySnapshot;
 	}
 
 	public boolean reverted() {

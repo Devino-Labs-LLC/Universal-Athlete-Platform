@@ -2,6 +2,7 @@ package com.devinolabs.uap.training.infrastructure.persistence;
 
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistory;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistoryId;
@@ -26,6 +27,11 @@ final class WorkoutExerciseSubstitutionHistoryPersistenceMapper {
 				entry.toExerciseNameSnapshot(),
 				entry.reason(),
 				entry.notes(),
+				entry.substitutionRelationshipId() == null
+						? null
+						: entry.substitutionRelationshipId().value(),
+				entry.relationshipTypeSnapshot(),
+				entry.compatibilitySnapshot(),
 				entry.reverted(),
 				entry.changedAt(),
 				entry.createdAt(),
@@ -44,6 +50,11 @@ final class WorkoutExerciseSubstitutionHistoryPersistenceMapper {
 				entity.getToExerciseNameSnapshot(),
 				entity.getReason(),
 				entity.getNotes(),
+				entity.getSubstitutionRelationshipId() == null
+						? null
+						: ExerciseSubstitutionRelationshipId.of(entity.getSubstitutionRelationshipId()),
+				entity.getRelationshipTypeSnapshot(),
+				entity.getCompatibilitySnapshot(),
 				entity.isReverted(),
 				entity.getChangedAt(),
 				entity.getCreatedAt());

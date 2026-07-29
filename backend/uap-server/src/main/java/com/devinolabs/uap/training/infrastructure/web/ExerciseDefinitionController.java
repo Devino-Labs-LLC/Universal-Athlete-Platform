@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.infrastructure.web;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -20,13 +21,27 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 import com.devinolabs.uap.training.application.ArchiveAthleteExerciseDefinitionUseCase;
+import com.devinolabs.uap.training.application.ArchiveExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.application.CreateAthleteExerciseDefinitionUseCase;
+import com.devinolabs.uap.training.application.CreateExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.application.GetExerciseDefinitionUseCase;
+import com.devinolabs.uap.training.application.GetExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.application.ListAccessibleExerciseDefinitionsUseCase;
+import com.devinolabs.uap.training.application.ListExerciseSubstitutionCandidatesUseCase;
 import com.devinolabs.uap.training.application.UpdateAthleteExerciseDefinitionUseCase;
+import com.devinolabs.uap.training.application.UpdateExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.domain.AccountId;
+import com.devinolabs.uap.training.domain.EquipmentType;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionCategory;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionScope;
+import com.devinolabs.uap.training.domain.ExerciseDifficulty;
+import com.devinolabs.uap.training.domain.ExerciseLaterality;
+import com.devinolabs.uap.training.domain.ExerciseMetricMode;
+import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
+import com.devinolabs.uap.training.domain.ImpactLevel;
+import com.devinolabs.uap.training.domain.MovementPattern;
+import com.devinolabs.uap.training.domain.MuscleGroup;
 
 @RestController
 @RequestMapping("/api/v1/training/exercise-definitions")
@@ -37,19 +52,27 @@ class ExerciseDefinitionController {
 	private final GetExerciseDefinitionUseCase getExerciseDefinitionUseCase;
 	private final UpdateAthleteExerciseDefinitionUseCase updateAthleteExerciseDefinitionUseCase;
 	private final ArchiveAthleteExerciseDefinitionUseCase archiveAthleteExerciseDefinitionUseCase;
+	private final CreateExerciseSubstitutionRelationshipUseCase createExerciseSubstitutionRelationshipUseCase;
+	private final ListExerciseSubstitutionCandidatesUseCase listExerciseSubstitutionCandidatesUseCase;
 
 	ExerciseDefinitionController(
 			CreateAthleteExerciseDefinitionUseCase createAthleteExerciseDefinitionUseCase,
 			ListAccessibleExerciseDefinitionsUseCase listAccessibleExerciseDefinitionsUseCase,
 			GetExerciseDefinitionUseCase getExerciseDefinitionUseCase,
 			UpdateAthleteExerciseDefinitionUseCase updateAthleteExerciseDefinitionUseCase,
-			ArchiveAthleteExerciseDefinitionUseCase archiveAthleteExerciseDefinitionUseCase) {
+			ArchiveAthleteExerciseDefinitionUseCase archiveAthleteExerciseDefinitionUseCase,
+			CreateExerciseSubstitutionRelationshipUseCase createExerciseSubstitutionRelationshipUseCase,
+			ListExerciseSubstitutionCandidatesUseCase listExerciseSubstitutionCandidatesUseCase) {
 		this.createAthleteExerciseDefinitionUseCase = Objects.requireNonNull(createAthleteExerciseDefinitionUseCase);
 		this.listAccessibleExerciseDefinitionsUseCase =
 				Objects.requireNonNull(listAccessibleExerciseDefinitionsUseCase);
 		this.getExerciseDefinitionUseCase = Objects.requireNonNull(getExerciseDefinitionUseCase);
 		this.updateAthleteExerciseDefinitionUseCase = Objects.requireNonNull(updateAthleteExerciseDefinitionUseCase);
 		this.archiveAthleteExerciseDefinitionUseCase = Objects.requireNonNull(archiveAthleteExerciseDefinitionUseCase);
+		this.createExerciseSubstitutionRelationshipUseCase =
+				Objects.requireNonNull(createExerciseSubstitutionRelationshipUseCase);
+		this.listExerciseSubstitutionCandidatesUseCase =
+				Objects.requireNonNull(listExerciseSubstitutionCandidatesUseCase);
 	}
 
 	@PostMapping
@@ -58,18 +81,40 @@ class ExerciseDefinitionController {
 			@Valid @RequestBody CreateExerciseDefinitionRequest request,
 			Authentication authentication) {
 		return ExerciseDefinitionResponse.from(createAthleteExerciseDefinitionUseCase.execute(
-				accountId(authentication), request.canonicalName()));
+				accountId(authentication),
+				request.canonicalName(),
+				ExerciseDefinitionMetadataMapper.toDomain(request.metadata())));
 	}
 
 	@GetMapping
 	ExerciseDefinitionPageResponse list(
 			@RequestParam(required = false) String name,
 			@RequestParam(required = false) ExerciseDefinitionScope scope,
+			@RequestParam(required = false) ExerciseDefinitionCategory category,
+			@RequestParam(required = false) ExerciseMetricMode metricMode,
+			@RequestParam(required = false) MovementPattern movementPattern,
+			@RequestParam(required = false) MuscleGroup muscleGroup,
+			@RequestParam(required = false) EquipmentType equipment,
+			@RequestParam(required = false) ExerciseLaterality laterality,
+			@RequestParam(required = false) ImpactLevel impactLevel,
+			@RequestParam(required = false) ExerciseDifficulty difficulty,
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer size,
 			Authentication authentication) {
 		return ExerciseDefinitionPageResponse.from(listAccessibleExerciseDefinitionsUseCase.execute(
-				accountId(authentication), name, scope, page, size));
+				accountId(authentication),
+				name,
+				scope,
+				category,
+				metricMode,
+				movementPattern,
+				muscleGroup,
+				equipment,
+				laterality,
+				impactLevel,
+				difficulty,
+				page,
+				size));
 	}
 
 	@GetMapping("/{exerciseDefinitionId}")
@@ -88,13 +133,9 @@ class ExerciseDefinitionController {
 		return ExerciseDefinitionResponse.from(updateAthleteExerciseDefinitionUseCase.execute(
 				accountId(authentication),
 				ExerciseDefinitionId.of(exerciseDefinitionId),
-				request.canonicalName()));
+				UpdateExerciseDefinitionRequestMapper.toCommand(request)));
 	}
 
-	/**
-	 * Archives instead of deleting: the definition is the identity an athlete's history and personal
-	 * records hang from, so it is retired from selection rather than removed.
-	 */
 	@DeleteMapping("/{exerciseDefinitionId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void archive(
@@ -102,6 +143,37 @@ class ExerciseDefinitionController {
 			Authentication authentication) {
 		archiveAthleteExerciseDefinitionUseCase.execute(
 				accountId(authentication), ExerciseDefinitionId.of(exerciseDefinitionId));
+	}
+
+	@PostMapping("/{sourceDefinitionId}/substitutions")
+	@ResponseStatus(HttpStatus.CREATED)
+	ExerciseSubstitutionRelationshipResponse createSubstitutionRelationship(
+			@PathVariable UUID sourceDefinitionId,
+			@Valid @RequestBody CreateExerciseSubstitutionRelationshipRequest request,
+			Authentication authentication) {
+		return ExerciseSubstitutionRelationshipResponse.from(
+				createExerciseSubstitutionRelationshipUseCase.execute(
+						accountId(authentication),
+						ExerciseDefinitionId.of(sourceDefinitionId),
+						ExerciseDefinitionId.of(request.targetExerciseDefinitionId()),
+						request.relationshipType(),
+						request.compatibilityLevel(),
+						request.rationale()));
+	}
+
+	@GetMapping("/{sourceDefinitionId}/substitution-candidates")
+	List<ExerciseSubstitutionCandidateResponse> substitutionCandidates(
+			@PathVariable UUID sourceDefinitionId,
+			@RequestParam(required = false) List<EquipmentType> equipment,
+			Authentication authentication) {
+		return listExerciseSubstitutionCandidatesUseCase
+				.execute(
+						accountId(authentication),
+						ExerciseDefinitionId.of(sourceDefinitionId),
+						equipment == null ? List.of() : equipment)
+				.stream()
+				.map(ExerciseSubstitutionCandidateResponse::from)
+				.toList();
 	}
 
 	private static AccountId accountId(Authentication authentication) {

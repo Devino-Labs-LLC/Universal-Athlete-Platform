@@ -32,8 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("20");
-		assertThat(flyway.info().current().getDescription()).isEqualTo("add workout exercise substitutions");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("21");
+		assertThat(flyway.info().current().getDescription())
+				.isEqualTo("add exercise classification and substitution relationships");
 	}
 
 	@Test
@@ -452,17 +453,26 @@ class UapServerApplicationTests {
 	}
 
 	@Test
-	void flywaySeedsSystemExerciseDefinitions() throws Exception {
+	void flywayAppliesExerciseClassificationAndSubstitutionRelationshipsMigration() throws Exception {
 		try (Connection connection = dataSource.getConnection();
-				ResultSet seeds = connection.createStatement().executeQuery(
-						"SELECT BIN_TO_UUID(id) AS id, canonical_name FROM exercise_definitions"
-								+ " WHERE scope = 'SYSTEM' ORDER BY canonical_name")) {
-			int count = 0;
-			while (seeds.next()) {
-				count++;
-				assertThat(seeds.getString("id")).startsWith("11111111-1111-1111-1111-1111111111");
-			}
-			assertThat(count).isEqualTo(SystemExerciseDefinitions.all().size());
+				ResultSet category = connection.getMetaData().getColumns(null, null, "exercise_definitions", "category");
+				ResultSet relationships = connection.getMetaData().getTables(null, null,
+						"exercise_substitution_relationships", new String[] { "TABLE" });
+				ResultSet secondaryMuscles = connection.getMetaData().getTables(null, null,
+						"exercise_definition_secondary_muscle_groups", new String[] { "TABLE" });
+				ResultSet relationshipId = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_substitution_history", "substitution_relationship_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '21'")) {
+			assertThat(category.next()).isTrue();
+			assertThat(category.getInt("NULLABLE")).isZero();
+			assertThat(relationships.next()).isTrue();
+			assertThat(secondaryMuscles.next()).isTrue();
+			assertThat(relationshipId.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("add exercise classification and substitution relationships");
+			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
 

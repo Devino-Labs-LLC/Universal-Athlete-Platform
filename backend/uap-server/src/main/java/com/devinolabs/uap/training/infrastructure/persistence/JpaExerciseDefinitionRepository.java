@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -7,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.devinolabs.uap.training.application.ExerciseDefinitionFilters;
 import com.devinolabs.uap.training.application.ExerciseDefinitionPage;
 import com.devinolabs.uap.training.application.ExerciseDefinitionRepository;
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -69,17 +71,39 @@ class JpaExerciseDefinitionRepository implements ExerciseDefinitionRepository {
 	@Override
 	public ExerciseDefinitionPage findAccessibleActive(
 			AthleteId athleteId,
-			String nameContains,
-			ExerciseDefinitionScope scope,
+			ExerciseDefinitionFilters filters,
 			int page,
 			int size) {
 		Page<ExerciseDefinitionJpaEntity> found = jpaRepository.findAccessibleActive(
-				athleteId.value(), nameContains, scope, PageRequest.of(page, size));
+				athleteId.value(),
+				filters.nameContains(),
+				filters.scope(),
+				filters.category(),
+				filters.metricMode(),
+				filters.movementPattern(),
+				filters.muscleGroup(),
+				filters.equipment(),
+				filters.laterality(),
+				filters.impactLevel(),
+				filters.difficulty(),
+				PageRequest.of(page, size));
 		return new ExerciseDefinitionPage(
 				found.getContent().stream().map(ExerciseDefinitionPersistenceMapper::toDomain).toList(),
 				page,
 				size,
 				found.getTotalElements());
+	}
+
+	@Override
+	public List<ExerciseDefinition> findAllByIds(List<ExerciseDefinitionId> ids) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository
+				.findAllByIdIn(ids.stream().map(ExerciseDefinitionId::value).toList())
+				.stream()
+				.map(ExerciseDefinitionPersistenceMapper::toDomain)
+				.toList();
 	}
 
 }
