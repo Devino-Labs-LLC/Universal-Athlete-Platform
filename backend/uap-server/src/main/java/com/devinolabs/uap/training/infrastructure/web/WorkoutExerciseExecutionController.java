@@ -22,6 +22,7 @@ import com.devinolabs.uap.training.application.CompleteWorkoutExerciseExecutionU
 import com.devinolabs.uap.training.application.GetWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.ListWorkoutExerciseExecutionsUseCase;
 import com.devinolabs.uap.training.application.ListWorkoutExerciseSubstitutionHistoryUseCase;
+import com.devinolabs.uap.training.application.ListOccurrenceExerciseSubstitutionCandidatesUseCase;
 import com.devinolabs.uap.training.application.RevertWorkoutExerciseExecutionSubstitutionUseCase;
 import com.devinolabs.uap.training.application.SkipWorkoutExerciseExecutionUseCase;
 import com.devinolabs.uap.training.application.StartWorkoutExerciseExecutionUseCase;
@@ -50,6 +51,7 @@ class WorkoutExerciseExecutionController {
 	private final RevertWorkoutExerciseExecutionSubstitutionUseCase
 			revertWorkoutExerciseExecutionSubstitutionUseCase;
 	private final ListWorkoutExerciseSubstitutionHistoryUseCase listWorkoutExerciseSubstitutionHistoryUseCase;
+	private final ListOccurrenceExerciseSubstitutionCandidatesUseCase listOccurrenceExerciseSubstitutionCandidatesUseCase;
 
 	WorkoutExerciseExecutionController(
 			ListWorkoutExerciseExecutionsUseCase listWorkoutExerciseExecutionsUseCase,
@@ -60,7 +62,8 @@ class WorkoutExerciseExecutionController {
 			SkipWorkoutExerciseExecutionUseCase skipWorkoutExerciseExecutionUseCase,
 			SubstituteWorkoutExerciseExecutionUseCase substituteWorkoutExerciseExecutionUseCase,
 			RevertWorkoutExerciseExecutionSubstitutionUseCase revertWorkoutExerciseExecutionSubstitutionUseCase,
-			ListWorkoutExerciseSubstitutionHistoryUseCase listWorkoutExerciseSubstitutionHistoryUseCase) {
+			ListWorkoutExerciseSubstitutionHistoryUseCase listWorkoutExerciseSubstitutionHistoryUseCase,
+			ListOccurrenceExerciseSubstitutionCandidatesUseCase listOccurrenceExerciseSubstitutionCandidatesUseCase) {
 		this.listWorkoutExerciseExecutionsUseCase = Objects.requireNonNull(listWorkoutExerciseExecutionsUseCase);
 		this.getWorkoutExerciseExecutionUseCase = Objects.requireNonNull(getWorkoutExerciseExecutionUseCase);
 		this.startWorkoutExerciseExecutionUseCase = Objects.requireNonNull(startWorkoutExerciseExecutionUseCase);
@@ -73,6 +76,8 @@ class WorkoutExerciseExecutionController {
 				revertWorkoutExerciseExecutionSubstitutionUseCase);
 		this.listWorkoutExerciseSubstitutionHistoryUseCase = Objects.requireNonNull(
 				listWorkoutExerciseSubstitutionHistoryUseCase);
+		this.listOccurrenceExerciseSubstitutionCandidatesUseCase = Objects.requireNonNull(
+				listOccurrenceExerciseSubstitutionCandidatesUseCase);
 	}
 
 	@GetMapping
@@ -230,6 +235,25 @@ class WorkoutExerciseExecutionController {
 						WorkoutOccurrenceId.of(occurrenceId),
 						WorkoutExerciseExecutionId.of(executionId),
 						request == null ? null : request.notes()));
+	}
+
+	@GetMapping("/{executionId}/substitution-candidates")
+	List<OccurrenceSubstitutionCandidateResponse> substitutionCandidates(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@PathVariable UUID executionId,
+			Authentication authentication) {
+		return listOccurrenceExerciseSubstitutionCandidatesUseCase
+				.execute(
+						accountId(authentication),
+						TrainingPlanId.of(planId),
+						WorkoutDayId.of(dayId),
+						WorkoutOccurrenceId.of(occurrenceId),
+						WorkoutExerciseExecutionId.of(executionId))
+				.stream()
+				.map(OccurrenceSubstitutionCandidateResponse::from)
+				.toList();
 	}
 
 	@GetMapping("/{executionId}/substitutions")

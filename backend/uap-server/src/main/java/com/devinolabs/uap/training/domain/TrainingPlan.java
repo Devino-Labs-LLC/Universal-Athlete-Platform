@@ -24,6 +24,7 @@ public class TrainingPlan {
 	private final AthleteId athleteId;
 	private AthleteSportId athleteSportId;
 	private AthleteGoalId athleteGoalId;
+	private TrainingEnvironmentId defaultTrainingEnvironmentId;
 	private String name;
 	private String normalizedName;
 	private String description;
@@ -49,6 +50,7 @@ public class TrainingPlan {
 			AthleteId athleteId,
 			AthleteSportId athleteSportId,
 			AthleteGoalId athleteGoalId,
+			TrainingEnvironmentId defaultTrainingEnvironmentId,
 			String name,
 			String normalizedName,
 			String description,
@@ -81,6 +83,7 @@ public class TrainingPlan {
 		enforceDateRange(this.startDate, this.endDate);
 		this.athleteSportId = athleteSportId;
 		this.athleteGoalId = athleteGoalId;
+		this.defaultTrainingEnvironmentId = defaultTrainingEnvironmentId;
 		this.scheduleStartDate = scheduleStartDate;
 		this.scheduleEndDate = scheduleEndDate;
 		this.scheduleTimezone = scheduleTimezone;
@@ -117,6 +120,7 @@ public class TrainingPlan {
 				athleteId,
 				athleteSportId,
 				athleteGoalId,
+				null,
 				name,
 				normalizeName(name),
 				description,
@@ -143,6 +147,7 @@ public class TrainingPlan {
 			AthleteId athleteId,
 			AthleteSportId athleteSportId,
 			AthleteGoalId athleteGoalId,
+			TrainingEnvironmentId defaultTrainingEnvironmentId,
 			String name,
 			String normalizedName,
 			String description,
@@ -167,6 +172,7 @@ public class TrainingPlan {
 				athleteId,
 				athleteSportId,
 				athleteGoalId,
+				defaultTrainingEnvironmentId,
 				name,
 				normalizedName,
 				description,
@@ -234,6 +240,19 @@ public class TrainingPlan {
 	public void unlinkGoal(Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		this.athleteGoalId = null;
+		touch(clock);
+	}
+
+	public void linkDefaultTrainingEnvironment(TrainingEnvironmentId environmentId, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.defaultTrainingEnvironmentId = Objects.requireNonNull(
+				environmentId, "defaultTrainingEnvironmentId must not be null");
+		touch(clock);
+	}
+
+	public void unlinkDefaultTrainingEnvironment(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.defaultTrainingEnvironmentId = null;
 		touch(clock);
 	}
 
@@ -457,6 +476,10 @@ public class TrainingPlan {
 
 	public AthleteGoalId athleteGoalId() {
 		return athleteGoalId;
+	}
+
+	public TrainingEnvironmentId defaultTrainingEnvironmentId() {
+		return defaultTrainingEnvironmentId;
 	}
 
 	public String name() {

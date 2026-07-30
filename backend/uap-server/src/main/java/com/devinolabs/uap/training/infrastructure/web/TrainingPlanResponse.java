@@ -20,6 +20,7 @@ public record TrainingPlanResponse(
 		LocalDate endDate,
 		UUID athleteSportId,
 		UUID athleteGoalId,
+		UUID defaultTrainingEnvironmentId,
 		LocalDate scheduleStartDate,
 		LocalDate scheduleEndDate,
 		String scheduleTimezone,

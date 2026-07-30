@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 import com.devinolabs.uap.training.domain.AthleteGoalId;
 import com.devinolabs.uap.training.domain.AthleteSportId;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.TrainingPlanRecurrenceMode;
 import com.devinolabs.uap.training.domain.TrainingPlanScheduleStatus;
@@ -22,6 +23,7 @@ public record TrainingPlanResult(
 		LocalDate endDate,
 		AthleteSportId athleteSportId,
 		AthleteGoalId athleteGoalId,
+		TrainingEnvironmentId defaultTrainingEnvironmentId,
 		LocalDate scheduleStartDate,
 		LocalDate scheduleEndDate,
 		String scheduleTimezone,

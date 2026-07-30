@@ -113,7 +113,14 @@ public class SubstituteWorkoutExerciseExecutionUseCase {
 		execution.substitute(target, reason, notes, clock);
 		WorkoutExerciseExecution substituted = workoutExerciseExecutionRepository.save(execution);
 		substitutionHistoryRepository.append(WorkoutExerciseSubstitutionHistory.substitution(
-				substituted, previousDefinitionId, previousName, reason, notes, relationship, clock));
+				substituted,
+				previousDefinitionId,
+				previousName,
+				reason,
+				notes,
+				relationship,
+				WorkoutOccurrenceEnvironmentSupport.resolveSubstitutionContextSnapshot(occurrence),
+				clock));
 		return WorkoutExerciseExecutionSupport.toResult(
 				substituted, workoutExerciseSetRepository, athleteId);
 	}

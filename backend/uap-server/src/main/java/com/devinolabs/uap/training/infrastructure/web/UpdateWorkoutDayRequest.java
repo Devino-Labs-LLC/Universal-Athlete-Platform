@@ -10,5 +10,6 @@ public record UpdateWorkoutDayRequest(
 		PatchValue<DayOfWeek> scheduledDayOfWeek,
 		PatchValue<LocalTime> plannedStartTime,
 		PatchValue<Integer> expectedDurationMinutes,
-		PatchValue<Integer> displayOrder) {
+		PatchValue<Integer> displayOrder,
+		PatchValue<java.util.UUID> trainingEnvironmentOverrideId) {
 }

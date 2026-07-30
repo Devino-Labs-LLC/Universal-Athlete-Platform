@@ -15,5 +15,7 @@ public record UpdateTrainingPlanCommand(
 		UUID athleteSportId,
 		boolean athleteSportIdPresent,
 		UUID athleteGoalId,
-		boolean athleteGoalIdPresent) {
+		boolean athleteGoalIdPresent,
+		UUID defaultTrainingEnvironmentId,
+		boolean defaultTrainingEnvironmentIdPresent) {
 }

@@ -3,6 +3,7 @@ package com.devinolabs.uap.training.infrastructure.persistence;
 import com.devinolabs.uap.training.domain.AthleteGoalId;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.AthleteSportId;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 
@@ -17,6 +18,7 @@ final class TrainingPlanPersistenceMapper {
 				plan.athleteId().value(),
 				plan.athleteSportId() == null ? null : plan.athleteSportId().value(),
 				plan.athleteGoalId() == null ? null : plan.athleteGoalId().value(),
+				plan.defaultTrainingEnvironmentId() == null ? null : plan.defaultTrainingEnvironmentId().value(),
 				plan.name(),
 				plan.normalizedName(),
 				plan.description(),
@@ -45,6 +47,9 @@ final class TrainingPlanPersistenceMapper {
 				AthleteId.of(entity.getAthleteId()),
 				entity.getAthleteSportId() == null ? null : AthleteSportId.of(entity.getAthleteSportId()),
 				entity.getAthleteGoalId() == null ? null : AthleteGoalId.of(entity.getAthleteGoalId()),
+				entity.getDefaultTrainingEnvironmentId() == null
+						? null
+						: TrainingEnvironmentId.of(entity.getDefaultTrainingEnvironmentId()),
 				entity.getName(),
 				entity.getNormalizedName(),
 				entity.getDescription(),

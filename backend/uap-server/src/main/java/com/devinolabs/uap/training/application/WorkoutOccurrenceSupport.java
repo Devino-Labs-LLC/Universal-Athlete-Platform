@@ -98,6 +98,7 @@ final class WorkoutOccurrenceSupport {
 				occurrence.origin(),
 				occurrence.originalScheduledDate(),
 				occurrence.manuallyRescheduled(),
+				WorkoutOccurrenceEnvironmentSupport.toDetailResult(occurrence),
 				occurrence.createdAt(),
 				occurrence.updatedAt());
 	}

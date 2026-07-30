@@ -132,7 +132,8 @@ class TrainingPlanUseCaseIntegrationTests {
 						LocalDate.of(2026, 6, 15), true,
 						null, false,
 						null, true,
-						null, true));
+						null, true,
+						null, false));
 		assertThat(updated.name()).isEqualTo("Summer Vertical Program");
 		assertThat(updated.description()).isNull();
 		assertThat(updated.athleteSportId()).isNull();
@@ -250,6 +251,7 @@ class TrainingPlanUseCaseIntegrationTests {
 				loaded.athleteId(),
 				loaded.athleteSportId(),
 				loaded.athleteGoalId(),
+				loaded.defaultTrainingEnvironmentId(),
 				"Stale",
 				"stale",
 				loaded.description(),

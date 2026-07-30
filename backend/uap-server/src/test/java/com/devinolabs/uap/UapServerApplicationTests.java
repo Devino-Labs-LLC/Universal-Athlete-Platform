@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("21");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("22");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add exercise classification and substitution relationships");
+				.isEqualTo("add training environments and occurrence context");
 	}
 
 	@Test
@@ -472,6 +472,33 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("add exercise classification and substitution relationships");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesTrainingEnvironmentsAndOccurrenceContextMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet environments = connection.getMetaData().getTables(null, null, "training_environments",
+						new String[] { "TABLE" });
+				ResultSet equipment = connection.getMetaData().getTables(null, null,
+						"training_environment_equipment", new String[] { "TABLE" });
+				ResultSet plannedEnvironment = connection.getMetaData().getColumns(null, null, "workout_occurrences",
+						"planned_training_environment_id");
+				ResultSet planDefault = connection.getMetaData().getColumns(null, null, "training_plans",
+						"default_training_environment_id");
+				ResultSet historyEnvironment = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_substitution_history", "training_environment_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '22'")) {
+			assertThat(environments.next()).isTrue();
+			assertThat(equipment.next()).isTrue();
+			assertThat(plannedEnvironment.next()).isTrue();
+			assertThat(planDefault.next()).isTrue();
+			assertThat(historyEnvironment.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("add training environments and occurrence context");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

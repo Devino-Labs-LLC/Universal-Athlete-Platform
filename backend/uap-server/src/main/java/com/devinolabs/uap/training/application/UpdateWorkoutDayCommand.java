@@ -2,6 +2,7 @@ package com.devinolabs.uap.training.application;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.UUID;
 
 public record UpdateWorkoutDayCommand(
 		String title,
@@ -17,7 +18,9 @@ public record UpdateWorkoutDayCommand(
 		Integer expectedDurationMinutes,
 		boolean expectedDurationMinutesPresent,
 		Integer displayOrder,
-		boolean displayOrderPresent) {
+		boolean displayOrderPresent,
+		UUID trainingEnvironmentOverrideId,
+		boolean trainingEnvironmentOverrideIdPresent) {
 
 	public boolean touchesPlacement() {
 		return planWeekNumberPresent || scheduledDayOfWeekPresent || plannedStartTimePresent;

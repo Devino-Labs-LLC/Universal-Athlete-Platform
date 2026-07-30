@@ -15,5 +15,6 @@ public record CreateWorkoutDayRequest(
 		@NotNull DayOfWeek scheduledDayOfWeek,
 		LocalTime plannedStartTime,
 		@Min(1) Integer expectedDurationMinutes,
-		@Min(0) Integer displayOrder) {
+		@Min(0) Integer displayOrder,
+		java.util.UUID trainingEnvironmentOverrideId) {
 }

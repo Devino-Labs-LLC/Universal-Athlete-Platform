@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -247,6 +248,90 @@ class WorkoutOccurrenceHttpIntegrationTests {
 	}
 
 	@Test
+	void occurrenceEnvironmentAndSubstitutionCandidatesAreAuthenticatedAndMapped() throws Exception {
+		AccountId accountId = AccountId.generate();
+		createProfile(accountId);
+		String commercialGymId = createEnvironment(
+				accountId,
+				"Commercial Gym",
+				"COMMERCIAL_GYM",
+				"[\"BARBELL\",\"SQUAT_RACK\",\"PLATE_LOADED_MACHINE\"]",
+				true);
+		String homeGymId = createEnvironment(
+				accountId,
+				"Home Gym",
+				"HOME_GYM",
+				"[\"DUMBBELL\",\"BENCH\",\"RESISTANCE_BAND\"]",
+				false);
+		String planId = createPlan(accountId, commercialGymId);
+		String dayId = createDay(accountId, planId);
+		String exerciseId = createExercise(accountId, planId, dayId);
+		String base = "/api/v1/training/plans/" + planId + "/days/" + dayId + "/occurrences";
+
+		MvcResult created = mockMvc.perform(post(base)
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"scheduledDate":"2026-07-28"}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.environment.plannedEnvironment.nameSnapshot").value("Commercial Gym"))
+				.andExpect(jsonPath("$.environment.actualEnvironment.nameSnapshot").value("Commercial Gym"))
+				.andReturn();
+		String occurrenceId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+		String executionId = JsonPath.read(created.getResponse().getContentAsString(), "$.executions[0].id");
+		String environmentPath = base + "/" + occurrenceId + "/environment";
+		String candidatesPath = base + "/" + occurrenceId + "/exercises/" + executionId + "/substitution-candidates";
+
+		mockMvc.perform(put(environmentPath)
+						.with(accountAuth(accountId))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"trainingEnvironmentId":"%s"}
+								""".formatted(homeGymId)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+
+		mockMvc.perform(put(environmentPath)
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"trainingEnvironmentId":"%s"}
+								""".formatted(homeGymId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.environment.plannedEnvironment.nameSnapshot").value("Commercial Gym"))
+				.andExpect(jsonPath("$.environment.actualEnvironment.nameSnapshot").value("Home Gym"));
+
+		mockMvc.perform(get(candidatesPath).with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*].targetExerciseDefinitionId")
+						.value(org.hamcrest.Matchers.hasItem(SystemExerciseDefinitions.GOBLET_SQUAT.value().toString())))
+				.andExpect(jsonPath("$[*].targetExerciseDefinitionId")
+						.value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(
+								SystemExerciseDefinitions.LEG_PRESS.value().toString()))))
+				.andExpect(jsonPath("$[0].environmentContext.nameSnapshot").value("Home Gym"));
+
+		mockMvc.perform(delete(environmentPath)
+						.with(accountAuth(accountId))
+						.with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.environment.plannedEnvironment.nameSnapshot").value("Commercial Gym"))
+				.andExpect(jsonPath("$.environment.actualEnvironment").value(nullValue()));
+
+		mockMvc.perform(delete(environmentPath)
+						.with(accountAuth(accountId))
+						.with(csrf()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("WORKOUT_OCCURRENCE_ENVIRONMENT_NOT_SET"));
+
+		mockMvc.perform(get(base + "/" + occurrenceId).with(accountAuth(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.executions[0].sourceWorkoutExerciseId").value(exerciseId));
+	}
+
+	@Test
 	void rejectsEmptyDayDuplicateDateAndCrossAccount() throws Exception {
 		AccountId accountId = AccountId.generate();
 		createProfile(accountId);
@@ -315,6 +400,13 @@ class WorkoutOccurrenceHttpIntegrationTests {
 	}
 
 	private String createPlan(AccountId accountId) throws Exception {
+		return createPlan(accountId, null);
+	}
+
+	private String createPlan(AccountId accountId, String defaultTrainingEnvironmentId) throws Exception {
+		String defaultEnvironmentField = defaultTrainingEnvironmentId == null
+				? ""
+				: ",\"defaultTrainingEnvironmentId\":\"" + defaultTrainingEnvironmentId + "\"";
 		MvcResult result = mockMvc.perform(post("/api/v1/training/plans")
 						.with(accountAuth(accountId))
 						.with(csrf())
@@ -324,9 +416,32 @@ class WorkoutOccurrenceHttpIntegrationTests {
 								  "type":"STRENGTH",
 								  "name":"Strength Plan",
 								  "startDate":"2026-06-01",
-								  "endDate":"2026-08-31"
+								  "endDate":"2026-08-31"%s
 								}
-								"""))
+								""".formatted(defaultEnvironmentField)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+	}
+
+	private String createEnvironment(
+			AccountId accountId,
+			String name,
+			String type,
+			String equipmentJson,
+			boolean defaultEnvironment) throws Exception {
+		MvcResult result = mockMvc.perform(post("/api/v1/training/environments")
+						.with(accountAuth(accountId))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "name":"%s",
+								  "type":"%s",
+								  "availableEquipment":%s,
+								  "defaultEnvironment":%s
+								}
+								""".formatted(name, type, equipmentJson, defaultEnvironment)))
 				.andExpect(status().isCreated())
 				.andReturn();
 		return JsonPath.read(result.getResponse().getContentAsString(), "$.id");

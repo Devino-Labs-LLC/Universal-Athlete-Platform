@@ -1,7 +1,10 @@
 package com.devinolabs.uap.training.infrastructure.web;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+
+import com.devinolabs.uap.training.domain.EquipmentType;
 
 import com.devinolabs.uap.training.application.WorkoutExerciseSubstitutionResult;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
@@ -21,6 +24,9 @@ record WorkoutExerciseSubstitutionResponse(
 		UUID substitutionRelationshipId,
 		ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
 		ExerciseSubstitutionCompatibility compatibilitySnapshot,
+		UUID trainingEnvironmentId,
+		String trainingEnvironmentNameSnapshot,
+		List<EquipmentType> availableEquipmentSnapshot,
 		boolean reverted,
 		Instant changedAt) {
 
@@ -40,6 +46,9 @@ record WorkoutExerciseSubstitutionResponse(
 						: result.substitutionRelationshipId().value(),
 				result.relationshipTypeSnapshot(),
 				result.compatibilitySnapshot(),
+				result.trainingEnvironmentId() == null ? null : result.trainingEnvironmentId().value(),
+				result.trainingEnvironmentNameSnapshot(),
+				result.availableEquipmentSnapshot(),
 				result.reverted(),
 				result.changedAt());
 	}

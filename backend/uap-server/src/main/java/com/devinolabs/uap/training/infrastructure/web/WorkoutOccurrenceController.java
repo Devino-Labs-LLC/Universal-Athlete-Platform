@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +29,8 @@ import com.devinolabs.uap.training.application.DeleteWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.GetWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.ListWorkoutOccurrencesUseCase;
 import com.devinolabs.uap.training.application.RescheduleWorkoutOccurrenceUseCase;
+import com.devinolabs.uap.training.application.SetWorkoutOccurrenceTrainingEnvironmentUseCase;
+import com.devinolabs.uap.training.application.ClearWorkoutOccurrenceTrainingEnvironmentUseCase;
 import com.devinolabs.uap.training.application.SkipWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.StartWorkoutOccurrenceUseCase;
 import com.devinolabs.uap.training.application.UpdateWorkoutOccurrenceCommand;
@@ -40,6 +43,7 @@ import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 import java.time.LocalDate;
 
@@ -57,6 +61,8 @@ class WorkoutOccurrenceController {
 	private final CancelWorkoutOccurrenceUseCase cancelWorkoutOccurrenceUseCase;
 	private final DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase;
 	private final RescheduleWorkoutOccurrenceUseCase rescheduleWorkoutOccurrenceUseCase;
+	private final SetWorkoutOccurrenceTrainingEnvironmentUseCase setWorkoutOccurrenceTrainingEnvironmentUseCase;
+	private final ClearWorkoutOccurrenceTrainingEnvironmentUseCase clearWorkoutOccurrenceTrainingEnvironmentUseCase;
 
 	WorkoutOccurrenceController(
 			CreateWorkoutOccurrenceUseCase createWorkoutOccurrenceUseCase,
@@ -68,7 +74,9 @@ class WorkoutOccurrenceController {
 			SkipWorkoutOccurrenceUseCase skipWorkoutOccurrenceUseCase,
 			CancelWorkoutOccurrenceUseCase cancelWorkoutOccurrenceUseCase,
 			DeleteWorkoutOccurrenceUseCase deleteWorkoutOccurrenceUseCase,
-			RescheduleWorkoutOccurrenceUseCase rescheduleWorkoutOccurrenceUseCase) {
+			RescheduleWorkoutOccurrenceUseCase rescheduleWorkoutOccurrenceUseCase,
+			SetWorkoutOccurrenceTrainingEnvironmentUseCase setWorkoutOccurrenceTrainingEnvironmentUseCase,
+			ClearWorkoutOccurrenceTrainingEnvironmentUseCase clearWorkoutOccurrenceTrainingEnvironmentUseCase) {
 		this.createWorkoutOccurrenceUseCase = Objects.requireNonNull(createWorkoutOccurrenceUseCase);
 		this.listWorkoutOccurrencesUseCase = Objects.requireNonNull(listWorkoutOccurrencesUseCase);
 		this.getWorkoutOccurrenceUseCase = Objects.requireNonNull(getWorkoutOccurrenceUseCase);
@@ -79,6 +87,8 @@ class WorkoutOccurrenceController {
 		this.cancelWorkoutOccurrenceUseCase = Objects.requireNonNull(cancelWorkoutOccurrenceUseCase);
 		this.deleteWorkoutOccurrenceUseCase = Objects.requireNonNull(deleteWorkoutOccurrenceUseCase);
 		this.rescheduleWorkoutOccurrenceUseCase = Objects.requireNonNull(rescheduleWorkoutOccurrenceUseCase);
+		this.setWorkoutOccurrenceTrainingEnvironmentUseCase = Objects.requireNonNull(setWorkoutOccurrenceTrainingEnvironmentUseCase);
+		this.clearWorkoutOccurrenceTrainingEnvironmentUseCase = Objects.requireNonNull(clearWorkoutOccurrenceTrainingEnvironmentUseCase);
 	}
 
 	@PostMapping
@@ -235,6 +245,35 @@ class WorkoutOccurrenceController {
 				WorkoutOccurrenceId.of(occurrenceId));
 	}
 
+
+	@PutMapping("/{occurrenceId}/environment")
+	WorkoutOccurrenceResponse setEnvironment(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			@Valid @RequestBody SetWorkoutOccurrenceEnvironmentRequest request,
+			Authentication authentication) {
+		return WorkoutOccurrenceResponse.from(setWorkoutOccurrenceTrainingEnvironmentUseCase.execute(
+				accountId(authentication),
+				TrainingPlanId.of(planId),
+				WorkoutDayId.of(dayId),
+				WorkoutOccurrenceId.of(occurrenceId),
+				TrainingEnvironmentId.of(request.trainingEnvironmentId())));
+	}
+
+	@DeleteMapping("/{occurrenceId}/environment")
+	WorkoutOccurrenceResponse clearEnvironment(
+			@PathVariable UUID planId,
+			@PathVariable UUID dayId,
+			@PathVariable UUID occurrenceId,
+			Authentication authentication) {
+		return WorkoutOccurrenceResponse.from(clearWorkoutOccurrenceTrainingEnvironmentUseCase.execute(
+				accountId(authentication),
+				TrainingPlanId.of(planId),
+				WorkoutDayId.of(dayId),
+				WorkoutOccurrenceId.of(occurrenceId)));
+	}
+
 	private static AccountId accountId(Authentication authentication) {
 		AccountPrincipal principal = requirePrincipal(authentication);
 		return AccountId.of(principal.accountUuid());
@@ -248,37 +287,26 @@ class WorkoutOccurrenceController {
 	}
 
 	static WorkoutOccurrenceResponse toResponse(WorkoutOccurrenceResult result) {
-		return new WorkoutOccurrenceResponse(
-				result.id().value(),
-				result.workoutDayId().value(),
-				result.scheduledDate(),
-				result.plannedStartTime(),
-				result.startedAt(),
-				result.completedAt(),
-				result.status(),
-				result.athleteNotes(),
-				result.origin(),
-				result.originalScheduledDate(),
-				result.manuallyRescheduled(),
-				result.createdAt(),
-				result.updatedAt());
+		return WorkoutOccurrenceResponse.from(result);
 	}
 
 	static WorkoutOccurrenceDetailResponse toDetailResponse(WorkoutOccurrenceDetailResult detail) {
+		WorkoutOccurrenceResult occurrence = detail.occurrence();
 		return new WorkoutOccurrenceDetailResponse(
-				detail.occurrence().id().value(),
-				detail.occurrence().workoutDayId().value(),
-				detail.occurrence().scheduledDate(),
-				detail.occurrence().plannedStartTime(),
-				detail.occurrence().startedAt(),
-				detail.occurrence().completedAt(),
-				detail.occurrence().status(),
-				detail.occurrence().athleteNotes(),
-				detail.occurrence().origin(),
-				detail.occurrence().originalScheduledDate(),
-				detail.occurrence().manuallyRescheduled(),
-				detail.occurrence().createdAt(),
-				detail.occurrence().updatedAt(),
+				occurrence.id().value(),
+				occurrence.workoutDayId().value(),
+				occurrence.scheduledDate(),
+				occurrence.plannedStartTime(),
+				occurrence.startedAt(),
+				occurrence.completedAt(),
+				occurrence.status(),
+				occurrence.athleteNotes(),
+				occurrence.origin(),
+				occurrence.originalScheduledDate(),
+				occurrence.manuallyRescheduled(),
+				WorkoutOccurrenceEnvironmentContextResponse.from(occurrence.environment()),
+				occurrence.createdAt(),
+				occurrence.updatedAt(),
 				detail.executions().stream().map(WorkoutOccurrenceController::toExecutionResponse).toList());
 	}
 

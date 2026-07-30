@@ -4,6 +4,7 @@ import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 public record ExerciseSubstitutionCandidateResult(
 		ExerciseSubstitutionRelationshipId relationshipId,
@@ -11,5 +12,7 @@ public record ExerciseSubstitutionCandidateResult(
 		String targetCanonicalName,
 		ExerciseSubstitutionRelationshipType relationshipType,
 		ExerciseSubstitutionCompatibility compatibilityLevel,
-		String rationale) {
+		String rationale,
+		TrainingEnvironmentId trainingEnvironmentId,
+		String trainingEnvironmentName) {
 }

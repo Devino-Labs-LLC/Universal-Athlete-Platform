@@ -16,6 +16,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceOrigin;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
+import com.devinolabs.uap.training.application.WorkoutOccurrenceResult;
+
 public record WorkoutOccurrenceResponse(
 		UUID id,
 		UUID workoutDayId,
@@ -28,8 +30,27 @@ public record WorkoutOccurrenceResponse(
 		WorkoutOccurrenceOrigin origin,
 		LocalDate originalScheduledDate,
 		boolean manuallyRescheduled,
+		WorkoutOccurrenceEnvironmentContextResponse environment,
 		Instant createdAt,
 		Instant updatedAt) {
+
+	static WorkoutOccurrenceResponse from(WorkoutOccurrenceResult result) {
+		return new WorkoutOccurrenceResponse(
+				result.id().value(),
+				result.workoutDayId().value(),
+				result.scheduledDate(),
+				result.plannedStartTime(),
+				result.startedAt(),
+				result.completedAt(),
+				result.status(),
+				result.athleteNotes(),
+				result.origin(),
+				result.originalScheduledDate(),
+				result.manuallyRescheduled(),
+				WorkoutOccurrenceEnvironmentContextResponse.from(result.environment()),
+				result.createdAt(),
+				result.updatedAt());
+	}
 }
 
 record WorkoutOccurrenceDetailResponse(
@@ -44,6 +65,7 @@ record WorkoutOccurrenceDetailResponse(
 		WorkoutOccurrenceOrigin origin,
 		LocalDate originalScheduledDate,
 		boolean manuallyRescheduled,
+		WorkoutOccurrenceEnvironmentContextResponse environment,
 		Instant createdAt,
 		Instant updatedAt,
 		List<WorkoutExerciseExecutionResponse> executions) {

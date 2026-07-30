@@ -2,6 +2,7 @@ package com.devinolabs.uap.training.domain;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -26,6 +27,9 @@ public class WorkoutExerciseSubstitutionHistory {
 	private final ExerciseSubstitutionRelationshipId substitutionRelationshipId;
 	private final ExerciseSubstitutionRelationshipType relationshipTypeSnapshot;
 	private final ExerciseSubstitutionCompatibility compatibilitySnapshot;
+	private final TrainingEnvironmentId trainingEnvironmentId;
+	private final String trainingEnvironmentNameSnapshot;
+	private final List<EquipmentType> availableEquipmentSnapshot;
 	private final boolean reverted;
 	private final Instant changedAt;
 	private final Instant createdAt;
@@ -44,6 +48,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			ExerciseSubstitutionRelationshipId substitutionRelationshipId,
 			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
 			ExerciseSubstitutionCompatibility compatibilitySnapshot,
+			TrainingEnvironmentId trainingEnvironmentId,
+			String trainingEnvironmentNameSnapshot,
+			List<EquipmentType> availableEquipmentSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -70,6 +77,11 @@ public class WorkoutExerciseSubstitutionHistory {
 		this.substitutionRelationshipId = substitutionRelationshipId;
 		this.relationshipTypeSnapshot = relationshipTypeSnapshot;
 		this.compatibilitySnapshot = compatibilitySnapshot;
+		this.trainingEnvironmentId = trainingEnvironmentId;
+		this.trainingEnvironmentNameSnapshot = trainingEnvironmentNameSnapshot;
+		this.availableEquipmentSnapshot = availableEquipmentSnapshot == null
+				? List.of()
+				: List.copyOf(availableEquipmentSnapshot);
 		this.reverted = reverted;
 		this.changedAt = Objects.requireNonNull(changedAt, "changedAt must not be null");
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
@@ -86,12 +98,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			String notes,
 			Clock clock) {
 		return substitution(
-				execution, fromExerciseDefinitionId, fromExerciseNameSnapshot, reason, notes, null, clock);
+				execution, fromExerciseDefinitionId, fromExerciseNameSnapshot, reason, notes, null, null, clock);
 	}
 
-	/**
-	 * Records a move to a substitute movement, optionally snapshotting an approved relationship.
-	 */
 	public static WorkoutExerciseSubstitutionHistory substitution(
 			WorkoutExerciseExecution execution,
 			ExerciseDefinitionId fromExerciseDefinitionId,
@@ -99,6 +108,19 @@ public class WorkoutExerciseSubstitutionHistory {
 			ExerciseSubstitutionReason reason,
 			String notes,
 			ExerciseSubstitutionRelationship relationship,
+			Clock clock) {
+		return substitution(
+				execution, fromExerciseDefinitionId, fromExerciseNameSnapshot, reason, notes, relationship, null, clock);
+	}
+
+	public static WorkoutExerciseSubstitutionHistory substitution(
+			WorkoutExerciseExecution execution,
+			ExerciseDefinitionId fromExerciseDefinitionId,
+			String fromExerciseNameSnapshot,
+			ExerciseSubstitutionReason reason,
+			String notes,
+			ExerciseSubstitutionRelationship relationship,
+			WorkoutOccurrenceEnvironmentSnapshot environmentContext,
 			Clock clock) {
 		Objects.requireNonNull(execution, "execution must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
@@ -110,6 +132,14 @@ public class WorkoutExerciseSubstitutionHistory {
 			relationshipId = relationship.id();
 			typeSnapshot = relationship.relationshipType();
 			compatibilitySnapshot = relationship.compatibilityLevel();
+		}
+		TrainingEnvironmentId environmentId = null;
+		String environmentName = null;
+		List<EquipmentType> environmentEquipment = List.of();
+		if (environmentContext != null) {
+			environmentId = environmentContext.trainingEnvironmentId();
+			environmentName = environmentContext.nameSnapshot();
+			environmentEquipment = environmentContext.availableEquipmentSnapshot();
 		}
 		return new WorkoutExerciseSubstitutionHistory(
 				WorkoutExerciseSubstitutionHistoryId.generate(),
@@ -125,6 +155,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				relationshipId,
 				typeSnapshot,
 				compatibilitySnapshot,
+				environmentId,
+				environmentName,
+				environmentEquipment,
 				execution.performedExerciseDefinitionId().equals(execution.prescribedExerciseDefinitionId()),
 				now,
 				now);
@@ -157,6 +190,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				null,
 				null,
 				null,
+				null,
+				null,
+				List.of(),
 				true,
 				now,
 				now);
@@ -176,6 +212,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			ExerciseSubstitutionRelationshipId substitutionRelationshipId,
 			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
 			ExerciseSubstitutionCompatibility compatibilitySnapshot,
+			TrainingEnvironmentId trainingEnvironmentId,
+			String trainingEnvironmentNameSnapshot,
+			List<EquipmentType> availableEquipmentSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -193,6 +232,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				substitutionRelationshipId,
 				relationshipTypeSnapshot,
 				compatibilitySnapshot,
+				trainingEnvironmentId,
+				trainingEnvironmentNameSnapshot,
+				availableEquipmentSnapshot,
 				reverted,
 				changedAt,
 				createdAt);
@@ -248,6 +290,18 @@ public class WorkoutExerciseSubstitutionHistory {
 
 	public ExerciseSubstitutionCompatibility compatibilitySnapshot() {
 		return compatibilitySnapshot;
+	}
+
+	public TrainingEnvironmentId trainingEnvironmentId() {
+		return trainingEnvironmentId;
+	}
+
+	public String trainingEnvironmentNameSnapshot() {
+		return trainingEnvironmentNameSnapshot;
+	}
+
+	public List<EquipmentType> availableEquipmentSnapshot() {
+		return availableEquipmentSnapshot;
 	}
 
 	public boolean reverted() {

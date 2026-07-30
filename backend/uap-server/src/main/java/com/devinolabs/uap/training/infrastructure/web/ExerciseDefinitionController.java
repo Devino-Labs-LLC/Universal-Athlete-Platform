@@ -28,6 +28,7 @@ import com.devinolabs.uap.training.application.GetExerciseDefinitionUseCase;
 import com.devinolabs.uap.training.application.GetExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.application.ListAccessibleExerciseDefinitionsUseCase;
 import com.devinolabs.uap.training.application.ListExerciseSubstitutionCandidatesUseCase;
+import com.devinolabs.uap.training.application.GetExerciseEnvironmentCompatibilityUseCase;
 import com.devinolabs.uap.training.application.UpdateAthleteExerciseDefinitionUseCase;
 import com.devinolabs.uap.training.application.UpdateExerciseSubstitutionRelationshipUseCase;
 import com.devinolabs.uap.training.domain.AccountId;
@@ -42,6 +43,7 @@ import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.ImpactLevel;
 import com.devinolabs.uap.training.domain.MovementPattern;
 import com.devinolabs.uap.training.domain.MuscleGroup;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 @RestController
 @RequestMapping("/api/v1/training/exercise-definitions")
@@ -54,6 +56,7 @@ class ExerciseDefinitionController {
 	private final ArchiveAthleteExerciseDefinitionUseCase archiveAthleteExerciseDefinitionUseCase;
 	private final CreateExerciseSubstitutionRelationshipUseCase createExerciseSubstitutionRelationshipUseCase;
 	private final ListExerciseSubstitutionCandidatesUseCase listExerciseSubstitutionCandidatesUseCase;
+	private final GetExerciseEnvironmentCompatibilityUseCase getExerciseEnvironmentCompatibilityUseCase;
 
 	ExerciseDefinitionController(
 			CreateAthleteExerciseDefinitionUseCase createAthleteExerciseDefinitionUseCase,
@@ -62,7 +65,8 @@ class ExerciseDefinitionController {
 			UpdateAthleteExerciseDefinitionUseCase updateAthleteExerciseDefinitionUseCase,
 			ArchiveAthleteExerciseDefinitionUseCase archiveAthleteExerciseDefinitionUseCase,
 			CreateExerciseSubstitutionRelationshipUseCase createExerciseSubstitutionRelationshipUseCase,
-			ListExerciseSubstitutionCandidatesUseCase listExerciseSubstitutionCandidatesUseCase) {
+			ListExerciseSubstitutionCandidatesUseCase listExerciseSubstitutionCandidatesUseCase,
+			GetExerciseEnvironmentCompatibilityUseCase getExerciseEnvironmentCompatibilityUseCase) {
 		this.createAthleteExerciseDefinitionUseCase = Objects.requireNonNull(createAthleteExerciseDefinitionUseCase);
 		this.listAccessibleExerciseDefinitionsUseCase =
 				Objects.requireNonNull(listAccessibleExerciseDefinitionsUseCase);
@@ -73,6 +77,8 @@ class ExerciseDefinitionController {
 				Objects.requireNonNull(createExerciseSubstitutionRelationshipUseCase);
 		this.listExerciseSubstitutionCandidatesUseCase =
 				Objects.requireNonNull(listExerciseSubstitutionCandidatesUseCase);
+		this.getExerciseEnvironmentCompatibilityUseCase =
+				Objects.requireNonNull(getExerciseEnvironmentCompatibilityUseCase);
 	}
 
 	@PostMapping
@@ -165,15 +171,28 @@ class ExerciseDefinitionController {
 	List<ExerciseSubstitutionCandidateResponse> substitutionCandidates(
 			@PathVariable UUID sourceDefinitionId,
 			@RequestParam(required = false) List<EquipmentType> equipment,
+			@RequestParam(required = false) UUID trainingEnvironmentId,
 			Authentication authentication) {
 		return listExerciseSubstitutionCandidatesUseCase
 				.execute(
 						accountId(authentication),
 						ExerciseDefinitionId.of(sourceDefinitionId),
-						equipment == null ? List.of() : equipment)
+						equipment == null ? List.of() : equipment,
+						trainingEnvironmentId == null ? null : TrainingEnvironmentId.of(trainingEnvironmentId))
 				.stream()
 				.map(ExerciseSubstitutionCandidateResponse::from)
 				.toList();
+	}
+
+	@GetMapping("/{exerciseDefinitionId}/environment-compatibility/{environmentId}")
+	ExerciseEnvironmentCompatibilityResponse environmentCompatibility(
+			@PathVariable UUID exerciseDefinitionId,
+			@PathVariable UUID environmentId,
+			Authentication authentication) {
+		return ExerciseEnvironmentCompatibilityResponse.from(getExerciseEnvironmentCompatibilityUseCase.execute(
+				accountId(authentication),
+				ExerciseDefinitionId.of(exerciseDefinitionId),
+				TrainingEnvironmentId.of(environmentId)));
 	}
 
 	private static AccountId accountId(Authentication authentication) {

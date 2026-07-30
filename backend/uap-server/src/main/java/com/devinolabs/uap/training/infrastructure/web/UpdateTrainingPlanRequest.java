@@ -9,5 +9,6 @@ public record UpdateTrainingPlanRequest(
 		PatchValue<LocalDate> startDate,
 		PatchValue<LocalDate> endDate,
 		PatchValue<UUID> athleteSportId,
-		PatchValue<UUID> athleteGoalId) {
+		PatchValue<UUID> athleteGoalId,
+		PatchValue<UUID> defaultTrainingEnvironmentId) {
 }

@@ -18,6 +18,7 @@ import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDay;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 @Service
 public class UpdateWorkoutDayUseCase {
@@ -26,6 +27,7 @@ public class UpdateWorkoutDayUseCase {
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
+	private final TrainingEnvironmentRepository trainingEnvironmentRepository;
 	private final Clock clock;
 
 	public UpdateWorkoutDayUseCase(
@@ -33,11 +35,13 @@ public class UpdateWorkoutDayUseCase {
 			TrainingPlanRepository trainingPlanRepository,
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
+			TrainingEnvironmentRepository trainingEnvironmentRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
+		this.trainingEnvironmentRepository = Objects.requireNonNull(trainingEnvironmentRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -95,6 +99,19 @@ public class UpdateWorkoutDayUseCase {
 			}
 			if (command.expectedDurationMinutesPresent()) {
 				day.changeExpectedDurationMinutes(command.expectedDurationMinutes(), clock);
+			}
+			if (command.trainingEnvironmentOverrideIdPresent()) {
+				if (command.trainingEnvironmentOverrideId() == null) {
+					day.unlinkTrainingEnvironmentOverride(clock);
+				}
+				else {
+					TrainingEnvironmentSupport.requireOwnedActive(
+							trainingEnvironmentRepository,
+							athleteId,
+							TrainingEnvironmentId.of(command.trainingEnvironmentOverrideId()));
+					day.linkTrainingEnvironmentOverride(
+							TrainingEnvironmentId.of(command.trainingEnvironmentOverrideId()), clock);
+				}
 			}
 		}
 		catch (IllegalArgumentException ex) {

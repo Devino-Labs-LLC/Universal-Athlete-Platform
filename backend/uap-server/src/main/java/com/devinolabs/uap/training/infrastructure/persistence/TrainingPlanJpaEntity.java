@@ -45,6 +45,10 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 	@Column(name = "athlete_goal_id", columnDefinition = "BINARY(16)")
 	private UUID athleteGoalId;
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "default_training_environment_id", columnDefinition = "BINARY(16)")
+	private UUID defaultTrainingEnvironmentId;
+
 	@Column(name = "name", nullable = false, length = 160)
 	private String name;
 
@@ -118,6 +122,7 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 			UUID athleteId,
 			UUID athleteSportId,
 			UUID athleteGoalId,
+			UUID defaultTrainingEnvironmentId,
 			String name,
 			String normalizedName,
 			String description,
@@ -142,6 +147,7 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 		this.athleteId = athleteId;
 		this.athleteSportId = athleteSportId;
 		this.athleteGoalId = athleteGoalId;
+		this.defaultTrainingEnvironmentId = defaultTrainingEnvironmentId;
 		this.name = name;
 		this.normalizedName = normalizedName;
 		this.description = description;
@@ -190,6 +196,14 @@ class TrainingPlanJpaEntity implements Persistable<UUID> {
 
 	UUID getAthleteGoalId() {
 		return athleteGoalId;
+	}
+
+	UUID getDefaultTrainingEnvironmentId() {
+		return defaultTrainingEnvironmentId;
+	}
+
+	void setDefaultTrainingEnvironmentId(UUID defaultTrainingEnvironmentId) {
+		this.defaultTrainingEnvironmentId = defaultTrainingEnvironmentId;
 	}
 
 	String getName() {

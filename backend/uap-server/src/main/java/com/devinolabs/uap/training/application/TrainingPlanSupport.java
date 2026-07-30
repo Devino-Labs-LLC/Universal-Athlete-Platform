@@ -57,6 +57,7 @@ final class TrainingPlanSupport {
 				plan.endDate(),
 				plan.athleteSportId(),
 				plan.athleteGoalId(),
+				plan.defaultTrainingEnvironmentId(),
 				plan.scheduleStartDate(),
 				plan.scheduleEndDate(),
 				plan.scheduleTimezone(),

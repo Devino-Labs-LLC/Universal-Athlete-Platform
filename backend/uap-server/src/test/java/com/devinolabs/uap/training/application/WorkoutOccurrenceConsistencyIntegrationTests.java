@@ -65,6 +65,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 	private ExerciseDefinitionFixtures exerciseDefinitions;
 
 	@Autowired
+	private TrainingEnvironmentRepository trainingEnvironmentRepository;
+
+	@Autowired
 	private CreateWorkoutOccurrenceUseCase createWorkoutOccurrenceUseCase;
 
 	@Autowired
@@ -456,6 +459,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				workoutOccurrenceRepository,
 				failingSaveAllRepository(),
 				workoutExerciseSetRepository,
+				trainingEnvironmentRepository,
 				clock);
 
 		LocalDate scheduledDate = LocalDate.of(2026, 8, 21);
@@ -501,6 +505,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				loaded.generationKey(),
 				loaded.originalScheduledDate(),
 				loaded.manuallyRescheduled(),
+				loaded.plannedEnvironment(),
+				loaded.actualEnvironment(),
+				loaded.environmentSelectedAt(),
 				loaded.createdAt(),
 				loaded.updatedAt(),
 				0L);

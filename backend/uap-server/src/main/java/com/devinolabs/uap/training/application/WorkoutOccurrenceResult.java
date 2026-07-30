@@ -21,6 +21,7 @@ public record WorkoutOccurrenceResult(
 		WorkoutOccurrenceOrigin origin,
 		LocalDate originalScheduledDate,
 		boolean manuallyRescheduled,
+		WorkoutOccurrenceEnvironmentDetailResult environment,
 		Instant createdAt,
 		Instant updatedAt) {
 }

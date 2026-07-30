@@ -77,7 +77,8 @@ class WorkoutDayController {
 				request.scheduledDayOfWeek(),
 				request.plannedStartTime(),
 				request.expectedDurationMinutes(),
-				request.displayOrder()));
+				request.displayOrder(),
+				request.trainingEnvironmentOverrideId()));
 	}
 
 	@GetMapping
@@ -119,7 +120,9 @@ class WorkoutDayController {
 				request.expectedDurationMinutes() == null ? null : request.expectedDurationMinutes().value(),
 				request.expectedDurationMinutes() != null,
 				request.displayOrder() == null ? null : request.displayOrder().value(),
-				request.displayOrder() != null);
+				request.displayOrder() != null,
+			request.trainingEnvironmentOverrideId() == null ? null : request.trainingEnvironmentOverrideId().value(),
+			request.trainingEnvironmentOverrideId() != null);
 		return toResponse(updateWorkoutDayUseCase.execute(
 				accountId(authentication),
 				TrainingPlanId.of(planId),
@@ -187,6 +190,9 @@ class WorkoutDayController {
 				result.plannedStartTime(),
 				result.expectedDurationMinutes(),
 				result.status(),
+				result.trainingEnvironmentOverrideId() == null
+						? null
+						: result.trainingEnvironmentOverrideId().value(),
 				result.createdAt(),
 				result.updatedAt());
 	}

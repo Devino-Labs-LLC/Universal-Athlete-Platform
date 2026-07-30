@@ -24,6 +24,9 @@ public class WorkoutOccurrence {
 	private final WorkoutGenerationKey generationKey;
 	private LocalDate originalScheduledDate;
 	private boolean manuallyRescheduled;
+	private WorkoutOccurrenceEnvironmentSnapshot plannedEnvironment;
+	private WorkoutOccurrenceEnvironmentSnapshot actualEnvironment;
+	private Instant environmentSelectedAt;
 	private final Instant createdAt;
 	private Instant updatedAt;
 	private long version;
@@ -43,6 +46,9 @@ public class WorkoutOccurrence {
 			WorkoutGenerationKey generationKey,
 			LocalDate originalScheduledDate,
 			boolean manuallyRescheduled,
+			WorkoutOccurrenceEnvironmentSnapshot plannedEnvironment,
+			WorkoutOccurrenceEnvironmentSnapshot actualEnvironment,
+			Instant environmentSelectedAt,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -60,6 +66,9 @@ public class WorkoutOccurrence {
 		this.generationKey = normalizeGenerationKey(origin, generationKey);
 		this.originalScheduledDate = originalScheduledDate;
 		this.manuallyRescheduled = manuallyRescheduled;
+		this.plannedEnvironment = plannedEnvironment;
+		this.actualEnvironment = actualEnvironment;
+		this.environmentSelectedAt = environmentSelectedAt;
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
 		if (version < 0) {
@@ -94,6 +103,9 @@ public class WorkoutOccurrence {
 				null,
 				null,
 				false,
+				null,
+				null,
+				null,
 				now,
 				now,
 				0L);
@@ -126,6 +138,9 @@ public class WorkoutOccurrence {
 				generationKey,
 				null,
 				false,
+				null,
+				null,
+				null,
 				now,
 				now,
 				0L);
@@ -146,6 +161,9 @@ public class WorkoutOccurrence {
 			WorkoutGenerationKey generationKey,
 			LocalDate originalScheduledDate,
 			boolean manuallyRescheduled,
+			WorkoutOccurrenceEnvironmentSnapshot plannedEnvironment,
+			WorkoutOccurrenceEnvironmentSnapshot actualEnvironment,
+			Instant environmentSelectedAt,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -164,9 +182,47 @@ public class WorkoutOccurrence {
 				generationKey,
 				originalScheduledDate,
 				manuallyRescheduled,
+				plannedEnvironment,
+				actualEnvironment,
+				environmentSelectedAt,
 				createdAt,
 				updatedAt,
 				version);
+	}
+
+	public void initializeEnvironmentContext(WorkoutOccurrenceEnvironmentSnapshot planned, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.plannedEnvironment = planned;
+		if (planned != null) {
+			this.actualEnvironment = WorkoutOccurrenceEnvironmentSnapshot.of(
+					planned.trainingEnvironmentId(),
+					planned.nameSnapshot(),
+					planned.availableEquipmentSnapshot());
+			this.environmentSelectedAt = Instant.now(clock);
+		}
+		else {
+			this.actualEnvironment = null;
+			this.environmentSelectedAt = null;
+		}
+		touch(clock);
+	}
+
+	public void setActualEnvironment(WorkoutOccurrenceEnvironmentSnapshot snapshot, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		Objects.requireNonNull(snapshot, "snapshot must not be null");
+		this.actualEnvironment = snapshot;
+		this.environmentSelectedAt = Instant.now(clock);
+		touch(clock);
+	}
+
+	public void clearActualEnvironment(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (actualEnvironment == null) {
+			throw new IllegalStateException("Actual environment is not set");
+		}
+		this.actualEnvironment = null;
+		this.environmentSelectedAt = null;
+		touch(clock);
 	}
 
 	public void start(Clock clock) {
@@ -361,6 +417,18 @@ public class WorkoutOccurrence {
 
 	public boolean manuallyRescheduled() {
 		return manuallyRescheduled;
+	}
+
+	public WorkoutOccurrenceEnvironmentSnapshot plannedEnvironment() {
+		return plannedEnvironment;
+	}
+
+	public WorkoutOccurrenceEnvironmentSnapshot actualEnvironment() {
+		return actualEnvironment;
+	}
+
+	public Instant environmentSelectedAt() {
+		return environmentSelectedAt;
 	}
 
 	public Instant createdAt() {

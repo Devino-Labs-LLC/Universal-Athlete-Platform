@@ -1,8 +1,15 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistory;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistoryId;
@@ -32,6 +39,9 @@ final class WorkoutExerciseSubstitutionHistoryPersistenceMapper {
 						: entry.substitutionRelationshipId().value(),
 				entry.relationshipTypeSnapshot(),
 				entry.compatibilitySnapshot(),
+				entry.trainingEnvironmentId() == null ? null : entry.trainingEnvironmentId().value(),
+				entry.trainingEnvironmentNameSnapshot(),
+				new LinkedHashSet<>(entry.availableEquipmentSnapshot()),
 				entry.reverted(),
 				entry.changedAt(),
 				entry.createdAt(),
@@ -39,6 +49,8 @@ final class WorkoutExerciseSubstitutionHistoryPersistenceMapper {
 	}
 
 	static WorkoutExerciseSubstitutionHistory toDomain(WorkoutExerciseSubstitutionHistoryJpaEntity entity) {
+		List<EquipmentType> equipment = new ArrayList<>(entity.getAvailableEquipmentSnapshot());
+		equipment.sort(Comparator.comparingInt(Enum::ordinal));
 		return WorkoutExerciseSubstitutionHistory.rehydrate(
 				WorkoutExerciseSubstitutionHistoryId.of(entity.getId()),
 				AthleteId.of(entity.getAthleteId()),
@@ -55,6 +67,11 @@ final class WorkoutExerciseSubstitutionHistoryPersistenceMapper {
 						: ExerciseSubstitutionRelationshipId.of(entity.getSubstitutionRelationshipId()),
 				entity.getRelationshipTypeSnapshot(),
 				entity.getCompatibilitySnapshot(),
+				entity.getTrainingEnvironmentId() == null
+						? null
+						: TrainingEnvironmentId.of(entity.getTrainingEnvironmentId()),
+				entity.getTrainingEnvironmentNameSnapshot(),
+				equipment,
 				entity.isReverted(),
 				entity.getChangedAt(),
 				entity.getCreatedAt());

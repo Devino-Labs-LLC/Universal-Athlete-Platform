@@ -112,7 +112,8 @@ class WorkoutDayUseCaseIntegrationTests {
 						DayOfWeek.THURSDAY, true,
 						null, true,
 						75, true,
-						0, true));
+						0, true,
+						null, false));
 		assertThat(updated.title()).isEqualTo("Lower Body Power");
 		assertThat(updated.description()).isNull();
 		assertThat(updated.planWeekNumber()).isEqualTo(2);

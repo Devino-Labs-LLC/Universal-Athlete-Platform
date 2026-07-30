@@ -44,7 +44,9 @@ record ExerciseSubstitutionCandidateResponse(
 		String targetCanonicalName,
 		ExerciseSubstitutionRelationshipType relationshipType,
 		ExerciseSubstitutionCompatibility compatibilityLevel,
-		String rationale) {
+		String rationale,
+		UUID trainingEnvironmentId,
+		String trainingEnvironmentName) {
 
 	static ExerciseSubstitutionCandidateResponse from(ExerciseSubstitutionCandidateResult result) {
 		return new ExerciseSubstitutionCandidateResponse(
@@ -53,7 +55,9 @@ record ExerciseSubstitutionCandidateResponse(
 				result.targetCanonicalName(),
 				result.relationshipType(),
 				result.compatibilityLevel(),
-				result.rationale());
+				result.rationale(),
+				result.trainingEnvironmentId() == null ? null : result.trainingEnvironmentId().value(),
+				result.trainingEnvironmentName());
 	}
 
 }

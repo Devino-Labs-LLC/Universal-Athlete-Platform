@@ -17,5 +17,6 @@ public record CreateTrainingPlanRequest(
 		@NotNull LocalDate startDate,
 		@NotNull LocalDate endDate,
 		UUID athleteSportId,
-		UUID athleteGoalId) {
+		UUID athleteGoalId,
+		UUID defaultTrainingEnvironmentId) {
 }

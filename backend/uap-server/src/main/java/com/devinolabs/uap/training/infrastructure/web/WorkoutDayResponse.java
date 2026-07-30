@@ -17,6 +17,7 @@ public record WorkoutDayResponse(
 		LocalTime plannedStartTime,
 		Integer expectedDurationMinutes,
 		WorkoutDayStatus status,
+		UUID trainingEnvironmentOverrideId,
 		Instant createdAt,
 		Instant updatedAt) {
 }

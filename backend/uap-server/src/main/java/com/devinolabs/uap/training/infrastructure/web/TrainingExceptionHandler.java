@@ -73,6 +73,13 @@ import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedEx
 import com.devinolabs.uap.training.application.TrainingMetricsRequireCompletedSetsException;
 import com.devinolabs.uap.training.application.DuplicateExerciseDefinitionException;
 import com.devinolabs.uap.training.application.DuplicateExerciseSubstitutionRelationshipException;
+import com.devinolabs.uap.training.application.DuplicateTrainingEnvironmentException;
+import com.devinolabs.uap.training.application.TrainingEnvironmentNotFoundException;
+import com.devinolabs.uap.training.application.TrainingEnvironmentNotAccessibleException;
+import com.devinolabs.uap.training.application.InvalidTrainingEnvironmentReferenceException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceEnvironmentLockedException;
+import com.devinolabs.uap.training.application.WorkoutOccurrenceEnvironmentNotSetException;
+import com.devinolabs.uap.training.application.ConflictingEquipmentContextFiltersException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipMismatchException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotFoundException;
@@ -92,6 +99,10 @@ import com.devinolabs.uap.training.domain.InvalidExerciseSubstitutionRelationshi
 import com.devinolabs.uap.training.domain.SystemExerciseSubstitutionRelationshipModificationNotAllowedException;
 import com.devinolabs.uap.training.domain.InvalidExerciseSubstitutionReasonException;
 import com.devinolabs.uap.training.domain.InvalidPerformanceMeasurementException;
+import com.devinolabs.uap.training.domain.InvalidTrainingEnvironmentNameException;
+import com.devinolabs.uap.training.domain.InvalidTrainingEnvironmentEquipmentException;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentArchivedException;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentDefaultConflictException;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitionModificationNotAllowedException;
 import com.devinolabs.uap.training.domain.UnsupportedDistanceUnitException;
 import com.devinolabs.uap.training.domain.UnsupportedWeightUnitException;
@@ -111,7 +122,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		TrainingPerformanceController.class,
 		WorkoutOccurrencePerformanceController.class,
 		ExerciseDefinitionController.class,
-		ExerciseSubstitutionRelationshipController.class
+		ExerciseSubstitutionRelationshipController.class,
+		TrainingEnvironmentController.class
 })
 class TrainingExceptionHandler {
 
@@ -803,6 +815,103 @@ class TrainingExceptionHandler {
 				.body(error("ATHLETE_GOAL_NOT_FOUND", "Athlete goal was not found", request, List.of()));
 	}
 
+	@ExceptionHandler(TrainingEnvironmentNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingEnvironmentNotFound(
+			TrainingEnvironmentNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("TRAINING_ENVIRONMENT_NOT_FOUND", "Training environment was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingEnvironmentNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingEnvironmentNotAccessible(
+			TrainingEnvironmentNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("TRAINING_ENVIRONMENT_NOT_ACCESSIBLE", "Training environment was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateTrainingEnvironmentException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateTrainingEnvironment(
+			DuplicateTrainingEnvironmentException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DUPLICATE_TRAINING_ENVIRONMENT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingEnvironmentArchivedException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingEnvironmentArchived(
+			TrainingEnvironmentArchivedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_ENVIRONMENT_ARCHIVED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingEnvironmentNameException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingEnvironmentName(
+			InvalidTrainingEnvironmentNameException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_ENVIRONMENT_NAME", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingEnvironmentEquipmentException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingEnvironmentEquipment(
+			InvalidTrainingEnvironmentEquipmentException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_ENVIRONMENT_EQUIPMENT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingEnvironmentDefaultConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingEnvironmentDefaultConflict(
+			TrainingEnvironmentDefaultConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_ENVIRONMENT_DEFAULT_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingEnvironmentReferenceException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingEnvironmentReference(
+			InvalidTrainingEnvironmentReferenceException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_ENVIRONMENT_REFERENCE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceEnvironmentLockedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceEnvironmentLocked(
+			WorkoutOccurrenceEnvironmentLockedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_ENVIRONMENT_LOCKED",
+						"Workout occurrence environment cannot be changed after activity has started",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutOccurrenceEnvironmentNotSetException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutOccurrenceEnvironmentNotSet(
+			WorkoutOccurrenceEnvironmentNotSetException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_OCCURRENCE_ENVIRONMENT_NOT_SET",
+						"Workout occurrence has no actual training environment to clear",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(ConflictingEquipmentContextFiltersException.class)
+	ResponseEntity<ApiErrorResponse> handleConflictingEquipmentContextFilters(
+			ConflictingEquipmentContextFiltersException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("CONFLICTING_EQUIPMENT_CONTEXT_FILTERS",
+						"Provide either trainingEnvironmentId or availableEquipment, not both",
+						request,
+						List.of()));
+	}
+
 	/**
 	 * Last line of defence for the unique active-name indexes: two concurrent creates can both pass
 	 * the pre-check, and the loser should read as a duplicate rather than a server error.
@@ -825,7 +934,27 @@ class TrainingExceptionHandler {
 							request,
 							List.of()));
 		}
+		if (indicatesDuplicateTrainingEnvironment(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("DUPLICATE_TRAINING_ENVIRONMENT",
+							"An active training environment with this name already exists",
+							request,
+							List.of()));
+		}
 		throw ex;
+	}
+
+	private static boolean indicatesDuplicateTrainingEnvironment(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("uq_training_environments")) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	private static boolean indicatesDuplicateExerciseDefinition(Throwable ex) {

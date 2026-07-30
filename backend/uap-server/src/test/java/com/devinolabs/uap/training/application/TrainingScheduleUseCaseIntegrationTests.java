@@ -439,6 +439,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 						DayOfWeek.SUNDAY, true,
 						null, false,
 						null, false,
+						null, false,
 						null, false)))
 				.isInstanceOf(TrainingPlanSchedulePlacementLockedException.class);
 
@@ -448,6 +449,7 @@ class TrainingScheduleUseCaseIntegrationTests {
 				fixture.weekOneDayId(),
 				new UpdateWorkoutDayCommand(
 						"Renamed Only", true,
+						null, false,
 						null, false,
 						null, false,
 						null, false,

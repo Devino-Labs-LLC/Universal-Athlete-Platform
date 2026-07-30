@@ -167,6 +167,7 @@ final class WorkoutDaySupport {
 				day.plannedStartTime(),
 				day.expectedDurationMinutes(),
 				day.status(),
+				day.trainingEnvironmentOverrideId(),
 				day.createdAt(),
 				day.updatedAt());
 	}

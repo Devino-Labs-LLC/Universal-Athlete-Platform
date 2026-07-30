@@ -15,20 +15,24 @@ import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.AthleteSportId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 @Service
 public class UpdateTrainingPlanUseCase {
 
 	private final AthleteContextPort athleteContextPort;
 	private final TrainingPlanRepository trainingPlanRepository;
+	private final TrainingEnvironmentRepository trainingEnvironmentRepository;
 	private final Clock clock;
 
 	public UpdateTrainingPlanUseCase(
 			AthleteContextPort athleteContextPort,
 			TrainingPlanRepository trainingPlanRepository,
+			TrainingEnvironmentRepository trainingEnvironmentRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
+		this.trainingEnvironmentRepository = Objects.requireNonNull(trainingEnvironmentRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -95,6 +99,19 @@ public class UpdateTrainingPlanUseCase {
 				}
 				else {
 					plan.linkGoal(AthleteGoalId.of(command.athleteGoalId()), clock);
+				}
+			}
+			if (command.defaultTrainingEnvironmentIdPresent()) {
+				if (command.defaultTrainingEnvironmentId() == null) {
+					plan.unlinkDefaultTrainingEnvironment(clock);
+				}
+				else {
+					TrainingEnvironmentSupport.requireOwnedActive(
+							trainingEnvironmentRepository,
+							athleteId,
+							TrainingEnvironmentId.of(command.defaultTrainingEnvironmentId()));
+					plan.linkDefaultTrainingEnvironment(
+							TrainingEnvironmentId.of(command.defaultTrainingEnvironmentId()), clock);
 				}
 			}
 		}

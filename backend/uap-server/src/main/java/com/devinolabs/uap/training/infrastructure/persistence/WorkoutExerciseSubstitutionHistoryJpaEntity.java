@@ -1,13 +1,19 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
@@ -17,6 +23,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
+import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
@@ -81,6 +88,21 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 	@Column(name = "compatibility_snapshot", updatable = false, length = 20)
 	private ExerciseSubstitutionCompatibility compatibilitySnapshot;
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "training_environment_id", updatable = false, columnDefinition = "BINARY(16)")
+	private UUID trainingEnvironmentId;
+
+	@Column(name = "training_environment_name_snapshot", updatable = false, length = 100)
+	private String trainingEnvironmentNameSnapshot;
+
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(
+			name = "workout_exercise_substitution_history_equipment_snapshot",
+			joinColumns = @JoinColumn(name = "substitution_history_id", columnDefinition = "BINARY(16)"))
+	@Column(name = "equipment_type", nullable = false, length = 40)
+	@Enumerated(EnumType.STRING)
+	private Set<EquipmentType> availableEquipmentSnapshot = new LinkedHashSet<>();
+
 	@Column(name = "reverted", nullable = false, updatable = false)
 	private boolean reverted;
 
@@ -110,6 +132,9 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 			UUID substitutionRelationshipId,
 			ExerciseSubstitutionRelationshipType relationshipTypeSnapshot,
 			ExerciseSubstitutionCompatibility compatibilitySnapshot,
+			UUID trainingEnvironmentId,
+			String trainingEnvironmentNameSnapshot,
+			Set<EquipmentType> availableEquipmentSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt,
@@ -127,6 +152,11 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 		this.substitutionRelationshipId = substitutionRelationshipId;
 		this.relationshipTypeSnapshot = relationshipTypeSnapshot;
 		this.compatibilitySnapshot = compatibilitySnapshot;
+		this.trainingEnvironmentId = trainingEnvironmentId;
+		this.trainingEnvironmentNameSnapshot = trainingEnvironmentNameSnapshot;
+		this.availableEquipmentSnapshot = availableEquipmentSnapshot == null
+				? new LinkedHashSet<>()
+				: new LinkedHashSet<>(availableEquipmentSnapshot);
 		this.reverted = reverted;
 		this.changedAt = changedAt;
 		this.createdAt = createdAt;
@@ -195,6 +225,18 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 
 	ExerciseSubstitutionCompatibility getCompatibilitySnapshot() {
 		return compatibilitySnapshot;
+	}
+
+	UUID getTrainingEnvironmentId() {
+		return trainingEnvironmentId;
+	}
+
+	String getTrainingEnvironmentNameSnapshot() {
+		return trainingEnvironmentNameSnapshot;
+	}
+
+	Set<EquipmentType> getAvailableEquipmentSnapshot() {
+		return availableEquipmentSnapshot;
 	}
 
 	boolean isReverted() {

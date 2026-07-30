@@ -24,6 +24,7 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseExecution;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSet;
 import com.devinolabs.uap.training.domain.WorkoutGenerationKey;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceEnvironmentSnapshot;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
@@ -42,6 +43,7 @@ class WorkoutOccurrenceGenerator {
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final TrainingPlanRepository trainingPlanRepository;
+	private final TrainingEnvironmentRepository trainingEnvironmentRepository;
 	private final Clock clock;
 
 	WorkoutOccurrenceGenerator(
@@ -51,6 +53,7 @@ class WorkoutOccurrenceGenerator {
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			TrainingPlanRepository trainingPlanRepository,
+			TrainingEnvironmentRepository trainingEnvironmentRepository,
 			Clock clock) {
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
@@ -58,6 +61,7 @@ class WorkoutOccurrenceGenerator {
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
+		this.trainingEnvironmentRepository = Objects.requireNonNull(trainingEnvironmentRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -167,6 +171,10 @@ class WorkoutOccurrenceGenerator {
 				day.plannedStartTime(),
 				key,
 				clock);
+
+		WorkoutOccurrenceEnvironmentSnapshot planned = TrainingEnvironmentSupport.resolvePreferredSnapshot(
+				trainingEnvironmentRepository, day, plan, athleteId);
+		occurrence.initializeEnvironmentContext(planned, clock);
 
 		List<WorkoutExerciseExecution> executions = new ArrayList<>(exercises.size());
 		for (WorkoutExercise exercise : exercises) {

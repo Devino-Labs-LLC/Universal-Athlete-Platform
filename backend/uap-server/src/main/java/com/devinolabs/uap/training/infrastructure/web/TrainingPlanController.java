@@ -71,7 +71,8 @@ class TrainingPlanController {
 				request.startDate(),
 				request.endDate(),
 				request.athleteSportId(),
-				request.athleteGoalId()));
+				request.athleteGoalId(),
+				request.defaultTrainingEnvironmentId()));
 	}
 
 	@GetMapping
@@ -107,7 +108,9 @@ class TrainingPlanController {
 				request.athleteSportId() == null ? null : request.athleteSportId().value(),
 				request.athleteSportId() != null,
 				request.athleteGoalId() == null ? null : request.athleteGoalId().value(),
-				request.athleteGoalId() != null);
+				request.athleteGoalId() != null,
+			request.defaultTrainingEnvironmentId() == null ? null : request.defaultTrainingEnvironmentId().value(),
+			request.defaultTrainingEnvironmentId() != null);
 		return toResponse(updateTrainingPlanUseCase.execute(
 				accountId(authentication),
 				TrainingPlanId.of(planId),
@@ -155,6 +158,9 @@ class TrainingPlanController {
 				result.endDate(),
 				result.athleteSportId() == null ? null : result.athleteSportId().value(),
 				result.athleteGoalId() == null ? null : result.athleteGoalId().value(),
+				result.defaultTrainingEnvironmentId() == null
+						? null
+						: result.defaultTrainingEnvironmentId().value(),
 				result.scheduleStartDate(),
 				result.scheduleEndDate(),
 				result.scheduleTimezone(),

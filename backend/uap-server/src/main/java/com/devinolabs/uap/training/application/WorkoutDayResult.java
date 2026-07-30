@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutDayStatus;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 public record WorkoutDayResult(
 		WorkoutDayId id,
@@ -17,6 +18,7 @@ public record WorkoutDayResult(
 		LocalTime plannedStartTime,
 		Integer expectedDurationMinutes,
 		WorkoutDayStatus status,
+		TrainingEnvironmentId trainingEnvironmentOverrideId,
 		Instant createdAt,
 		Instant updatedAt) {
 }

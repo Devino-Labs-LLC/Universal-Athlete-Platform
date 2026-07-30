@@ -15,6 +15,7 @@ public class WorkoutDay {
 	private final WorkoutDayId id;
 	private final TrainingPlanId trainingPlanId;
 	private final AthleteId athleteId;
+	private TrainingEnvironmentId trainingEnvironmentOverrideId;
 	private int displayOrder;
 	private String title;
 	private String normalizedTitle;
@@ -32,6 +33,7 @@ public class WorkoutDay {
 			WorkoutDayId id,
 			TrainingPlanId trainingPlanId,
 			AthleteId athleteId,
+			TrainingEnvironmentId trainingEnvironmentOverrideId,
 			int displayOrder,
 			String title,
 			String normalizedTitle,
@@ -47,6 +49,7 @@ public class WorkoutDay {
 		this.id = Objects.requireNonNull(id, "id must not be null");
 		this.trainingPlanId = Objects.requireNonNull(trainingPlanId, "trainingPlanId must not be null");
 		this.athleteId = Objects.requireNonNull(athleteId, "athleteId must not be null");
+		this.trainingEnvironmentOverrideId = trainingEnvironmentOverrideId;
 		this.displayOrder = requireDisplayOrder(displayOrder);
 		this.title = requireTitle(title);
 		this.normalizedTitle = Objects.requireNonNull(normalizedTitle, "normalizedTitle must not be null");
@@ -82,6 +85,7 @@ public class WorkoutDay {
 				id,
 				trainingPlanId,
 				athleteId,
+				null,
 				displayOrder,
 				title,
 				normalizeTitle(title),
@@ -100,6 +104,7 @@ public class WorkoutDay {
 			WorkoutDayId id,
 			TrainingPlanId trainingPlanId,
 			AthleteId athleteId,
+			TrainingEnvironmentId trainingEnvironmentOverrideId,
 			int displayOrder,
 			String title,
 			String normalizedTitle,
@@ -116,6 +121,7 @@ public class WorkoutDay {
 				id,
 				trainingPlanId,
 				athleteId,
+				trainingEnvironmentOverrideId,
 				displayOrder,
 				title,
 				normalizedTitle,
@@ -171,6 +177,19 @@ public class WorkoutDay {
 	public void changeExpectedDurationMinutes(Integer expectedDurationMinutes, Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
 		this.expectedDurationMinutes = normalizeDuration(expectedDurationMinutes);
+		touch(clock);
+	}
+
+	public void linkTrainingEnvironmentOverride(TrainingEnvironmentId environmentId, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.trainingEnvironmentOverrideId = Objects.requireNonNull(
+				environmentId, "trainingEnvironmentOverrideId must not be null");
+		touch(clock);
+	}
+
+	public void unlinkTrainingEnvironmentOverride(Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		this.trainingEnvironmentOverrideId = null;
 		touch(clock);
 	}
 
@@ -294,6 +313,10 @@ public class WorkoutDay {
 
 	public AthleteId athleteId() {
 		return athleteId;
+	}
+
+	public TrainingEnvironmentId trainingEnvironmentOverrideId() {
+		return trainingEnvironmentOverrideId;
 	}
 
 	public int displayOrder() {

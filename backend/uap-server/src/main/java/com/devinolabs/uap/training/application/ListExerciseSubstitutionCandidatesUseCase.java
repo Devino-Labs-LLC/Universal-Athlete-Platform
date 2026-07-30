@@ -21,6 +21,8 @@ import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationship;
+import com.devinolabs.uap.training.domain.TrainingEnvironment;
+import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 
 @Service
 public class ListExerciseSubstitutionCandidatesUseCase {
@@ -31,14 +33,17 @@ public class ListExerciseSubstitutionCandidatesUseCase {
 	private final AthleteContextPort athleteContextPort;
 	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final ExerciseSubstitutionRelationshipRepository relationshipRepository;
+	private final TrainingEnvironmentRepository trainingEnvironmentRepository;
 
 	public ListExerciseSubstitutionCandidatesUseCase(
 			AthleteContextPort athleteContextPort,
 			ExerciseDefinitionRepository exerciseDefinitionRepository,
-			ExerciseSubstitutionRelationshipRepository relationshipRepository) {
+			ExerciseSubstitutionRelationshipRepository relationshipRepository,
+			TrainingEnvironmentRepository trainingEnvironmentRepository) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.relationshipRepository = Objects.requireNonNull(relationshipRepository);
+		this.trainingEnvironmentRepository = Objects.requireNonNull(trainingEnvironmentRepository);
 	}
 
 	@Transactional(readOnly = true)
@@ -46,9 +51,32 @@ public class ListExerciseSubstitutionCandidatesUseCase {
 			AccountId accountId,
 			ExerciseDefinitionId sourceDefinitionId,
 			List<EquipmentType> availableEquipment) {
+		return execute(accountId, sourceDefinitionId, availableEquipment, null);
+	}
+
+	@Transactional(readOnly = true)
+	public List<ExerciseSubstitutionCandidateResult> execute(
+			AccountId accountId,
+			ExerciseDefinitionId sourceDefinitionId,
+			List<EquipmentType> availableEquipment,
+			TrainingEnvironmentId trainingEnvironmentId) {
 		Objects.requireNonNull(sourceDefinitionId, "sourceDefinitionId must not be null");
+		boolean hasEquipmentFilter = availableEquipment != null && !availableEquipment.isEmpty();
+		if (trainingEnvironmentId != null && hasEquipmentFilter) {
+			throw new ConflictingEquipmentContextFiltersException();
+		}
 		AthleteRef athlete = ExerciseDefinitionSupport.requireAthlete(athleteContextPort, accountId.value());
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
+		TrainingEnvironmentId contextEnvironmentId = null;
+		String contextEnvironmentName = null;
+		List<EquipmentType> equipmentFilter = availableEquipment == null ? List.of() : availableEquipment;
+		if (trainingEnvironmentId != null) {
+			TrainingEnvironment environment = TrainingEnvironmentSupport.requireOwnedActive(
+					trainingEnvironmentRepository, athleteId, trainingEnvironmentId);
+			equipmentFilter = environment.availableEquipment();
+			contextEnvironmentId = environment.id();
+			contextEnvironmentName = environment.name();
+		}
 		ExerciseDefinitionSupport.requireAccessible(exerciseDefinitionRepository, athleteId, sourceDefinitionId);
 		List<ExerciseSubstitutionRelationship> relationships = relationshipRepository.findActiveBySourceDefinitionId(
 				sourceDefinitionId, athleteId);
@@ -70,7 +98,7 @@ public class ListExerciseSubstitutionCandidatesUseCase {
 				continue;
 			}
 			if (!EquipmentCompatibilityEvaluator.isCompatible(
-					target.metadata().requiredEquipment(), availableEquipment)) {
+					target.metadata().requiredEquipment(), equipmentFilter)) {
 				continue;
 			}
 			candidates.add(new ExerciseSubstitutionCandidateResult(
@@ -79,7 +107,9 @@ public class ListExerciseSubstitutionCandidatesUseCase {
 					target.canonicalName(),
 					relationship.relationshipType(),
 					relationship.compatibilityLevel(),
-					relationship.rationale()));
+					relationship.rationale(),
+					contextEnvironmentId,
+					contextEnvironmentName));
 		}
 		candidates.sort(Comparator
 				.comparing(ExerciseSubstitutionCandidateResult::compatibilityLevel, COMPATIBILITY_ORDER)
