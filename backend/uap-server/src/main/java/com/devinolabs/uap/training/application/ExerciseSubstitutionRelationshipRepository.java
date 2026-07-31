@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.application;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,10 @@ public interface ExerciseSubstitutionRelationshipRepository {
 
 	List<ExerciseSubstitutionRelationship> findActiveBySourceDefinitionId(
 			ExerciseDefinitionId sourceDefinitionId,
+			AthleteId athleteId);
+
+	List<ExerciseSubstitutionRelationship> findActiveBySourceDefinitionIds(
+			Collection<ExerciseDefinitionId> sourceDefinitionIds,
 			AthleteId athleteId);
 
 }

@@ -80,6 +80,9 @@ import com.devinolabs.uap.training.application.InvalidTrainingEnvironmentReferen
 import com.devinolabs.uap.training.application.WorkoutOccurrenceEnvironmentLockedException;
 import com.devinolabs.uap.training.application.WorkoutOccurrenceEnvironmentNotSetException;
 import com.devinolabs.uap.training.application.ConflictingEquipmentContextFiltersException;
+import com.devinolabs.uap.training.application.InvalidFeasibilityEnvironmentModeException;
+import com.devinolabs.uap.training.application.InvalidFeasibilitySuggestionLimitException;
+import com.devinolabs.uap.training.application.WorkoutFeasibilityAnalysisFailedException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipMismatchException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotFoundException;
@@ -123,7 +126,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		WorkoutOccurrencePerformanceController.class,
 		ExerciseDefinitionController.class,
 		ExerciseSubstitutionRelationshipController.class,
-		TrainingEnvironmentController.class
+		TrainingEnvironmentController.class,
+		FeasibilityController.class
 })
 class TrainingExceptionHandler {
 
@@ -910,6 +914,30 @@ class TrainingExceptionHandler {
 						"Provide either trainingEnvironmentId or availableEquipment, not both",
 						request,
 						List.of()));
+	}
+
+	@ExceptionHandler(InvalidFeasibilityEnvironmentModeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidFeasibilityEnvironmentMode(
+			InvalidFeasibilityEnvironmentModeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_FEASIBILITY_ENVIRONMENT_MODE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidFeasibilitySuggestionLimitException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidFeasibilitySuggestionLimit(
+			InvalidFeasibilitySuggestionLimitException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_FEASIBILITY_SUGGESTION_LIMIT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutFeasibilityAnalysisFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutFeasibilityAnalysisFailed(
+			WorkoutFeasibilityAnalysisFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("WORKOUT_FEASIBILITY_ANALYSIS_FAILED", ex.getMessage(), request, List.of()));
 	}
 
 	/**

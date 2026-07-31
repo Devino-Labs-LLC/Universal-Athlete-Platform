@@ -101,4 +101,36 @@ public final class ExerciseDefinitionMetadataFixtures {
 				ExerciseDifficulty.INTERMEDIATE);
 	}
 
+	public static ExerciseDefinitionMetadata pullUp() {
+		return ExerciseDefinitionMetadata.of(
+				ExerciseDefinitionCategory.STRENGTH,
+				ExerciseMetricMode.WEIGHT_AND_REPETITIONS,
+				MovementPattern.VERTICAL_PULL,
+				List.of(),
+				List.of(MuscleGroup.LATS, MuscleGroup.BICEPS),
+				List.of(MuscleGroup.SHOULDERS),
+				List.of(EquipmentType.PULL_UP_BAR),
+				List.of(),
+				ExerciseLaterality.BILATERAL,
+				KineticChainType.CLOSED_CHAIN,
+				ImpactLevel.NO_IMPACT,
+				ExerciseDifficulty.INTERMEDIATE);
+	}
+
+	public static ExerciseDefinitionMetadata dumbbellBenchPress() {
+		return ExerciseDefinitionMetadata.of(
+				ExerciseDefinitionCategory.STRENGTH,
+				ExerciseMetricMode.WEIGHT_AND_REPETITIONS,
+				MovementPattern.HORIZONTAL_PUSH,
+				List.of(),
+				List.of(MuscleGroup.CHEST, MuscleGroup.TRICEPS),
+				List.of(MuscleGroup.SHOULDERS),
+				List.of(EquipmentType.DUMBBELL, EquipmentType.BENCH),
+				List.of(),
+				ExerciseLaterality.BILATERAL,
+				KineticChainType.OPEN_CHAIN,
+				ImpactLevel.NO_IMPACT,
+				ExerciseDifficulty.INTERMEDIATE);
+	}
+
 }

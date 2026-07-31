@@ -61,4 +61,22 @@ class JpaExerciseSubstitutionRelationshipRepository implements ExerciseSubstitut
 				.toList();
 	}
 
+	@Override
+	public java.util.List<ExerciseSubstitutionRelationship> findActiveBySourceDefinitionIds(
+			java.util.Collection<ExerciseDefinitionId> sourceDefinitionIds,
+			AthleteId athleteId) {
+		if (sourceDefinitionIds == null || sourceDefinitionIds.isEmpty()) {
+			return java.util.List.of();
+		}
+		java.util.List<java.util.UUID> ids = sourceDefinitionIds.stream()
+				.map(ExerciseDefinitionId::value)
+				.distinct()
+				.toList();
+		return jpaRepository
+				.findActiveBySourceDefinitionIds(ids, athleteId.value())
+				.stream()
+				.map(ExerciseSubstitutionRelationshipPersistenceMapper::toDomain)
+				.toList();
+	}
+
 }
