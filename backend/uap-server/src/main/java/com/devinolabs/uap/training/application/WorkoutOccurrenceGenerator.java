@@ -10,10 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanRecurrenceMode;
 import com.devinolabs.uap.training.domain.TrainingScheduleDateCalculator;
@@ -39,6 +43,7 @@ class WorkoutOccurrenceGenerator {
 
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutExerciseRepository workoutExerciseRepository;
+	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
@@ -49,6 +54,7 @@ class WorkoutOccurrenceGenerator {
 	WorkoutOccurrenceGenerator(
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutExerciseRepository workoutExerciseRepository,
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
@@ -57,6 +63,7 @@ class WorkoutOccurrenceGenerator {
 			Clock clock) {
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
+		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
@@ -177,8 +184,16 @@ class WorkoutOccurrenceGenerator {
 		occurrence.initializeEnvironmentContext(planned, clock);
 
 		List<WorkoutExerciseExecution> executions = new ArrayList<>(exercises.size());
+		Map<ExerciseDefinitionId, ExerciseDefinition> definitionsById = exerciseDefinitionRepository
+				.findAllByIds(exercises.stream().map(WorkoutExercise::exerciseDefinitionId).distinct().toList())
+				.stream()
+				.collect(Collectors.toMap(ExerciseDefinition::id, Function.identity()));
 		for (WorkoutExercise exercise : exercises) {
-			executions.add(WorkoutExerciseExecution.fromPrescription(exercise, occurrenceId, clock));
+			ExerciseDefinition definition = definitionsById.get(exercise.exerciseDefinitionId());
+			if (definition == null) {
+				throw new ExerciseDefinitionNotFoundException();
+			}
+			executions.add(WorkoutExerciseExecution.fromPrescription(exercise, definition, occurrenceId, clock));
 		}
 
 		WorkoutOccurrence saved = workoutOccurrenceRepository.save(occurrence);

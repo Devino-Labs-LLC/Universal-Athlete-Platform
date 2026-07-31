@@ -11,6 +11,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.devinolabs.uap.ExerciseDefinitionMetadataFixtures;
+
 class WorkoutExerciseSetTests {
 
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-25T15:00:00Z"), ZoneOffset.UTC);
@@ -253,7 +255,15 @@ class WorkoutExerciseSetTests {
 				"3-0-1",
 				"Brace",
 				CLOCK);
-		return WorkoutExerciseExecution.fromPrescription(exercise, WorkoutOccurrenceId.generate(), CLOCK);
+		return WorkoutExerciseExecution.fromPrescription(
+				exercise,
+				ExerciseDefinition.createSystem(
+						SystemExerciseDefinitions.BACK_SQUAT,
+						"Back Squat",
+						ExerciseDefinitionMetadataFixtures.backSquat(),
+						CLOCK),
+				WorkoutOccurrenceId.generate(),
+				CLOCK);
 	}
 
 }

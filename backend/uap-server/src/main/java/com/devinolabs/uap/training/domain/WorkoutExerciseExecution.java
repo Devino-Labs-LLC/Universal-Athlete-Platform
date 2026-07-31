@@ -26,6 +26,9 @@ public class WorkoutExerciseExecution {
 	private final String prescribedExerciseNameSnapshot;
 	private ExerciseDefinitionId performedExerciseDefinitionId;
 	private String performedExerciseNameSnapshot;
+	private ExerciseDefinitionCategory performedExerciseCategorySnapshot;
+	private MovementPattern performedPrimaryMovementPatternSnapshot;
+	private ImpactLevel performedImpactLevelSnapshot;
 	private ExercisePerformanceKey exercisePerformanceKey;
 	private ExerciseSubstitutionReason substitutionReason;
 	private String substitutionNotes;
@@ -71,6 +74,9 @@ public class WorkoutExerciseExecution {
 			String prescribedExerciseNameSnapshot,
 			ExerciseDefinitionId performedExerciseDefinitionId,
 			String performedExerciseNameSnapshot,
+			ExerciseDefinitionCategory performedExerciseCategorySnapshot,
+			MovementPattern performedPrimaryMovementPatternSnapshot,
+			ImpactLevel performedImpactLevelSnapshot,
 			ExercisePerformanceKey exercisePerformanceKey,
 			ExerciseSubstitutionReason substitutionReason,
 			String substitutionNotes,
@@ -119,6 +125,12 @@ public class WorkoutExerciseExecution {
 				performedExerciseDefinitionId, "performedExerciseDefinitionId must not be null");
 		this.performedExerciseNameSnapshot = Objects.requireNonNull(
 				performedExerciseNameSnapshot, "performedExerciseNameSnapshot must not be null");
+		this.performedExerciseCategorySnapshot = Objects.requireNonNull(
+				performedExerciseCategorySnapshot, "performedExerciseCategorySnapshot must not be null");
+		this.performedPrimaryMovementPatternSnapshot = Objects.requireNonNull(
+				performedPrimaryMovementPatternSnapshot, "performedPrimaryMovementPatternSnapshot must not be null");
+		this.performedImpactLevelSnapshot = Objects.requireNonNull(
+				performedImpactLevelSnapshot, "performedImpactLevelSnapshot must not be null");
 		this.exercisePerformanceKey = Objects.requireNonNull(
 				exercisePerformanceKey, "exercisePerformanceKey must not be null");
 		requirePerformedIdentity(this.performedExerciseDefinitionId, this.exercisePerformanceKey);
@@ -184,12 +196,15 @@ public class WorkoutExerciseExecution {
 
 	public static WorkoutExerciseExecution fromPrescription(
 			WorkoutExercise exercise,
+			ExerciseDefinition exerciseDefinition,
 			WorkoutOccurrenceId occurrenceId,
 			Clock clock) {
 		Objects.requireNonNull(exercise, "exercise must not be null");
+		Objects.requireNonNull(exerciseDefinition, "exerciseDefinition must not be null");
 		Objects.requireNonNull(occurrenceId, "occurrenceId must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
 		Instant now = Instant.now(clock);
+		ExerciseDefinitionMetadata metadata = exerciseDefinition.metadata();
 		return new WorkoutExerciseExecution(
 				WorkoutExerciseExecutionId.generate(),
 				occurrenceId,
@@ -198,6 +213,9 @@ public class WorkoutExerciseExecution {
 				exercise.exerciseName(),
 				exercise.exerciseDefinitionId(),
 				exercise.exerciseName(),
+				metadata.category(),
+				metadata.primaryMovementPattern(),
+				metadata.impactLevel(),
 				ExercisePerformanceKey.of(exercise.exerciseDefinitionId()),
 				null,
 				null,
@@ -244,6 +262,9 @@ public class WorkoutExerciseExecution {
 			String prescribedExerciseNameSnapshot,
 			ExerciseDefinitionId performedExerciseDefinitionId,
 			String performedExerciseNameSnapshot,
+			ExerciseDefinitionCategory performedExerciseCategorySnapshot,
+			MovementPattern performedPrimaryMovementPatternSnapshot,
+			ImpactLevel performedImpactLevelSnapshot,
 			ExercisePerformanceKey exercisePerformanceKey,
 			ExerciseSubstitutionReason substitutionReason,
 			String substitutionNotes,
@@ -288,6 +309,9 @@ public class WorkoutExerciseExecution {
 				prescribedExerciseNameSnapshot,
 				performedExerciseDefinitionId,
 				performedExerciseNameSnapshot,
+				performedExerciseCategorySnapshot,
+				performedPrimaryMovementPatternSnapshot,
+				performedImpactLevelSnapshot,
 				exercisePerformanceKey,
 				substitutionReason,
 				substitutionNotes,
@@ -354,6 +378,9 @@ public class WorkoutExerciseExecution {
 		boolean backToPrescription = target.id().equals(prescribedExerciseDefinitionId);
 		this.performedExerciseDefinitionId = target.id();
 		this.performedExerciseNameSnapshot = target.canonicalName();
+		this.performedExerciseCategorySnapshot = target.metadata().category();
+		this.performedPrimaryMovementPatternSnapshot = target.metadata().primaryMovementPattern();
+		this.performedImpactLevelSnapshot = target.metadata().impactLevel();
 		this.exercisePerformanceKey = ExercisePerformanceKey.of(target.id());
 		this.substitutionReason = backToPrescription ? null : reason;
 		this.substitutionNotes = backToPrescription ? null : normalizedNotes;
@@ -365,13 +392,18 @@ public class WorkoutExerciseExecution {
 	 * Puts the execution back on the prescribed movement. The substitution itself is not erased: the
 	 * caller appends the reversion to the substitution log before this returns.
 	 */
-	public void revertSubstitution(Clock clock) {
+	public void revertSubstitution(ExerciseDefinition prescribedDefinition, Clock clock) {
+		Objects.requireNonNull(prescribedDefinition, "prescribedDefinition must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
 		if (!isSubstituted()) {
 			throw new WorkoutExerciseNotSubstitutedException();
 		}
+		ExerciseDefinitionMetadata metadata = prescribedDefinition.metadata();
 		this.performedExerciseDefinitionId = prescribedExerciseDefinitionId;
 		this.performedExerciseNameSnapshot = prescribedExerciseNameSnapshot;
+		this.performedExerciseCategorySnapshot = metadata.category();
+		this.performedPrimaryMovementPatternSnapshot = metadata.primaryMovementPattern();
+		this.performedImpactLevelSnapshot = metadata.impactLevel();
 		this.exercisePerformanceKey = ExercisePerformanceKey.of(prescribedExerciseDefinitionId);
 		this.substitutionReason = null;
 		this.substitutionNotes = null;
@@ -652,6 +684,18 @@ public class WorkoutExerciseExecution {
 
 	public String performedExerciseNameSnapshot() {
 		return performedExerciseNameSnapshot;
+	}
+
+	public ExerciseDefinitionCategory performedExerciseCategorySnapshot() {
+		return performedExerciseCategorySnapshot;
+	}
+
+	public MovementPattern performedPrimaryMovementPatternSnapshot() {
+		return performedPrimaryMovementPatternSnapshot;
+	}
+
+	public ImpactLevel performedImpactLevelSnapshot() {
+		return performedImpactLevelSnapshot;
 	}
 
 	/**

@@ -100,6 +100,20 @@ import com.devinolabs.uap.training.application.WorkoutAdaptationProposalStaleExc
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalTerminalException;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalUnresolvedException;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalVersionConflictException;
+import com.devinolabs.uap.training.application.InvalidTrainingLoadDateRangeException;
+import com.devinolabs.uap.training.application.InvalidTrainingLoadGranularityException;
+import com.devinolabs.uap.training.application.TrainingLoadRebuildConflictException;
+import com.devinolabs.uap.training.application.TrainingLoadRebuildFailedException;
+import com.devinolabs.uap.training.application.WorkoutLoadCalculationFailedException;
+import com.devinolabs.uap.training.application.WorkoutLoadSummaryNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutSessionEffortAlreadyExistsException;
+import com.devinolabs.uap.training.application.WorkoutSessionEffortNotAccessibleException;
+import com.devinolabs.uap.training.application.WorkoutSessionEffortNotAllowedException;
+import com.devinolabs.uap.training.application.WorkoutSessionEffortNotFoundException;
+import com.devinolabs.uap.training.domain.InvalidSessionDurationException;
+import com.devinolabs.uap.training.domain.InvalidSessionRpeException;
+import com.devinolabs.uap.training.domain.InvalidWorkoutSessionEffortNotesException;
+import com.devinolabs.uap.training.domain.TrainingLoadNumericOverflowException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipMismatchException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotFoundException;
@@ -145,7 +159,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		ExerciseSubstitutionRelationshipController.class,
 		TrainingEnvironmentController.class,
 		FeasibilityController.class,
-		WorkoutAdaptationProposalController.class
+		WorkoutAdaptationProposalController.class,
+		TrainingLoadController.class
 })
 class TrainingExceptionHandler {
 
@@ -1098,6 +1113,118 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(error("WORKOUT_ADAPTATION_PROPOSAL_ENVIRONMENT_REQUIRED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidSessionRpeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidSessionRpe(InvalidSessionRpeException ex, HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_SESSION_RPE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidSessionDurationException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidSessionDuration(
+			InvalidSessionDurationException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_SESSION_DURATION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutSessionEffortNotesException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutSessionEffortNotes(
+			InvalidWorkoutSessionEffortNotesException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_SESSION_EFFORT_NOTES", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionEffortNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionEffortNotFound(
+			WorkoutSessionEffortNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_SESSION_EFFORT_NOT_FOUND", "Workout session effort was not found", request,
+						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionEffortAlreadyExistsException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionEffortAlreadyExists(
+			WorkoutSessionEffortAlreadyExistsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_SESSION_EFFORT_ALREADY_EXISTS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionEffortNotAllowedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionEffortNotAllowed(
+			WorkoutSessionEffortNotAllowedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_SESSION_EFFORT_NOT_ALLOWED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutSessionEffortNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutSessionEffortNotAccessible(
+			WorkoutSessionEffortNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_SESSION_EFFORT_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutLoadSummaryNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutLoadSummaryNotFound(
+			WorkoutLoadSummaryNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_LOAD_SUMMARY_NOT_FOUND", "Workout load summary was not found", request,
+						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutLoadCalculationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutLoadCalculationFailed(
+			WorkoutLoadCalculationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_LOAD_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingLoadNumericOverflowException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingLoadNumericOverflow(
+			TrainingLoadNumericOverflowException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_LOAD_NUMERIC_OVERFLOW", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingLoadDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingLoadDateRange(
+			InvalidTrainingLoadDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_LOAD_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingLoadGranularityException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingLoadGranularity(
+			InvalidTrainingLoadGranularityException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_LOAD_GRANULARITY", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingLoadRebuildConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingLoadRebuildConflict(
+			TrainingLoadRebuildConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_LOAD_REBUILD_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingLoadRebuildFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingLoadRebuildFailed(
+			TrainingLoadRebuildFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_LOAD_REBUILD_FAILED", ex.getMessage(), request, List.of()));
 	}
 
 	/**

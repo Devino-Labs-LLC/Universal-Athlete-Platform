@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("23");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("24");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add workout adaptation proposals");
+				.isEqualTo("add workout session effort and training load");
 	}
 
 	@Test
@@ -522,6 +522,45 @@ class UapServerApplicationTests {
 			assertThat(historyProposal.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add workout adaptation proposals");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesWorkoutSessionEffortAndTrainingLoadMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet sessionEfforts = connection.getMetaData().getTables(null, null,
+						"workout_session_efforts", new String[] { "TABLE" });
+				ResultSet revisions = connection.getMetaData().getTables(null, null,
+						"workout_session_effort_revisions", new String[] { "TABLE" });
+				ResultSet loadSummaries = connection.getMetaData().getTables(null, null,
+						"workout_occurrence_load_summaries", new String[] { "TABLE" });
+				ResultSet categorySummaries = connection.getMetaData().getTables(null, null,
+						"workout_occurrence_load_category_summaries", new String[] { "TABLE" });
+				ResultSet movementSummaries = connection.getMetaData().getTables(null, null,
+						"workout_occurrence_load_movement_summaries", new String[] { "TABLE" });
+				ResultSet categorySnapshot = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "performed_exercise_category_snapshot");
+				ResultSet patternSnapshot = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "performed_primary_movement_pattern_snapshot");
+				ResultSet impactSnapshot = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_executions", "performed_impact_level_snapshot");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '24'")) {
+			assertThat(sessionEfforts.next()).isTrue();
+			assertThat(revisions.next()).isTrue();
+			assertThat(loadSummaries.next()).isTrue();
+			assertThat(categorySummaries.next()).isTrue();
+			assertThat(movementSummaries.next()).isTrue();
+			assertThat(categorySnapshot.next()).isTrue();
+			assertThat(categorySnapshot.getInt("NULLABLE")).isZero();
+			assertThat(patternSnapshot.next()).isTrue();
+			assertThat(patternSnapshot.getInt("NULLABLE")).isZero();
+			assertThat(impactSnapshot.next()).isTrue();
+			assertThat(impactSnapshot.getInt("NULLABLE")).isZero();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("add workout session effort and training load");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

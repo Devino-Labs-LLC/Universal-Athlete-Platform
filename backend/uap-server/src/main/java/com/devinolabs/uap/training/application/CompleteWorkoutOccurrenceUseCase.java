@@ -29,6 +29,7 @@ public class CompleteWorkoutOccurrenceUseCase {
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
+	private final WorkoutLoadCalculationSupport loadCalculationSupport;
 	private final Clock clock;
 
 	public CompleteWorkoutOccurrenceUseCase(
@@ -38,6 +39,7 @@ public class CompleteWorkoutOccurrenceUseCase {
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
+			WorkoutLoadCalculationSupport loadCalculationSupport,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
@@ -45,6 +47,7 @@ public class CompleteWorkoutOccurrenceUseCase {
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
+		this.loadCalculationSupport = Objects.requireNonNull(loadCalculationSupport);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -77,6 +80,8 @@ public class CompleteWorkoutOccurrenceUseCase {
 			throw WorkoutOccurrenceSupport.translateStatus(ex);
 		}
 		WorkoutOccurrence saved = workoutOccurrenceRepository.save(occurrence);
+		loadCalculationSupport.calculateAndPersist(
+				saved, athleteId, plan.id(), day.id(), null, saved.updatedAt());
 		return WorkoutOccurrenceSupport.toDetailResult(
 				saved,
 				WorkoutExerciseExecutionSupport.toResults(executions, workoutExerciseSetRepository, athleteId));

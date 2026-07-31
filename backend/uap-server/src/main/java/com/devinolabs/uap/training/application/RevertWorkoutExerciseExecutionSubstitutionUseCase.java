@@ -11,6 +11,7 @@ import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
@@ -40,6 +41,7 @@ public class RevertWorkoutExerciseExecutionSubstitutionUseCase {
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final WorkoutExerciseSubstitutionHistoryRepository substitutionHistoryRepository;
+	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final Clock clock;
 
 	public RevertWorkoutExerciseExecutionSubstitutionUseCase(
@@ -50,6 +52,7 @@ public class RevertWorkoutExerciseExecutionSubstitutionUseCase {
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
 			WorkoutExerciseSubstitutionHistoryRepository substitutionHistoryRepository,
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
 			Clock clock) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
@@ -58,6 +61,7 @@ public class RevertWorkoutExerciseExecutionSubstitutionUseCase {
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.substitutionHistoryRepository = Objects.requireNonNull(substitutionHistoryRepository);
+		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -91,7 +95,10 @@ public class RevertWorkoutExerciseExecutionSubstitutionUseCase {
 
 		ExerciseDefinitionId previousDefinitionId = execution.performedExerciseDefinitionId();
 		String previousName = execution.performedExerciseNameSnapshot();
-		execution.revertSubstitution(clock);
+		ExerciseDefinition prescribedDefinition = exerciseDefinitionRepository
+				.findById(execution.prescribedExerciseDefinitionId())
+				.orElseThrow(ExerciseDefinitionNotFoundException::new);
+		execution.revertSubstitution(prescribedDefinition, clock);
 		WorkoutExerciseExecution reverted = workoutExerciseExecutionRepository.save(execution);
 		substitutionHistoryRepository.append(WorkoutExerciseSubstitutionHistory.reversion(
 				reverted, previousDefinitionId, previousName, notes, clock));

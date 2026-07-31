@@ -63,6 +63,18 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 	@Column(name = "performed_exercise_name_snapshot", nullable = false, length = 160)
 	private String performedExerciseNameSnapshot;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "performed_exercise_category_snapshot", nullable = false, length = 32)
+	private com.devinolabs.uap.training.domain.ExerciseDefinitionCategory performedExerciseCategorySnapshot;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "performed_primary_movement_pattern_snapshot", nullable = false, length = 40)
+	private com.devinolabs.uap.training.domain.MovementPattern performedPrimaryMovementPatternSnapshot;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "performed_impact_level_snapshot", nullable = false, length = 32)
+	private com.devinolabs.uap.training.domain.ImpactLevel performedImpactLevelSnapshot;
+
 	@JdbcTypeCode(SqlTypes.UUID)
 	@Column(name = "exercise_performance_key", nullable = false, columnDefinition = "BINARY(16)")
 	private UUID exercisePerformanceKey;
@@ -196,6 +208,9 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 			String prescribedExerciseNameSnapshot,
 			UUID performedExerciseDefinitionId,
 			String performedExerciseNameSnapshot,
+			com.devinolabs.uap.training.domain.ExerciseDefinitionCategory performedExerciseCategorySnapshot,
+			com.devinolabs.uap.training.domain.MovementPattern performedPrimaryMovementPatternSnapshot,
+			com.devinolabs.uap.training.domain.ImpactLevel performedImpactLevelSnapshot,
 			UUID exercisePerformanceKey,
 			ExerciseSubstitutionReason substitutionReason,
 			String substitutionNotes,
@@ -240,6 +255,9 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 		this.prescribedExerciseNameSnapshot = prescribedExerciseNameSnapshot;
 		this.performedExerciseDefinitionId = performedExerciseDefinitionId;
 		this.performedExerciseNameSnapshot = performedExerciseNameSnapshot;
+		this.performedExerciseCategorySnapshot = performedExerciseCategorySnapshot;
+		this.performedPrimaryMovementPatternSnapshot = performedPrimaryMovementPatternSnapshot;
+		this.performedImpactLevelSnapshot = performedImpactLevelSnapshot;
 		this.exercisePerformanceKey = exercisePerformanceKey;
 		this.substitutionReason = substitutionReason;
 		this.substitutionNotes = substitutionNotes;
@@ -517,6 +535,54 @@ class WorkoutExerciseExecutionJpaEntity implements Persistable<UUID> {
 
 	void setUpdatedAt(Instant updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	void setPerformedExerciseDefinitionId(UUID performedExerciseDefinitionId) {
+		this.performedExerciseDefinitionId = performedExerciseDefinitionId;
+	}
+
+	void setPerformedExerciseNameSnapshot(String performedExerciseNameSnapshot) {
+		this.performedExerciseNameSnapshot = performedExerciseNameSnapshot;
+	}
+
+	void setPerformedExerciseCategorySnapshot(com.devinolabs.uap.training.domain.ExerciseDefinitionCategory performedExerciseCategorySnapshot) {
+		this.performedExerciseCategorySnapshot = performedExerciseCategorySnapshot;
+	}
+
+	void setPerformedPrimaryMovementPatternSnapshot(com.devinolabs.uap.training.domain.MovementPattern performedPrimaryMovementPatternSnapshot) {
+		this.performedPrimaryMovementPatternSnapshot = performedPrimaryMovementPatternSnapshot;
+	}
+
+	void setPerformedImpactLevelSnapshot(com.devinolabs.uap.training.domain.ImpactLevel performedImpactLevelSnapshot) {
+		this.performedImpactLevelSnapshot = performedImpactLevelSnapshot;
+	}
+
+	void setExercisePerformanceKey(UUID exercisePerformanceKey) {
+		this.exercisePerformanceKey = exercisePerformanceKey;
+	}
+
+	void setSubstitutionReason(com.devinolabs.uap.training.domain.ExerciseSubstitutionReason substitutionReason) {
+		this.substitutionReason = substitutionReason;
+	}
+
+	void setSubstitutionNotes(String substitutionNotes) {
+		this.substitutionNotes = substitutionNotes;
+	}
+
+	void setSubstitutedAt(Instant substitutedAt) {
+		this.substitutedAt = substitutedAt;
+	}
+
+	com.devinolabs.uap.training.domain.ExerciseDefinitionCategory getPerformedExerciseCategorySnapshot() {
+		return performedExerciseCategorySnapshot;
+	}
+
+	com.devinolabs.uap.training.domain.MovementPattern getPerformedPrimaryMovementPatternSnapshot() {
+		return performedPrimaryMovementPatternSnapshot;
+	}
+
+	com.devinolabs.uap.training.domain.ImpactLevel getPerformedImpactLevelSnapshot() {
+		return performedImpactLevelSnapshot;
 	}
 
 }

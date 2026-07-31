@@ -5,7 +5,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +17,8 @@ import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteRef;
 import com.devinolabs.uap.training.domain.AccountId;
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.ExerciseDefinition;
+import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.TrainingPlan;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
 import com.devinolabs.uap.training.domain.WorkoutDay;
@@ -32,6 +37,7 @@ public class CreateWorkoutOccurrenceUseCase {
 	private final TrainingPlanRepository trainingPlanRepository;
 	private final WorkoutDayRepository workoutDayRepository;
 	private final WorkoutExerciseRepository workoutExerciseRepository;
+	private final ExerciseDefinitionRepository exerciseDefinitionRepository;
 	private final WorkoutOccurrenceRepository workoutOccurrenceRepository;
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
@@ -43,6 +49,7 @@ public class CreateWorkoutOccurrenceUseCase {
 			TrainingPlanRepository trainingPlanRepository,
 			WorkoutDayRepository workoutDayRepository,
 			WorkoutExerciseRepository workoutExerciseRepository,
+			ExerciseDefinitionRepository exerciseDefinitionRepository,
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
@@ -52,6 +59,7 @@ public class CreateWorkoutOccurrenceUseCase {
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
 		this.workoutExerciseRepository = Objects.requireNonNull(workoutExerciseRepository);
+		this.exerciseDefinitionRepository = Objects.requireNonNull(exerciseDefinitionRepository);
 		this.workoutOccurrenceRepository = Objects.requireNonNull(workoutOccurrenceRepository);
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
@@ -96,8 +104,16 @@ public class CreateWorkoutOccurrenceUseCase {
 		occurrence.initializeEnvironmentContext(planned, clock);
 
 		List<WorkoutExerciseExecution> executions = new ArrayList<>(exercises.size());
+		Map<ExerciseDefinitionId, ExerciseDefinition> definitionsById = exerciseDefinitionRepository
+				.findAllByIds(exercises.stream().map(WorkoutExercise::exerciseDefinitionId).distinct().toList())
+				.stream()
+				.collect(Collectors.toMap(ExerciseDefinition::id, Function.identity()));
 		for (WorkoutExercise exercise : exercises) {
-			executions.add(WorkoutExerciseExecution.fromPrescription(exercise, occurrenceId, clock));
+			ExerciseDefinition definition = definitionsById.get(exercise.exerciseDefinitionId());
+			if (definition == null) {
+				throw new ExerciseDefinitionNotFoundException();
+			}
+			executions.add(WorkoutExerciseExecution.fromPrescription(exercise, definition, occurrenceId, clock));
 		}
 
 		WorkoutOccurrence saved = workoutOccurrenceRepository.save(occurrence);

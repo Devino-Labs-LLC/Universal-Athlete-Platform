@@ -45,10 +45,17 @@ class WorkoutExerciseExecutionTests {
 
 		WorkoutExerciseExecution execution = WorkoutExerciseExecution.fromPrescription(
 				exercise,
+				backSquat(),
 				WorkoutOccurrenceId.generate(),
 				CLOCK);
 
 		assertThat(execution.status()).isEqualTo(WorkoutExerciseExecutionStatus.NOT_STARTED);
+		assertThat(execution.performedExerciseCategorySnapshot())
+				.isEqualTo(ExerciseDefinitionMetadataFixtures.backSquat().category());
+		assertThat(execution.performedPrimaryMovementPatternSnapshot())
+				.isEqualTo(ExerciseDefinitionMetadataFixtures.backSquat().primaryMovementPattern());
+		assertThat(execution.performedImpactLevelSnapshot())
+				.isEqualTo(ExerciseDefinitionMetadataFixtures.backSquat().impactLevel());
 		assertThat(execution.prescribedExerciseDefinitionId()).isEqualTo(SystemExerciseDefinitions.BACK_SQUAT);
 		assertThat(execution.performedExerciseDefinitionId()).isEqualTo(SystemExerciseDefinitions.BACK_SQUAT);
 		assertThat(execution.prescribedExerciseNameSnapshot()).isEqualTo("Back Squat");
@@ -155,7 +162,7 @@ class WorkoutExerciseExecutionTests {
 		WorkoutExerciseExecution execution = fromSampleExercise();
 		execution.substitute(gobletSquat(), ExerciseSubstitutionReason.INJURY, "Knee", LATER);
 
-		execution.revertSubstitution(LATER);
+		execution.revertSubstitution(backSquat(), LATER);
 
 		assertThat(execution.isSubstituted()).isFalse();
 		assertThat(execution.performedExerciseDefinitionId()).isEqualTo(SystemExerciseDefinitions.BACK_SQUAT);
@@ -165,7 +172,7 @@ class WorkoutExerciseExecutionTests {
 		assertThat(execution.substitutionReason()).isNull();
 		assertThat(execution.substitutionNotes()).isNull();
 		assertThat(execution.substitutedAt()).isNull();
-		assertThatThrownBy(() -> execution.revertSubstitution(LATER))
+		assertThatThrownBy(() -> execution.revertSubstitution(backSquat(), LATER))
 				.isInstanceOf(WorkoutExerciseNotSubstitutedException.class);
 	}
 
@@ -237,6 +244,9 @@ class WorkoutExerciseExecutionTests {
 				execution.prescribedExerciseNameSnapshot(),
 				performedExerciseDefinitionId,
 				"Performed",
+				ExerciseDefinitionCategory.OTHER,
+				MovementPattern.OTHER,
+				ImpactLevel.NO_IMPACT,
 				exercisePerformanceKey,
 				substitutionReason,
 				null,
@@ -314,7 +324,7 @@ class WorkoutExerciseExecutionTests {
 				null,
 				null,
 				CLOCK);
-		return WorkoutExerciseExecution.fromPrescription(exercise, WorkoutOccurrenceId.generate(), CLOCK);
+		return WorkoutExerciseExecution.fromPrescription(exercise, backSquat(), WorkoutOccurrenceId.generate(), CLOCK);
 	}
 
 }

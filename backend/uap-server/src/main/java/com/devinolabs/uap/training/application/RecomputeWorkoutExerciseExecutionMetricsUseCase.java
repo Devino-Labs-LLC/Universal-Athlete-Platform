@@ -23,6 +23,7 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionStatus;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSet;
 import com.devinolabs.uap.training.domain.WorkoutOccurrence;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
+import com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus;
 
 /**
  * Re-derives one completed execution's metrics and re-applies its personal record candidates.
@@ -40,6 +41,7 @@ public class RecomputeWorkoutExerciseExecutionMetricsUseCase {
 	private final WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository;
 	private final WorkoutExerciseSetRepository workoutExerciseSetRepository;
 	private final ExerciseMetricProcessor exerciseMetricProcessor;
+	private final WorkoutLoadCalculationSupport loadCalculationSupport;
 
 	public RecomputeWorkoutExerciseExecutionMetricsUseCase(
 			AthleteContextPort athleteContextPort,
@@ -48,7 +50,8 @@ public class RecomputeWorkoutExerciseExecutionMetricsUseCase {
 			WorkoutOccurrenceRepository workoutOccurrenceRepository,
 			WorkoutExerciseExecutionRepository workoutExerciseExecutionRepository,
 			WorkoutExerciseSetRepository workoutExerciseSetRepository,
-			ExerciseMetricProcessor exerciseMetricProcessor) {
+			ExerciseMetricProcessor exerciseMetricProcessor,
+			WorkoutLoadCalculationSupport loadCalculationSupport) {
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.trainingPlanRepository = Objects.requireNonNull(trainingPlanRepository);
 		this.workoutDayRepository = Objects.requireNonNull(workoutDayRepository);
@@ -56,6 +59,7 @@ public class RecomputeWorkoutExerciseExecutionMetricsUseCase {
 		this.workoutExerciseExecutionRepository = Objects.requireNonNull(workoutExerciseExecutionRepository);
 		this.workoutExerciseSetRepository = Objects.requireNonNull(workoutExerciseSetRepository);
 		this.exerciseMetricProcessor = Objects.requireNonNull(exerciseMetricProcessor);
+		this.loadCalculationSupport = Objects.requireNonNull(loadCalculationSupport);
 	}
 
 	@Transactional
@@ -88,6 +92,10 @@ public class RecomputeWorkoutExerciseExecutionMetricsUseCase {
 		try {
 			ExercisePerformanceMetrics metrics = exerciseMetricProcessor.process(
 					athleteId, execution, occurrence.status(), occurrence.scheduledDate(), sets);
+			if (occurrence.status() == WorkoutOccurrenceStatus.COMPLETED) {
+				loadCalculationSupport.calculateAndPersist(
+						occurrence, athleteId, plan.id(), day.id(), null, occurrence.updatedAt());
+			}
 			return new ExerciseExecutionPerformanceResult(
 					execution.id(),
 					execution.workoutOccurrenceId(),

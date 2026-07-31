@@ -131,6 +131,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 	private WorkoutExerciseRepository workoutExerciseRepository;
 
 	@Autowired
+	private ExerciseDefinitionRepository exerciseDefinitionRepository;
+
+	@Autowired
 	private WorkoutOccurrenceRepository workoutOccurrenceRepository;
 
 	@Autowired
@@ -456,6 +459,7 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				trainingPlanRepository,
 				workoutDayRepository,
 				workoutExerciseRepository,
+				exerciseDefinitionRepository,
 				workoutOccurrenceRepository,
 				failingSaveAllRepository(),
 				workoutExerciseSetRepository,
@@ -530,6 +534,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 				execution.prescribedExerciseNameSnapshot(),
 				execution.performedExerciseDefinitionId(),
 				execution.performedExerciseNameSnapshot(),
+				execution.performedExerciseCategorySnapshot(),
+				execution.performedPrimaryMovementPatternSnapshot(),
+				execution.performedImpactLevelSnapshot(),
 				execution.exercisePerformanceKey(),
 				execution.substitutionReason(),
 				execution.substitutionNotes(),

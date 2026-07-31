@@ -66,4 +66,12 @@ interface WorkoutOccurrenceJpaRepository extends JpaRepository<WorkoutOccurrence
 			@Param("status") WorkoutOccurrenceStatus status,
 			@Param("trainingPlanId") UUID trainingPlanId);
 
+	@Query("""
+			select o from WorkoutOccurrenceJpaEntity o
+			where o.athleteId = :athleteId
+			and o.status = com.devinolabs.uap.training.domain.WorkoutOccurrenceStatus.COMPLETED
+			order by o.scheduledDate asc, o.createdAt asc
+			""")
+	List<WorkoutOccurrenceJpaEntity> findCompletedByAthleteIdOrderByScheduledDate(@Param("athleteId") UUID athleteId);
+
 }
