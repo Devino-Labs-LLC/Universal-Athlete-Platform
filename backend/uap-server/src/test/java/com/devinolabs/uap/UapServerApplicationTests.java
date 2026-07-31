@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("22");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("23");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add training environments and occurrence context");
+				.isEqualTo("add workout adaptation proposals");
 	}
 
 	@Test
@@ -499,6 +499,29 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("add training environments and occurrence context");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesWorkoutAdaptationProposalsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet proposals = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_proposals", new String[] { "TABLE" });
+				ResultSet items = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_proposal_items", new String[] { "TABLE" });
+				ResultSet alternatives = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_proposal_item_alternatives", new String[] { "TABLE" });
+				ResultSet historyProposal = connection.getMetaData().getColumns(null, null,
+						"workout_exercise_substitution_history", "workout_adaptation_proposal_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '23'")) {
+			assertThat(proposals.next()).isTrue();
+			assertThat(items.next()).isTrue();
+			assertThat(alternatives.next()).isTrue();
+			assertThat(historyProposal.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add workout adaptation proposals");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

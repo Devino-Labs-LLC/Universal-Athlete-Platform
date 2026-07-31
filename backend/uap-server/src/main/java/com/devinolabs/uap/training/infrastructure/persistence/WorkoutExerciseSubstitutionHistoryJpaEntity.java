@@ -103,6 +103,18 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 	@Enumerated(EnumType.STRING)
 	private Set<EquipmentType> availableEquipmentSnapshot = new LinkedHashSet<>();
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "workout_adaptation_proposal_id", updatable = false, columnDefinition = "BINARY(16)")
+	private UUID workoutAdaptationProposalId;
+
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "workout_adaptation_proposal_item_id", updatable = false, columnDefinition = "BINARY(16)")
+	private UUID workoutAdaptationProposalItemId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "adaptation_decision_snapshot", updatable = false, length = 32)
+	private com.devinolabs.uap.training.domain.WorkoutAdaptationDecision adaptationDecisionSnapshot;
+
 	@Column(name = "reverted", nullable = false, updatable = false)
 	private boolean reverted;
 
@@ -135,6 +147,9 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 			UUID trainingEnvironmentId,
 			String trainingEnvironmentNameSnapshot,
 			Set<EquipmentType> availableEquipmentSnapshot,
+			UUID workoutAdaptationProposalId,
+			UUID workoutAdaptationProposalItemId,
+			com.devinolabs.uap.training.domain.WorkoutAdaptationDecision adaptationDecisionSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt,
@@ -157,6 +172,9 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 		this.availableEquipmentSnapshot = availableEquipmentSnapshot == null
 				? new LinkedHashSet<>()
 				: new LinkedHashSet<>(availableEquipmentSnapshot);
+		this.workoutAdaptationProposalId = workoutAdaptationProposalId;
+		this.workoutAdaptationProposalItemId = workoutAdaptationProposalItemId;
+		this.adaptationDecisionSnapshot = adaptationDecisionSnapshot;
 		this.reverted = reverted;
 		this.changedAt = changedAt;
 		this.createdAt = createdAt;
@@ -237,6 +255,18 @@ class WorkoutExerciseSubstitutionHistoryJpaEntity implements Persistable<UUID> {
 
 	Set<EquipmentType> getAvailableEquipmentSnapshot() {
 		return availableEquipmentSnapshot;
+	}
+
+	UUID getWorkoutAdaptationProposalId() {
+		return workoutAdaptationProposalId;
+	}
+
+	UUID getWorkoutAdaptationProposalItemId() {
+		return workoutAdaptationProposalItemId;
+	}
+
+	com.devinolabs.uap.training.domain.WorkoutAdaptationDecision getAdaptationDecisionSnapshot() {
+		return adaptationDecisionSnapshot;
 	}
 
 	boolean isReverted() {

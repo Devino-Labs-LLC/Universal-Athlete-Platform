@@ -83,6 +83,23 @@ import com.devinolabs.uap.training.application.ConflictingEquipmentContextFilter
 import com.devinolabs.uap.training.application.InvalidFeasibilityEnvironmentModeException;
 import com.devinolabs.uap.training.application.InvalidFeasibilitySuggestionLimitException;
 import com.devinolabs.uap.training.application.WorkoutFeasibilityAnalysisFailedException;
+import com.devinolabs.uap.training.application.ActiveWorkoutAdaptationProposalExistsException;
+import com.devinolabs.uap.training.application.AdaptationRelationshipMismatchException;
+import com.devinolabs.uap.training.application.AdaptationTargetNotAccessibleException;
+import com.devinolabs.uap.training.application.AdaptationTargetNotEnvironmentCompatibleException;
+import com.devinolabs.uap.training.application.InvalidAdaptationProposalExpirationException;
+import com.devinolabs.uap.training.application.InvalidWorkoutAdaptationDecisionException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalEnvironmentRequiredException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalExpiredException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalItemMismatchException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalItemNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalLockedException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalNotAccessibleException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalNotFoundException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalStaleException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalTerminalException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalUnresolvedException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalVersionConflictException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipMismatchException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotAccessibleException;
 import com.devinolabs.uap.training.application.ExerciseSubstitutionRelationshipNotFoundException;
@@ -127,7 +144,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		ExerciseDefinitionController.class,
 		ExerciseSubstitutionRelationshipController.class,
 		TrainingEnvironmentController.class,
-		FeasibilityController.class
+		FeasibilityController.class,
+		WorkoutAdaptationProposalController.class
 })
 class TrainingExceptionHandler {
 
@@ -940,6 +958,148 @@ class TrainingExceptionHandler {
 				.body(error("WORKOUT_FEASIBILITY_ANALYSIS_FAILED", ex.getMessage(), request, List.of()));
 	}
 
+	@ExceptionHandler(WorkoutAdaptationProposalNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalNotFound(
+			WorkoutAdaptationProposalNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_NOT_FOUND",
+						"Workout adaptation proposal was not found",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalNotAccessible(
+			WorkoutAdaptationProposalNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ActiveWorkoutAdaptationProposalExistsException.class)
+	ResponseEntity<ApiErrorResponse> handleActiveWorkoutAdaptationProposalExists(
+			ActiveWorkoutAdaptationProposalExistsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ACTIVE_WORKOUT_ADAPTATION_PROPOSAL_EXISTS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalTerminalException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalTerminal(
+			WorkoutAdaptationProposalTerminalException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_TERMINAL", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalExpiredException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalExpired(
+			WorkoutAdaptationProposalExpiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_EXPIRED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalStaleException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalStale(
+			WorkoutAdaptationProposalStaleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_STALE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalUnresolvedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalUnresolved(
+			WorkoutAdaptationProposalUnresolvedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_UNRESOLVED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalLockedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalLocked(
+			WorkoutAdaptationProposalLockedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_LOCKED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalVersionConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalVersionConflict(
+			WorkoutAdaptationProposalVersionConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_VERSION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalItemNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalItemNotFound(
+			WorkoutAdaptationProposalItemNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_ITEM_NOT_FOUND",
+						"Workout adaptation proposal item was not found",
+						request,
+						List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalItemMismatchException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalItemMismatch(
+			WorkoutAdaptationProposalItemMismatchException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_ITEM_MISMATCH", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidWorkoutAdaptationDecisionException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidWorkoutAdaptationDecision(
+			InvalidWorkoutAdaptationDecisionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_WORKOUT_ADAPTATION_DECISION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidAdaptationProposalExpirationException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidAdaptationProposalExpiration(
+			InvalidAdaptationProposalExpirationException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_ADAPTATION_PROPOSAL_EXPIRATION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AdaptationTargetNotEnvironmentCompatibleException.class)
+	ResponseEntity<ApiErrorResponse> handleAdaptationTargetNotEnvironmentCompatible(
+			AdaptationTargetNotEnvironmentCompatibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ADAPTATION_TARGET_NOT_ENVIRONMENT_COMPATIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AdaptationTargetNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleAdaptationTargetNotAccessible(
+			AdaptationTargetNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(error("ADAPTATION_TARGET_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(AdaptationRelationshipMismatchException.class)
+	ResponseEntity<ApiErrorResponse> handleAdaptationRelationshipMismatch(
+			AdaptationRelationshipMismatchException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("ADAPTATION_RELATIONSHIP_MISMATCH", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutAdaptationProposalEnvironmentRequiredException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalEnvironmentRequired(
+			WorkoutAdaptationProposalEnvironmentRequiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_ENVIRONMENT_REQUIRED", ex.getMessage(), request, List.of()));
+	}
+
 	/**
 	 * Last line of defence for the unique active-name indexes: two concurrent creates can both pass
 	 * the pre-check, and the loser should read as a duplicate rather than a server error.
@@ -969,7 +1129,27 @@ class TrainingExceptionHandler {
 							request,
 							List.of()));
 		}
+		if (indicatesActiveWorkoutAdaptationProposal(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("ACTIVE_WORKOUT_ADAPTATION_PROPOSAL_EXISTS",
+							"An active workout adaptation proposal already exists for this occurrence",
+							request,
+							List.of()));
+		}
 		throw ex;
+	}
+
+	private static boolean indicatesActiveWorkoutAdaptationProposal(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("uq_adaptation_proposals_active_occurrence")) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	private static boolean indicatesDuplicateTrainingEnvironment(Throwable ex) {

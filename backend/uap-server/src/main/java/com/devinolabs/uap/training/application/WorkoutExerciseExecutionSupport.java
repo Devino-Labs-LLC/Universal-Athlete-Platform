@@ -212,6 +212,9 @@ final class WorkoutExerciseExecutionSupport {
 				entry.trainingEnvironmentId(),
 				entry.trainingEnvironmentNameSnapshot(),
 				entry.availableEquipmentSnapshot(),
+				entry.workoutAdaptationProposalId(),
+				entry.workoutAdaptationProposalItemId(),
+				entry.adaptationDecisionSnapshot(),
 				entry.reverted(),
 				entry.changedAt());
 	}

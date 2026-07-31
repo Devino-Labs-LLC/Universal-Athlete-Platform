@@ -10,6 +10,9 @@ import com.devinolabs.uap.training.domain.ExerciseSubstitutionReason;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipType;
 import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationDecision;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalId;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalItemId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionHistoryId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
@@ -30,6 +33,9 @@ public record WorkoutExerciseSubstitutionResult(
 		TrainingEnvironmentId trainingEnvironmentId,
 		String trainingEnvironmentNameSnapshot,
 		List<EquipmentType> availableEquipmentSnapshot,
+		WorkoutAdaptationProposalId workoutAdaptationProposalId,
+		WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId,
+		WorkoutAdaptationDecision adaptationDecisionSnapshot,
 		boolean reverted,
 		Instant changedAt) {
 }

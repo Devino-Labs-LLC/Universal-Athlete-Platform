@@ -30,6 +30,9 @@ public class WorkoutExerciseSubstitutionHistory {
 	private final TrainingEnvironmentId trainingEnvironmentId;
 	private final String trainingEnvironmentNameSnapshot;
 	private final List<EquipmentType> availableEquipmentSnapshot;
+	private final WorkoutAdaptationProposalId workoutAdaptationProposalId;
+	private final WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId;
+	private final WorkoutAdaptationDecision adaptationDecisionSnapshot;
 	private final boolean reverted;
 	private final Instant changedAt;
 	private final Instant createdAt;
@@ -51,6 +54,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			TrainingEnvironmentId trainingEnvironmentId,
 			String trainingEnvironmentNameSnapshot,
 			List<EquipmentType> availableEquipmentSnapshot,
+			WorkoutAdaptationProposalId workoutAdaptationProposalId,
+			WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId,
+			WorkoutAdaptationDecision adaptationDecisionSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -82,6 +88,9 @@ public class WorkoutExerciseSubstitutionHistory {
 		this.availableEquipmentSnapshot = availableEquipmentSnapshot == null
 				? List.of()
 				: List.copyOf(availableEquipmentSnapshot);
+		this.workoutAdaptationProposalId = workoutAdaptationProposalId;
+		this.workoutAdaptationProposalItemId = workoutAdaptationProposalItemId;
+		this.adaptationDecisionSnapshot = adaptationDecisionSnapshot;
 		this.reverted = reverted;
 		this.changedAt = Objects.requireNonNull(changedAt, "changedAt must not be null");
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
@@ -122,6 +131,32 @@ public class WorkoutExerciseSubstitutionHistory {
 			ExerciseSubstitutionRelationship relationship,
 			WorkoutOccurrenceEnvironmentSnapshot environmentContext,
 			Clock clock) {
+		return substitutionWithAdaptationProvenance(
+				execution,
+				fromExerciseDefinitionId,
+				fromExerciseNameSnapshot,
+				reason,
+				notes,
+				relationship,
+				environmentContext,
+				null,
+				null,
+				null,
+				clock);
+	}
+
+	public static WorkoutExerciseSubstitutionHistory substitutionWithAdaptationProvenance(
+			WorkoutExerciseExecution execution,
+			ExerciseDefinitionId fromExerciseDefinitionId,
+			String fromExerciseNameSnapshot,
+			ExerciseSubstitutionReason reason,
+			String notes,
+			ExerciseSubstitutionRelationship relationship,
+			WorkoutOccurrenceEnvironmentSnapshot environmentContext,
+			WorkoutAdaptationProposalId workoutAdaptationProposalId,
+			WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId,
+			WorkoutAdaptationDecision adaptationDecisionSnapshot,
+			Clock clock) {
 		Objects.requireNonNull(execution, "execution must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
 		Instant now = Instant.now(clock);
@@ -158,6 +193,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				environmentId,
 				environmentName,
 				environmentEquipment,
+				workoutAdaptationProposalId,
+				workoutAdaptationProposalItemId,
+				adaptationDecisionSnapshot,
 				execution.performedExerciseDefinitionId().equals(execution.prescribedExerciseDefinitionId()),
 				now,
 				now);
@@ -193,6 +231,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				null,
 				null,
 				List.of(),
+				null,
+				null,
+				null,
 				true,
 				now,
 				now);
@@ -215,6 +256,9 @@ public class WorkoutExerciseSubstitutionHistory {
 			TrainingEnvironmentId trainingEnvironmentId,
 			String trainingEnvironmentNameSnapshot,
 			List<EquipmentType> availableEquipmentSnapshot,
+			WorkoutAdaptationProposalId workoutAdaptationProposalId,
+			WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId,
+			WorkoutAdaptationDecision adaptationDecisionSnapshot,
 			boolean reverted,
 			Instant changedAt,
 			Instant createdAt) {
@@ -235,6 +279,9 @@ public class WorkoutExerciseSubstitutionHistory {
 				trainingEnvironmentId,
 				trainingEnvironmentNameSnapshot,
 				availableEquipmentSnapshot,
+				workoutAdaptationProposalId,
+				workoutAdaptationProposalItemId,
+				adaptationDecisionSnapshot,
 				reverted,
 				changedAt,
 				createdAt);
@@ -302,6 +349,18 @@ public class WorkoutExerciseSubstitutionHistory {
 
 	public List<EquipmentType> availableEquipmentSnapshot() {
 		return availableEquipmentSnapshot;
+	}
+
+	public WorkoutAdaptationProposalId workoutAdaptationProposalId() {
+		return workoutAdaptationProposalId;
+	}
+
+	public WorkoutAdaptationProposalItemId workoutAdaptationProposalItemId() {
+		return workoutAdaptationProposalItemId;
+	}
+
+	public WorkoutAdaptationDecision adaptationDecisionSnapshot() {
+		return adaptationDecisionSnapshot;
 	}
 
 	public boolean reverted() {
