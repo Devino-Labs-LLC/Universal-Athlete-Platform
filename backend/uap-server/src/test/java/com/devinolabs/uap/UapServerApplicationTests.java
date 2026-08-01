@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("24");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("25");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add workout session effort and training load");
+				.isEqualTo("add daily recovery check ins");
 	}
 
 	@Test
@@ -561,6 +561,29 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("add workout session effort and training load");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesDailyRecoveryCheckInsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet checkIns = connection.getMetaData().getTables(null, null,
+						"daily_recovery_check_ins", new String[] { "TABLE" });
+				ResultSet discomfort = connection.getMetaData().getTables(null, null,
+						"daily_recovery_check_in_discomfort", new String[] { "TABLE" });
+				ResultSet revisions = connection.getMetaData().getTables(null, null,
+						"daily_recovery_check_in_revisions", new String[] { "TABLE" });
+				ResultSet revisionDiscomfort = connection.getMetaData().getTables(null, null,
+						"daily_recovery_check_in_revision_discomfort", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '25'")) {
+			assertThat(checkIns.next()).isTrue();
+			assertThat(discomfort.next()).isTrue();
+			assertThat(revisions.next()).isTrue();
+			assertThat(revisionDiscomfort.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add daily recovery check ins");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

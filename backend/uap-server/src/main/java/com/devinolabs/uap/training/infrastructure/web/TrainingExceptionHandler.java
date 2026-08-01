@@ -110,6 +110,29 @@ import com.devinolabs.uap.training.application.WorkoutSessionEffortAlreadyExists
 import com.devinolabs.uap.training.application.WorkoutSessionEffortNotAccessibleException;
 import com.devinolabs.uap.training.application.WorkoutSessionEffortNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutSessionEffortNotFoundException;
+import com.devinolabs.uap.training.application.RecoveryCheckInAlreadyExistsException;
+import com.devinolabs.uap.training.application.RecoveryCheckInNotAccessibleException;
+import com.devinolabs.uap.training.application.RecoveryCheckInNotFoundException;
+import com.devinolabs.uap.training.application.RecoveryCheckInVersionConflictException;
+import com.devinolabs.uap.training.application.InvalidRecoveryCheckInDateRangeException;
+import com.devinolabs.uap.training.application.InvalidRecoveryCalendarDateRangeException;
+import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInDateException;
+import com.devinolabs.uap.training.domain.RecoveryCheckInDateOutOfRangeException;
+import com.devinolabs.uap.training.domain.EmptyRecoveryCheckInException;
+import com.devinolabs.uap.training.domain.InvalidSleepDurationException;
+import com.devinolabs.uap.training.domain.InvalidSleepQualityException;
+import com.devinolabs.uap.training.domain.InvalidFatigueRatingException;
+import com.devinolabs.uap.training.domain.InvalidMuscleSorenessRatingException;
+import com.devinolabs.uap.training.domain.InvalidStressRatingException;
+import com.devinolabs.uap.training.domain.InvalidMoodRatingException;
+import com.devinolabs.uap.training.domain.InvalidTrainingMotivationRatingException;
+import com.devinolabs.uap.training.domain.InvalidBodyAreaException;
+import com.devinolabs.uap.training.domain.InvalidBodySideException;
+import com.devinolabs.uap.training.domain.InvalidDiscomfortIntensityException;
+import com.devinolabs.uap.training.domain.InvalidBodyAreaDiscomfortException;
+import com.devinolabs.uap.training.domain.DuplicateBodyAreaDiscomfortException;
+import com.devinolabs.uap.training.domain.TooManyBodyAreaDiscomfortObservationsException;
+import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInNotesException;
 import com.devinolabs.uap.training.domain.InvalidSessionDurationException;
 import com.devinolabs.uap.training.domain.InvalidSessionRpeException;
 import com.devinolabs.uap.training.domain.InvalidWorkoutSessionEffortNotesException;
@@ -160,7 +183,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		TrainingEnvironmentController.class,
 		FeasibilityController.class,
 		WorkoutAdaptationProposalController.class,
-		TrainingLoadController.class
+		TrainingLoadController.class,
+		RecoveryCheckInController.class
 })
 class TrainingExceptionHandler {
 
@@ -1227,6 +1251,190 @@ class TrainingExceptionHandler {
 				.body(error("TRAINING_LOAD_REBUILD_FAILED", ex.getMessage(), request, List.of()));
 	}
 
+	@ExceptionHandler(RecoveryCheckInNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryCheckInNotFound(
+			RecoveryCheckInNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("RECOVERY_CHECK_IN_NOT_FOUND", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryCheckInNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryCheckInNotAccessible(
+			RecoveryCheckInNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("RECOVERY_CHECK_IN_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryCheckInAlreadyExistsException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryCheckInAlreadyExists(
+			RecoveryCheckInAlreadyExistsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("RECOVERY_CHECK_IN_ALREADY_EXISTS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryCheckInVersionConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryCheckInVersionConflict(
+			RecoveryCheckInVersionConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("RECOVERY_CHECK_IN_VERSION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryCheckInDateException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryCheckInDate(
+			InvalidRecoveryCheckInDateException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_CHECK_IN_DATE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryCheckInDateOutOfRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryCheckInDateOutOfRange(
+			RecoveryCheckInDateOutOfRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("RECOVERY_CHECK_IN_DATE_OUT_OF_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryCheckInDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryCheckInDateRange(
+			InvalidRecoveryCheckInDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_CHECK_IN_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryCalendarDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryCalendarDateRange(
+			InvalidRecoveryCalendarDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_CALENDAR_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(EmptyRecoveryCheckInException.class)
+	ResponseEntity<ApiErrorResponse> handleEmptyRecoveryCheckIn(
+			EmptyRecoveryCheckInException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("EMPTY_RECOVERY_CHECK_IN", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidSleepDurationException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidSleepDuration(
+			InvalidSleepDurationException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_SLEEP_DURATION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidSleepQualityException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidSleepQuality(
+			InvalidSleepQualityException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_SLEEP_QUALITY", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidFatigueRatingException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidFatigueRating(
+			InvalidFatigueRatingException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_FATIGUE_RATING", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMuscleSorenessRatingException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidMuscleSorenessRating(
+			InvalidMuscleSorenessRatingException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MUSCLE_SORENESS_RATING", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidStressRatingException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidStressRating(
+			InvalidStressRatingException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_STRESS_RATING", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidMoodRatingException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidMoodRating(
+			InvalidMoodRatingException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_MOOD_RATING", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingMotivationRatingException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingMotivationRating(
+			InvalidTrainingMotivationRatingException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_MOTIVATION_RATING", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidBodyAreaException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidBodyArea(
+			InvalidBodyAreaException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_BODY_AREA", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidBodySideException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidBodySide(
+			InvalidBodySideException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_BODY_SIDE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidDiscomfortIntensityException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidDiscomfortIntensity(
+			InvalidDiscomfortIntensityException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_DISCOMFORT_INTENSITY", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidBodyAreaDiscomfortException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidBodyAreaDiscomfort(
+			InvalidBodyAreaDiscomfortException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_BODY_AREA_DISCOMFORT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DuplicateBodyAreaDiscomfortException.class)
+	ResponseEntity<ApiErrorResponse> handleDuplicateBodyAreaDiscomfort(
+			DuplicateBodyAreaDiscomfortException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DUPLICATE_BODY_AREA_DISCOMFORT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TooManyBodyAreaDiscomfortObservationsException.class)
+	ResponseEntity<ApiErrorResponse> handleTooManyBodyAreaDiscomfort(
+			TooManyBodyAreaDiscomfortObservationsException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TOO_MANY_BODY_AREA_DISCOMFORT_OBSERVATIONS", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryCheckInNotesException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryCheckInNotes(
+			InvalidRecoveryCheckInNotesException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_CHECK_IN_NOTES", ex.getMessage(), request, List.of()));
+	}
+
 	/**
 	 * Last line of defence for the unique active-name indexes: two concurrent creates can both pass
 	 * the pre-check, and the loser should read as a duplicate rather than a server error.
@@ -1263,7 +1471,27 @@ class TrainingExceptionHandler {
 							request,
 							List.of()));
 		}
+		if (indicatesDuplicateRecoveryCheckIn(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("RECOVERY_CHECK_IN_ALREADY_EXISTS",
+							"A recovery check-in already exists for this date",
+							request,
+							List.of()));
+		}
 		throw ex;
+	}
+
+	private static boolean indicatesDuplicateRecoveryCheckIn(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("uq_daily_recovery_check_ins_athlete_date")) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	private static boolean indicatesActiveWorkoutAdaptationProposal(Throwable ex) {
