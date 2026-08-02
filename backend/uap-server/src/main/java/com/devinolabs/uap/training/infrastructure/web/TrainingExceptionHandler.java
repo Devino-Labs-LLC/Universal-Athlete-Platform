@@ -116,6 +116,11 @@ import com.devinolabs.uap.training.application.RecoveryCheckInNotFoundException;
 import com.devinolabs.uap.training.application.RecoveryCheckInVersionConflictException;
 import com.devinolabs.uap.training.application.InvalidRecoveryCheckInDateRangeException;
 import com.devinolabs.uap.training.application.InvalidRecoveryCalendarDateRangeException;
+import com.devinolabs.uap.training.application.InvalidRecoveryTrendDateRangeException;
+import com.devinolabs.uap.training.application.InvalidRecoveryMetricTypeException;
+import com.devinolabs.uap.training.application.RecoveryAnalyticsDateOutOfRangeException;
+import com.devinolabs.uap.training.application.RecoveryAnalyticsCalculationFailedException;
+import com.devinolabs.uap.training.domain.InvalidRecoveryBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInDateException;
 import com.devinolabs.uap.training.domain.RecoveryCheckInDateOutOfRangeException;
 import com.devinolabs.uap.training.domain.EmptyRecoveryCheckInException;
@@ -184,7 +189,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		FeasibilityController.class,
 		WorkoutAdaptationProposalController.class,
 		TrainingLoadController.class,
-		RecoveryCheckInController.class
+		RecoveryCheckInController.class,
+		RecoveryAnalyticsController.class
 })
 class TrainingExceptionHandler {
 
@@ -1433,6 +1439,46 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("INVALID_RECOVERY_CHECK_IN_NOTES", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryBaselineWindowException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryBaselineWindow(
+			InvalidRecoveryBaselineWindowException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_BASELINE_WINDOW", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryTrendDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryTrendDateRange(
+			InvalidRecoveryTrendDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_TREND_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidRecoveryMetricTypeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidRecoveryMetricType(
+			InvalidRecoveryMetricTypeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_RECOVERY_METRIC_TYPE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryAnalyticsDateOutOfRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryAnalyticsDateOutOfRange(
+			RecoveryAnalyticsDateOutOfRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("RECOVERY_ANALYTICS_DATE_OUT_OF_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryAnalyticsCalculationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryAnalyticsCalculationFailed(
+			RecoveryAnalyticsCalculationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("RECOVERY_ANALYTICS_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
 	}
 
 	/**

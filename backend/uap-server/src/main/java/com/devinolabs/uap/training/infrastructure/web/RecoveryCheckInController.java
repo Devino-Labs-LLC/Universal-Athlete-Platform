@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
+import com.devinolabs.uap.training.application.CompareDailyRecoveryCheckInToBaselineUseCase;
+import com.devinolabs.uap.training.application.CompareRecoveryDateToBaselineUseCase;
 import com.devinolabs.uap.training.application.CreateDailyRecoveryCheckInUseCase;
 import com.devinolabs.uap.training.application.GetAthleteRecoveryHistoryUseCase;
 import com.devinolabs.uap.training.application.GetDailyRecoveryCheckInByDateUseCase;
@@ -46,6 +48,8 @@ class RecoveryCheckInController {
 	private final ListDailyRecoveryCheckInRevisionsUseCase listDailyRecoveryCheckInRevisionsUseCase;
 	private final GetRecoveryCheckInCalendarUseCase getRecoveryCheckInCalendarUseCase;
 	private final GetAthleteRecoveryHistoryUseCase getAthleteRecoveryHistoryUseCase;
+	private final CompareDailyRecoveryCheckInToBaselineUseCase compareDailyRecoveryCheckInToBaselineUseCase;
+	private final CompareRecoveryDateToBaselineUseCase compareRecoveryDateToBaselineUseCase;
 
 	RecoveryCheckInController(
 			CreateDailyRecoveryCheckInUseCase createDailyRecoveryCheckInUseCase,
@@ -55,7 +59,9 @@ class RecoveryCheckInController {
 			ListDailyRecoveryCheckInsUseCase listDailyRecoveryCheckInsUseCase,
 			ListDailyRecoveryCheckInRevisionsUseCase listDailyRecoveryCheckInRevisionsUseCase,
 			GetRecoveryCheckInCalendarUseCase getRecoveryCheckInCalendarUseCase,
-			GetAthleteRecoveryHistoryUseCase getAthleteRecoveryHistoryUseCase) {
+			GetAthleteRecoveryHistoryUseCase getAthleteRecoveryHistoryUseCase,
+			CompareDailyRecoveryCheckInToBaselineUseCase compareDailyRecoveryCheckInToBaselineUseCase,
+			CompareRecoveryDateToBaselineUseCase compareRecoveryDateToBaselineUseCase) {
 		this.createDailyRecoveryCheckInUseCase = Objects.requireNonNull(createDailyRecoveryCheckInUseCase);
 		this.updateDailyRecoveryCheckInUseCase = Objects.requireNonNull(updateDailyRecoveryCheckInUseCase);
 		this.getDailyRecoveryCheckInUseCase = Objects.requireNonNull(getDailyRecoveryCheckInUseCase);
@@ -64,6 +70,10 @@ class RecoveryCheckInController {
 		this.listDailyRecoveryCheckInRevisionsUseCase = Objects.requireNonNull(listDailyRecoveryCheckInRevisionsUseCase);
 		this.getRecoveryCheckInCalendarUseCase = Objects.requireNonNull(getRecoveryCheckInCalendarUseCase);
 		this.getAthleteRecoveryHistoryUseCase = Objects.requireNonNull(getAthleteRecoveryHistoryUseCase);
+		this.compareDailyRecoveryCheckInToBaselineUseCase =
+				Objects.requireNonNull(compareDailyRecoveryCheckInToBaselineUseCase);
+		this.compareRecoveryDateToBaselineUseCase =
+				Objects.requireNonNull(compareRecoveryDateToBaselineUseCase);
 	}
 
 	@PostMapping("/api/v1/training/recovery-check-ins")
@@ -153,6 +163,32 @@ class RecoveryCheckInController {
 				accountId(authentication),
 				startDate,
 				endDate));
+	}
+
+	@GetMapping("/api/v1/training/recovery-check-ins/{checkInId}/baseline-comparison")
+	DailyRecoveryBaselineComparisonResponse baselineComparisonById(
+			@PathVariable UUID checkInId,
+			@RequestParam int baselineWindowDays,
+			@RequestParam(defaultValue = "false") boolean includeTrainingLoad,
+			Authentication authentication) {
+		return DailyRecoveryBaselineComparisonResponse.from(compareDailyRecoveryCheckInToBaselineUseCase.execute(
+				accountId(authentication),
+				DailyRecoveryCheckInId.of(checkInId),
+				baselineWindowDays,
+				includeTrainingLoad));
+	}
+
+	@GetMapping("/api/v1/training/recovery-check-ins/by-date/{date}/baseline-comparison")
+	DailyRecoveryBaselineComparisonResponse baselineComparisonByDate(
+			@PathVariable LocalDate date,
+			@RequestParam int baselineWindowDays,
+			@RequestParam(defaultValue = "false") boolean includeTrainingLoad,
+			Authentication authentication) {
+		return DailyRecoveryBaselineComparisonResponse.from(compareRecoveryDateToBaselineUseCase.execute(
+				accountId(authentication),
+				date,
+				baselineWindowDays,
+				includeTrainingLoad));
 	}
 
 	@GetMapping("/api/v1/training/recovery-check-ins/history")
