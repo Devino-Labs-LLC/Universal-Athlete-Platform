@@ -120,6 +120,15 @@ import com.devinolabs.uap.training.application.InvalidRecoveryTrendDateRangeExce
 import com.devinolabs.uap.training.application.InvalidRecoveryMetricTypeException;
 import com.devinolabs.uap.training.application.RecoveryAnalyticsDateOutOfRangeException;
 import com.devinolabs.uap.training.application.RecoveryAnalyticsCalculationFailedException;
+import com.devinolabs.uap.training.application.DailyAthleteStateSnapshotNotFoundException;
+import com.devinolabs.uap.training.application.DailyAthleteStateSnapshotNotAccessibleException;
+import com.devinolabs.uap.training.application.DailyAthleteStateVersionConflictException;
+import com.devinolabs.uap.training.application.DailyAthleteStateGenerationFailedException;
+import com.devinolabs.uap.training.application.DailyAthleteStateSourceInconsistentException;
+import com.devinolabs.uap.training.application.DailyAthleteStateSnapshotCompareInvalidException;
+import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateDateException;
+import com.devinolabs.uap.training.domain.DailyAthleteStateDateOutOfRangeException;
+import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInDateException;
 import com.devinolabs.uap.training.domain.RecoveryCheckInDateOutOfRangeException;
@@ -190,7 +199,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		WorkoutAdaptationProposalController.class,
 		TrainingLoadController.class,
 		RecoveryCheckInController.class,
-		RecoveryAnalyticsController.class
+		RecoveryAnalyticsController.class,
+		DailyAthleteStateController.class
 })
 class TrainingExceptionHandler {
 
@@ -1481,6 +1491,78 @@ class TrainingExceptionHandler {
 				.body(error("RECOVERY_ANALYTICS_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
 	}
 
+	@ExceptionHandler(DailyAthleteStateSnapshotNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateSnapshotNotFound(
+			DailyAthleteStateSnapshotNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_NOT_FOUND", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateSnapshotNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateSnapshotNotAccessible(
+			DailyAthleteStateSnapshotNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidDailyAthleteStateDateException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidDailyAthleteStateDate(
+			InvalidDailyAthleteStateDateException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_DAILY_ATHLETE_STATE_DATE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateDateOutOfRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateDateOutOfRange(
+			DailyAthleteStateDateOutOfRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_ATHLETE_STATE_DATE_OUT_OF_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidDailyAthleteStateBaselineWindowException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidDailyAthleteStateBaselineWindow(
+			InvalidDailyAthleteStateBaselineWindowException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_DAILY_ATHLETE_STATE_BASELINE_WINDOW", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateVersionConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateVersionConflict(
+			DailyAthleteStateVersionConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DAILY_ATHLETE_STATE_VERSION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateGenerationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateGenerationFailed(
+			DailyAthleteStateGenerationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("DAILY_ATHLETE_STATE_GENERATION_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateSourceInconsistentException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateSourceInconsistent(
+			DailyAthleteStateSourceInconsistentException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DAILY_ATHLETE_STATE_SOURCE_INCONSISTENT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyAthleteStateSnapshotCompareInvalidException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyAthleteStateSnapshotCompareInvalid(
+			DailyAthleteStateSnapshotCompareInvalidException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_COMPARE_INVALID", ex.getMessage(), request, List.of()));
+	}
+
 	/**
 	 * Last line of defence for the unique active-name indexes: two concurrent creates can both pass
 	 * the pre-check, and the loser should read as a duplicate rather than a server error.
@@ -1524,7 +1606,29 @@ class TrainingExceptionHandler {
 							request,
 							List.of()));
 		}
+		if (indicatesDailyAthleteStateVersionConflict(ex)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(error("DAILY_ATHLETE_STATE_VERSION_CONFLICT",
+							"Concurrent daily athlete state snapshot version conflict",
+							request,
+							List.of()));
+		}
 		throw ex;
+	}
+
+	private static boolean indicatesDailyAthleteStateVersionConflict(Throwable ex) {
+		for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+			String message = cause.getMessage();
+			if (message != null
+					&& (message.contains("uq_daily_athlete_state_version")
+							|| message.contains("uq_daily_athlete_state_current"))) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	private static boolean indicatesDuplicateRecoveryCheckIn(Throwable ex) {

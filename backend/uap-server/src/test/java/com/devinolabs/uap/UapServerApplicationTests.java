@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("25");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("26");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add daily recovery check ins");
+				.isEqualTo("add daily athlete state snapshots");
 	}
 
 	@Test
@@ -584,6 +584,35 @@ class UapServerApplicationTests {
 			assertThat(revisionDiscomfort.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add daily recovery check ins");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesDailyAthleteStateSnapshotsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet snapshots = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_snapshots", new String[] { "TABLE" });
+				ResultSet metrics = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_recovery_metrics", new String[] { "TABLE" });
+				ResultSet discomfort = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_discomfort", new String[] { "TABLE" });
+				ResultSet categories = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_category_summaries", new String[] { "TABLE" });
+				ResultSet movements = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_movement_summaries", new String[] { "TABLE" });
+				ResultSet scheduled = connection.getMetaData().getTables(null, null,
+						"daily_athlete_state_scheduled_occurrences", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '26'")) {
+			assertThat(snapshots.next()).isTrue();
+			assertThat(metrics.next()).isTrue();
+			assertThat(discomfort.next()).isTrue();
+			assertThat(categories.next()).isTrue();
+			assertThat(movements.next()).isTrue();
+			assertThat(scheduled.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add daily athlete state snapshots");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
