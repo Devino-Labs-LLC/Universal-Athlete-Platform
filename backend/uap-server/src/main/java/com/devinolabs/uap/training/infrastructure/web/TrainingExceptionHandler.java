@@ -126,9 +126,17 @@ import com.devinolabs.uap.training.application.DailyAthleteStateVersionConflictE
 import com.devinolabs.uap.training.application.DailyAthleteStateGenerationFailedException;
 import com.devinolabs.uap.training.application.DailyAthleteStateSourceInconsistentException;
 import com.devinolabs.uap.training.application.DailyAthleteStateSnapshotCompareInvalidException;
+import com.devinolabs.uap.training.application.DailyReadinessAssessmentNotFoundException;
+import com.devinolabs.uap.training.application.DailyReadinessAssessmentNotAccessibleException;
+import com.devinolabs.uap.training.application.DailyReadinessStateSnapshotRequiredException;
+import com.devinolabs.uap.training.application.DailyReadinessCalculationFailedException;
+import com.devinolabs.uap.training.application.DailyReadinessCompareInvalidException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateDateException;
 import com.devinolabs.uap.training.domain.DailyAthleteStateDateOutOfRangeException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateBaselineWindowException;
+import com.devinolabs.uap.training.domain.InvalidDailyReadinessDateRangeException;
+import com.devinolabs.uap.training.domain.InvalidReadinessAlgorithmVersionException;
+import com.devinolabs.uap.training.domain.ReadinessNumericOverflowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInDateException;
 import com.devinolabs.uap.training.domain.RecoveryCheckInDateOutOfRangeException;
@@ -200,7 +208,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		TrainingLoadController.class,
 		RecoveryCheckInController.class,
 		RecoveryAnalyticsController.class,
-		DailyAthleteStateController.class
+		DailyAthleteStateController.class,
+		DailyReadinessController.class
 })
 class TrainingExceptionHandler {
 
@@ -1561,6 +1570,70 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_COMPARE_INVALID", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyReadinessAssessmentNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyReadinessAssessmentNotFound(
+			DailyReadinessAssessmentNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("DAILY_READINESS_ASSESSMENT_NOT_FOUND", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyReadinessAssessmentNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyReadinessAssessmentNotAccessible(
+			DailyReadinessAssessmentNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DAILY_READINESS_ASSESSMENT_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyReadinessStateSnapshotRequiredException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyReadinessStateSnapshotRequired(
+			DailyReadinessStateSnapshotRequiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_READINESS_STATE_SNAPSHOT_REQUIRED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyReadinessCalculationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyReadinessCalculationFailed(
+			DailyReadinessCalculationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("DAILY_READINESS_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(ReadinessNumericOverflowException.class)
+	ResponseEntity<ApiErrorResponse> handleReadinessNumericOverflow(
+			ReadinessNumericOverflowException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_READINESS_NUMERIC_OVERFLOW", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyReadinessCompareInvalidException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyReadinessCompareInvalid(
+			DailyReadinessCompareInvalidException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_READINESS_COMPARE_INVALID", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidDailyReadinessDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidDailyReadinessDateRange(
+			InvalidDailyReadinessDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_DAILY_READINESS_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidReadinessAlgorithmVersionException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidReadinessAlgorithmVersion(
+			InvalidReadinessAlgorithmVersionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_READINESS_ALGORITHM_VERSION", ex.getMessage(), request, List.of()));
 	}
 
 	/**

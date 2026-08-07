@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("26");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("27");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add daily athlete state snapshots");
+				.isEqualTo("add daily readiness assessments");
 	}
 
 	@Test
@@ -613,6 +613,29 @@ class UapServerApplicationTests {
 			assertThat(scheduled.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add daily athlete state snapshots");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesDailyReadinessAssessmentsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet assessments = connection.getMetaData().getTables(null, null,
+						"daily_readiness_assessments", new String[] { "TABLE" });
+				ResultSet contributions = connection.getMetaData().getTables(null, null,
+						"daily_readiness_dimension_contributions", new String[] { "TABLE" });
+				ResultSet limiting = connection.getMetaData().getTables(null, null,
+						"daily_readiness_limiting_dimensions", new String[] { "TABLE" });
+				ResultSet strongest = connection.getMetaData().getTables(null, null,
+						"daily_readiness_strongest_dimensions", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '27'")) {
+			assertThat(assessments.next()).isTrue();
+			assertThat(contributions.next()).isTrue();
+			assertThat(limiting.next()).isTrue();
+			assertThat(strongest.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add daily readiness assessments");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
