@@ -34,6 +34,8 @@ public final class WorkoutAdaptationProposal {
 	private final TrainingPlanId trainingPlanId;
 	private final WorkoutDayId workoutDayId;
 	private final WorkoutOccurrenceId workoutOccurrenceId;
+	private final WorkoutAdaptationProposalOrigin origin;
+	private final WorkoutAdaptationRecommendationContext recommendationContext;
 	private final FeasibilityEnvironmentContextSource environmentContextSource;
 	private final TrainingEnvironmentId trainingEnvironmentId;
 	private final String environmentNameSnapshot;
@@ -67,6 +69,8 @@ public final class WorkoutAdaptationProposal {
 			TrainingPlanId trainingPlanId,
 			WorkoutDayId workoutDayId,
 			WorkoutOccurrenceId workoutOccurrenceId,
+			WorkoutAdaptationProposalOrigin origin,
+			WorkoutAdaptationRecommendationContext recommendationContext,
 			FeasibilityEnvironmentContextSource environmentContextSource,
 			TrainingEnvironmentId trainingEnvironmentId,
 			String environmentNameSnapshot,
@@ -98,6 +102,15 @@ public final class WorkoutAdaptationProposal {
 		this.trainingPlanId = Objects.requireNonNull(trainingPlanId, "trainingPlanId must not be null");
 		this.workoutDayId = Objects.requireNonNull(workoutDayId, "workoutDayId must not be null");
 		this.workoutOccurrenceId = Objects.requireNonNull(workoutOccurrenceId, "workoutOccurrenceId must not be null");
+		this.origin = Objects.requireNonNull(origin, "origin must not be null");
+		this.recommendationContext = recommendationContext;
+		if (origin == WorkoutAdaptationProposalOrigin.TRAINING_RECOMMENDATION && recommendationContext == null) {
+			throw new IllegalArgumentException(
+					"recommendationContext is required for TRAINING_RECOMMENDATION origin");
+		}
+		if (origin == WorkoutAdaptationProposalOrigin.MANUAL && recommendationContext != null) {
+			throw new IllegalArgumentException("recommendationContext must be null for MANUAL origin");
+		}
 		this.environmentContextSource = Objects.requireNonNull(
 				environmentContextSource, "environmentContextSource must not be null");
 		this.trainingEnvironmentId = trainingEnvironmentId;
@@ -147,6 +160,38 @@ public final class WorkoutAdaptationProposal {
 			List<WorkoutAdaptationProposalItem> items,
 			int expirationMinutes,
 			Clock clock) {
+		return generate(
+				id,
+				athleteId,
+				trainingPlanId,
+				workoutDayId,
+				occurrence,
+				environmentContextSource,
+				trainingEnvironmentId,
+				environmentNameSnapshot,
+				availableEquipmentSnapshot,
+				feasibilityFingerprint,
+				items,
+				expirationMinutes,
+				clock,
+				null);
+	}
+
+	public static WorkoutAdaptationProposal generate(
+			WorkoutAdaptationProposalId id,
+			AthleteId athleteId,
+			TrainingPlanId trainingPlanId,
+			WorkoutDayId workoutDayId,
+			WorkoutOccurrence occurrence,
+			FeasibilityEnvironmentContextSource environmentContextSource,
+			TrainingEnvironmentId trainingEnvironmentId,
+			String environmentNameSnapshot,
+			List<EquipmentType> availableEquipmentSnapshot,
+			WorkoutAdaptationFeasibilityFingerprint feasibilityFingerprint,
+			List<WorkoutAdaptationProposalItem> items,
+			int expirationMinutes,
+			Clock clock,
+			WorkoutAdaptationRecommendationContext recommendationContext) {
 		Objects.requireNonNull(clock, "clock must not be null");
 		validateExpirationMinutes(expirationMinutes);
 		Instant now = Instant.now(clock);
@@ -154,12 +199,17 @@ public final class WorkoutAdaptationProposal {
 				.anyMatch(item -> item.action() == WorkoutAdaptationAction.UNRESOLVED)
 						? WorkoutAdaptationProposalStatus.PARTIALLY_RESOLVED
 						: WorkoutAdaptationProposalStatus.READY;
+		WorkoutAdaptationProposalOrigin origin = recommendationContext == null
+				? WorkoutAdaptationProposalOrigin.MANUAL
+				: WorkoutAdaptationProposalOrigin.TRAINING_RECOMMENDATION;
 		WorkoutAdaptationProposal proposal = new WorkoutAdaptationProposal(
 				id,
 				athleteId,
 				trainingPlanId,
 				workoutDayId,
 				occurrence.id(),
+				origin,
+				recommendationContext,
 				environmentContextSource,
 				trainingEnvironmentId,
 				environmentNameSnapshot,
@@ -196,6 +246,8 @@ public final class WorkoutAdaptationProposal {
 			TrainingPlanId trainingPlanId,
 			WorkoutDayId workoutDayId,
 			WorkoutOccurrenceId workoutOccurrenceId,
+			WorkoutAdaptationProposalOrigin origin,
+			WorkoutAdaptationRecommendationContext recommendationContext,
 			FeasibilityEnvironmentContextSource environmentContextSource,
 			TrainingEnvironmentId trainingEnvironmentId,
 			String environmentNameSnapshot,
@@ -228,6 +280,8 @@ public final class WorkoutAdaptationProposal {
 				trainingPlanId,
 				workoutDayId,
 				workoutOccurrenceId,
+				origin,
+				recommendationContext,
 				environmentContextSource,
 				trainingEnvironmentId,
 				environmentNameSnapshot,
@@ -400,6 +454,14 @@ public final class WorkoutAdaptationProposal {
 
 	public WorkoutOccurrenceId workoutOccurrenceId() {
 		return workoutOccurrenceId;
+	}
+
+	public WorkoutAdaptationProposalOrigin origin() {
+		return origin;
+	}
+
+	public Optional<WorkoutAdaptationRecommendationContext> recommendationContext() {
+		return Optional.ofNullable(recommendationContext);
 	}
 
 	public FeasibilityEnvironmentContextSource environmentContextSource() {

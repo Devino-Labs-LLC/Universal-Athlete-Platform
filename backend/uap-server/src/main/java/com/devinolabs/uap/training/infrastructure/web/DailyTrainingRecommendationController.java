@@ -6,17 +6,20 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.devinolabs.uap.training.application.CompareDailyTrainingRecommendationsUseCase;
 import com.devinolabs.uap.training.application.GenerateCurrentDailyTrainingRecommendationUseCase;
 import com.devinolabs.uap.training.application.GenerateDailyTrainingRecommendationUseCase;
+import com.devinolabs.uap.training.application.GenerateRecommendedWorkoutAdaptationProposalUseCase;
 import com.devinolabs.uap.training.application.GetDailyTrainingRecommendationHistoryUseCase;
 import com.devinolabs.uap.training.application.GetDailyTrainingRecommendationUseCase;
 
@@ -29,18 +32,21 @@ class DailyTrainingRecommendationController {
 	private final GetDailyTrainingRecommendationUseCase getUseCase;
 	private final GetDailyTrainingRecommendationHistoryUseCase historyUseCase;
 	private final CompareDailyTrainingRecommendationsUseCase compareUseCase;
+	private final GenerateRecommendedWorkoutAdaptationProposalUseCase generateRecommendedAdaptationUseCase;
 
 	DailyTrainingRecommendationController(
 			GenerateDailyTrainingRecommendationUseCase generateUseCase,
 			GenerateCurrentDailyTrainingRecommendationUseCase generateCurrentUseCase,
 			GetDailyTrainingRecommendationUseCase getUseCase,
 			GetDailyTrainingRecommendationHistoryUseCase historyUseCase,
-			CompareDailyTrainingRecommendationsUseCase compareUseCase) {
+			CompareDailyTrainingRecommendationsUseCase compareUseCase,
+			GenerateRecommendedWorkoutAdaptationProposalUseCase generateRecommendedAdaptationUseCase) {
 		this.generateUseCase = Objects.requireNonNull(generateUseCase);
 		this.generateCurrentUseCase = Objects.requireNonNull(generateCurrentUseCase);
 		this.getUseCase = Objects.requireNonNull(getUseCase);
 		this.historyUseCase = Objects.requireNonNull(historyUseCase);
 		this.compareUseCase = Objects.requireNonNull(compareUseCase);
+		this.generateRecommendedAdaptationUseCase = Objects.requireNonNull(generateRecommendedAdaptationUseCase);
 	}
 
 	@PostMapping
@@ -100,6 +106,25 @@ class DailyTrainingRecommendationController {
 		return DailyTrainingRecommendationResponse.from(getUseCase.execute(
 				RecoveryAnalyticsWebSupport.accountId(authentication),
 				recommendationId));
+	}
+
+	@PostMapping("/{recommendationId}/occurrences/{occurrenceId}/adaptation-proposals")
+	@ResponseStatus(HttpStatus.CREATED)
+	WorkoutAdaptationProposalResponse generateRecommendedAdaptationProposal(
+			@PathVariable UUID recommendationId,
+			@PathVariable UUID occurrenceId,
+			@RequestBody(required = false) GenerateWorkoutAdaptationProposalRequest request,
+			org.springframework.security.core.Authentication authentication) {
+		GenerateWorkoutAdaptationProposalRequest resolved = request == null
+				? new GenerateWorkoutAdaptationProposalRequest(null, null, null)
+				: request;
+		return WorkoutAdaptationProposalResponse.from(generateRecommendedAdaptationUseCase.execute(
+				RecoveryAnalyticsWebSupport.accountId(authentication),
+				recommendationId,
+				occurrenceId,
+				resolved.suggestionLimit(),
+				resolved.includeAlternatives(),
+				resolved.expirationMinutes()));
 	}
 
 }

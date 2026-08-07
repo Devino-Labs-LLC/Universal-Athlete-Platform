@@ -23,11 +23,16 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.FeasibilityEnvironmentContextSource;
+import com.devinolabs.uap.training.domain.ReadinessBand;
+import com.devinolabs.uap.training.domain.TrainingRecommendationAction;
+import com.devinolabs.uap.training.domain.TrainingRecommendationAlgorithmVersion;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalOrigin;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalStatus;
 
 @Entity
@@ -54,6 +59,34 @@ class WorkoutAdaptationProposalJpaEntity {
 	@JdbcTypeCode(SqlTypes.UUID)
 	@Column(name = "workout_occurrence_id", nullable = false, columnDefinition = "BINARY(16)")
 	private UUID workoutOccurrenceId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "origin", nullable = false, length = 40)
+	private WorkoutAdaptationProposalOrigin origin = WorkoutAdaptationProposalOrigin.MANUAL;
+
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "daily_training_recommendation_id", columnDefinition = "BINARY(16)")
+	private UUID dailyTrainingRecommendationId;
+
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "daily_readiness_assessment_id", columnDefinition = "BINARY(16)")
+	private UUID dailyReadinessAssessmentId;
+
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "daily_athlete_state_snapshot_id", columnDefinition = "BINARY(16)")
+	private UUID dailyAthleteStateSnapshotId;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "training_recommendation_algorithm_version", length = 64)
+	private TrainingRecommendationAlgorithmVersion trainingRecommendationAlgorithmVersion;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "recommendation_overall_action_snapshot", length = 40)
+	private TrainingRecommendationAction recommendationOverallActionSnapshot;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "recommendation_readiness_band_snapshot", length = 32)
+	private ReadinessBand recommendationReadinessBandSnapshot;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "environment_context_source", nullable = false, length = 40)
@@ -134,6 +167,11 @@ class WorkoutAdaptationProposalJpaEntity {
 	@OrderBy("executionOrder ASC, id ASC")
 	private List<WorkoutAdaptationProposalItemJpaEntity> items = new ArrayList<>();
 
+	@OneToMany(mappedBy = "proposal", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@OrderBy("orderIndex ASC")
+	@BatchSize(size = 16)
+	private List<WorkoutAdaptationRecommendationAdjustmentJpaEntity> recommendationAdjustments = new ArrayList<>();
+
 	protected WorkoutAdaptationProposalJpaEntity() {
 	}
 
@@ -155,6 +193,38 @@ class WorkoutAdaptationProposalJpaEntity {
 
 	UUID getWorkoutOccurrenceId() {
 		return workoutOccurrenceId;
+	}
+
+	WorkoutAdaptationProposalOrigin getOrigin() {
+		return origin;
+	}
+
+	UUID getDailyTrainingRecommendationId() {
+		return dailyTrainingRecommendationId;
+	}
+
+	UUID getDailyReadinessAssessmentId() {
+		return dailyReadinessAssessmentId;
+	}
+
+	UUID getDailyAthleteStateSnapshotId() {
+		return dailyAthleteStateSnapshotId;
+	}
+
+	TrainingRecommendationAlgorithmVersion getTrainingRecommendationAlgorithmVersion() {
+		return trainingRecommendationAlgorithmVersion;
+	}
+
+	TrainingRecommendationAction getRecommendationOverallActionSnapshot() {
+		return recommendationOverallActionSnapshot;
+	}
+
+	ReadinessBand getRecommendationReadinessBandSnapshot() {
+		return recommendationReadinessBandSnapshot;
+	}
+
+	List<WorkoutAdaptationRecommendationAdjustmentJpaEntity> getRecommendationAdjustments() {
+		return recommendationAdjustments;
 	}
 
 	FeasibilityEnvironmentContextSource getEnvironmentContextSource() {
@@ -267,6 +337,40 @@ class WorkoutAdaptationProposalJpaEntity {
 
 	void setWorkoutOccurrenceId(UUID workoutOccurrenceId) {
 		this.workoutOccurrenceId = workoutOccurrenceId;
+	}
+
+	void setOrigin(WorkoutAdaptationProposalOrigin origin) {
+		this.origin = origin;
+	}
+
+	void setDailyTrainingRecommendationId(UUID dailyTrainingRecommendationId) {
+		this.dailyTrainingRecommendationId = dailyTrainingRecommendationId;
+	}
+
+	void setDailyReadinessAssessmentId(UUID dailyReadinessAssessmentId) {
+		this.dailyReadinessAssessmentId = dailyReadinessAssessmentId;
+	}
+
+	void setDailyAthleteStateSnapshotId(UUID dailyAthleteStateSnapshotId) {
+		this.dailyAthleteStateSnapshotId = dailyAthleteStateSnapshotId;
+	}
+
+	void setTrainingRecommendationAlgorithmVersion(
+			TrainingRecommendationAlgorithmVersion trainingRecommendationAlgorithmVersion) {
+		this.trainingRecommendationAlgorithmVersion = trainingRecommendationAlgorithmVersion;
+	}
+
+	void setRecommendationOverallActionSnapshot(TrainingRecommendationAction recommendationOverallActionSnapshot) {
+		this.recommendationOverallActionSnapshot = recommendationOverallActionSnapshot;
+	}
+
+	void setRecommendationReadinessBandSnapshot(ReadinessBand recommendationReadinessBandSnapshot) {
+		this.recommendationReadinessBandSnapshot = recommendationReadinessBandSnapshot;
+	}
+
+	void setRecommendationAdjustments(
+			List<WorkoutAdaptationRecommendationAdjustmentJpaEntity> recommendationAdjustments) {
+		this.recommendationAdjustments = recommendationAdjustments;
 	}
 
 	void setEnvironmentContextSource(FeasibilityEnvironmentContextSource environmentContextSource) {

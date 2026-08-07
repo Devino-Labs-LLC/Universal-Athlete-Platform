@@ -136,6 +136,11 @@ import com.devinolabs.uap.training.application.DailyTrainingRecommendationNotAcc
 import com.devinolabs.uap.training.application.DailyTrainingRecommendationReadinessRequiredException;
 import com.devinolabs.uap.training.application.DailyTrainingRecommendationCalculationFailedException;
 import com.devinolabs.uap.training.application.DailyTrainingRecommendationCompareInvalidException;
+import com.devinolabs.uap.training.application.RecommendedAdaptationGenerationFailedException;
+import com.devinolabs.uap.training.application.RecommendedAdaptationOccurrenceLockedException;
+import com.devinolabs.uap.training.application.RecommendedAdaptationOccurrenceNotEligibleException;
+import com.devinolabs.uap.training.application.TrainingRecommendationNotAdaptationEligibleException;
+import com.devinolabs.uap.training.application.TrainingRecommendationOccurrenceMismatchException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateDateException;
 import com.devinolabs.uap.training.domain.DailyAthleteStateDateOutOfRangeException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateBaselineWindowException;
@@ -1682,6 +1687,46 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("DAILY_TRAINING_RECOMMENDATION_COMPARE_INVALID", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingRecommendationNotAdaptationEligibleException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingRecommendationNotAdaptationEligible(
+			TrainingRecommendationNotAdaptationEligibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TRAINING_RECOMMENDATION_NOT_ADAPTATION_ELIGIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingRecommendationOccurrenceMismatchException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingRecommendationOccurrenceMismatch(
+			TrainingRecommendationOccurrenceMismatchException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("TRAINING_RECOMMENDATION_OCCURRENCE_MISMATCH", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecommendedAdaptationOccurrenceNotEligibleException.class)
+	ResponseEntity<ApiErrorResponse> handleRecommendedAdaptationOccurrenceNotEligible(
+			RecommendedAdaptationOccurrenceNotEligibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("RECOMMENDED_ADAPTATION_OCCURRENCE_NOT_ELIGIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecommendedAdaptationOccurrenceLockedException.class)
+	ResponseEntity<ApiErrorResponse> handleRecommendedAdaptationOccurrenceLocked(
+			RecommendedAdaptationOccurrenceLockedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("RECOMMENDED_ADAPTATION_OCCURRENCE_LOCKED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecommendedAdaptationGenerationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleRecommendedAdaptationGenerationFailed(
+			RecommendedAdaptationGenerationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("RECOMMENDED_ADAPTATION_GENERATION_FAILED", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(InvalidTrainingRecommendationDateRangeException.class)

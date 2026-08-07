@@ -6,6 +6,14 @@ import java.util.List;
 import java.util.UUID;
 
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalResult;
+import com.devinolabs.uap.training.domain.ReadinessBand;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
+import com.devinolabs.uap.training.domain.TrainingAdjustmentApplicability;
+import com.devinolabs.uap.training.domain.TrainingAdjustmentType;
+import com.devinolabs.uap.training.domain.TrainingRecommendationAction;
+import com.devinolabs.uap.training.domain.TrainingRecommendationAlgorithmVersion;
+import com.devinolabs.uap.training.domain.TrainingRecommendationReasonCode;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalOrigin;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalStatus;
 
 record WorkoutAdaptationProposalResponse(
@@ -14,6 +22,9 @@ record WorkoutAdaptationProposalResponse(
 		UUID trainingPlanId,
 		UUID workoutDayId,
 		UUID workoutOccurrenceId,
+		WorkoutAdaptationProposalOrigin origin,
+		RecommendationProvenanceResponse recommendationProvenance,
+		List<RecommendationAdjustmentResponse> recommendationAdjustments,
 		WorkoutAdaptationEnvironmentContextResponse environmentContext,
 		long occurrenceVersionAtGeneration,
 		Instant occurrenceUpdatedAtAtGeneration,
@@ -45,6 +56,13 @@ record WorkoutAdaptationProposalResponse(
 				result.trainingPlanId().value(),
 				result.workoutDayId().value(),
 				result.workoutOccurrenceId().value(),
+				result.origin(),
+				result.recommendationProvenance() == null
+						? null
+						: RecommendationProvenanceResponse.from(result.recommendationProvenance()),
+				result.recommendationAdjustments().stream()
+						.map(RecommendationAdjustmentResponse::from)
+						.toList(),
 				WorkoutAdaptationEnvironmentContextResponse.from(result.environmentContext()),
 				result.occurrenceVersionAtGeneration(),
 				result.occurrenceUpdatedAtAtGeneration(),
@@ -68,6 +86,46 @@ record WorkoutAdaptationProposalResponse(
 				result.createdAt(),
 				result.updatedAt(),
 				result.version());
+	}
+
+	record RecommendationProvenanceResponse(
+			UUID recommendationId,
+			UUID readinessAssessmentId,
+			UUID stateSnapshotId,
+			TrainingRecommendationAlgorithmVersion recommendationAlgorithmVersion,
+			TrainingRecommendationAction overallAction,
+			ReadinessBand readinessBand) {
+
+		static RecommendationProvenanceResponse from(
+				WorkoutAdaptationProposalResult.RecommendationProvenanceResult provenance) {
+			return new RecommendationProvenanceResponse(
+					provenance.recommendationId(),
+					provenance.readinessAssessmentId(),
+					provenance.stateSnapshotId(),
+					provenance.recommendationAlgorithmVersion(),
+					provenance.overallAction(),
+					provenance.readinessBand());
+		}
+	}
+
+	record RecommendationAdjustmentResponse(
+			TrainingAdjustmentType type,
+			TrainingAdjustmentApplicability applicability,
+			List<ReadinessDimensionType> sourceDimensions,
+			List<TrainingRecommendationReasonCode> reasonCodes,
+			String explanationKey,
+			int orderIndex) {
+
+		static RecommendationAdjustmentResponse from(
+				WorkoutAdaptationProposalResult.RecommendationAdjustmentResult adjustment) {
+			return new RecommendationAdjustmentResponse(
+					adjustment.type(),
+					adjustment.applicability(),
+					adjustment.sourceDimensions(),
+					adjustment.reasonCodes(),
+					adjustment.explanationKey(),
+					adjustment.orderIndex());
+		}
 	}
 
 }

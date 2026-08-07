@@ -20,6 +20,8 @@ import com.devinolabs.uap.training.domain.ExerciseFeasibilityStatus;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationship;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionSuggestionRanker;
 import com.devinolabs.uap.training.domain.FeasibilityEnvironmentContextSource;
+import com.devinolabs.uap.training.domain.ImpactLevel;
+import com.devinolabs.uap.training.domain.RecommendationAwareSubstitutionSuggestionRanker;
 import com.devinolabs.uap.training.domain.FeasibilityReasonCode;
 import com.devinolabs.uap.training.domain.TrainingEnvironment;
 import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
@@ -167,6 +169,34 @@ final class WorkoutFeasibilitySupport {
 			Map<ExerciseDefinitionId, List<ExerciseSubstitutionRelationship>> relationshipsBySource,
 			int suggestionLimit,
 			boolean includeAlternatives) {
+		return analyzeExecution(
+				athleteId,
+				prescribedDefinitionId,
+				prescribedName,
+				performedDefinitionId,
+				performedName,
+				substituted,
+				environmentContext,
+				definitionsById,
+				relationshipsBySource,
+				suggestionLimit,
+				includeAlternatives,
+				false);
+	}
+
+	static ExecutionAnalysis analyzeExecution(
+			AthleteId athleteId,
+			ExerciseDefinitionId prescribedDefinitionId,
+			String prescribedName,
+			ExerciseDefinitionId performedDefinitionId,
+			String performedName,
+			boolean substituted,
+			FeasibilityEnvironmentContextResult environmentContext,
+			Map<ExerciseDefinitionId, ExerciseDefinition> definitionsById,
+			Map<ExerciseDefinitionId, List<ExerciseSubstitutionRelationship>> relationshipsBySource,
+			int suggestionLimit,
+			boolean includeAlternatives,
+			boolean preferLowerImpactVariations) {
 		ExerciseDefinition prescribed = definitionsById.get(prescribedDefinitionId);
 		ExerciseDefinition performed = definitionsById.get(performedDefinitionId);
 		if (prescribed == null || performed == null) {
@@ -222,7 +252,12 @@ final class WorkoutFeasibilitySupport {
 		String reasonSummary = summarizeReason(reasonCode, performedCompatibility.missingRequiredEquipment());
 		List<ExerciseSubstitutionSuggestionResult> rankedSuggestions = List.of();
 		if (shouldIncludeSuggestions(currentExecutionFeasible, includeAlternatives, suggestionLimit)) {
-			rankedSuggestions = rankSuggestions(suggestions.compatible(), prescribed.metadata().difficulty(), suggestionLimit);
+			rankedSuggestions = rankSuggestions(
+					suggestions.compatible(),
+					prescribed.metadata().difficulty(),
+					performed.metadata().impactLevel(),
+					preferLowerImpactVariations,
+					suggestionLimit);
 		}
 		if (!currentExecutionFeasible && suggestions.compatible().isEmpty() && suggestions.totalRelationships() > 0) {
 			status = ExerciseFeasibilityStatus.NO_COMPATIBLE_SUBSTITUTION;
@@ -451,14 +486,24 @@ final class WorkoutFeasibilitySupport {
 			List<RankedSuggestionCandidate> compatible,
 			ExerciseDifficulty sourceDifficulty,
 			int limit) {
+		return rankSuggestions(compatible, sourceDifficulty, null, false, limit);
+	}
+
+	private static List<ExerciseSubstitutionSuggestionResult> rankSuggestions(
+			List<RankedSuggestionCandidate> compatible,
+			ExerciseDifficulty sourceDifficulty,
+			ImpactLevel sourceImpactLevel,
+			boolean preferLowerImpact,
+			int limit) {
 		if (compatible.isEmpty() || limit <= 0) {
 			return List.of();
 		}
-		List<ExerciseSubstitutionSuggestionRanker.RankableSuggestion> rankable = compatible.stream()
-				.map(RankedSuggestionCandidate::toRankable)
+		List<RecommendationAwareSubstitutionSuggestionRanker.ImpactAwareRankable> rankable = compatible.stream()
+				.map(RankedSuggestionCandidate::toImpactAwareRankable)
 				.toList();
 		List<ExerciseSubstitutionSuggestionRanker.RankableSuggestion> ranked =
-				ExerciseSubstitutionSuggestionRanker.rank(rankable, sourceDifficulty, limit);
+				RecommendationAwareSubstitutionSuggestionRanker.rank(
+						rankable, sourceDifficulty, sourceImpactLevel, preferLowerImpact, limit);
 		List<ExerciseSubstitutionSuggestionResult> results = new ArrayList<>(ranked.size());
 		for (int index = 0; index < ranked.size(); index++) {
 			RankedSuggestionCandidate candidate = findCandidate(compatible, ranked.get(index));
@@ -607,8 +652,8 @@ final class WorkoutFeasibilitySupport {
 			ExerciseSubstitutionRelationship relationship,
 			ExerciseDefinition target) {
 
-		ExerciseSubstitutionSuggestionRanker.RankableSuggestion toRankable() {
-			return new ExerciseSubstitutionSuggestionRanker.RankableSuggestion() {
+		RecommendationAwareSubstitutionSuggestionRanker.ImpactAwareRankable toImpactAwareRankable() {
+			return new RecommendationAwareSubstitutionSuggestionRanker.ImpactAwareRankable() {
 				@Override
 				public com.devinolabs.uap.training.domain.ExerciseSubstitutionCompatibility compatibilityLevel() {
 					return relationship.compatibilityLevel();
@@ -638,6 +683,11 @@ final class WorkoutFeasibilitySupport {
 				public ExerciseDefinitionId targetExerciseDefinitionId() {
 					return target.id();
 				}
+
+				@Override
+				public ImpactLevel targetImpactLevel() {
+					return target.metadata().impactLevel();
+				}
 			};
 		}
 
@@ -654,7 +704,8 @@ final class WorkoutFeasibilitySupport {
 							sourceDifficulty, target.metadata().difficulty()),
 					relationship.rationale(),
 					target.metadata().requiredEquipment(),
-					target.metadata().difficulty());
+					target.metadata().difficulty(),
+					target.metadata().impactLevel());
 		}
 
 	}

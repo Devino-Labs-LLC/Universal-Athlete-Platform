@@ -201,12 +201,36 @@ final class WorkoutAdaptationProposalSupport {
 		List<WorkoutAdaptationProposalItemResult> items = proposal.itemsInOrder().stream()
 				.map(WorkoutAdaptationProposalSupport::toItemResult)
 				.toList();
+		WorkoutAdaptationProposalResult.RecommendationProvenanceResult provenance = proposal.recommendationContext()
+				.map(context -> new WorkoutAdaptationProposalResult.RecommendationProvenanceResult(
+						context.dailyTrainingRecommendationId().value(),
+						context.dailyReadinessAssessmentId().value(),
+						context.dailyAthleteStateSnapshotId().value(),
+						context.trainingRecommendationAlgorithmVersion(),
+						context.recommendationOverallAction(),
+						context.recommendationReadinessBand()))
+				.orElse(null);
+		List<WorkoutAdaptationProposalResult.RecommendationAdjustmentResult> recommendationAdjustments =
+				proposal.recommendationContext()
+						.map(context -> context.adjustments().stream()
+								.map(adjustment -> new WorkoutAdaptationProposalResult.RecommendationAdjustmentResult(
+										adjustment.trainingAdjustmentType(),
+										adjustment.applicability(),
+										adjustment.sourceDimensions(),
+										adjustment.reasonCodes(),
+										adjustment.explanationKey(),
+										adjustment.orderIndex()))
+								.toList())
+						.orElse(List.of());
 		return new WorkoutAdaptationProposalResult(
 				proposal.id(),
 				proposal.athleteId(),
 				proposal.trainingPlanId(),
 				proposal.workoutDayId(),
 				proposal.workoutOccurrenceId(),
+				proposal.origin(),
+				provenance,
+				recommendationAdjustments,
 				new WorkoutAdaptationEnvironmentContextResult(
 						proposal.environmentContextSource(),
 						proposal.trainingEnvironmentId().orElse(null),
@@ -319,7 +343,7 @@ final class WorkoutAdaptationProposalSupport {
 					suggestion.compatibilityLevel(),
 					suggestion.rationale(),
 					suggestion.targetDifficulty(),
-					null,
+					suggestion.targetImpactLevel(),
 					suggestion.targetRequiredEquipment(),
 					suggestion.targetExerciseDefinitionId().equals(defaultTargetId)));
 		}

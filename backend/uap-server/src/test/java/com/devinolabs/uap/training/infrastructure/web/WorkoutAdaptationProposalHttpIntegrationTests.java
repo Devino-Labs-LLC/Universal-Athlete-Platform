@@ -100,6 +100,8 @@ class WorkoutAdaptationProposalHttpIntegrationTests {
 								}
 								"""))
 				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.origin").value("MANUAL"))
+				.andExpect(jsonPath("$.recommendationProvenance").value(org.hamcrest.Matchers.nullValue()))
 				.andExpect(jsonPath("$.status").value("READY"))
 				.andExpect(jsonPath("$.totalExecutions").value(2))
 				.andExpect(jsonPath("$.expectedFeasibleExecutions").value(2))

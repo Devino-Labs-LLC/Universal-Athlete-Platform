@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("28");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("29");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add daily training recommendations");
+				.isEqualTo("link training recommendations to adaptation proposals");
 	}
 
 	@Test
@@ -662,6 +662,50 @@ class UapServerApplicationTests {
 			assertThat(occurrences.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add daily training recommendations");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesRecommendationAdaptationProposalLinkMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet origin = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "origin");
+				ResultSet recommendationId = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "daily_training_recommendation_id");
+				ResultSet readinessId = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "daily_readiness_assessment_id");
+				ResultSet snapshotId = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "daily_athlete_state_snapshot_id");
+				ResultSet algorithm = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "training_recommendation_algorithm_version");
+				ResultSet actionSnapshot = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "recommendation_overall_action_snapshot");
+				ResultSet bandSnapshot = connection.getMetaData().getColumns(null, null,
+						"workout_adaptation_proposals", "recommendation_readiness_band_snapshot");
+				ResultSet adjustments = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_recommendation_adjustments", new String[] { "TABLE" });
+				ResultSet reasons = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_recommendation_adjustment_reasons", new String[] { "TABLE" });
+				ResultSet dimensions = connection.getMetaData().getTables(null, null,
+						"workout_adaptation_recommendation_adjustment_dimensions", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '29'")) {
+			assertThat(origin.next()).isTrue();
+			assertThat(origin.getInt("NULLABLE")).isZero();
+			assertThat(recommendationId.next()).isTrue();
+			assertThat(recommendationId.getInt("NULLABLE")).isEqualTo(1);
+			assertThat(readinessId.next()).isTrue();
+			assertThat(snapshotId.next()).isTrue();
+			assertThat(algorithm.next()).isTrue();
+			assertThat(actionSnapshot.next()).isTrue();
+			assertThat(bandSnapshot.next()).isTrue();
+			assertThat(adjustments.next()).isTrue();
+			assertThat(reasons.next()).isTrue();
+			assertThat(dimensions.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("link training recommendations to adaptation proposals");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

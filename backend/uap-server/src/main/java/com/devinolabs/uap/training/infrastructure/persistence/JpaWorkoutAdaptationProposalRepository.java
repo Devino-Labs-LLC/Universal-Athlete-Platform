@@ -44,7 +44,7 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 					.orElseGet(() -> WorkoutAdaptationProposalPersistenceMapper.toEntity(proposal));
 			WorkoutAdaptationProposalJpaEntity saved = jpaRepository.save(entity);
 			jpaRepository.flush();
-			return WorkoutAdaptationProposalPersistenceMapper.toDomain(saved);
+			return toDomainWithChildren(saved);
 		}
 		catch (ObjectOptimisticLockingFailureException ex) {
 			throw new WorkoutAdaptationProposalVersionConflictException();
@@ -57,13 +57,13 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 	@Override
 	public Optional<WorkoutAdaptationProposal> findOwnedById(WorkoutAdaptationProposalId id, AthleteId athleteId) {
 		return jpaRepository.findOwnedById(id.value(), athleteId.value())
-				.map(WorkoutAdaptationProposalPersistenceMapper::toDomain);
+				.map(this::toDomainWithChildren);
 	}
 
 	@Override
 	public Optional<WorkoutAdaptationProposal> lockOwnedById(WorkoutAdaptationProposalId id, AthleteId athleteId) {
 		return jpaRepository.lockOwnedById(id.value(), athleteId.value())
-				.map(WorkoutAdaptationProposalPersistenceMapper::toDomain);
+				.map(this::toDomainWithChildren);
 	}
 
 	@Override
@@ -74,7 +74,7 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 				.findActiveByOccurrenceId(occurrenceId.value(), athleteId.value(), ACTIVE_STATUSES)
 				.stream()
 				.findFirst()
-				.map(WorkoutAdaptationProposalPersistenceMapper::toDomain);
+				.map(this::toDomainWithChildren);
 	}
 
 	@Override
@@ -91,9 +91,18 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 		List<WorkoutAdaptationProposal> proposals = found.getContent().stream()
 				.map(summaryEntity -> jpaRepository.findOwnedById(summaryEntity.getId(), athleteId.value())
 						.orElseThrow())
-				.map(WorkoutAdaptationProposalPersistenceMapper::toDomain)
+				.map(this::toDomainWithChildren)
 				.toList();
 		return new WorkoutAdaptationProposalPage(proposals, page, size, found.getTotalElements());
+	}
+
+	private WorkoutAdaptationProposal toDomainWithChildren(WorkoutAdaptationProposalJpaEntity entity) {
+		entity.getRecommendationAdjustments().size();
+		for (WorkoutAdaptationRecommendationAdjustmentJpaEntity adjustment : entity.getRecommendationAdjustments()) {
+			adjustment.getReasons().size();
+			adjustment.getDimensions().size();
+		}
+		return WorkoutAdaptationProposalPersistenceMapper.toDomain(entity);
 	}
 
 	private static RuntimeException mapConstraint(DataIntegrityViolationException ex) {

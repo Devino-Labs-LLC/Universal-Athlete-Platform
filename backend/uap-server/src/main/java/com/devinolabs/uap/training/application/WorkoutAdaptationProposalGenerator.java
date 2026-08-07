@@ -32,6 +32,30 @@ final class WorkoutAdaptationProposalGenerator {
 			int suggestionLimit,
 			boolean includeAlternatives,
 			Clock clock) {
+		return generateItems(
+				proposalId,
+				athleteId,
+				executions,
+				environmentContext,
+				definitionsById,
+				relationshipsBySource,
+				suggestionLimit,
+				includeAlternatives,
+				clock,
+				false);
+	}
+
+	static List<WorkoutAdaptationProposalItem> generateItems(
+			WorkoutAdaptationProposalId proposalId,
+			AthleteId athleteId,
+			List<WorkoutExerciseExecution> executions,
+			FeasibilityEnvironmentContextResult environmentContext,
+			Map<ExerciseDefinitionId, ExerciseDefinition> definitionsById,
+			Map<ExerciseDefinitionId, List<ExerciseSubstitutionRelationship>> relationshipsBySource,
+			int suggestionLimit,
+			boolean includeAlternatives,
+			Clock clock,
+			boolean preferLowerImpactVariations) {
 		List<WorkoutExerciseExecution> ordered = executions.stream()
 				.sorted(Comparator.comparingInt(WorkoutExerciseExecution::displayOrder)
 						.thenComparing(execution -> execution.id().value()))
@@ -47,7 +71,8 @@ final class WorkoutAdaptationProposalGenerator {
 					relationshipsBySource,
 					suggestionLimit,
 					includeAlternatives,
-					clock));
+					clock,
+					preferLowerImpactVariations));
 		}
 		return List.copyOf(items);
 	}
@@ -61,7 +86,8 @@ final class WorkoutAdaptationProposalGenerator {
 			Map<ExerciseDefinitionId, List<ExerciseSubstitutionRelationship>> relationshipsBySource,
 			int suggestionLimit,
 			boolean includeAlternatives,
-			Clock clock) {
+			Clock clock,
+			boolean preferLowerImpactVariations) {
 		boolean substituted = execution.isSubstituted();
 		WorkoutFeasibilitySupport.ExecutionAnalysis analysis = WorkoutFeasibilitySupport.analyzeExecution(
 				athleteId,
@@ -74,7 +100,8 @@ final class WorkoutAdaptationProposalGenerator {
 				definitionsById,
 				relationshipsBySource,
 				suggestionLimit,
-				includeAlternatives);
+				includeAlternatives,
+				preferLowerImpactVariations);
 		List<com.devinolabs.uap.training.domain.EquipmentType> missingEquipment =
 				analysis.performedCompatibility().missingRequiredEquipment();
 		if (analysis.currentExecutionFeasible()) {

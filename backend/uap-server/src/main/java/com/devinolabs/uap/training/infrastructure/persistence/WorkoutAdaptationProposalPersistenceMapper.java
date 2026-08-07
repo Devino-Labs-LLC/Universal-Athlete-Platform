@@ -10,13 +10,18 @@ import java.util.Map;
 import java.util.Set;
 
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
+import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
+import com.devinolabs.uap.training.domain.DailyTrainingRecommendationId;
 import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExercisePerformanceKey;
 import com.devinolabs.uap.training.domain.ExerciseSubstitutionRelationshipId;
 import com.devinolabs.uap.training.domain.FeasibilityEnvironmentContextSource;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 import com.devinolabs.uap.training.domain.TrainingEnvironmentId;
 import com.devinolabs.uap.training.domain.TrainingPlanId;
+import com.devinolabs.uap.training.domain.TrainingRecommendationReasonCode;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationAction;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationAlternative;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationAlternativeId;
@@ -26,7 +31,10 @@ import com.devinolabs.uap.training.domain.WorkoutAdaptationProposal;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalId;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalItem;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalItemId;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalOrigin;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalStatus;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationRecommendationAdjustmentSnapshot;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationRecommendationContext;
 import com.devinolabs.uap.training.domain.WorkoutDayId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutExerciseId;
@@ -41,6 +49,7 @@ final class WorkoutAdaptationProposalPersistenceMapper {
 		WorkoutAdaptationProposalJpaEntity entity = new WorkoutAdaptationProposalJpaEntity();
 		applyProposalFields(entity, proposal);
 		entity.setItems(toItemEntities(proposal.items(), entity));
+		entity.setRecommendationAdjustments(toRecommendationAdjustmentEntities(proposal, entity));
 		return entity;
 	}
 
@@ -49,6 +58,8 @@ final class WorkoutAdaptationProposalPersistenceMapper {
 			WorkoutAdaptationProposalJpaEntity existing) {
 		applyProposalFields(existing, proposal);
 		syncItems(existing, proposal.items());
+		existing.getRecommendationAdjustments().clear();
+		existing.getRecommendationAdjustments().addAll(toRecommendationAdjustmentEntities(proposal, existing));
 		return existing;
 	}
 
@@ -56,12 +67,18 @@ final class WorkoutAdaptationProposalPersistenceMapper {
 		List<WorkoutAdaptationProposalItem> items = entity.getItems().stream()
 				.map(WorkoutAdaptationProposalPersistenceMapper::toItemDomain)
 				.toList();
+		WorkoutAdaptationProposalOrigin origin = entity.getOrigin() == null
+				? WorkoutAdaptationProposalOrigin.MANUAL
+				: entity.getOrigin();
+		WorkoutAdaptationRecommendationContext recommendationContext = toRecommendationContext(entity);
 		WorkoutAdaptationProposal proposal = WorkoutAdaptationProposal.rehydrate(
 				WorkoutAdaptationProposalId.of(entity.getId()),
 				AthleteId.of(entity.getAthleteId()),
 				TrainingPlanId.of(entity.getTrainingPlanId()),
 				WorkoutDayId.of(entity.getWorkoutDayId()),
 				WorkoutOccurrenceId.of(entity.getWorkoutOccurrenceId()),
+				origin,
+				recommendationContext,
 				entity.getEnvironmentContextSource(),
 				entity.getTrainingEnvironmentId() == null
 						? null
@@ -102,6 +119,25 @@ final class WorkoutAdaptationProposalPersistenceMapper {
 		entity.setTrainingPlanId(proposal.trainingPlanId().value());
 		entity.setWorkoutDayId(proposal.workoutDayId().value());
 		entity.setWorkoutOccurrenceId(proposal.workoutOccurrenceId().value());
+		entity.setOrigin(proposal.origin());
+		entity.setDailyTrainingRecommendationId(proposal.recommendationContext()
+				.map(context -> context.dailyTrainingRecommendationId().value())
+				.orElse(null));
+		entity.setDailyReadinessAssessmentId(proposal.recommendationContext()
+				.map(context -> context.dailyReadinessAssessmentId().value())
+				.orElse(null));
+		entity.setDailyAthleteStateSnapshotId(proposal.recommendationContext()
+				.map(context -> context.dailyAthleteStateSnapshotId().value())
+				.orElse(null));
+		entity.setTrainingRecommendationAlgorithmVersion(proposal.recommendationContext()
+				.map(WorkoutAdaptationRecommendationContext::trainingRecommendationAlgorithmVersion)
+				.orElse(null));
+		entity.setRecommendationOverallActionSnapshot(proposal.recommendationContext()
+				.map(WorkoutAdaptationRecommendationContext::recommendationOverallAction)
+				.orElse(null));
+		entity.setRecommendationReadinessBandSnapshot(proposal.recommendationContext()
+				.map(WorkoutAdaptationRecommendationContext::recommendationReadinessBand)
+				.orElse(null));
 		entity.setEnvironmentContextSource(proposal.environmentContextSource());
 		entity.setTrainingEnvironmentId(proposal.trainingEnvironmentId()
 				.map(TrainingEnvironmentId::value)
@@ -126,6 +162,85 @@ final class WorkoutAdaptationProposalPersistenceMapper {
 		entity.setCreatedAt(proposal.createdAt());
 		entity.setUpdatedAt(proposal.updatedAt());
 		entity.setVersion(proposal.version());
+	}
+
+	private static WorkoutAdaptationRecommendationContext toRecommendationContext(
+			WorkoutAdaptationProposalJpaEntity entity) {
+		if (entity.getDailyTrainingRecommendationId() == null
+				|| entity.getDailyReadinessAssessmentId() == null
+				|| entity.getDailyAthleteStateSnapshotId() == null
+				|| entity.getTrainingRecommendationAlgorithmVersion() == null
+				|| entity.getRecommendationOverallActionSnapshot() == null
+				|| entity.getRecommendationReadinessBandSnapshot() == null) {
+			return null;
+		}
+		List<WorkoutAdaptationRecommendationAdjustmentSnapshot> adjustments =
+				entity.getRecommendationAdjustments().stream()
+						.sorted(Comparator.comparingInt(
+								WorkoutAdaptationRecommendationAdjustmentJpaEntity::getOrderIndex))
+						.map(row -> {
+							List<TrainingRecommendationReasonCode> reasons = row.getReasons().stream()
+									.sorted(Comparator.comparingInt(
+											WorkoutAdaptationRecommendationAdjustmentReasonJpaEntity::getOrderIndex))
+									.map(WorkoutAdaptationRecommendationAdjustmentReasonJpaEntity::getReasonCode)
+									.toList();
+							List<ReadinessDimensionType> dimensions = row.getDimensions().stream()
+									.sorted(Comparator.comparingInt(
+											WorkoutAdaptationRecommendationAdjustmentDimensionJpaEntity::getOrderIndex))
+									.map(WorkoutAdaptationRecommendationAdjustmentDimensionJpaEntity::getDimensionType)
+									.toList();
+							return new WorkoutAdaptationRecommendationAdjustmentSnapshot(
+									row.getId(),
+									row.getTrainingAdjustmentType(),
+									row.getApplicability(),
+									reasons,
+									dimensions,
+									row.getExplanationKey(),
+									row.getOrderIndex());
+						})
+						.toList();
+		return new WorkoutAdaptationRecommendationContext(
+				DailyTrainingRecommendationId.of(entity.getDailyTrainingRecommendationId()),
+				DailyReadinessAssessmentId.of(entity.getDailyReadinessAssessmentId()),
+				DailyAthleteStateSnapshotId.of(entity.getDailyAthleteStateSnapshotId()),
+				entity.getTrainingRecommendationAlgorithmVersion(),
+				entity.getRecommendationOverallActionSnapshot(),
+				entity.getRecommendationReadinessBandSnapshot(),
+				adjustments);
+	}
+
+	private static List<WorkoutAdaptationRecommendationAdjustmentJpaEntity> toRecommendationAdjustmentEntities(
+			WorkoutAdaptationProposal proposal,
+			WorkoutAdaptationProposalJpaEntity entity) {
+		if (proposal.recommendationContext().isEmpty()) {
+			return new ArrayList<>();
+		}
+		List<WorkoutAdaptationRecommendationAdjustmentJpaEntity> rows = new ArrayList<>();
+		for (WorkoutAdaptationRecommendationAdjustmentSnapshot adjustment :
+				proposal.recommendationContext().orElseThrow().adjustments()) {
+			WorkoutAdaptationRecommendationAdjustmentJpaEntity adjustmentEntity =
+					WorkoutAdaptationRecommendationAdjustmentJpaEntity.of(
+							entity,
+							adjustment.id(),
+							adjustment.trainingAdjustmentType(),
+							adjustment.applicability(),
+							adjustment.explanationKey(),
+							adjustment.orderIndex());
+			int reasonOrder = 0;
+			for (TrainingRecommendationReasonCode reason : adjustment.reasonCodes()) {
+				adjustmentEntity.getReasons().add(
+						WorkoutAdaptationRecommendationAdjustmentReasonJpaEntity.of(
+								adjustmentEntity, reason, reasonOrder++));
+			}
+			int dimensionOrder = 0;
+			for (ReadinessDimensionType dimension : adjustment.sourceDimensions()) {
+				adjustmentEntity.getDimensions().add(
+						WorkoutAdaptationRecommendationAdjustmentDimensionJpaEntity.of(
+								adjustmentEntity, dimension, dimensionOrder++));
+			}
+			rows.add(adjustmentEntity);
+		}
+		return rows;
 	}
 
 	private static void syncItems(

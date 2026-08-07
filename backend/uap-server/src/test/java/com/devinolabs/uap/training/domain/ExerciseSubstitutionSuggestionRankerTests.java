@@ -76,7 +76,8 @@ class ExerciseSubstitutionSuggestionRankerTests {
 						ExerciseDifficulty.INTERMEDIATE, difficulty),
 				"rationale",
 				equipment,
-				difficulty);
+				difficulty,
+				com.devinolabs.uap.training.domain.ImpactLevel.MODERATE_IMPACT);
 	}
 
 }
