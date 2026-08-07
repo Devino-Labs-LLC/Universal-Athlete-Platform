@@ -131,11 +131,18 @@ import com.devinolabs.uap.training.application.DailyReadinessAssessmentNotAccess
 import com.devinolabs.uap.training.application.DailyReadinessStateSnapshotRequiredException;
 import com.devinolabs.uap.training.application.DailyReadinessCalculationFailedException;
 import com.devinolabs.uap.training.application.DailyReadinessCompareInvalidException;
+import com.devinolabs.uap.training.application.DailyTrainingRecommendationNotFoundException;
+import com.devinolabs.uap.training.application.DailyTrainingRecommendationNotAccessibleException;
+import com.devinolabs.uap.training.application.DailyTrainingRecommendationReadinessRequiredException;
+import com.devinolabs.uap.training.application.DailyTrainingRecommendationCalculationFailedException;
+import com.devinolabs.uap.training.application.DailyTrainingRecommendationCompareInvalidException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateDateException;
 import com.devinolabs.uap.training.domain.DailyAthleteStateDateOutOfRangeException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidDailyReadinessDateRangeException;
 import com.devinolabs.uap.training.domain.InvalidReadinessAlgorithmVersionException;
+import com.devinolabs.uap.training.domain.InvalidTrainingRecommendationAlgorithmVersionException;
+import com.devinolabs.uap.training.domain.InvalidTrainingRecommendationDateRangeException;
 import com.devinolabs.uap.training.domain.ReadinessNumericOverflowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryBaselineWindowException;
 import com.devinolabs.uap.training.domain.InvalidRecoveryCheckInDateException;
@@ -209,7 +216,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		RecoveryCheckInController.class,
 		RecoveryAnalyticsController.class,
 		DailyAthleteStateController.class,
-		DailyReadinessController.class
+		DailyReadinessController.class,
+		DailyTrainingRecommendationController.class
 })
 class TrainingExceptionHandler {
 
@@ -1634,6 +1642,62 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("INVALID_READINESS_ALGORITHM_VERSION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyTrainingRecommendationNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyTrainingRecommendationNotFound(
+			DailyTrainingRecommendationNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("DAILY_TRAINING_RECOMMENDATION_NOT_FOUND", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyTrainingRecommendationNotAccessibleException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyTrainingRecommendationNotAccessible(
+			DailyTrainingRecommendationNotAccessibleException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DAILY_TRAINING_RECOMMENDATION_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyTrainingRecommendationReadinessRequiredException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyTrainingRecommendationReadinessRequired(
+			DailyTrainingRecommendationReadinessRequiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_TRAINING_RECOMMENDATION_READINESS_REQUIRED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyTrainingRecommendationCalculationFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyTrainingRecommendationCalculationFailed(
+			DailyTrainingRecommendationCalculationFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("DAILY_TRAINING_RECOMMENDATION_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(DailyTrainingRecommendationCompareInvalidException.class)
+	ResponseEntity<ApiErrorResponse> handleDailyTrainingRecommendationCompareInvalid(
+			DailyTrainingRecommendationCompareInvalidException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("DAILY_TRAINING_RECOMMENDATION_COMPARE_INVALID", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingRecommendationDateRangeException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingRecommendationDateRange(
+			InvalidTrainingRecommendationDateRangeException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_RECOMMENDATION_DATE_RANGE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingRecommendationAlgorithmVersionException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingRecommendationAlgorithmVersion(
+			InvalidTrainingRecommendationAlgorithmVersionException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_RECOMMENDATION_ALGORITHM_VERSION", ex.getMessage(), request, List.of()));
 	}
 
 	/**

@@ -32,9 +32,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("27");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("28");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("add daily readiness assessments");
+				.isEqualTo("add daily training recommendations");
 	}
 
 	@Test
@@ -636,6 +636,32 @@ class UapServerApplicationTests {
 			assertThat(strongest.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("add daily readiness assessments");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesDailyTrainingRecommendationsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet recommendations = connection.getMetaData().getTables(null, null,
+						"daily_training_recommendations", new String[] { "TABLE" });
+				ResultSet adjustments = connection.getMetaData().getTables(null, null,
+						"daily_training_recommendation_adjustments", new String[] { "TABLE" });
+				ResultSet reasons = connection.getMetaData().getTables(null, null,
+						"daily_training_recommendation_adjustment_reasons", new String[] { "TABLE" });
+				ResultSet dimensions = connection.getMetaData().getTables(null, null,
+						"daily_training_recommendation_adjustment_dimensions", new String[] { "TABLE" });
+				ResultSet occurrences = connection.getMetaData().getTables(null, null,
+						"daily_training_recommendation_occurrences", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '28'")) {
+			assertThat(recommendations.next()).isTrue();
+			assertThat(adjustments.next()).isTrue();
+			assertThat(reasons.next()).isTrue();
+			assertThat(dimensions.next()).isTrue();
+			assertThat(occurrences.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("add daily training recommendations");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
