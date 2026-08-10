@@ -1,78 +1,89 @@
-import { Link } from 'expo-router';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useForm } from 'react-hook-form';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { FormTextField } from '@/src/features/auth/components/FormTextField';
+import { PasswordField } from '@/src/features/auth/components/PasswordField';
+import { identityErrorMessage } from '@/src/features/auth/errorMessages';
+import { LoginRequest, loginRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
-import { isApiError } from '@/src/core/api/errors';
 
 export default function LoginScreen() {
   const theme = useAppTheme();
   const { login } = useAuthSession();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async () => {
+  const form = useForm<LoginRequest>({
+    resolver: zodResolver(loginRequestSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
     setSubmitting(true);
-    setErrorMessage(null);
+    setSubmitError(null);
     try {
-      await login({ email: email.trim(), password });
+      await login(values);
+      router.replace('/bootstrap');
     } catch (error) {
-      setErrorMessage(isApiError(error) ? error.message : 'Login failed');
+      setSubmitError(identityErrorMessage(error, 'Login failed'));
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
   return (
-    <Screen title="Welcome back" scroll>
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        placeholder="Email"
-        placeholderTextColor={theme.colors.textMuted}
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="password"
-        placeholder="Password"
-        placeholderTextColor={theme.colors.textMuted}
-        secureTextEntry
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        value={password}
-        onChangeText={setPassword}
-      />
-      {errorMessage ? (
-        <Text style={[styles.error, { color: theme.colors.danger }]}>{errorMessage}</Text>
-      ) : null}
-      <PrimaryButton label={submitting ? 'Signing in…' : 'Sign in'} disabled={submitting} onPress={() => void onSubmit()} />
-      <View style={styles.links}>
-        <Link href="/(auth)/register" style={{ color: theme.colors.primary }}>
-          Create account
-        </Link>
-        <Link href="/(auth)/verify-email" style={{ color: theme.colors.primary }}>
-          Verify email
-        </Link>
-      </View>
-    </Screen>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.flex}>
+      <Screen title="Welcome back" scroll>
+        <FormTextField
+          control={form.control}
+          name="email"
+          label="Email"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="username"
+        />
+        <PasswordField
+          control={form.control}
+          name="password"
+          label="Password"
+          textContentType="password"
+        />
+        {submitError ? (
+          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+        ) : null}
+        <PrimaryButton
+          label={submitting ? 'Signing in…' : 'Sign in'}
+          disabled={submitting}
+          onPress={() => void onSubmit()}
+        />
+        <View style={styles.links}>
+          <Link href="/(auth)/register" style={{ color: theme.colors.primary }}>
+            Create account
+          </Link>
+          <Link href="/(auth)/verify-email" style={{ color: theme.colors.primary }}>
+            Verify email
+          </Link>
+        </View>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  flex: {
+    flex: 1,
   },
   error: {
     fontSize: 14,

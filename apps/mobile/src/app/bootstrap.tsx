@@ -1,25 +1,53 @@
 import { Redirect } from 'expo-router';
-import { useEffect } from 'react';
 
+import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
+import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
 import { useBootstrap } from '@/src/app/providers/BootstrapProvider';
+import { onboardingRouteForState } from '@/src/features/onboarding/onboardingRoutes';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
 
 export default function BootstrapScreen() {
-  const { status, errorMessage, retry } = useBootstrap();
+  const { status: authStatus } = useAuthSession();
+  const { state: onboardingState, errorMessage: onboardingError, refresh } = useAthleteOnboarding();
+  const { status: bootstrapStatus, errorMessage: bootstrapError, retry } = useBootstrap();
 
-  useEffect(() => {
-    // BootstrapProvider reacts to auth changes; this screen only routes.
-  }, []);
+  if (authStatus === 'INITIALIZING' || authStatus === 'REFRESHING') {
+    return <LoadingView message="Restoring session…" />;
+  }
 
-  if (status === 'BOOTSTRAPPING') {
+  if (authStatus === 'UNAUTHENTICATED' || authStatus === 'EXPIRED') {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (onboardingState === 'LOADING') {
+    return <LoadingView message="Loading athlete profile…" />;
+  }
+
+  if (onboardingState === 'ERROR') {
+    return (
+      <ErrorView
+        message={onboardingError ?? 'Unable to load onboarding data.'}
+        onRetry={() => {
+          void refresh();
+        }}
+      />
+    );
+  }
+
+  const onboardingRoute = onboardingRouteForState(onboardingState);
+  if (onboardingRoute) {
+    return <Redirect href={onboardingRoute} />;
+  }
+
+  if (bootstrapStatus === 'BOOTSTRAPPING' || bootstrapStatus === 'IDLE') {
     return <LoadingView message="Starting Universal Athlete…" />;
   }
 
-  if (status === 'BOOTSTRAP_ERROR') {
+  if (bootstrapStatus === 'BOOTSTRAP_ERROR') {
     return (
       <ErrorView
-        message={errorMessage ?? 'Unable to load client bootstrap.'}
+        message={bootstrapError ?? 'Unable to load client bootstrap.'}
         onRetry={() => {
           void retry();
         }}
@@ -27,15 +55,11 @@ export default function BootstrapScreen() {
     );
   }
 
-  if (status === 'UNAUTHENTICATED') {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  if (status === 'INCOMPATIBLE_CLIENT') {
+  if (bootstrapStatus === 'INCOMPATIBLE_CLIENT') {
     return <Redirect href="/incompatible" />;
   }
 
-  if (status === 'AUTHENTICATED_READY') {
+  if (bootstrapStatus === 'AUTHENTICATED_READY') {
     return <Redirect href="/(tabs)" />;
   }
 

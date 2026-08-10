@@ -1,8 +1,8 @@
-# Universal Athlete — Mobile (M1R)
+# Universal Athlete — Mobile (M2)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-This milestone replaces the Expo tabs template with a production-grade foundation: cookie-backed auth, CSRF-aware API access, session refresh, client bootstrap validation, and a diagnostic Home screen.
+M2 adds production auth forms, athlete onboarding (profile → sports → goals), bootstrap gating, and a full Profile tab. M1R covered cookie-backed auth, CSRF-aware API access, session refresh, client bootstrap validation, and the diagnostic Home screen.
 
 ## Stack versions
 
@@ -97,19 +97,47 @@ src/providers/           App, auth session, bootstrap
 src/theme/               Slate/teal tokens + ThemeProvider
 src/core/api/            Axios client, CSRF, cookies, errors
 src/core/components/     Screen, buttons, loading/error/empty
-src/features/auth/       Identity API + Zod schemas
+src/features/auth/       Identity API, Zod schemas, form fields, error copy
+src/features/onboarding/ Onboarding state resolver, routes, provider wiring
+src/features/profile/    Athlete profile/sports/goals API, schemas, hooks
 src/features/training/   Bootstrap/today API + Zod schemas
 src/features/home/       Diagnostic Home + TanStack Query hook
 __tests__/               Jest unit/integration tests
 ```
 
-### Bootstrap flow
+### Bootstrap + onboarding flow (M2)
 
 1. `src/app/index.tsx` → `/bootstrap`
 2. Restore session (`GET /api/v1/identity/me`)
-3. If authenticated, load bootstrap (`GET /api/v1/training/client/bootstrap`)
-4. Require `clientContractVersion === 'V1'`
-5. Route to `/(auth)/login`, `/(tabs)`, or `/incompatible`
+3. Load athlete profile, sports, and goals; derive onboarding state client-side (backend has no onboarding flag):
+   - `PROFILE_REQUIRED` — `GET /api/v1/athletes/me` → 404
+   - `SPORTS_REQUIRED` — profile OK, zero sports
+   - `GOALS_REQUIRED` — ≥1 sport, zero goals
+   - `COMPLETE` — profile + ≥1 sport + ≥1 goal
+4. Incomplete onboarding → `/(onboarding)/profile|sports|goals`
+5. When onboarding is **COMPLETE**, load bootstrap (`GET /api/v1/training/client/bootstrap`)
+6. Require `clientContractVersion === 'V1'`
+7. Route to `/(auth)/login`, onboarding step, `/(tabs)`, or `/incompatible`
+
+Training bootstrap is **not** fetched during onboarding. This avoids failures when the athlete profile does not exist yet.
+
+### Auth + verify email (M2)
+
+- Register/login/verify screens use `react-hook-form` + Zod (`registerRequestSchema` enforces 12–128 char password policy matching backend).
+- Identity errors map to stable user copy (`src/features/auth/errorMessages.ts`).
+- **No resend verification API.** In development, read the token from backend logs (`InMemoryVerificationNotifier`) or your configured notifier output, then paste it on **Verify email**.
+- Password policy: 12–128 characters, upper, lower, digit, special.
+
+### Athlete profile contract notes
+
+- Profile create/update uses metric fields only (`heightCm`, `weightKg`). There are **no timezone or unit preference** fields in M2.
+- Sports and goals use backend enums exactly (`SportType`, `ParticipationLevel`, `SeasonStatus`, `GoalType`, `GoalPriority`).
+
+### Logout security (M2)
+
+Logout and logout-all call the backend (best effort), clear cookies, and `queryClient.clear()` so Athlete A cached data cannot appear for Athlete B after account switch.
+
+### Bootstrap flow (M1R baseline)
 
 ### API client highlights
 
@@ -153,13 +181,14 @@ npx expo run:ios
 EXPO_PUBLIC_UAP_API_BASE_URL=http://10.0.2.2:8080 npx expo run:android
 ```
 
-Then:
+Then (M2 smoke):
 
-1. Register → verify email → login
-2. Confirm session cookies via authenticated Home (today diagnostics)
-3. Logout from Profile (CSRF-protected mutation)
-4. Confirm redirect to login / protected calls fail
-5. Login again → bootstrap V1 → today
+1. Register with a policy-compliant password → verify email using dev token from backend logs → login
+2. Complete onboarding: profile → sport → goal
+3. Confirm bootstrap V1 loads only after onboarding completes, then Home/today diagnostics work
+4. Profile tab shows account, athlete summary, sports/goals, client contract + environment
+5. Logout / logout-all clears session and returns to login; login as a different user shows no stale cache
+6. Edit profile or add another sport/goal from Profile without forced re-onboarding (unless you delete the last sport or goal)
 
 Cookie mechanism: `@react-native-cookies/cookies` + Axios Cookie/`X-XSRF-TOKEN` interceptors.  
 CSRF: double-submit `XSRF-TOKEN` cookie → `X-XSRF-TOKEN` header.  
@@ -167,7 +196,7 @@ Refresh: single-flight `POST /api/v1/identity/refresh`.
 
 ## Testing
 
-Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth API helpers, Zod schemas, logging redaction, and the Home diagnostic screen.
+Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, and the Home diagnostic screen.
 
 ```bash
 pnpm test
@@ -176,5 +205,5 @@ pnpm test
 ## Notes
 
 - Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Training, Recovery, Performance) are intentional for M1R.
+- Placeholder tabs (Training, Recovery, Performance) remain intentional beyond M2 scope.
 - Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.

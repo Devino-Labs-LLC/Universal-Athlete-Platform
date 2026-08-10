@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
+import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
 import {
   EXPECTED_CLIENT_CONTRACT_VERSION,
   fetchTrainingBootstrap,
@@ -19,6 +20,7 @@ import { createLogger } from '@/src/core/logging/logger';
 const log = createLogger('bootstrap');
 
 export type BootstrapStatus =
+  | 'IDLE'
   | 'BOOTSTRAPPING'
   | 'UNAUTHENTICATED'
   | 'AUTHENTICATED_READY'
@@ -36,15 +38,16 @@ const BootstrapContext = createContext<BootstrapContextValue | null>(null);
 
 export function BootstrapProvider({ children }: PropsWithChildren) {
   const { status: authStatus, apiClient } = useAuthSession();
-  const [status, setStatus] = useState<BootstrapStatus>('BOOTSTRAPPING');
+  const { state: onboardingState } = useAthleteOnboarding();
+  const [status, setStatus] = useState<BootstrapStatus>('IDLE');
   const [bootstrap, setBootstrap] = useState<TrainingClientBootstrap | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const runBootstrap = useCallback(async () => {
-    setStatus('BOOTSTRAPPING');
     setErrorMessage(null);
 
     if (authStatus === 'INITIALIZING' || authStatus === 'REFRESHING') {
+      setStatus('IDLE');
       return;
     }
 
@@ -53,6 +56,19 @@ export function BootstrapProvider({ children }: PropsWithChildren) {
       setStatus('UNAUTHENTICATED');
       return;
     }
+
+    if (onboardingState === 'LOADING') {
+      setStatus('IDLE');
+      return;
+    }
+
+    if (onboardingState !== 'COMPLETE') {
+      setBootstrap(null);
+      setStatus('IDLE');
+      return;
+    }
+
+    setStatus('BOOTSTRAPPING');
 
     try {
       const result = await fetchTrainingBootstrap(apiClient);
@@ -70,7 +86,7 @@ export function BootstrapProvider({ children }: PropsWithChildren) {
       setErrorMessage(error instanceof Error ? error.message : 'Bootstrap failed');
       setStatus('BOOTSTRAP_ERROR');
     }
-  }, [apiClient, authStatus]);
+  }, [apiClient, authStatus, onboardingState]);
 
   useEffect(() => {
     void runBootstrap();

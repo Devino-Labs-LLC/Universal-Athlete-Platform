@@ -14,6 +14,7 @@ const LOGIN_PATH = '/api/v1/identity/login';
 const REGISTER_PATH = '/api/v1/identity/register';
 const VERIFY_EMAIL_PATH = '/api/v1/identity/verify-email';
 const LOGOUT_PATH = '/api/v1/identity/logout';
+const LOGOUT_ALL_PATH = '/api/v1/identity/logout-all';
 
 export async function fetchMe(client: ApiClient): Promise<MeResponse> {
   const response = await client.axios.get(ME_PATH);
@@ -36,4 +37,8 @@ export async function verifyEmail(client: ApiClient, request: VerifyEmailRequest
 
 export async function logout(client: ApiClient): Promise<void> {
   await client.axios.post(LOGOUT_PATH);
+}
+
+export async function logoutAll(client: ApiClient): Promise<void> {
+  await client.axios.post(LOGOUT_ALL_PATH);
 }

@@ -38,6 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="bootstrap" />
         <Stack.Screen name="incompatible" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </AppProviders>

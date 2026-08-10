@@ -7,12 +7,20 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { QueryClient } from '@tanstack/react-query';
 
 import { loadAppConfig } from '@/src/app/config/env';
 import { ApiClient, createApiClient } from '@/src/core/api/apiClient';
 import { createCookieStore } from '@/src/core/api/cookieStore';
 import { isUnauthorizedError } from '@/src/core/api/errorMapper';
-import { fetchMe, login as loginRequest, logout as logoutRequest, register as registerRequest, verifyEmail as verifyEmailRequest } from '@/src/features/auth/api';
+import {
+  fetchMe,
+  login as loginRequest,
+  logout as logoutRequest,
+  logoutAll as logoutAllRequest,
+  register as registerRequest,
+  verifyEmail as verifyEmailRequest,
+} from '@/src/features/auth/api';
 import {
   LoginRequest,
   MeResponse,
@@ -20,6 +28,7 @@ import {
   RegisterResponse,
   VerifyEmailRequest,
 } from '@/src/features/auth/schemas';
+import { athleteQueryKeys } from '@/src/features/profile/queryKeys';
 import { createLogger } from '@/src/core/logging/logger';
 
 const log = createLogger('auth');
@@ -38,17 +47,26 @@ interface AuthSessionContextValue {
   restore: () => Promise<void>;
   login: (request: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   register: (request: RegisterRequest) => Promise<RegisterResponse>;
   verifyEmail: (request: VerifyEmailRequest) => Promise<void>;
 }
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
-export function AuthSessionProvider({ children }: PropsWithChildren) {
+interface AuthSessionProviderProps extends PropsWithChildren {
+  queryClient: QueryClient;
+}
+
+export function AuthSessionProvider({ children, queryClient }: AuthSessionProviderProps) {
   const appConfig = useMemo(() => loadAppConfig(), []);
   const cookieStore = useMemo(() => createCookieStore(), []);
   const [status, setStatus] = useState<AuthSessionStatus>('INITIALIZING');
   const [account, setAccount] = useState<MeResponse | null>(null);
+
+  const clearSessionCache = useCallback(() => {
+    queryClient.clear();
+  }, [queryClient]);
 
   const apiClient = useMemo(
     () =>
@@ -56,11 +74,12 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
         baseURL: appConfig.apiBaseUrl,
         cookieStore,
         onSessionExpired: () => {
+          clearSessionCache();
           setAccount(null);
           setStatus('EXPIRED');
         },
       }),
-    [appConfig.apiBaseUrl, cookieStore],
+    [appConfig.apiBaseUrl, clearSessionCache, cookieStore],
   );
 
   const restore = useCallback(async () => {
@@ -88,11 +107,13 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
   const login = useCallback(
     async (request: LoginRequest) => {
       setStatus('REFRESHING');
+      clearSessionCache();
       const me = await loginRequest(apiClient, request);
       setAccount(me);
       setStatus('AUTHENTICATED');
+      await queryClient.invalidateQueries({ queryKey: athleteQueryKeys.all });
     },
-    [apiClient],
+    [apiClient, clearSessionCache, queryClient],
   );
 
   const logout = useCallback(async () => {
@@ -102,10 +123,24 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
       log.warn('Logout request failed; clearing local session anyway', error);
     } finally {
       await cookieStore.clearAll();
+      clearSessionCache();
       setAccount(null);
       setStatus('UNAUTHENTICATED');
     }
-  }, [apiClient, cookieStore]);
+  }, [apiClient, clearSessionCache, cookieStore]);
+
+  const logoutAll = useCallback(async () => {
+    try {
+      await logoutAllRequest(apiClient);
+    } catch (error) {
+      log.warn('Logout-all request failed; clearing local session anyway', error);
+    } finally {
+      await cookieStore.clearAll();
+      clearSessionCache();
+      setAccount(null);
+      setStatus('UNAUTHENTICATED');
+    }
+  }, [apiClient, clearSessionCache, cookieStore]);
 
   const register = useCallback(
     async (request: RegisterRequest) => registerRequest(apiClient, request),
@@ -127,10 +162,11 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
       restore,
       login,
       logout,
+      logoutAll,
       register,
       verifyEmail,
     }),
-    [status, account, apiClient, restore, login, logout, register, verifyEmail],
+    [status, account, apiClient, restore, login, logout, logoutAll, register, verifyEmail],
   );
 
   return (

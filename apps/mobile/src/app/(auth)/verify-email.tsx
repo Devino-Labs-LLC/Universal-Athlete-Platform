@@ -1,70 +1,86 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { useForm } from 'react-hook-form';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { FormTextField } from '@/src/features/auth/components/FormTextField';
+import { identityErrorMessage } from '@/src/features/auth/errorMessages';
+import { VerifyEmailRequest, verifyEmailRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
-import { isApiError } from '@/src/core/api/errors';
 
 export default function VerifyEmailScreen() {
   const theme = useAppTheme();
   const { verifyEmail } = useAuthSession();
-  const [token, setToken] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async () => {
+  const form = useForm<VerifyEmailRequest>({
+    resolver: zodResolver(verifyEmailRequestSchema),
+    defaultValues: {
+      token: '',
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
     setSubmitting(true);
-    setErrorMessage(null);
+    setSubmitError(null);
     setMessage(null);
     try {
-      await verifyEmail({ token: token.trim() });
+      await verifyEmail(values);
       setMessage('Email verified. You can sign in now.');
     } catch (error) {
-      setErrorMessage(isApiError(error) ? error.message : 'Verification failed');
+      setSubmitError(identityErrorMessage(error, 'Verification failed'));
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
   return (
-    <Screen title="Verify email" scroll>
-      <TextInput
-        autoCapitalize="none"
-        placeholder="Verification token"
-        placeholderTextColor={theme.colors.textMuted}
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        value={token}
-        onChangeText={setToken}
-      />
-      {errorMessage ? (
-        <Text style={[styles.error, { color: theme.colors.danger }]}>{errorMessage}</Text>
-      ) : null}
-      {message ? (
-        <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
-      ) : null}
-      <PrimaryButton
-        label={submitting ? 'Verifying…' : 'Verify email'}
-        disabled={submitting}
-        onPress={() => void onSubmit()}
-      />
-      <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
-        Back to sign in
-      </Link>
-    </Screen>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.flex}>
+      <Screen title="Verify email" scroll>
+        <Text style={[styles.help, { color: theme.colors.textMuted }]}>
+          Paste the verification token from your email or backend dev logs. There is no resend API.
+        </Text>
+        <FormTextField
+          control={form.control}
+          name="token"
+          label="Verification token"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {submitError ? (
+          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+        ) : null}
+        {message ? (
+          <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
+        ) : null}
+        <PrimaryButton
+          label={submitting ? 'Verifying…' : 'Verify email'}
+          disabled={submitting}
+          onPress={() => void onSubmit()}
+        />
+        <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
+          Back to sign in
+        </Link>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  flex: {
+    flex: 1,
+  },
+  help: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   error: {
     fontSize: 14,

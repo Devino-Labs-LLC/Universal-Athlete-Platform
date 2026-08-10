@@ -1,83 +1,91 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput } from 'react-native';
+import { useForm } from 'react-hook-form';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { FormTextField } from '@/src/features/auth/components/FormTextField';
+import { PasswordField } from '@/src/features/auth/components/PasswordField';
+import { identityErrorMessage } from '@/src/features/auth/errorMessages';
+import { PASSWORD_MIN_LENGTH } from '@/src/features/auth/schemas';
+import { RegisterRequest, registerRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
-import { isApiError } from '@/src/core/api/errors';
 
 export default function RegisterScreen() {
   const theme = useAppTheme();
   const { register } = useAuthSession();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async () => {
+  const form = useForm<RegisterRequest>({
+    resolver: zodResolver(registerRequestSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
     setSubmitting(true);
-    setErrorMessage(null);
+    setSubmitError(null);
     setMessage(null);
     try {
-      const result = await register({ email: email.trim(), password });
+      const result = await register(values);
       setMessage(`Account created for ${result.email}. Verify your email before signing in.`);
     } catch (error) {
-      setErrorMessage(isApiError(error) ? error.message : 'Registration failed');
+      setSubmitError(identityErrorMessage(error, 'Registration failed'));
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
   return (
-    <Screen title="Create account" scroll>
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        placeholder="Email"
-        placeholderTextColor={theme.colors.textMuted}
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="new-password"
-        placeholder="Password (min 8 characters)"
-        placeholderTextColor={theme.colors.textMuted}
-        secureTextEntry
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-        value={password}
-        onChangeText={setPassword}
-      />
-      {errorMessage ? (
-        <Text style={[styles.error, { color: theme.colors.danger }]}>{errorMessage}</Text>
-      ) : null}
-      {message ? (
-        <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
-      ) : null}
-      <PrimaryButton
-        label={submitting ? 'Creating…' : 'Create account'}
-        disabled={submitting}
-        onPress={() => void onSubmit()}
-      />
-      <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
-        Back to sign in
-      </Link>
-    </Screen>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.flex}>
+      <Screen title="Create account" scroll>
+        <FormTextField
+          control={form.control}
+          name="email"
+          label="Email"
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="username"
+        />
+        <PasswordField
+          control={form.control}
+          name="password"
+          label={`Password (min ${PASSWORD_MIN_LENGTH} characters)`}
+          autoComplete="new-password"
+          textContentType="newPassword"
+        />
+        {submitError ? (
+          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+        ) : null}
+        {message ? (
+          <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
+        ) : null}
+        <PrimaryButton
+          label={submitting ? 'Creating…' : 'Create account'}
+          disabled={submitting}
+          onPress={() => void onSubmit()}
+        />
+        <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
+          Back to sign in
+        </Link>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  flex: {
+    flex: 1,
   },
   error: {
     fontSize: 14,
