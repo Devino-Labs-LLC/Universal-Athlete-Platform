@@ -17,4 +17,12 @@ export const trainingKeys = {
     ['training', 'occurrence', planId, dayId, occurrenceId] as const,
   launch: (planId: string, dayId: string, occurrenceId: string) =>
     ['training', 'launch', planId, dayId, occurrenceId] as const,
+  executions: (planId: string, dayId: string, occurrenceId: string) =>
+    ['training', 'executions', planId, dayId, occurrenceId] as const,
+  sets: (planId: string, dayId: string, occurrenceId: string, executionId: string) =>
+    ['training', 'sets', planId, dayId, occurrenceId, executionId] as const,
+  sessionEffort: (planId: string, dayId: string, occurrenceId: string) =>
+    ['training', 'sessionEffort', planId, dayId, occurrenceId] as const,
+  trainingLoad: (planId: string, dayId: string, occurrenceId: string) =>
+    ['training', 'trainingLoad', planId, dayId, occurrenceId] as const,
 };

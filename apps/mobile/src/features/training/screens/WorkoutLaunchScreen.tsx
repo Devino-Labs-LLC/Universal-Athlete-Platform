@@ -82,7 +82,7 @@ export function WorkoutLaunchScreen({ planId, dayId, occurrenceId }: WorkoutLaun
       ) : null}
 
       <Text style={[styles.m5Note, { color: theme.colors.textMuted }]}>
-        Live workout execution arrives in M5. The start button routes to a placeholder screen only.
+        Set logging and workout completion happen on the execute screen after you start or continue.
       </Text>
     </Screen>
   );

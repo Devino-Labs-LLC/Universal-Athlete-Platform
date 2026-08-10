@@ -1,8 +1,8 @@
-# Universal Athlete — Mobile (M4)
+# Universal Athlete — Mobile (M5)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M4 adds the **Training** tab stack: overview, calendar, plan/day browsing, occurrence detail, and read-only workout launch prep (execution/adaptation placeholders for M5/M7). M3 added the production **Home / Today** dashboard. M2 added auth forms, onboarding, bootstrap gating, and Profile. M1R covered cookie-backed auth, CSRF, session refresh, and client bootstrap validation.
+M5 adds **live workout execution and set logging**: start/complete/skip occurrence, per-exercise set logging (PATCH actuals auto-start sets), session effort, and training load summary. M4 added the Training tab browse stack and launch prep. M3 added the production Home / Today dashboard.
 
 ## Stack versions
 
@@ -113,8 +113,9 @@ The Training tab (`/(tabs)/training`) is a nested Stack:
 2. **Calendar** — **GET** `/api/v1/training/calendar?scheduledFrom=&scheduledTo=` — visible week strip (7 days), prev/next week, day-filtered occurrence list.
 3. **Plan detail** — **GET** `/api/v1/training/plans/{planId}` + `/days` — list workout days.
 4. **Day detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/exercises` — ordered prescriptions.
-5. **Occurrence detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}` — status, environment, execution summary. CTA routes to launch prep (no start mutation).
-6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to an M5 execute placeholder; Review Adaptation routes to an M7 placeholder.
+5. **Occurrence detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}` — status, environment, execution summary. CTA routes to launch prep.
+6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to execute; Review Adaptation routes to an M7 placeholder.
+7. **Execute (M5)** — live workout logging at `/occurrences/{occurrenceId}/execute` — see [Workout execution (M5)](#workout-execution-m5).
 
 Route layout under `src/app/(tabs)/training/`:
 
@@ -126,11 +127,37 @@ plans/[planId]/index.tsx    TrainingPlanDetailScreen
 plans/[planId]/days/[dayId]/index.tsx
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/index.tsx
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/launch.tsx
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/execute.tsx   (M5 placeholder)
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/execute.tsx   (M5 live execution)
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/adaptation-review.tsx (M7 placeholder)
 ```
 
-Feature code lives in `src/features/training/` (`api/`, `hooks/`, `models/browseSchemas.ts`, `components/`, `screens/`, `utils/`).
+Feature code lives in `src/features/training/` (`api/`, `hooks/`, `models/browseSchemas.ts`, `components/`, `screens/`, `utils/`). M5 execution code lives in `src/features/training/execution/`.
+
+### Workout execution (M5)
+
+Base path: `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}`
+
+| Action | Method | Path |
+| --- | --- | --- |
+| Start workout | POST | `.../start` |
+| Complete workout | POST | `.../complete` |
+| Skip workout | POST | `.../skip` |
+| List sets | GET | `.../exercises/{executionId}/sets` |
+| Add set | POST | `.../exercises/{executionId}/sets` (body optional `{}`) |
+| Update set actuals | PATCH | `.../exercises/{executionId}/sets/{setId}` |
+| Complete set | POST | `.../exercises/{executionId}/sets/{setId}/complete` |
+| Skip set | POST | `.../exercises/{executionId}/sets/{setId}/skip` |
+| Delete set | DELETE | `.../exercises/{executionId}/sets/{setId}` (NOT_STARTED only, ≥1 set) |
+| Session effort | POST/PATCH/GET | `.../session-effort` |
+| Training load | GET | `.../training-load` |
+
+**PATCH auto-start:** Updating set actuals via PATCH promotes `NOT_STARTED → IN_PROGRESS` and auto-promotes parent occurrence/execution. The mobile client does **not** call `POST .../sets/{setId}/start` separately.
+
+**Invalidation:** Scoped helpers in `execution/models/invalidation.ts` invalidate occurrence, launch, calendar (prefix), overview (prefix), today, sets, load, and effort as appropriate. No global `invalidateQueries()`.
+
+**Deferred:** Set reorder, exercise substitute (M7), occurrence cancel, offline sync.
+
+**UX:** Start workout is explicit on the execute screen (SCHEDULED state). Launch prep Start/Continue navigates to execute without calling start — the athlete starts from execute when ready.
 
 ### Home / Today dashboard (M3)
 
@@ -236,7 +263,7 @@ Refresh: single-flight `POST /api/v1/identity/refresh`.
 
 ## Testing
 
-Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, and prescription formatting.
+Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, prescription formatting, and M5 execution schemas, set formatting, error mapping, invalidation helpers, SetRow/SetEditor, and WorkoutExecutionScreen states.
 
 ```bash
 pnpm test
@@ -245,5 +272,5 @@ pnpm test
 ## Notes
 
 - Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Recovery, Performance) remain intentional beyond M4 scope. Training execution (M5) and adaptation apply (M7) are stubbed routes only.
+- Placeholder tabs (Recovery, Performance) remain intentional beyond M5 scope. Adaptation apply (M7) is a stubbed route only. Workout execution (M5) is implemented on the execute screen.
 - Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.
