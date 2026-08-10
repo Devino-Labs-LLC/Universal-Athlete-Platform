@@ -70,13 +70,36 @@ class AthleteTrainingCalendarReader {
 
 		List<WorkoutOccurrence> occurrences = workoutOccurrenceRepository
 				.findCalendarRange(athleteId, from, to, status, trainingPlanId);
-		if (occurrences.isEmpty()) {
+		return decorate(athleteId, occurrences);
+	}
+
+	/**
+	 * Decorates already-loaded occurrences with plan/day labels and execution counts.
+	 * Callers that also need the occurrence entities (e.g. environment snapshots) can load once
+	 * and reuse this instead of querying the calendar range twice.
+	 */
+	List<AthleteCalendarEntryResult> decorate(AthleteId athleteId, List<WorkoutOccurrence> occurrences) {
+		return decorate(athleteId, occurrences, null);
+	}
+
+	/**
+	 * Same as {@link #decorate(AthleteId, List)} but reuses caller-supplied plan names when
+	 * non-null, avoiding a second {@code findAllByAthleteId} round-trip.
+	 */
+	List<AthleteCalendarEntryResult> decorate(
+			AthleteId athleteId,
+			List<WorkoutOccurrence> occurrences,
+			Map<TrainingPlanId, String> planNamesById) {
+		if (occurrences == null || occurrences.isEmpty()) {
 			return List.of();
 		}
 
-		Map<TrainingPlanId, String> planNames = new HashMap<>();
-		for (TrainingPlan plan : trainingPlanRepository.findAllByAthleteId(athleteId)) {
-			planNames.put(plan.id(), plan.name());
+		Map<TrainingPlanId, String> planNames = planNamesById;
+		if (planNames == null) {
+			planNames = new HashMap<>();
+			for (TrainingPlan plan : trainingPlanRepository.findAllByAthleteId(athleteId)) {
+				planNames.put(plan.id(), plan.name());
+			}
 		}
 		Map<WorkoutDayId, String> dayTitles = new HashMap<>();
 		List<WorkoutDayId> dayIds = occurrences.stream().map(WorkoutOccurrence::workoutDayId).distinct().toList();

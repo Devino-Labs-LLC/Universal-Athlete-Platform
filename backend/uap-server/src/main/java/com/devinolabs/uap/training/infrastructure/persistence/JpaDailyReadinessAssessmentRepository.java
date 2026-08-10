@@ -19,6 +19,7 @@ import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessment;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
 import com.devinolabs.uap.training.domain.ReadinessAlgorithmVersion;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 
 @Repository
 class JpaDailyReadinessAssessmentRepository implements DailyReadinessAssessmentRepository {
@@ -61,6 +62,24 @@ class JpaDailyReadinessAssessmentRepository implements DailyReadinessAssessmentR
 		return jpaRepository.findByDailyAthleteStateSnapshotIdAndAlgorithmVersionAndAthleteId(
 						snapshotId.value(), algorithmVersion, athleteId.value())
 				.map(this::toDomainWithChildren);
+	}
+
+	@Override
+	public Optional<DailyReadinessAssessmentSummary> findSummaryBySnapshotIdAndAlgorithmVersion(
+			DailyAthleteStateSnapshotId snapshotId,
+			ReadinessAlgorithmVersion algorithmVersion,
+			AthleteId athleteId) {
+		return jpaRepository.findByDailyAthleteStateSnapshotIdAndAlgorithmVersionAndAthleteId(
+						snapshotId.value(), algorithmVersion, athleteId.value())
+				.map(entity -> DailyReadinessAssessmentPersistenceMapper.toSummary(entity, true));
+	}
+
+	@Override
+	public List<ReadinessDimensionType> findLimitingDimensionsByAssessmentId(
+			DailyReadinessAssessmentId assessmentId,
+			AthleteId athleteId) {
+		return List.copyOf(jpaRepository.findLimitingDimensionTypesByAssessmentId(
+				assessmentId.value(), athleteId.value()));
 	}
 
 	@Override

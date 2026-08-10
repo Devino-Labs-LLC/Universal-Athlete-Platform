@@ -21,6 +21,21 @@ public interface WorkoutAdaptationProposalRepository {
 			WorkoutOccurrenceId occurrenceId,
 			AthleteId athleteId);
 
+	/**
+	 * Scalar header lookup for client facades — avoids EAGER item/equipment hydration.
+	 */
+	Optional<WorkoutAdaptationProposalBrief> findActiveBriefByOccurrenceId(
+			WorkoutOccurrenceId occurrenceId,
+			AthleteId athleteId);
+
+	/**
+	 * Scalar outstanding-proposal headers for overview — one query, no child hydration.
+	 * Statuses: DRAFT, READY, PARTIALLY_RESOLVED. Ordered by generatedAt DESC, id ASC.
+	 */
+	List<WorkoutAdaptationProposalOutstandingBrief> findOutstandingBriefsByAthlete(
+			AthleteId athleteId,
+			int limit);
+
 	WorkoutAdaptationProposalPage findByAthlete(
 			AthleteId athleteId,
 			WorkoutAdaptationProposalFilters filters,

@@ -1,9 +1,12 @@
 package com.devinolabs.uap.training.application;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionScope;
@@ -39,5 +42,13 @@ public interface ExerciseDefinitionRepository {
 	 * Loads several definitions by id in one round trip for candidate ordering.
 	 */
 	List<ExerciseDefinition> findAllByIds(List<ExerciseDefinitionId> ids);
+
+	/**
+	 * Bounded equipment-gap helper: one query for accessible active definitions' required equipment.
+	 * Missing ids are omitted from the map.
+	 */
+	Map<ExerciseDefinitionId, Set<EquipmentType>> findAccessibleActiveRequiredEquipmentByIds(
+			List<ExerciseDefinitionId> ids,
+			AthleteId athleteId);
 
 }

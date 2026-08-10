@@ -111,16 +111,21 @@ class JpaTrainingLoadQueryRepository implements TrainingLoadQueryRepository {
 			WorkoutDayId workoutDayId,
 			ExerciseDefinitionCategory category,
 			MovementPattern movementPattern) {
-		return WorkoutOccurrenceLoadSummaryFetchSupport.loadFilteredWithChildren(
-				jpaRepository,
-				jpaRepository.findFiltered(
-						athleteId.value(),
-						startDate,
-						endDate,
-						uuidOrNull(trainingPlanId),
-						uuidOrNull(workoutDayId),
-						category,
-						movementPattern))
+		List<WorkoutOccurrenceLoadSummaryJpaEntity> entities = jpaRepository.findFiltered(
+				athleteId.value(),
+				startDate,
+				endDate,
+				uuidOrNull(trainingPlanId),
+				uuidOrNull(workoutDayId),
+				category,
+				movementPattern);
+		// Unfiltered daily/weekly totals only need header columns; skip category/movement fetches.
+		if (category == null && movementPattern == null) {
+			return entities.stream()
+					.map(WorkoutOccurrenceLoadSummaryPersistenceMapper::toDomainHeaderOnly)
+					.toList();
+		}
+		return WorkoutOccurrenceLoadSummaryFetchSupport.loadFilteredWithChildren(jpaRepository, entities)
 				.stream()
 				.map(WorkoutOccurrenceLoadSummaryPersistenceMapper::toDomain)
 				.toList();

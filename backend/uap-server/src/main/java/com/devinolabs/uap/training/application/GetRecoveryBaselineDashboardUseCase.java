@@ -47,21 +47,24 @@ public class GetRecoveryBaselineDashboardUseCase {
 		RecoveryAnalyticsSupport.requireTargetDate(resolvedTargetDate, clock);
 		AthleteRef athlete = RecoveryCheckInSupport.requireReadableAthlete(athleteContextPort, accountId.value());
 		AthleteId athleteId = AthleteId.of(athlete.athleteId());
-		List<DailyRecoveryCheckIn> priorCheckIns = RecoveryAnalyticsSupport.loadPriorCheckIns(
-				checkInRepository, athleteId, resolvedTargetDate, baselineWindowDays);
+		// One range load covers prior window, target date, and trends (avoids 3 overlapping queries).
+		LocalDate trendStart = resolvedTargetDate.minusDays(baselineWindowDays);
+		List<DailyRecoveryCheckIn> rangeCheckIns = RecoveryAnalyticsSupport.loadCheckInsInRange(
+				checkInRepository, athleteId, trendStart, resolvedTargetDate);
+		List<DailyRecoveryCheckIn> priorCheckIns = rangeCheckIns.stream()
+				.filter(checkIn -> checkIn.checkInDate().isBefore(resolvedTargetDate))
+				.toList();
+		Optional<DailyRecoveryCheckIn> checkIn = rangeCheckIns.stream()
+				.filter(candidate -> candidate.checkInDate().equals(resolvedTargetDate))
+				.findFirst();
 		List<RecoveryMetricBaselineResult> baselines = RecoveryAnalyticsSupport.buildBaselines(
 				resolvedTargetDate, baselineWindowDays, priorCheckIns, clock);
-		Optional<DailyRecoveryCheckIn> checkIn = checkInRepository.findByAthleteIdAndCheckInDate(
-				athleteId, resolvedTargetDate);
 		List<RecoveryMetricDeviationResult> deviations = checkIn
 				.map(target -> RecoveryAnalyticsSupport.buildDeviations(
 						target, resolvedTargetDate, baselineWindowDays, priorCheckIns, clock))
 				.orElse(List.of());
-		LocalDate trendStart = resolvedTargetDate.minusDays(baselineWindowDays);
-		List<DailyRecoveryCheckIn> trendCheckIns = RecoveryAnalyticsSupport.loadCheckInsInRange(
-				checkInRepository, athleteId, trendStart, resolvedTargetDate);
 		List<RecoveryMetricDashboardTrendResult> metricTrends = RecoveryAnalyticsSupport.buildDashboardTrends(
-				resolvedTargetDate, baselineWindowDays, trendCheckIns);
+				resolvedTargetDate, baselineWindowDays, rangeCheckIns);
 		RecoveryTrainingLoadContextResult load = includeTrainingLoad
 				? loadContext(athleteId, resolvedTargetDate)
 				: null;

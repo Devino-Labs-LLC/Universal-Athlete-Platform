@@ -1,8 +1,10 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -11,13 +13,16 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.training.application.ActiveWorkoutAdaptationProposalExistsException;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalBrief;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalFilters;
+import com.devinolabs.uap.training.application.WorkoutAdaptationProposalOutstandingBrief;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalPage;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalRepository;
 import com.devinolabs.uap.training.application.WorkoutAdaptationProposalVersionConflictException;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposal;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalId;
+import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalOrigin;
 import com.devinolabs.uap.training.domain.WorkoutAdaptationProposalStatus;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
@@ -75,6 +80,45 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 				.stream()
 				.findFirst()
 				.map(this::toDomainWithChildren);
+	}
+
+	@Override
+	public Optional<WorkoutAdaptationProposalBrief> findActiveBriefByOccurrenceId(
+			WorkoutOccurrenceId occurrenceId,
+			AthleteId athleteId) {
+		return jpaRepository
+				.findActiveBriefRowsByOccurrenceId(occurrenceId.value(), athleteId.value(), ACTIVE_STATUSES)
+				.stream()
+				.findFirst()
+				.map(row -> new WorkoutAdaptationProposalBrief(
+						(UUID) row[0],
+						(UUID) row[1],
+						(WorkoutAdaptationProposalStatus) row[2],
+						(WorkoutAdaptationProposalOrigin) row[3],
+						((Number) row[4]).intValue()));
+	}
+
+	@Override
+	public List<WorkoutAdaptationProposalOutstandingBrief> findOutstandingBriefsByAthlete(
+			AthleteId athleteId,
+			int limit) {
+		if (limit <= 0) {
+			return List.of();
+		}
+		return jpaRepository
+				.findOutstandingBriefRowsByAthlete(
+						athleteId.value(),
+						ACTIVE_STATUSES,
+						PageRequest.of(0, limit))
+				.stream()
+				.map(row -> new WorkoutAdaptationProposalOutstandingBrief(
+						(UUID) row[0],
+						(UUID) row[1],
+						(WorkoutAdaptationProposalStatus) row[2],
+						((Number) row[3]).intValue(),
+						(Instant) row[4],
+						(Instant) row[5]))
+				.toList();
 	}
 
 	@Override

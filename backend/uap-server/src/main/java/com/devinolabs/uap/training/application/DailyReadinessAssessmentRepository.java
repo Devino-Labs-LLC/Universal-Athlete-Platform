@@ -9,6 +9,7 @@ import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessment;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
 import com.devinolabs.uap.training.domain.ReadinessAlgorithmVersion;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 
 public interface DailyReadinessAssessmentRepository {
 
@@ -19,6 +20,21 @@ public interface DailyReadinessAssessmentRepository {
 	Optional<DailyReadinessAssessment> findBySnapshotIdAndAlgorithmVersion(
 			DailyAthleteStateSnapshotId snapshotId,
 			ReadinessAlgorithmVersion algorithmVersion,
+			AthleteId athleteId);
+
+	/**
+	 * Header-only readiness lookup for client facades (no contribution/dimension child hydration).
+	 */
+	Optional<DailyReadinessAssessmentSummary> findSummaryBySnapshotIdAndAlgorithmVersion(
+			DailyAthleteStateSnapshotId snapshotId,
+			ReadinessAlgorithmVersion algorithmVersion,
+			AthleteId athleteId);
+
+	/**
+	 * Scalar limiting-dimension types for client facades — no contribution/strongest hydration.
+	 */
+	List<ReadinessDimensionType> findLimitingDimensionsByAssessmentId(
+			DailyReadinessAssessmentId assessmentId,
 			AthleteId athleteId);
 
 	List<DailyReadinessAssessmentSummary> findHistory(

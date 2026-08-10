@@ -18,6 +18,7 @@ import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
 import com.devinolabs.uap.training.domain.DailyTrainingRecommendation;
 import com.devinolabs.uap.training.domain.DailyTrainingRecommendationId;
+import com.devinolabs.uap.training.domain.TrainingAdjustmentType;
 import com.devinolabs.uap.training.domain.TrainingRecommendationAction;
 import com.devinolabs.uap.training.domain.TrainingRecommendationAlgorithmVersion;
 
@@ -62,6 +63,24 @@ class JpaDailyTrainingRecommendationRepository implements DailyTrainingRecommend
 		return jpaRepository.findByDailyReadinessAssessmentIdAndRecommendationAlgorithmVersionAndAthleteId(
 						assessmentId.value(), algorithmVersion, athleteId.value())
 				.map(this::toDomainWithChildren);
+	}
+
+	@Override
+	public Optional<DailyTrainingRecommendationSummary> findSummaryByAssessmentIdAndAlgorithmVersion(
+			DailyReadinessAssessmentId assessmentId,
+			TrainingRecommendationAlgorithmVersion algorithmVersion,
+			AthleteId athleteId) {
+		return jpaRepository.findByDailyReadinessAssessmentIdAndRecommendationAlgorithmVersionAndAthleteId(
+						assessmentId.value(), algorithmVersion, athleteId.value())
+				.map(entity -> DailyTrainingRecommendationPersistenceMapper.toSummary(entity, true));
+	}
+
+	@Override
+	public List<TrainingAdjustmentType> findAdjustmentTypesByRecommendationId(
+			DailyTrainingRecommendationId recommendationId,
+			AthleteId athleteId) {
+		return List.copyOf(jpaRepository.findAdjustmentTypesByRecommendationId(
+				recommendationId.value(), athleteId.value()));
 	}
 
 	@Override

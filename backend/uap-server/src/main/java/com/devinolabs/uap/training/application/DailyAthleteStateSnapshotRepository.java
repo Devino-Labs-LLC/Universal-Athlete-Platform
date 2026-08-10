@@ -16,6 +16,13 @@ public interface DailyAthleteStateSnapshotRepository {
 
 	Optional<DailyAthleteStateSnapshot> findCurrentByAthleteIdAndStateDate(AthleteId athleteId, LocalDate stateDate);
 
+	/**
+	 * Header-only current snapshot lookup for client facades (no child collection hydration).
+	 */
+	Optional<DailyAthleteStateSnapshotSummary> findCurrentSummaryByAthleteIdAndStateDate(
+			AthleteId athleteId,
+			LocalDate stateDate);
+
 	Optional<DailyAthleteStateSnapshot> findCurrentByAthleteIdAndStateDateForUpdate(
 			AthleteId athleteId,
 			LocalDate stateDate);

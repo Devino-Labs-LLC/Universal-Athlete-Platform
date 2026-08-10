@@ -141,6 +141,13 @@ import com.devinolabs.uap.training.application.RecommendedAdaptationOccurrenceLo
 import com.devinolabs.uap.training.application.RecommendedAdaptationOccurrenceNotEligibleException;
 import com.devinolabs.uap.training.application.TrainingRecommendationNotAdaptationEligibleException;
 import com.devinolabs.uap.training.application.TrainingRecommendationOccurrenceMismatchException;
+import com.devinolabs.uap.training.application.TrainingDashboardLoadFailedException;
+import com.devinolabs.uap.training.application.TrainingOverviewLoadFailedException;
+import com.devinolabs.uap.training.application.RecoveryOverviewLoadFailedException;
+import com.devinolabs.uap.training.application.WorkoutLaunchContextLoadFailedException;
+import com.devinolabs.uap.training.application.TrainingClientBootstrapFailedException;
+import com.devinolabs.uap.training.application.InvalidTrainingClientDateException;
+import com.devinolabs.uap.training.application.InvalidTrainingClientTrendDaysException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateDateException;
 import com.devinolabs.uap.training.domain.DailyAthleteStateDateOutOfRangeException;
 import com.devinolabs.uap.training.domain.InvalidDailyAthleteStateBaselineWindowException;
@@ -222,7 +229,8 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		RecoveryAnalyticsController.class,
 		DailyAthleteStateController.class,
 		DailyReadinessController.class,
-		DailyTrainingRecommendationController.class
+		DailyTrainingRecommendationController.class,
+		TrainingClientController.class
 })
 class TrainingExceptionHandler {
 
@@ -1743,6 +1751,62 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("INVALID_TRAINING_RECOMMENDATION_ALGORITHM_VERSION", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingDashboardLoadFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingDashboardLoadFailed(
+			TrainingDashboardLoadFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("TRAINING_DASHBOARD_LOAD_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingOverviewLoadFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingOverviewLoadFailed(
+			TrainingOverviewLoadFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("TRAINING_OVERVIEW_LOAD_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(RecoveryOverviewLoadFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleRecoveryOverviewLoadFailed(
+			RecoveryOverviewLoadFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("RECOVERY_OVERVIEW_LOAD_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(WorkoutLaunchContextLoadFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleWorkoutLaunchContextLoadFailed(
+			WorkoutLaunchContextLoadFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("WORKOUT_LAUNCH_CONTEXT_LOAD_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingClientBootstrapFailedException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingClientBootstrapFailed(
+			TrainingClientBootstrapFailedException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(error("TRAINING_CLIENT_BOOTSTRAP_FAILED", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingClientDateException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingClientDate(
+			InvalidTrainingClientDateException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_CLIENT_DATE", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingClientTrendDaysException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingClientTrendDays(
+			InvalidTrainingClientTrendDaysException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("INVALID_TRAINING_CLIENT_TREND_DAYS", ex.getMessage(), request, List.of()));
 	}
 
 	/**

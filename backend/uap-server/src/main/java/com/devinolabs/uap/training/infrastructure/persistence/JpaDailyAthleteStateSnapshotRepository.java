@@ -58,6 +58,14 @@ class JpaDailyAthleteStateSnapshotRepository implements DailyAthleteStateSnapsho
 	}
 
 	@Override
+	public Optional<DailyAthleteStateSnapshotSummary> findCurrentSummaryByAthleteIdAndStateDate(
+			AthleteId athleteId,
+			LocalDate stateDate) {
+		return jpaRepository.findByAthleteIdAndStateDateAndCurrentSnapshotTrue(athleteId.value(), stateDate)
+				.map(DailyAthleteStateSnapshotPersistenceMapper::toSummary);
+	}
+
+	@Override
 	public Optional<DailyAthleteStateSnapshot> findCurrentByAthleteIdAndStateDateForUpdate(
 			AthleteId athleteId,
 			LocalDate stateDate) {

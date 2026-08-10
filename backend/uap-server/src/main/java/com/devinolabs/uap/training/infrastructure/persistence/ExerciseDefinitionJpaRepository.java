@@ -89,4 +89,17 @@ interface ExerciseDefinitionJpaRepository extends JpaRepository<ExerciseDefiniti
 
 	List<ExerciseDefinitionJpaEntity> findAllByIdIn(List<UUID> ids);
 
+	@Query("""
+			select d.id, equipment
+			from ExerciseDefinitionJpaEntity d
+			left join d.requiredEquipment equipment
+			where d.id in :ids
+			and d.active = true
+			and (d.scope = com.devinolabs.uap.training.domain.ExerciseDefinitionScope.SYSTEM
+				or d.athleteId = :athleteId)
+			""")
+	List<Object[]> findAccessibleActiveRequiredEquipmentRows(
+			@Param("ids") List<UUID> ids,
+			@Param("athleteId") UUID athleteId);
+
 }

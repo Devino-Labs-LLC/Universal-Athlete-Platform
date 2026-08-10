@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.devinolabs.uap.training.domain.TrainingAdjustmentType;
 import com.devinolabs.uap.training.domain.TrainingRecommendationAction;
 import com.devinolabs.uap.training.domain.TrainingRecommendationAlgorithmVersion;
 
@@ -23,6 +24,17 @@ interface DailyTrainingRecommendationJpaRepository
 					UUID dailyReadinessAssessmentId,
 					TrainingRecommendationAlgorithmVersion recommendationAlgorithmVersion,
 					UUID athleteId);
+
+	@Query("""
+			select a.adjustmentType from DailyTrainingRecommendationAdjustmentJpaEntity a
+			join a.recommendation r
+			where r.id = :recommendationId
+			  and r.athleteId = :athleteId
+			order by a.orderIndex asc
+			""")
+	List<TrainingAdjustmentType> findAdjustmentTypesByRecommendationId(
+			@Param("recommendationId") UUID recommendationId,
+			@Param("athleteId") UUID athleteId);
 
 	@Query("""
 			select r from DailyTrainingRecommendationJpaEntity r

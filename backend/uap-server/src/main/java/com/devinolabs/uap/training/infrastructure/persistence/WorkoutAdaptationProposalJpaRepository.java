@@ -48,6 +48,31 @@ interface WorkoutAdaptationProposalJpaRepository extends JpaRepository<WorkoutAd
 			@Param("athleteId") UUID athleteId,
 			@Param("activeStatuses") List<WorkoutAdaptationProposalStatus> activeStatuses);
 
+	@Query("""
+			select p.id, p.workoutOccurrenceId, p.status, p.origin, p.unresolvedExecutions
+			from WorkoutAdaptationProposalJpaEntity p
+			where p.workoutOccurrenceId = :occurrenceId
+			and p.athleteId = :athleteId
+			and p.status in :activeStatuses
+			order by p.generatedAt desc, p.id asc
+			""")
+	List<Object[]> findActiveBriefRowsByOccurrenceId(
+			@Param("occurrenceId") UUID occurrenceId,
+			@Param("athleteId") UUID athleteId,
+			@Param("activeStatuses") List<WorkoutAdaptationProposalStatus> activeStatuses);
+
+	@Query("""
+			select p.id, p.workoutOccurrenceId, p.status, p.unresolvedExecutions, p.generatedAt, p.expiresAt
+			from WorkoutAdaptationProposalJpaEntity p
+			where p.athleteId = :athleteId
+			and p.status in :statuses
+			order by p.generatedAt desc, p.id asc
+			""")
+	List<Object[]> findOutstandingBriefRowsByAthlete(
+			@Param("athleteId") UUID athleteId,
+			@Param("statuses") List<WorkoutAdaptationProposalStatus> statuses,
+			Pageable pageable);
+
 	@Query(
 			value = """
 					select p from WorkoutAdaptationProposalJpaEntity p

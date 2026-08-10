@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.devinolabs.uap.training.domain.ReadinessAlgorithmVersion;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 
 interface DailyReadinessAssessmentJpaRepository extends JpaRepository<DailyReadinessAssessmentJpaEntity, UUID> {
 
@@ -20,6 +21,17 @@ interface DailyReadinessAssessmentJpaRepository extends JpaRepository<DailyReadi
 			UUID dailyAthleteStateSnapshotId,
 			ReadinessAlgorithmVersion algorithmVersion,
 			UUID athleteId);
+
+	@Query("""
+			select d.dimensionType from DailyReadinessLimitingDimensionJpaEntity d
+			join d.assessment a
+			where a.id = :assessmentId
+			  and a.athleteId = :athleteId
+			order by d.rankOrder asc
+			""")
+	List<ReadinessDimensionType> findLimitingDimensionTypesByAssessmentId(
+			@Param("assessmentId") UUID assessmentId,
+			@Param("athleteId") UUID athleteId);
 
 	@Query("""
 			select a from DailyReadinessAssessmentJpaEntity a

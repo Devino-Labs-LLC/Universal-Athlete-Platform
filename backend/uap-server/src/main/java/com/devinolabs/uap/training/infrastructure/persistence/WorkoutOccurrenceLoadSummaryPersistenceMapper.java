@@ -50,6 +50,20 @@ final class WorkoutOccurrenceLoadSummaryPersistenceMapper {
 		List<WorkoutLoadMovementPatternSummary> movements = entity.getMovements().stream()
 				.map(WorkoutOccurrenceLoadSummaryPersistenceMapper::toMovementDomain)
 				.toList();
+		return toDomain(entity, categories, movements);
+	}
+
+	/**
+	 * Maps occurrence load headers without touching lazy category/movement collections.
+	 */
+	static WorkoutOccurrenceLoadSummary toDomainHeaderOnly(WorkoutOccurrenceLoadSummaryJpaEntity entity) {
+		return toDomain(entity, List.of(), List.of());
+	}
+
+	private static WorkoutOccurrenceLoadSummary toDomain(
+			WorkoutOccurrenceLoadSummaryJpaEntity entity,
+			List<WorkoutLoadCategorySummary> categories,
+			List<WorkoutLoadMovementPatternSummary> movements) {
 		WorkoutLoadCalculator.Result result = new WorkoutLoadCalculator.Result(
 				entity.getSessionRpe() == null ? null : SessionRpe.of(entity.getSessionRpe()),
 				entity.getSessionDurationMinutes(),

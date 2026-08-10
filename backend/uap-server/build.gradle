@@ -51,4 +51,6 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Integration suites spin many Spring + Testcontainers contexts; default heap OOMs near full suite.
+	maxHeapSize = '2g'
 }

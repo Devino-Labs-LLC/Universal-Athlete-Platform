@@ -1,8 +1,13 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +17,7 @@ import com.devinolabs.uap.training.application.ExerciseDefinitionFilters;
 import com.devinolabs.uap.training.application.ExerciseDefinitionPage;
 import com.devinolabs.uap.training.application.ExerciseDefinitionRepository;
 import com.devinolabs.uap.training.domain.AthleteId;
+import com.devinolabs.uap.training.domain.EquipmentType;
 import com.devinolabs.uap.training.domain.ExerciseDefinition;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionId;
 import com.devinolabs.uap.training.domain.ExerciseDefinitionScope;
@@ -104,6 +110,26 @@ class JpaExerciseDefinitionRepository implements ExerciseDefinitionRepository {
 				.stream()
 				.map(ExerciseDefinitionPersistenceMapper::toDomain)
 				.toList();
+	}
+
+	@Override
+	public Map<ExerciseDefinitionId, Set<EquipmentType>> findAccessibleActiveRequiredEquipmentByIds(
+			List<ExerciseDefinitionId> ids,
+			AthleteId athleteId) {
+		if (ids == null || ids.isEmpty()) {
+			return Map.of();
+		}
+		List<UUID> rawIds = ids.stream().map(ExerciseDefinitionId::value).distinct().toList();
+		Map<ExerciseDefinitionId, Set<EquipmentType>> byId = new LinkedHashMap<>();
+		for (Object[] row : jpaRepository.findAccessibleActiveRequiredEquipmentRows(rawIds, athleteId.value())) {
+			ExerciseDefinitionId definitionId = ExerciseDefinitionId.of((UUID) row[0]);
+			Set<EquipmentType> equipment = byId.computeIfAbsent(
+					definitionId, ignored -> EnumSet.noneOf(EquipmentType.class));
+			if (row[1] instanceof EquipmentType type) {
+				equipment.add(type);
+			}
+		}
+		return byId;
 	}
 
 }
