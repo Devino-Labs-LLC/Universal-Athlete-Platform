@@ -30,6 +30,8 @@ export interface ColorTokens {
   primaryText: string;
   danger: string;
   success: string;
+  warning: string;
+  info: string;
 }
 
 export const lightColors: ColorTokens = {
@@ -42,6 +44,8 @@ export const lightColors: ColorTokens = {
   primaryText: '#FFFFFF',
   danger: '#DC2626',
   success: '#059669',
+  warning: '#D97706',
+  info: '#0284C7',
 };
 
 export const darkColors: ColorTokens = {
@@ -54,6 +58,8 @@ export const darkColors: ColorTokens = {
   primaryText: '#042F2E',
   danger: '#F87171',
   success: '#34D399',
+  warning: '#FBBF24',
+  info: '#38BDF8',
 };
 
 export type ThemeMode = 'light' | 'dark';

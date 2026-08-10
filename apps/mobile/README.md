@@ -1,8 +1,8 @@
-# Universal Athlete — Mobile (M2)
+# Universal Athlete — Mobile (M4)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M2 adds production auth forms, athlete onboarding (profile → sports → goals), bootstrap gating, and a full Profile tab. M1R covered cookie-backed auth, CSRF-aware API access, session refresh, client bootstrap validation, and the diagnostic Home screen.
+M4 adds the **Training** tab stack: overview, calendar, plan/day browsing, occurrence detail, and read-only workout launch prep (execution/adaptation placeholders for M5/M7). M3 added the production **Home / Today** dashboard. M2 added auth forms, onboarding, bootstrap gating, and Profile. M1R covered cookie-backed auth, CSRF, session refresh, and client bootstrap validation.
 
 ## Stack versions
 
@@ -100,10 +100,50 @@ src/core/components/     Screen, buttons, loading/error/empty
 src/features/auth/       Identity API, Zod schemas, form fields, error copy
 src/features/onboarding/ Onboarding state resolver, routes, provider wiring
 src/features/profile/    Athlete profile/sports/goals API, schemas, hooks
-src/features/training/   Bootstrap/today API + Zod schemas
-src/features/home/       Diagnostic Home + TanStack Query hook
+src/features/training/   Bootstrap/today API, browse APIs, schemas, screens
+src/features/home/       Today dashboard (cards, hooks, generation actions)
 __tests__/               Jest unit/integration tests
 ```
+
+### Training browse stack (M4)
+
+The Training tab (`/(tabs)/training`) is a nested Stack:
+
+1. **Overview (default)** — **GET** `/api/v1/training/client/training-overview?date=` — next workout, upcoming list, active plans, recent completed, weekly load, outstanding adaptations. Pull-to-refresh on overview only.
+2. **Calendar** — **GET** `/api/v1/training/calendar?scheduledFrom=&scheduledTo=` — visible week strip (7 days), prev/next week, day-filtered occurrence list.
+3. **Plan detail** — **GET** `/api/v1/training/plans/{planId}` + `/days` — list workout days.
+4. **Day detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/exercises` — ordered prescriptions.
+5. **Occurrence detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}` — status, environment, execution summary. CTA routes to launch prep (no start mutation).
+6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to an M5 execute placeholder; Review Adaptation routes to an M7 placeholder.
+
+Route layout under `src/app/(tabs)/training/`:
+
+```
+_layout.tsx                 Stack navigator
+index.tsx                   TrainingOverviewScreen
+calendar.tsx                TrainingCalendarScreen
+plans/[planId]/index.tsx    TrainingPlanDetailScreen
+plans/[planId]/days/[dayId]/index.tsx
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/index.tsx
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/launch.tsx
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/execute.tsx   (M5 placeholder)
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/adaptation-review.tsx (M7 placeholder)
+```
+
+Feature code lives in `src/features/training/` (`api/`, `hooks/`, `models/browseSchemas.ts`, `components/`, `screens/`, `utils/`).
+
+### Home / Today dashboard (M3)
+
+After onboarding completes and bootstrap V1 loads, the Home tab (`/(tabs)/index`) renders `HomeScreen`:
+
+1. **GET** `/api/v1/training/client/today` — full today DTO (recovery, readiness, recommendation, training, load, adaptation, PRs, action flags)
+2. Card hierarchy: header → quick actions / primary workout → readiness → guidance → recovery → load → adaptation → recent performance
+3. **Explicit generation only** (no auto-chaining on mount):
+   - **POST** `/api/v1/training/athlete-state/daily/{date}` — body `{ baselineWindowDays: 7 }`
+   - **POST** `/api/v1/training/readiness/daily/{date}`
+   - **POST** `/api/v1/training/recommendations/daily/{date}`
+4. Each successful generation invalidates the today query; pull-to-refresh refetches read-only data
+5. Workout / adaptation CTAs route into the Training stack (overview → launch prep); recovery check-in routes to Recovery
 
 ### Bootstrap + onboarding flow (M2)
 
@@ -196,7 +236,7 @@ Refresh: single-flight `POST /api/v1/identity/refresh`.
 
 ## Testing
 
-Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, and the Home diagnostic screen.
+Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, and prescription formatting.
 
 ```bash
 pnpm test
@@ -205,5 +245,5 @@ pnpm test
 ## Notes
 
 - Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Training, Recovery, Performance) remain intentional beyond M2 scope.
+- Placeholder tabs (Recovery, Performance) remain intentional beyond M4 scope. Training execution (M5) and adaptation apply (M7) are stubbed routes only.
 - Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.

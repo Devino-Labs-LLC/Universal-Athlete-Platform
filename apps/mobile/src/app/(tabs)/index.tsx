@@ -1,3 +1,3 @@
-import { HomeDiagnosticScreen } from '@/src/features/home/HomeDiagnosticScreen';
+import { HomeScreen } from '@/src/features/home/screens/HomeScreen';
 
-export default HomeDiagnosticScreen;
+export default HomeScreen;
