@@ -3,6 +3,7 @@ package com.devinolabs.uap.identity.infrastructure.http;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -37,6 +38,61 @@ public class IdentityHttpProperties {
 
 	public void setTokenDelivery(TokenDelivery tokenDelivery) {
 		this.tokenDelivery = tokenDelivery;
+	}
+
+	/**
+	 * Always-on HTTP auth transport guards. Safe for local/dev profiles.
+	 */
+	public void validate() {
+		if (tokenDelivery == null) {
+			throw new IllegalStateException("uap.identity.http.token-delivery must be configured");
+		}
+		if (cookies.getSameSite() == SameSite.NONE && !cookies.isSecure()) {
+			throw new IllegalStateException(
+					"uap.identity.http.cookies.same-site=NONE requires uap.identity.http.cookies.secure=true");
+		}
+		if (cookies.getAccessCookieName() == null || cookies.getAccessCookieName().isBlank()) {
+			throw new IllegalStateException("uap.identity.http.cookies.access-cookie-name must not be blank");
+		}
+		if (cookies.getRefreshCookieName() == null || cookies.getRefreshCookieName().isBlank()) {
+			throw new IllegalStateException("uap.identity.http.cookies.refresh-cookie-name must not be blank");
+		}
+		if (cors.getAllowedOrigins() == null || cors.getAllowedOrigins().isEmpty()) {
+			throw new IllegalStateException(
+					"uap.identity.http.cors.allowed-origins must be configured via UAP_CORS_ALLOWED_ORIGINS");
+		}
+		if (cors.isAllowCredentials() && cors.getAllowedOrigins().stream().anyMatch("*"::equals)) {
+			throw new IllegalStateException("CORS must not allow wildcard origins when credentials are enabled");
+		}
+		if (rateLimit.getCapacity() < 1) {
+			throw new IllegalStateException("uap.identity.http.rate-limit.capacity must be at least 1");
+		}
+		if (rateLimit.getWindow() == null || rateLimit.getWindow().isNegative() || rateLimit.getWindow().isZero()) {
+			throw new IllegalStateException("uap.identity.http.rate-limit.window must be a positive duration");
+		}
+	}
+
+	/**
+	 * Production-only guards so the process cannot silently ship with local cookie/CORS defaults.
+	 */
+	public void validateProductionSafety() {
+		validate();
+		if (!cookies.isSecure()) {
+			throw new IllegalStateException(
+					"Production requires uap.identity.http.cookies.secure=true (set UAP_COOKIE_SECURE=true)");
+		}
+		for (String origin : cors.getAllowedOrigins()) {
+			if (origin == null || origin.isBlank()) {
+				throw new IllegalStateException(
+						"Production CORS allowed-origins must not contain blank entries");
+			}
+			String normalized = origin.strip().toLowerCase(Locale.ROOT);
+			if (normalized.contains("localhost") || normalized.contains("127.0.0.1")) {
+				throw new IllegalStateException(
+						"Production CORS allowed-origins must not include localhost/loopback defaults; "
+								+ "set UAP_CORS_ALLOWED_ORIGINS explicitly");
+			}
+		}
 	}
 
 	public enum TokenDelivery {

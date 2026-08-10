@@ -1,0 +1,18 @@
+# Alias of application-prod.yaml for spring.profiles.active=production.
+# Production profile: required secrets/settings have no development defaults.
+#
+# Required environment variables:
+#   SPRING_DATASOURCE_URL
+#   SPRING_DATASOURCE_USERNAME
+#   SPRING_DATASOURCE_PASSWORD
+#   UAP_IDENTITY_ACCESS_TOKEN_SECRET
+#   UAP_COOKIE_SECURE=true
+#   UAP_CORS_ALLOWED_ORIGINS=<comma-separated production origins>
+uap:
+  identity:
+    http:
+      cookies:
+        secure: ${UAP_COOKIE_SECURE}
+        same-site: ${UAP_COOKIE_SAME_SITE:LAX}
+      cors:
+        allowed-origins: ${UAP_CORS_ALLOWED_ORIGINS}

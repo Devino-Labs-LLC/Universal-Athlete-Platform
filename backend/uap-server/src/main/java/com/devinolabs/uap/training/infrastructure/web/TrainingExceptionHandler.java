@@ -1040,7 +1040,10 @@ class TrainingExceptionHandler {
 			WorkoutFeasibilityAnalysisFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("WORKOUT_FEASIBILITY_ANALYSIS_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("WORKOUT_FEASIBILITY_ANALYSIS_FAILED",
+						"Workout feasibility analysis failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(WorkoutAdaptationProposalNotFoundException.class)
@@ -1054,12 +1057,19 @@ class TrainingExceptionHandler {
 						List.of()));
 	}
 
+	/**
+	 * Foreign or otherwise inaccessible proposals are reported as missing rather than forbidden:
+	 * a distinct status would confirm the proposal exists.
+	 */
 	@ExceptionHandler(WorkoutAdaptationProposalNotAccessibleException.class)
 	ResponseEntity<ApiErrorResponse> handleWorkoutAdaptationProposalNotAccessible(
 			WorkoutAdaptationProposalNotAccessibleException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.FORBIDDEN)
-				.body(error("WORKOUT_ADAPTATION_PROPOSAL_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("WORKOUT_ADAPTATION_PROPOSAL_NOT_ACCESSIBLE",
+						"Workout adaptation proposal was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(ActiveWorkoutAdaptationProposalExistsException.class)
@@ -1161,12 +1171,19 @@ class TrainingExceptionHandler {
 				.body(error("ADAPTATION_TARGET_NOT_ENVIRONMENT_COMPATIBLE", ex.getMessage(), request, List.of()));
 	}
 
+	/**
+	 * Inaccessible adaptation targets (including another athlete's custom definitions) are reported as
+	 * not found so clients cannot probe foreign resource existence via status codes.
+	 */
 	@ExceptionHandler(AdaptationTargetNotAccessibleException.class)
 	ResponseEntity<ApiErrorResponse> handleAdaptationTargetNotAccessible(
 			AdaptationTargetNotAccessibleException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.FORBIDDEN)
-				.body(error("ADAPTATION_TARGET_NOT_ACCESSIBLE", ex.getMessage(), request, List.of()));
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("ADAPTATION_TARGET_NOT_ACCESSIBLE",
+						"Adaptation target was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(AdaptationRelationshipMismatchException.class)
@@ -1302,7 +1319,10 @@ class TrainingExceptionHandler {
 			RecoveryCheckInNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("RECOVERY_CHECK_IN_NOT_FOUND", ex.getMessage(), request, List.of()));
+				.body(error("RECOVERY_CHECK_IN_NOT_FOUND",
+						"Recovery check-in was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(RecoveryCheckInNotAccessibleException.class)
@@ -1518,7 +1538,10 @@ class TrainingExceptionHandler {
 			RecoveryAnalyticsCalculationFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("RECOVERY_ANALYTICS_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("RECOVERY_ANALYTICS_CALCULATION_FAILED",
+						"Recovery analytics calculation failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyAthleteStateSnapshotNotFoundException.class)
@@ -1526,7 +1549,10 @@ class TrainingExceptionHandler {
 			DailyAthleteStateSnapshotNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_NOT_FOUND", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_ATHLETE_STATE_SNAPSHOT_NOT_FOUND",
+						"Daily athlete state snapshot was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyAthleteStateSnapshotNotAccessibleException.class)
@@ -1574,7 +1600,10 @@ class TrainingExceptionHandler {
 			DailyAthleteStateGenerationFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("DAILY_ATHLETE_STATE_GENERATION_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_ATHLETE_STATE_GENERATION_FAILED",
+						"Daily athlete state generation failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyAthleteStateSourceInconsistentException.class)
@@ -1598,7 +1627,10 @@ class TrainingExceptionHandler {
 			DailyReadinessAssessmentNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("DAILY_READINESS_ASSESSMENT_NOT_FOUND", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_READINESS_ASSESSMENT_NOT_FOUND",
+						"Daily readiness assessment was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyReadinessAssessmentNotAccessibleException.class)
@@ -1622,7 +1654,10 @@ class TrainingExceptionHandler {
 			DailyReadinessCalculationFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("DAILY_READINESS_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_READINESS_CALCULATION_FAILED",
+						"Daily readiness calculation failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(ReadinessNumericOverflowException.class)
@@ -1662,7 +1697,10 @@ class TrainingExceptionHandler {
 			DailyTrainingRecommendationNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("DAILY_TRAINING_RECOMMENDATION_NOT_FOUND", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_TRAINING_RECOMMENDATION_NOT_FOUND",
+						"Daily training recommendation was not found",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyTrainingRecommendationNotAccessibleException.class)
@@ -1686,7 +1724,10 @@ class TrainingExceptionHandler {
 			DailyTrainingRecommendationCalculationFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("DAILY_TRAINING_RECOMMENDATION_CALCULATION_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("DAILY_TRAINING_RECOMMENDATION_CALCULATION_FAILED",
+						"Daily training recommendation calculation failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(DailyTrainingRecommendationCompareInvalidException.class)
@@ -1734,7 +1775,10 @@ class TrainingExceptionHandler {
 			RecommendedAdaptationGenerationFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("RECOMMENDED_ADAPTATION_GENERATION_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("RECOMMENDED_ADAPTATION_GENERATION_FAILED",
+						"Recommended adaptation generation failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(InvalidTrainingRecommendationDateRangeException.class)
@@ -1758,7 +1802,10 @@ class TrainingExceptionHandler {
 			TrainingDashboardLoadFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("TRAINING_DASHBOARD_LOAD_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("TRAINING_DASHBOARD_LOAD_FAILED",
+						"Training dashboard load failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(TrainingOverviewLoadFailedException.class)
@@ -1766,7 +1813,10 @@ class TrainingExceptionHandler {
 			TrainingOverviewLoadFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("TRAINING_OVERVIEW_LOAD_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("TRAINING_OVERVIEW_LOAD_FAILED",
+						"Training overview load failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(RecoveryOverviewLoadFailedException.class)
@@ -1774,7 +1824,10 @@ class TrainingExceptionHandler {
 			RecoveryOverviewLoadFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("RECOVERY_OVERVIEW_LOAD_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("RECOVERY_OVERVIEW_LOAD_FAILED",
+						"Recovery overview load failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(WorkoutLaunchContextLoadFailedException.class)
@@ -1782,7 +1835,10 @@ class TrainingExceptionHandler {
 			WorkoutLaunchContextLoadFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("WORKOUT_LAUNCH_CONTEXT_LOAD_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("WORKOUT_LAUNCH_CONTEXT_LOAD_FAILED",
+						"Workout launch context load failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(TrainingClientBootstrapFailedException.class)
@@ -1790,7 +1846,10 @@ class TrainingExceptionHandler {
 			TrainingClientBootstrapFailedException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(error("TRAINING_CLIENT_BOOTSTRAP_FAILED", ex.getMessage(), request, List.of()));
+				.body(error("TRAINING_CLIENT_BOOTSTRAP_FAILED",
+						"Training client bootstrap failed",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(InvalidTrainingClientDateException.class)
@@ -1859,7 +1918,12 @@ class TrainingExceptionHandler {
 							request,
 							List.of()));
 		}
-		throw ex;
+		// Never rethrow: Spring's default error body can expose SQL/constraint/table details.
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("DATA_INTEGRITY_CONFLICT",
+						"Request conflicts with existing data",
+						request,
+						List.of()));
 	}
 
 	private static boolean indicatesDailyAthleteStateVersionConflict(Throwable ex) {

@@ -11,6 +11,9 @@ spring:
   flyway:
     enabled: true
 
+# Local/dev defaults below are intentionally permissive. Production must activate the
+# `prod` (or `production`) Spring profile so application-prod.yaml + IdentityHttpProperties
+# production guards reject insecure cookies and localhost CORS origins.
 uap:
   identity:
     auth:

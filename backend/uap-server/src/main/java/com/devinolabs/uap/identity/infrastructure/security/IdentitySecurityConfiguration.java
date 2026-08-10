@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,7 +53,11 @@ class IdentitySecurityConfiguration {
 	static final String TRAINING_API = "/api/v1/training/**";
 
 	@Bean
-	AuthTokenTransport authTokenTransport(IdentityHttpProperties httpProperties, IdentityAuthProperties authProperties) {
+	AuthTokenTransport authTokenTransport(
+			IdentityHttpProperties httpProperties,
+			IdentityAuthProperties authProperties,
+			Environment environment) {
+		validateHttpProperties(httpProperties, environment);
 		return new CookieAuthTokenTransport(httpProperties, authProperties);
 	}
 
@@ -64,11 +69,11 @@ class IdentitySecurityConfiguration {
 	}
 
 	@Bean
-	CorsConfigurationSource corsConfigurationSource(IdentityHttpProperties httpProperties) {
+	CorsConfigurationSource corsConfigurationSource(
+			IdentityHttpProperties httpProperties,
+			Environment environment) {
+		validateHttpProperties(httpProperties, environment);
 		IdentityHttpProperties.Cors corsProperties = httpProperties.getCors();
-		if (corsProperties.isAllowCredentials() && corsProperties.getAllowedOrigins().stream().anyMatch("*"::equals)) {
-			throw new IllegalStateException("CORS must not allow wildcard origins when credentials are enabled");
-		}
 
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(List.copyOf(corsProperties.getAllowedOrigins()));
@@ -80,6 +85,24 @@ class IdentitySecurityConfiguration {
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/api/**", configuration);
 		return source;
+	}
+
+	static void validateHttpProperties(IdentityHttpProperties httpProperties, Environment environment) {
+		if (isProductionProfile(environment)) {
+			httpProperties.validateProductionSafety();
+		}
+		else {
+			httpProperties.validate();
+		}
+	}
+
+	private static boolean isProductionProfile(Environment environment) {
+		for (String profile : environment.getActiveProfiles()) {
+			if ("prod".equalsIgnoreCase(profile) || "production".equalsIgnoreCase(profile)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Bean
