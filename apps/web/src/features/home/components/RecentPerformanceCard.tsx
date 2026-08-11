@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { HomeCard } from '@/features/home/components/HomeCard';
 import { personalRecordTypeLabel } from '@/features/home/labels/todayLabels';
 import type { TrainingDashboardPersonalRecord } from '@/features/home/schemas';
@@ -11,6 +13,7 @@ export function RecentPerformanceCard({ records }: RecentPerformanceCardProps) {
     return (
       <HomeCard title="Recent performance">
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No recent personal records.</p>
+        <Link to="/app/performance/records">View all records</Link>
       </HomeCard>
     );
   }
@@ -20,11 +23,21 @@ export function RecentPerformanceCard({ records }: RecentPerformanceCardProps) {
       <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--uap-text-secondary)' }}>
         {records.slice(0, 5).map((record) => (
           <li key={record.personalRecordId}>
-            {record.exerciseName} — {personalRecordTypeLabel(record.recordType)}
+            <Link
+              to={
+                record.exercisePerformanceKey
+                  ? `/app/performance/exercises/${record.exercisePerformanceKey}`
+                  : '/app/performance/records'
+              }
+            >
+              {record.exerciseName}
+            </Link>{' '}
+            — {personalRecordTypeLabel(record.recordType)}
             {record.normalizedValue != null ? `: ${record.normalizedValue}` : ''}
           </li>
         ))}
       </ul>
+      <Link to="/app/performance/records">View all records</Link>
     </HomeCard>
   );
 }

@@ -58,6 +58,11 @@ export function ExerciseDetailPage() {
       description={isSystem ? 'System exercise — read only.' : 'Custom exercise.'}
       actions={
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link to={`/app/performance/exercises/${definitionId}`}>
+            <Button type="button" variant="secondary">
+              View performance
+            </Button>
+          </Link>
           <Link to={`/app/exercises/${definitionId}/substitutions`}>
             <Button type="button" variant="secondary">
               Substitutions

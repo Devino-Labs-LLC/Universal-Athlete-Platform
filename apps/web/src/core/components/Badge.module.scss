@@ -1,0 +1,25 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--uap-radius-full, 999px);
+  font-size: var(--uap-font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.neutral {
+  background: var(--uap-surface-muted, rgb(148 163 184 / 16%));
+  color: var(--uap-text-secondary);
+}
+
+.accent {
+  background: var(--uap-accent-muted, rgb(59 130 246 / 16%));
+  color: var(--uap-accent);
+}
+
+.muted {
+  background: transparent;
+  color: var(--uap-text-secondary);
+  border: 1px solid var(--uap-border-subtle);
+}

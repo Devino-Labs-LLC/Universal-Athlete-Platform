@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { HomeCard } from '@/features/home/components/HomeCard';
 import type { TodayDashboard } from '@/features/home/schemas';
 
@@ -10,6 +12,7 @@ export function TrainingLoadCard({ trainingLoad }: TrainingLoadCardProps) {
     return (
       <HomeCard title="Training load">
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No training load data yet.</p>
+        <Link to="/app/performance/load">View training load</Link>
       </HomeCard>
     );
   }
@@ -31,6 +34,7 @@ export function TrainingLoadCard({ trainingLoad }: TrainingLoadCardProps) {
           Avg session RPE: {trainingLoad.averageSessionRpe}
         </p>
       ) : null}
+      <Link to="/app/performance/load">View training load</Link>
     </HomeCard>
   );
 }

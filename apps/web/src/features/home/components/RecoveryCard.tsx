@@ -20,7 +20,7 @@ export function RecoveryCard({ recovery }: RecoveryCardProps) {
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>Fatigue: {recovery.fatigue}</p>
       ) : null}
       <Button variant="secondary" onClick={() => navigate('/app/recovery')}>
-        Check In
+        View recovery
       </Button>
     </HomeCard>
   );

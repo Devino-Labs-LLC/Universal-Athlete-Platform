@@ -5,6 +5,8 @@ import { Button } from '@/core/components/Button';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
+import { OccurrencePerformanceSummary } from '@/features/performance/components/OccurrencePerformanceSummary';
+import { useOccurrencePerformance } from '@/features/performance/hooks/useOccurrencePerformance';
 import { ConfirmationDialog } from '@/features/profile/components/ConfirmationDialog';
 import {
   isOccurrenceDeletable,
@@ -40,6 +42,7 @@ export function OccurrenceDetailPage() {
   const occurrence = occurrenceQuery.data;
   const canReschedule = isOccurrenceReschedulable(occurrence);
   const canDelete = isOccurrenceDeletable(occurrence);
+  const isCompleted = occurrence.status === 'COMPLETED';
 
   return (
     <Page
@@ -97,6 +100,13 @@ export function OccurrenceDetailPage() {
         )}
       </section>
 
+      {isCompleted ? (
+        <section className="card" style={{ marginBottom: '1rem' }}>
+          <h2 className="cardTitle">Performance</h2>
+          <OccurrencePerformanceSection planId={planId} dayId={dayId} occurrenceId={occurrenceId} />
+        </section>
+      ) : null}
+
       {canReschedule || canDelete ? (
         <section className="card">
           <h2 className="cardTitle">Manage occurrence</h2>
@@ -148,5 +158,32 @@ export function OccurrenceDetailPage() {
         }}
       />
     </Page>
+  );
+}
+
+interface OccurrencePerformanceSectionProps {
+  planId: string;
+  dayId: string;
+  occurrenceId: string;
+}
+
+function OccurrencePerformanceSection({ planId, dayId, occurrenceId }: OccurrencePerformanceSectionProps) {
+  const performanceQuery = useOccurrencePerformance(planId, dayId, occurrenceId);
+
+  if (performanceQuery.isLoading) {
+    return <LoadingView message="Loading performance summary…" />;
+  }
+
+  if (performanceQuery.isError || !performanceQuery.data) {
+    return <p>Performance summary is not available for this session yet.</p>;
+  }
+
+  return (
+    <>
+      <OccurrencePerformanceSummary performance={performanceQuery.data} />
+      <p style={{ marginTop: '1rem' }}>
+        <Link to={`/app/performance/sessions/${planId}/${dayId}/${occurrenceId}`}>View performance details</Link>
+      </p>
+    </>
   );
 }

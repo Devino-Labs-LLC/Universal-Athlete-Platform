@@ -1,0 +1,38 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--uap-font-size-sm);
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: var(--uap-space-3);
+  border-bottom: 1px solid var(--uap-border-subtle);
+}
+
+.table thead th {
+  color: var(--uap-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.link {
+  color: var(--uap-accent);
+  font-weight: 600;
+}
+
+.subtle {
+  color: var(--uap-text-secondary);
+}

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { HomeCard } from '@/features/home/components/HomeCard';
 import { readinessBandLabel } from '@/features/home/labels/todayLabels';
 import type { TodayDashboard } from '@/features/home/schemas';
@@ -11,6 +13,7 @@ export function ReadinessCard({ readiness }: ReadinessCardProps) {
     return (
       <HomeCard title="Readiness">
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No readiness assessment yet.</p>
+        <Link to="/app/recovery">View recovery</Link>
       </HomeCard>
     );
   }
@@ -30,6 +33,9 @@ export function ReadinessCard({ readiness }: ReadinessCardProps) {
           Limiting: {readiness.limitingDimensions.join(', ')}
         </p>
       ) : null}
+      <Link to={readiness.readinessAssessmentId ? `/app/recovery/readiness/${readiness.readinessAssessmentId}` : '/app/recovery'}>
+        View details
+      </Link>
     </HomeCard>
   );
 }

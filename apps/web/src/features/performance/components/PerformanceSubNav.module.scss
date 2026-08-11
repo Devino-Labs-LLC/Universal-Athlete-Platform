@@ -1,0 +1,18 @@
+.nav {
+  display: flex;
+  gap: var(--uap-space-2);
+  margin-bottom: var(--uap-space-4);
+  border-bottom: 1px solid var(--uap-border-subtle);
+}
+
+.link {
+  padding: var(--uap-space-2) var(--uap-space-3);
+  color: var(--uap-text-secondary);
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+}
+
+.active {
+  color: var(--uap-accent);
+  border-bottom-color: var(--uap-accent);
+}

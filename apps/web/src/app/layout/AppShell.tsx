@@ -12,7 +12,11 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/training/plans/new': 'Create plan',
   '/app/training/calendar': 'Training calendar',
   '/app/recovery': 'Recovery',
+  '/app/recovery/history': 'Recovery history',
+  '/app/recovery/analytics': 'Recovery analytics',
   '/app/performance': 'Performance',
+  '/app/performance/records': 'Personal records',
+  '/app/performance/load': 'Training load',
   '/app/exercises': 'Exercise catalog',
   '/app/exercises/new': 'Create exercise',
   '/app/environments': 'Environments',
@@ -53,6 +57,24 @@ function resolvePageTitle(pathname: string): string {
   }
   if (pathname.includes('/environments/')) {
     return 'Environment details';
+  }
+  if (pathname.includes('/recovery/readiness/')) {
+    return 'Readiness assessment';
+  }
+  if (pathname.includes('/recovery/guidance/')) {
+    return 'Training guidance';
+  }
+  if (pathname.includes('/recovery/state/') && pathname.endsWith('/compare')) {
+    return 'Compare athlete state';
+  }
+  if (pathname.includes('/recovery/state/')) {
+    return 'Daily athlete state';
+  }
+  if (pathname.includes('/performance/exercises/')) {
+    return 'Exercise performance';
+  }
+  if (pathname.includes('/performance/sessions/')) {
+    return 'Session performance';
   }
   return 'Universal Athlete Platform';
 }

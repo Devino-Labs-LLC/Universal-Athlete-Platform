@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { HomeCard } from '@/features/home/components/HomeCard';
 import {
   adjustmentTypeLabel,
@@ -16,6 +18,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
           No training recommendation yet.
         </p>
+        <Link to="/app/recovery">View recovery</Link>
       </HomeCard>
     );
   }
@@ -31,6 +34,9 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
             <li key={type}>{adjustmentTypeLabel(type)}</li>
           ))}
         </ul>
+      ) : null}
+      {recommendation.recommendationId ? (
+        <Link to={`/app/recovery/guidance/${recommendation.recommendationId}`}>View details</Link>
       ) : null}
     </HomeCard>
   );

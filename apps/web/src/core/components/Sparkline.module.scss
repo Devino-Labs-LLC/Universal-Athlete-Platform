@@ -1,0 +1,17 @@
+.sparkline {
+  display: block;
+  color: var(--uap-accent);
+  overflow: visible;
+}
+
+.sparkline circle {
+  fill: currentColor;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+  min-height: 56px;
+}
