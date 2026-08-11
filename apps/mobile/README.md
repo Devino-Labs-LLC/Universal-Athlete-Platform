@@ -1,8 +1,76 @@
-# Universal Athlete — Mobile (M8)
+# Universal Athlete — Mobile (M9)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M8 adds the **Performance tab**: personal records, exercise performance history, training load history, and occurrence performance summaries. M7 added adaptation & substitution. M6 added Recovery. M5 added live workout execution. M4 added the Training browse stack.
+M9 adds **Training Environments** under Profile plus occurrence environment selection from workout launch. M8 added the Performance tab. M7 added adaptation & substitution. M6 added Recovery. M5 added live workout execution. M4 added the Training browse stack.
+
+## M9 — Training environments & settings
+
+### REST endpoints
+
+| Action | Method | Path |
+| --- | --- | --- |
+| Create | POST | `/api/v1/training/environments` |
+| List | GET | `/api/v1/training/environments?type=&equipment=&activeOnly=&page=&size=` |
+| Get | GET | `/api/v1/training/environments/{id}` |
+| Update | PATCH | `/api/v1/training/environments/{id}` (bare PatchValue fields) |
+| Archive | DELETE | `/api/v1/training/environments/{id}` |
+| Set default | POST | `/api/v1/training/environments/{id}/default` |
+| Set occurrence actual env | PUT | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/environment` → `WorkoutOccurrenceResponse` |
+| Clear occurrence actual env | DELETE | same path → `WorkoutOccurrenceResponse` |
+| Set occurrence env | PUT | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/environment` |
+| Clear occurrence env | DELETE | same path |
+
+Default list UI uses `activeOnly=true`. PATCH sends bare JSON values/null — not `{ value: T }` wrappers (same semantics as M6 recovery check-in). BODYWEIGHT is selectable equipment but never auto-inserted.
+
+### Routes
+
+Profile converted to a stack (`headerShown: false` on the tab):
+
+```
+(tabs)/profile/
+  index.tsx
+  environments/index.tsx
+  environments/create.tsx
+  environments/[environmentId]/index.tsx
+  environments/[environmentId]/edit.tsx
+```
+
+Training occurrence environment picker:
+
+```
+plans/.../occurrences/[occurrenceId]/environment.tsx
+```
+
+### Feature layout
+
+`src/features/environments/` — `api/`, `hooks/`, `models/`, `components/`, `forms/`, `screens/`, `utils/`
+
+### Plan/day environment preferences
+
+**Read-only / deferred.** Plan `defaultTrainingEnvironmentId` and day `trainingEnvironmentOverrideId` are visible on existing plan/day browse responses but there is **no plan editor** in mobile v1. Occurrence actual environment is set from launch prep only.
+
+### Invalidation
+
+Environment create/update/archive/default → `environmentKeys.all`, detail, `trainingKeys.overview`, `todayQueryKeys.all`.
+
+Occurrence set/clear → occurrence, launch, today, overview, `adaptationKeys.all`, proposal list, substitution candidates prefix.
+
+### Integrations
+
+- **Profile** — Training section with link to environments list and optional default environment summary; app version when `Constants.expoConfig?.version` is available.
+- **WorkoutLaunchScreen** — **Choose Environment** when `canChangeEnvironment.allowed`; locked reason shows muted note.
+
+### Tests
+
+`__tests__/environments/` — schemas, labels, errors, patch request, EquipmentPicker, EnvironmentCard, form validation, invalidation, profile training section.
+
+### Remaining v1 gaps (M10+)
+
+- Athlete timezone and unit preferences (unsupported backend)
+- Plan/day environment preference editor (deferred)
+- Exercise environment compatibility detail from exercise context (optional; not required for M9)
+- Performance charts (deferred from M8)
 
 ## M8 — Performance, PRs & training load
 

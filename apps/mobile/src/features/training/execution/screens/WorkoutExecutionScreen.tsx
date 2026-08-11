@@ -21,6 +21,7 @@ import { useWorkoutLaunchContext } from '@/src/features/training/hooks/useWorkou
 import { WorkoutExerciseSet } from '@/src/features/training/execution/models/executionSchemas';
 import { executionErrorMessage, isConflictError } from '@/src/features/training/execution/utils/executionErrors';
 import { isExecutionTerminal } from '@/src/features/training/execution/utils/setMetrics';
+import { navigateToOccurrenceEnvironment } from '@/src/features/training/utils/trainingNavigation';
 
 interface WorkoutExecutionScreenProps {
   planId: string;
@@ -79,7 +80,10 @@ export function WorkoutExecutionScreen({
 
   const status = detail.status;
   const readOnly = status === 'COMPLETED' || status === 'SKIPPED' || status === 'CANCELLED';
-  const canSubstituteExercise = launchQuery.data?.actions.canSubstituteExercise.allowed ?? false;
+  const canSubstituteExercise =
+    launchQuery.data?.actions.canSubstituteExercise?.allowed ?? false;
+  const canChangeEnvironment =
+    launchQuery.data?.actions.canChangeEnvironment?.allowed ?? false;
   const allExecutionsTerminal =
     executions.length > 0 && executions.every((e) => isExecutionTerminal(e.status));
   const canCompleteWorkout = status === 'IN_PROGRESS' && allExecutionsTerminal;
@@ -153,6 +157,13 @@ export function WorkoutExecutionScreen({
             disabled={startMutation.isPending}
           />
         </>
+      ) : null}
+
+      {canChangeEnvironment && !readOnly ? (
+        <PrimaryButton
+          label="Choose Environment"
+          onPress={() => navigateToOccurrenceEnvironment(planId, dayId, occurrenceId)}
+        />
       ) : null}
 
       {status === 'IN_PROGRESS' || status === 'COMPLETED' ? (

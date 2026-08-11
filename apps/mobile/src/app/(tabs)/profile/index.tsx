@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { PropsWithChildren } from 'react';
@@ -12,6 +13,8 @@ import { ConfirmationDialog } from '@/src/core/components/ConfirmationDialog';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { EXPECTED_CLIENT_CONTRACT_VERSION } from '@/src/features/training/api';
+import { useTrainingEnvironments } from '@/src/features/environments/hooks/useTrainingEnvironments';
+import { trainingEnvironmentTypeLabel } from '@/src/features/environments/models/environmentLabels';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
 import {
   useDeleteAthleteGoalMutation,
@@ -23,13 +26,19 @@ import {
 export default function ProfileScreen() {
   const theme = useAppTheme();
   const appConfig = loadAppConfig();
+  const appVersion = Constants.expoConfig?.version;
   const { account, logout, logoutAll } = useAuthSession();
   const { snapshot, refresh } = useAthleteOnboarding();
   const { bootstrap } = useBootstrap();
   const deleteSportMutation = useDeleteAthleteSportMutation();
   const deleteGoalMutation = useDeleteAthleteGoalMutation();
+  const environmentsQuery = useTrainingEnvironments({ activeOnly: true, size: 50 });
   const [confirmAction, setConfirmAction] = useState<'logout' | 'logoutAll' | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const defaultEnvironment = environmentsQuery.data?.environments.find(
+    (environment) => environment.defaultEnvironment,
+  );
 
   const handleLogout = async () => {
     setBusy(true);
@@ -145,12 +154,29 @@ export default function ProfileScreen() {
         </Link>
       </Section>
 
+      <Section title="Training">
+        <Link href="/(tabs)/profile/environments" asChild>
+          <Pressable accessibilityRole="button" testID="profile-training-environments-link">
+            <Text style={{ color: theme.colors.primary }}>Training Environments</Text>
+          </Pressable>
+        </Link>
+        {defaultEnvironment ? (
+          <LabelValue
+            label="Default environment"
+            value={`${defaultEnvironment.name} · ${trainingEnvironmentTypeLabel(defaultEnvironment.type)}`}
+          />
+        ) : (
+          <Text style={{ color: theme.colors.textMuted }}>No default environment set.</Text>
+        )}
+      </Section>
+
       <Section title="Client">
         <LabelValue label="Environment" value={appConfig.environment} />
         <LabelValue
           label="Client contract"
           value={bootstrap?.clientContractVersion ?? EXPECTED_CLIENT_CONTRACT_VERSION}
         />
+        {appVersion ? <LabelValue label="App version" value={appVersion} /> : null}
       </Section>
 
       <PrimaryButton

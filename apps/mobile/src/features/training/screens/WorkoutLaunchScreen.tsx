@@ -14,7 +14,10 @@ import {
 import { navigateToAdaptationProposal } from '@/src/features/adaptation/utils/proposalNavigation';
 import { LaunchContextSections } from '@/src/features/training/components/LaunchContextSections';
 import { useWorkoutLaunchContext } from '@/src/features/training/hooks/useWorkoutLaunchContext';
-import { navigateToOccurrenceExecute } from '@/src/features/training/utils/trainingNavigation';
+import {
+  navigateToOccurrenceEnvironment,
+  navigateToOccurrenceExecute,
+} from '@/src/features/training/utils/trainingNavigation';
 
 interface WorkoutLaunchScreenProps {
   planId: string;
@@ -104,8 +107,13 @@ export function WorkoutLaunchScreen({ planId, dayId, occurrenceId }: WorkoutLaun
       )}
 
       {actions.canChangeEnvironment.allowed ? (
+        <PrimaryButton
+          label="Choose Environment"
+          onPress={() => navigateToOccurrenceEnvironment(planId, dayId, occurrenceId)}
+        />
+      ) : actions.canChangeEnvironment.reasonCode === 'WORKOUT_OCCURRENCE_ENVIRONMENT_LOCKED' ? (
         <Text style={[styles.note, { color: theme.colors.textMuted }]}>
-          Choose Environment is available from the backend, but environment selection ships after M4.
+          Training environment is locked for this workout.
         </Text>
       ) : null}
 

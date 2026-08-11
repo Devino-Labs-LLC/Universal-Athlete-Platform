@@ -20,6 +20,16 @@ export function navigateToOccurrenceLaunch(
   );
 }
 
+export function navigateToOccurrenceEnvironment(
+  planId: string,
+  dayId: string,
+  occurrenceId: string,
+) {
+  router.push(
+    `/(tabs)/training/plans/${planId}/days/${dayId}/occurrences/${occurrenceId}/environment`,
+  );
+}
+
 export function navigateToOccurrenceExecute(
   planId: string,
   dayId: string,
