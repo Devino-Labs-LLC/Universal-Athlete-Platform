@@ -22,6 +22,9 @@ import {
   TrainingOverview,
 } from '@/src/features/training/models/browseSchemas';
 import {
+  navigateToAdaptationProposal,
+} from '@/src/features/adaptation/utils/proposalNavigation';
+import {
   navigateToOccurrenceLaunch,
   navigateToOccurrenceDetail,
 } from '@/src/features/training/utils/trainingNavigation';
@@ -223,7 +226,12 @@ export function TrainingOverviewScreen() {
                   <PrimaryButton
                     label="Review adaptation"
                     onPress={() =>
-                      navigateToOccurrenceLaunch(route.planId, route.dayId, route.occurrenceId)
+                      navigateToAdaptationProposal(
+                        route.planId,
+                        route.dayId,
+                        route.occurrenceId,
+                        adaptation.adaptationProposalId,
+                      )
                     }
                   />
                 ) : (

@@ -222,7 +222,7 @@ const occurrenceEnvironmentSchema = z
   .nullable()
   .optional();
 
-const exerciseExecutionSchema = z
+export const exerciseExecutionSchema = z
   .object({
     id: z.string(),
     sourceWorkoutExerciseId: z.string().nullable().optional(),

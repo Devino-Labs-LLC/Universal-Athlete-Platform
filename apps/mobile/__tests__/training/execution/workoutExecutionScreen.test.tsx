@@ -21,6 +21,10 @@ jest.mock('@/src/features/training/execution/hooks/useWorkoutExecution', () => (
   useWorkoutExecution: jest.fn(),
 }));
 
+jest.mock('@/src/features/training/hooks/useWorkoutLaunchContext', () => ({
+  useWorkoutLaunchContext: jest.fn(),
+}));
+
 jest.mock('@/src/features/training/execution/hooks/useOccurrenceLifecycleMutations', () => ({
   useOccurrenceLifecycleMutations: () => ({
     startMutation: { mutate: mockStartMutate, isPending: false },
@@ -43,6 +47,9 @@ jest.mock('@/src/features/training/execution/hooks/useSessionEffort', () => ({
 
 const { useWorkoutExecution } = jest.requireMock(
   '@/src/features/training/execution/hooks/useWorkoutExecution',
+);
+const { useWorkoutLaunchContext } = jest.requireMock(
+  '@/src/features/training/hooks/useWorkoutLaunchContext',
 );
 
 const scheduledDetail: WorkoutOccurrenceDetail = {
@@ -117,6 +124,14 @@ describe('WorkoutExecutionScreen', () => {
     mockStartMutate.mockClear();
     mockCompleteMutate.mockClear();
     mockRefetch.mockClear();
+    useWorkoutLaunchContext.mockReturnValue({
+      data: {
+        actions: {
+          canSubstituteExercise: { allowed: false },
+        },
+      },
+      isLoading: false,
+    });
   });
 
   afterEach(() => {

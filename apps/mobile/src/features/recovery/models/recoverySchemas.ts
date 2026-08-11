@@ -280,6 +280,19 @@ const trainingRecommendationAdjustmentSchema = z
   })
   .passthrough();
 
+const trainingRecommendationOccurrenceSchema = z
+  .object({
+    occurrenceId: z.string(),
+    trainingPlanId: z.string(),
+    workoutDayId: z.string(),
+    occurrenceStatus: z.string(),
+    modifiable: z.boolean(),
+    plannedEnvironmentNameSnapshot: z.string().nullable().optional(),
+    actualEnvironmentNameSnapshot: z.string().nullable().optional(),
+    orderIndex: z.number(),
+  })
+  .passthrough();
+
 export const dailyTrainingRecommendationSchema = z
   .object({
     recommendationId: z.string(),
@@ -290,6 +303,9 @@ export const dailyTrainingRecommendationSchema = z
     readinessScore: bigDecimalLike,
     limitingDimensions: z.array(z.string()).optional(),
     adjustments: z.array(trainingRecommendationAdjustmentSchema),
+    scheduledOccurrenceCount: z.number().optional(),
+    modifiableScheduledOccurrenceCount: z.number().optional(),
+    scheduledOccurrences: z.array(trainingRecommendationOccurrenceSchema).optional(),
     generatedAt: z.string().optional(),
     createdAt: z.string().optional(),
     newlyCreated: z.boolean().optional(),

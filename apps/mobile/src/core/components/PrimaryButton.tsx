@@ -6,14 +6,16 @@ interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  testID?: string;
 }
 
-export function PrimaryButton({ label, onPress, disabled = false }: PrimaryButtonProps) {
+export function PrimaryButton({ label, onPress, disabled = false, testID }: PrimaryButtonProps) {
   const theme = useAppTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
+      testID={testID}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [

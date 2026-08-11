@@ -1,8 +1,56 @@
-# Universal Athlete — Mobile (M6)
+# Universal Athlete — Mobile (M7)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M6 adds the **Recovery tab**: daily check-in CRUD, recovery overview with baselines/trends, explicit insights pipeline (check-in → athlete state → readiness → guidance), history, analytics, and readiness/guidance detail screens. M5 added live workout execution and set logging. M4 added the Training tab browse stack and launch prep. M3 added the production Home / Today dashboard.
+M7 adds **workout adaptation review and exercise substitution**: generate/review/apply adaptation proposals, per-item accept/override/reject, direct in-workout substitution, and Home/Launch/Guidance integrations. M6 added the Recovery tab. M5 added live workout execution. M4 added the Training browse stack.
+
+## M7 — Adaptation & substitution
+
+### REST endpoints
+
+| Action | Method | Path |
+| --- | --- | --- |
+| Generate (manual) | POST | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/adaptation-proposals` |
+| Generate (guidance) | POST | `/api/v1/training/recommendations/{recommendationId}/occurrences/{occurrenceId}/adaptation-proposals` |
+| Get proposal | GET | `/api/v1/training/adaptation-proposals/{proposalId}` |
+| List proposals | GET | `/api/v1/training/adaptation-proposals?occurrenceId=&status=` |
+| Update item | PATCH | `/api/v1/training/adaptation-proposals/{proposalId}/items/{itemId}` |
+| Cancel | POST | `/api/v1/training/adaptation-proposals/{proposalId}/cancel` |
+| Regenerate | POST | `/api/v1/training/adaptation-proposals/{proposalId}/regenerate` |
+| Apply | POST | `/api/v1/training/plans/.../adaptation-proposals/{proposalId}/apply` |
+| Substitution candidates | GET | `/api/v1/training/plans/.../exercises/{executionId}/substitution-candidates` |
+| Substitute | POST | `/api/v1/training/plans/.../exercises/{executionId}/substitute` |
+| Revert substitution | POST | `/api/v1/training/plans/.../exercises/{executionId}/substitute/revert` |
+| Substitution history | GET | `/api/v1/training/plans/.../exercises/{executionId}/substitutions` |
+
+### Routes
+
+```
+plans/.../occurrences/[occurrenceId]/adaptation/[proposalId].tsx
+plans/.../occurrences/[occurrenceId]/adaptation/[proposalId]/items/[itemId]/candidates.tsx
+plans/.../occurrences/[occurrenceId]/exercises/[executionId]/substitute.tsx
+```
+
+### Feature layout
+
+`src/features/adaptation/` — `api/`, `hooks/`, `models/`, `components/`, `screens/`, `utils/`
+
+### Invalidation
+
+Proposal mutations invalidate `adaptationKeys.proposal/list`, `trainingKeys.launch`, and `todayQueryKeys.all`. Apply also invalidates occurrence, overview, calendar, and execution keys. Direct substitution invalidates occurrence, launch, today, candidates, and history.
+
+### Integrations
+
+- **Home AdaptationCard** → deep-link to proposal (fallback GET proposal for plan/day IDs)
+- **HomeQuickActions** → generate manual proposal for primary occurrence
+- **WorkoutLaunchScreen** → Review Adaptation / Find Workout Alternatives
+- **TrainingGuidanceScreen** → Review Workout Adaptation when `MODIFY_SESSION`
+- **Training overview** → outstanding adaptations open proposal directly
+- **Workout execution** → Substitute Exercise when `canSubstituteExercise` allowed
+
+### Tests
+
+`__tests__/adaptation/` — schemas, labels, errors, item card, context-only messaging, proposal screen apply path, navigation helpers, invalidation, substitution reason labels.
 
 ## Stack versions
 
@@ -149,7 +197,7 @@ The Training tab (`/(tabs)/training`) is a nested Stack:
 3. **Plan detail** — **GET** `/api/v1/training/plans/{planId}` + `/days` — list workout days.
 4. **Day detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/exercises` — ordered prescriptions.
 5. **Occurrence detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}` — status, environment, execution summary. CTA routes to launch prep.
-6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to execute; Review Adaptation routes to an M7 placeholder.
+6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to execute; Review Adaptation / Find Workout Alternatives route to M7 adaptation screens.
 7. **Execute (M5)** — live workout logging at `/occurrences/{occurrenceId}/execute` — see [Workout execution (M5)](#workout-execution-m5).
 
 Route layout under `src/app/(tabs)/training/`:
@@ -163,7 +211,8 @@ plans/[planId]/days/[dayId]/index.tsx
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/index.tsx
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/launch.tsx
 plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/execute.tsx   (M5 live execution)
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/adaptation-review.tsx (M7 placeholder)
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/adaptation/[proposalId].tsx
+plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/exercises/[executionId]/substitute.tsx
 ```
 
 Feature code lives in `src/features/training/` (`api/`, `hooks/`, `models/browseSchemas.ts`, `components/`, `screens/`, `utils/`). M5 execution code lives in `src/features/training/execution/`.
@@ -190,7 +239,7 @@ Base path: `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrence
 
 **Invalidation:** Scoped helpers in `execution/models/invalidation.ts` invalidate occurrence, launch, calendar (prefix), overview (prefix), today, sets, load, and effort as appropriate. No global `invalidateQueries()`.
 
-**Deferred:** Set reorder, exercise substitute (M7), occurrence cancel, offline sync.
+**Deferred:** Set reorder, occurrence cancel, offline sync.
 
 **UX:** Start workout is explicit on the execute screen (SCHEDULED state). Launch prep Start/Continue navigates to execute without calling start — the athlete starts from execute when ready.
 
@@ -307,5 +356,5 @@ pnpm test
 ## Notes
 
 - Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Performance) remain intentional beyond M6 scope. Adaptation apply (M7) is a stubbed route only. Workout execution (M5) is implemented on the execute screen. Recovery (M6) is fully implemented on the Recovery stack.
+- Placeholder tabs (Performance) remain intentional beyond M7 scope. Workout adaptation review and direct substitution are implemented in M7. Workout execution (M5) is on the execute screen. Recovery (M6) is on the Recovery stack.
 - Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.

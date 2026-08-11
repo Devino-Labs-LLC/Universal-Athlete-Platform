@@ -13,6 +13,7 @@ import {
 } from '@/src/features/training/execution/models/executionLabels';
 import { WorkoutExerciseSet } from '@/src/features/training/execution/models/executionSchemas';
 import { executionErrorMessage, isConflictError } from '@/src/features/training/execution/utils/executionErrors';
+import { navigateToDirectSubstitution } from '@/src/features/adaptation/utils/proposalNavigation';
 import { formatExecutionPrescription } from '@/src/features/training/execution/utils/setFormat';
 import {
   allSetsTerminal,
@@ -28,6 +29,7 @@ interface ExerciseExecutionCardProps {
   execution: ExerciseExecution;
   sets: WorkoutExerciseSet[];
   readOnly?: boolean;
+  canSubstitute?: boolean;
   onEditSet: (set: WorkoutExerciseSet) => void;
   onRefetchOccurrence: () => void;
 }
@@ -39,6 +41,7 @@ export function ExerciseExecutionCard({
   execution,
   sets,
   readOnly = false,
+  canSubstitute = false,
   onEditSet,
   onRefetchOccurrence,
 }: ExerciseExecutionCardProps) {
@@ -168,6 +171,15 @@ export function ExerciseExecutionCard({
 
       {!readOnly && !terminal ? (
         <View style={styles.actions}>
+          {canSubstitute ? (
+            <PrimaryButton
+              testID={`substitute-exercise-${execution.id}`}
+              label="Substitute Exercise"
+              onPress={() =>
+                navigateToDirectSubstitution(planId, dayId, occurrenceId, execution.id)
+              }
+            />
+          ) : null}
           {canAddSet ? (
             <Pressable
               accessibilityRole="button"

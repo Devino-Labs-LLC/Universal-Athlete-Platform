@@ -1,4 +1,4 @@
-import { StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
@@ -20,12 +20,22 @@ import { TrainingLoadCard } from '@/src/features/home/components/TrainingLoadCar
 import { useDerivedStateMutations } from '@/src/features/home/hooks/useDerivedStateMutations';
 import { useTodayDashboard } from '@/src/features/home/hooks/useTodayDashboard';
 import { buildGreeting } from '@/src/features/home/utils/greeting';
+import { useGenerateManualAdaptation } from '@/src/features/adaptation/hooks/useGenerateManualAdaptation';
+import {
+  adaptationErrorMessage,
+  isActiveProposalExistsError,
+} from '@/src/features/adaptation/utils/adaptationErrors';
+import {
+  navigateToAdaptationProposal,
+  resolveAdaptationRouteFromToday,
+} from '@/src/features/adaptation/utils/proposalNavigation';
 
 export function HomeScreen() {
   const theme = useAppTheme();
   const { account } = useAuthSession();
   const { snapshot } = useAthleteOnboarding();
   const todayQuery = useTodayDashboard();
+  const generateAdaptationMutation = useGenerateManualAdaptation();
 
   const data = todayQuery.data;
   const mutations = useDerivedStateMutations(data?.date ?? '');
@@ -36,7 +46,55 @@ export function HomeScreen() {
       ? 'readiness'
       : mutations.recommendationMutation.isPending
         ? 'guidance'
-        : null;
+        : generateAdaptationMutation.isPending
+          ? 'adaptation'
+          : null;
+
+  const handleGenerateAdaptation = () => {
+    const primary = data?.training.primaryOccurrence;
+    if (!primary) {
+      Alert.alert(
+        'No workout selected',
+        'Schedule or select a primary workout before generating alternatives.',
+      );
+      return;
+    }
+
+    generateAdaptationMutation.mutate(
+      {
+        planId: primary.trainingPlanId,
+        dayId: primary.workoutDayId,
+        occurrenceId: primary.occurrenceId,
+      },
+      {
+        onSuccess: (proposal) => {
+          navigateToAdaptationProposal(
+            proposal.trainingPlanId,
+            proposal.workoutDayId,
+            proposal.workoutOccurrenceId,
+            proposal.id,
+          );
+        },
+        onError: (error) => {
+          if (isActiveProposalExistsError(error) && data?.adaptation?.adaptationProposalId) {
+            const route = data.adaptation.occurrenceId
+              ? resolveAdaptationRouteFromToday(data.adaptation, data.training)
+              : null;
+            if (route) {
+              navigateToAdaptationProposal(
+                route.planId,
+                route.dayId,
+                route.occurrenceId,
+                data.adaptation.adaptationProposalId,
+              );
+              return;
+            }
+          }
+          Alert.alert('Could not generate alternatives', adaptationErrorMessage(error));
+        },
+      },
+    );
+  };
 
   if (todayQuery.isLoading && !data) {
     return (
@@ -87,9 +145,11 @@ export function HomeScreen() {
 
       <HomeQuickActions
         actions={data.actions}
+        primaryOccurrence={primaryOccurrence}
         onGenerateDailyState={() => mutations.athleteStateMutation.mutate()}
         onCalculateReadiness={() => mutations.readinessMutation.mutate()}
         onGenerateGuidance={() => mutations.recommendationMutation.mutate()}
+        onGenerateAdaptation={handleGenerateAdaptation}
         pendingAction={pendingAction}
       />
 
@@ -113,7 +173,9 @@ export function HomeScreen() {
         <TrainingLoadCard trainingLoad={data.trainingLoad} />
       ) : null}
 
-      {data.adaptation ? <AdaptationCard adaptation={data.adaptation} /> : null}
+      {data.adaptation ? (
+        <AdaptationCard adaptation={data.adaptation} training={data.training} />
+      ) : null}
 
       <RecentPerformanceCard records={data.recentPerformance ?? []} />
     </Screen>

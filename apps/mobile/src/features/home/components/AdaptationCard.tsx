@@ -1,8 +1,15 @@
-import { StyleSheet, Text } from 'react-native';
-import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, StyleSheet, Text } from 'react-native';
 
+import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { fetchAdaptationProposal } from '@/src/features/adaptation/api/proposalApi';
+import { adaptationErrorMessage } from '@/src/features/adaptation/utils/adaptationErrors';
+import {
+  navigateToAdaptationProposal,
+  resolveAdaptationRouteFromToday,
+} from '@/src/features/adaptation/utils/proposalNavigation';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
@@ -10,10 +17,47 @@ import { TrainingTodayDashboard } from '@/src/features/training/schemas';
 
 interface AdaptationCardProps {
   adaptation: NonNullable<TrainingTodayDashboard['adaptation']>;
+  training: TrainingTodayDashboard['training'];
 }
 
-export function AdaptationCard({ adaptation }: AdaptationCardProps) {
+export function AdaptationCard({ adaptation, training }: AdaptationCardProps) {
   const theme = useAppTheme();
+  const { apiClient } = useAuthSession();
+  const [loading, setLoading] = useState(false);
+
+  const handleReview = useCallback(async () => {
+    const proposalId = adaptation.adaptationProposalId;
+    if (!proposalId) {
+      Alert.alert('Adaptation unavailable', 'No active adaptation proposal was found.');
+      return;
+    }
+
+    const route = resolveAdaptationRouteFromToday(adaptation, training);
+    if (route) {
+      navigateToAdaptationProposal(
+        route.planId,
+        route.dayId,
+        route.occurrenceId,
+        proposalId,
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const proposal = await fetchAdaptationProposal(apiClient, proposalId);
+      navigateToAdaptationProposal(
+        proposal.trainingPlanId,
+        proposal.workoutDayId,
+        proposal.workoutOccurrenceId,
+        proposal.id,
+      );
+    } catch (error) {
+      Alert.alert('Could not open adaptation', adaptationErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [adaptation, apiClient, training]);
 
   if (!adaptation.activeProposalPresent) {
     return null;
@@ -38,7 +82,8 @@ export function AdaptationCard({ adaptation }: AdaptationCardProps) {
 
       <PrimaryButton
         label="Review Adaptation"
-        onPress={() => router.push('/(tabs)/training')}
+        onPress={() => void handleReview()}
+        disabled={loading}
       />
     </HomeCard>
   );

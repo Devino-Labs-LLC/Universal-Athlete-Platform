@@ -3,21 +3,28 @@ import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ActionFlagButton } from '@/src/features/home/components/ActionFlagButton';
-import { TrainingTodayDashboard } from '@/src/features/training/schemas';
+import {
+  TrainingDashboardOccurrence,
+  TrainingTodayDashboard,
+} from '@/src/features/training/schemas';
 
 interface HomeQuickActionsProps {
   actions: TrainingTodayDashboard['actions'];
+  primaryOccurrence?: TrainingDashboardOccurrence | null;
   onGenerateDailyState: () => void;
   onCalculateReadiness: () => void;
   onGenerateGuidance: () => void;
-  pendingAction?: 'state' | 'readiness' | 'guidance' | null;
+  onGenerateAdaptation?: () => void;
+  pendingAction?: 'state' | 'readiness' | 'guidance' | 'adaptation' | null;
 }
 
 export function HomeQuickActions({
   actions,
+  primaryOccurrence,
   onGenerateDailyState,
   onCalculateReadiness,
   onGenerateGuidance,
+  onGenerateAdaptation,
   pendingAction = null,
 }: HomeQuickActionsProps) {
   const theme = useAppTheme();
@@ -92,9 +99,10 @@ export function HomeQuickActions({
   if (actions.canGenerateAdaptationProposal.allowed) {
     items.push({
       key: 'adaptation',
-      label: 'Review Adaptation',
+      label: primaryOccurrence ? 'Find Workout Alternatives' : 'Review Adaptation',
       allowed: true,
-      onPress: () => router.push('/(tabs)/training'),
+      onPress: () => onGenerateAdaptation?.(),
+      loading: pendingAction === 'adaptation',
     });
   }
 

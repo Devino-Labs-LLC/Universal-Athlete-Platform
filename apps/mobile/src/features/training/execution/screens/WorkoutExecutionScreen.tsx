@@ -17,6 +17,7 @@ import { useOccurrenceLifecycleMutations } from '@/src/features/training/executi
 import { useSessionEffort } from '@/src/features/training/execution/hooks/useSessionEffort';
 import { useTrainingLoad } from '@/src/features/training/execution/hooks/useTrainingLoad';
 import { useWorkoutExecution } from '@/src/features/training/execution/hooks/useWorkoutExecution';
+import { useWorkoutLaunchContext } from '@/src/features/training/hooks/useWorkoutLaunchContext';
 import { WorkoutExerciseSet } from '@/src/features/training/execution/models/executionSchemas';
 import { executionErrorMessage, isConflictError } from '@/src/features/training/execution/utils/executionErrors';
 import { isExecutionTerminal } from '@/src/features/training/execution/utils/setMetrics';
@@ -45,6 +46,7 @@ export function WorkoutExecutionScreen({
     dayId,
     occurrenceId,
   );
+  const launchQuery = useWorkoutLaunchContext(planId, dayId, occurrenceId);
   const { startMutation, completeMutation, skipMutation } = useOccurrenceLifecycleMutations(scope);
   const loadQuery = useTrainingLoad(
     scope,
@@ -77,6 +79,7 @@ export function WorkoutExecutionScreen({
 
   const status = detail.status;
   const readOnly = status === 'COMPLETED' || status === 'SKIPPED' || status === 'CANCELLED';
+  const canSubstituteExercise = launchQuery.data?.actions.canSubstituteExercise.allowed ?? false;
   const allExecutionsTerminal =
     executions.length > 0 && executions.every((e) => isExecutionTerminal(e.status));
   const canCompleteWorkout = status === 'IN_PROGRESS' && allExecutionsTerminal;
@@ -158,6 +161,10 @@ export function WorkoutExecutionScreen({
           {executions.map((execution) => {
             const setsQuery = getSetsForExecution(execution.id);
             const sets = (setsQuery?.data as WorkoutExerciseSet[] | undefined) ?? [];
+            const showSubstitute =
+              canSubstituteExercise &&
+              !readOnly &&
+              !isExecutionTerminal(execution.status);
             return (
               <ExerciseExecutionCard
                 key={execution.id}
@@ -167,6 +174,7 @@ export function WorkoutExecutionScreen({
                 execution={execution}
                 sets={sets}
                 readOnly={readOnly}
+                canSubstitute={showSubstitute}
                 onEditSet={(set) => setEditingSet({ set, executionId: execution.id })}
                 onRefetchOccurrence={refetchOccurrence}
               />

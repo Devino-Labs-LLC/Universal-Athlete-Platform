@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import {
@@ -13,11 +14,21 @@ import { DailyTrainingRecommendation } from '@/src/features/recovery/models/reco
 
 interface GuidanceDetailCardProps {
   recommendation: DailyTrainingRecommendation;
+  onReviewAdaptation?: () => void;
+  adaptationPending?: boolean;
 }
 
-export function GuidanceDetailCard({ recommendation }: GuidanceDetailCardProps) {
+export function GuidanceDetailCard({
+  recommendation,
+  onReviewAdaptation,
+  adaptationPending = false,
+}: GuidanceDetailCardProps) {
   const theme = useAppTheme();
   const actionLabel = recommendationActionLabel(recommendation.overallAction);
+  const showAdaptationCta =
+    recommendation.overallAction === 'MODIFY_SESSION' &&
+    (recommendation.scheduledOccurrences?.length ?? 0) > 0 &&
+    onReviewAdaptation;
 
   return (
     <HomeCard testID="guidance-detail-card" title="Training guidance">
@@ -77,6 +88,15 @@ export function GuidanceDetailCard({ recommendation }: GuidanceDetailCardProps) 
           No specific adjustments suggested. Proceed based on how you feel.
         </Text>
       )}
+
+      {showAdaptationCta ? (
+        <PrimaryButton
+          testID="review-workout-adaptation-cta"
+          label="Review Workout Adaptation"
+          onPress={onReviewAdaptation}
+          disabled={adaptationPending}
+        />
+      ) : null}
     </HomeCard>
   );
 }
