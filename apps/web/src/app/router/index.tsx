@@ -14,7 +14,15 @@ import { RegisterPage } from '@/features/auth/pages/RegisterPage';
 import { VerifyEmailPage } from '@/features/auth/pages/VerifyEmailPage';
 import { BootstrapPage } from '@/features/bootstrap/pages/BootstrapPage';
 import { IncompatiblePage } from '@/features/bootstrap/pages/IncompatiblePage';
-import { EnvironmentsPlaceholderPage } from '@/features/environments/pages/EnvironmentsPlaceholderPage';
+import { CreateEnvironmentPage } from '@/features/environments/pages/CreateEnvironmentPage';
+import { EditEnvironmentPage } from '@/features/environments/pages/EditEnvironmentPage';
+import { EnvironmentDetailPage } from '@/features/environments/pages/EnvironmentDetailPage';
+import { EnvironmentListPage } from '@/features/environments/pages/EnvironmentListPage';
+import { CreateExercisePage } from '@/features/exercises/pages/CreateExercisePage';
+import { EditExercisePage } from '@/features/exercises/pages/EditExercisePage';
+import { ExerciseCatalogPage } from '@/features/exercises/pages/ExerciseCatalogPage';
+import { ExerciseDetailPage } from '@/features/exercises/pages/ExerciseDetailPage';
+import { ExerciseSubstitutionsPage } from '@/features/exercises/pages/ExerciseSubstitutionsPage';
 import { HomePage } from '@/features/home/pages/HomePage';
 import { OnboardingLayout } from '@/features/onboarding/layout/OnboardingLayout';
 import { OnboardingGoalsPage } from '@/features/onboarding/pages/OnboardingGoalsPage';
@@ -78,7 +86,18 @@ export function AppRouter() {
               />
               <Route path="recovery" element={<RecoveryPlaceholderPage />} />
               <Route path="performance" element={<PerformancePlaceholderPage />} />
-              <Route path="environments" element={<EnvironmentsPlaceholderPage />} />
+              <Route path="exercises" element={<ExerciseCatalogPage />} />
+              <Route path="exercises/new" element={<CreateExercisePage />} />
+              <Route path="exercises/:definitionId" element={<ExerciseDetailPage />} />
+              <Route path="exercises/:definitionId/edit" element={<EditExercisePage />} />
+              <Route
+                path="exercises/:definitionId/substitutions"
+                element={<ExerciseSubstitutionsPage />}
+              />
+              <Route path="environments" element={<EnvironmentListPage />} />
+              <Route path="environments/new" element={<CreateEnvironmentPage />} />
+              <Route path="environments/:environmentId" element={<EnvironmentDetailPage />} />
+              <Route path="environments/:environmentId/edit" element={<EditEnvironmentPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="profile/edit" element={<EditProfilePage />} />
               <Route path="profile/sports" element={<ManageSportsPage />} />

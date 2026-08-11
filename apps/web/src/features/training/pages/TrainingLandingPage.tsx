@@ -39,6 +39,16 @@ export function TrainingLandingPage() {
               Calendar
             </Button>
           </Link>
+          <Link to="/app/exercises">
+            <Button type="button" variant="secondary">
+              Exercise catalog
+            </Button>
+          </Link>
+          <Link to="/app/environments">
+            <Button type="button" variant="secondary">
+              Environments
+            </Button>
+          </Link>
         </div>
       }
     >

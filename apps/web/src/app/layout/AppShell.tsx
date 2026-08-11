@@ -13,7 +13,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/training/calendar': 'Training calendar',
   '/app/recovery': 'Recovery',
   '/app/performance': 'Performance',
+  '/app/exercises': 'Exercise catalog',
+  '/app/exercises/new': 'Create exercise',
   '/app/environments': 'Environments',
+  '/app/environments/new': 'Create environment',
   '/app/profile': 'Profile',
   '/app/profile/edit': 'Edit profile',
   '/app/profile/sports': 'Manage sports',
@@ -35,6 +38,21 @@ function resolvePageTitle(pathname: string): string {
   }
   if (pathname.includes('/plans/')) {
     return 'Plan builder';
+  }
+  if (pathname.includes('/exercises/') && pathname.endsWith('/substitutions')) {
+    return 'Exercise substitutions';
+  }
+  if (pathname.includes('/exercises/') && pathname.endsWith('/edit')) {
+    return 'Edit exercise';
+  }
+  if (pathname.includes('/exercises/')) {
+    return 'Exercise details';
+  }
+  if (pathname.includes('/environments/') && pathname.endsWith('/edit')) {
+    return 'Edit environment';
+  }
+  if (pathname.includes('/environments/')) {
+    return 'Environment details';
   }
   return 'Universal Athlete Platform';
 }

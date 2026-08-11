@@ -1,0 +1,28 @@
+.result {
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  padding: var(--uap-space-3);
+}
+
+.status {
+  margin: 0;
+  font-weight: 600;
+}
+
+.compatible {
+  color: #16a34a;
+}
+
+.incompatible {
+  color: #b45309;
+}
+
+.missing {
+  margin: var(--uap-space-2) 0 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.error {
+  color: #b91c1c;
+}

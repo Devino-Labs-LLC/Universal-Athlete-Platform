@@ -1,4 +1,5 @@
 import type { DateOnly } from '@/core/date/dateOnly';
+import type { ExerciseCategory, ExerciseScope, MetricMode } from '@/features/exercises/models/schemas';
 
 export interface PlanListFilters {
   status?: string;
@@ -12,9 +13,9 @@ export interface CalendarQueryFilters {
 
 export interface ExerciseDefinitionFilters {
   name?: string;
-  scope?: string;
-  category?: string;
-  metricMode?: string;
+  scope?: ExerciseScope;
+  category?: ExerciseCategory;
+  metricMode?: MetricMode;
   page?: number;
   size?: number;
 }

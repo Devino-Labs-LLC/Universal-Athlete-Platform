@@ -1,0 +1,25 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--uap-font-size-sm);
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--uap-radius-sm);
+}
+
+.system {
+  background: var(--uap-surface-muted);
+  color: var(--uap-text-secondary);
+}
+
+.custom {
+  background: rgb(20 184 166 / 14%);
+  color: var(--uap-accent);
+}
+
+.idHint {
+  font-weight: 400;
+  opacity: 0.75;
+  font-size: 0.7rem;
+}

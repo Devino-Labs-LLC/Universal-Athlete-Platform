@@ -5,9 +5,10 @@ import styles from '@/app/layout/Sidebar.module.scss';
 const NAV_ITEMS = [
   { to: '/app/home', label: 'Home' },
   { to: '/app/training', label: 'Training' },
+  { to: '/app/exercises', label: 'Exercise Catalog' },
+  { to: '/app/environments', label: 'Environments' },
   { to: '/app/recovery', label: 'Recovery' },
   { to: '/app/performance', label: 'Performance' },
-  { to: '/app/environments', label: 'Environments' },
   { to: '/app/profile', label: 'Profile' },
 ] as const;
 

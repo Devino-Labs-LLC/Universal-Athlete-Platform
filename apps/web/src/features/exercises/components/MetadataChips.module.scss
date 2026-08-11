@@ -1,0 +1,36 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--uap-space-2);
+  padding: var(--uap-space-2) 0;
+  border-bottom: 1px solid var(--uap-border-subtle);
+}
+
+.label {
+  min-width: 9rem;
+  font-weight: 600;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.emptyText {
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  background: var(--uap-surface-muted);
+  border-radius: var(--uap-radius-sm);
+  padding: 0.15rem 0.55rem;
+  font-size: var(--uap-font-size-sm);
+}

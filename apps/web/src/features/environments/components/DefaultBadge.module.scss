@@ -1,0 +1,10 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--uap-font-size-sm);
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--uap-radius-sm);
+  background: rgb(20 184 166 / 14%);
+  color: var(--uap-accent);
+}

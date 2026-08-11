@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+import {
+  type ExerciseDefinition,
+  exerciseDefinitionPageSchema,
+  type ExerciseDefinitionPage,
+  exerciseDefinitionSchema,
+  type MetricMode,
+  metricModeSchema,
+} from '@/features/exercises/models/schemas';
+
+export { exerciseDefinitionPageSchema, exerciseDefinitionSchema, metricModeSchema };
+export type { ExerciseDefinition, ExerciseDefinitionPage, MetricMode };
+
 const bigDecimalLike = z
   .union([z.number(), z.string()])
   .transform(Number)
@@ -66,14 +78,6 @@ export const exerciseTypeSchema = z.enum([
 
 export const weightUnitSchema = z.enum(['KILOGRAM', 'POUND']);
 export const distanceUnitSchema = z.enum(['METER', 'KILOMETER', 'MILE']);
-export const metricModeSchema = z.enum([
-  'REPETITIONS',
-  'WEIGHT_AND_REPETITIONS',
-  'DURATION',
-  'DISTANCE',
-  'DISTANCE_AND_DURATION',
-  'MIXED',
-]);
 
 export const trainingPlanSchema = z
   .object({
@@ -259,45 +263,6 @@ export const updateWorkoutExerciseSchema = z.object({
 });
 
 export type UpdateWorkoutExerciseRequest = z.infer<typeof updateWorkoutExerciseSchema>;
-
-export const exerciseDefinitionMetadataSchema = z
-  .object({
-    metricMode: metricModeSchema.optional(),
-    category: z.string().optional(),
-    movementPattern: z.string().optional(),
-    muscleGroup: z.string().optional(),
-    equipment: z.string().optional(),
-  })
-  .passthrough();
-
-export const exerciseDefinitionSchema = z
-  .object({
-    id: z.string(),
-    exercisePerformanceKey: z.string(),
-    scope: z.enum(['SYSTEM', 'ATHLETE_CUSTOM']),
-    canonicalName: z.string(),
-    normalizedName: z.string(),
-    metadata: exerciseDefinitionMetadataSchema,
-    active: z.boolean(),
-    archivedAt: z.string().nullable().optional(),
-    createdAt: z.string().nullable().optional(),
-    updatedAt: z.string().nullable().optional(),
-  })
-  .passthrough();
-
-export type ExerciseDefinition = z.infer<typeof exerciseDefinitionSchema>;
-
-export const exerciseDefinitionPageSchema = z
-  .object({
-    definitions: z.array(exerciseDefinitionSchema),
-    page: z.number(),
-    size: z.number(),
-    totalElements: z.number(),
-    totalPages: z.number(),
-  })
-  .passthrough();
-
-export type ExerciseDefinitionPage = z.infer<typeof exerciseDefinitionPageSchema>;
 
 export const activateScheduleSchema = z.object({
   scheduleStartDate: z.string().min(1),

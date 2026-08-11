@@ -3,21 +3,47 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ExercisePrescriptionForm, metricModeFromDefinition } from '@/features/training/forms/ExercisePrescriptionForm';
+import type { ExerciseDefinition, MetricMode } from '@/features/training/models/schemas';
+
+function definitionFixture(overrides: Partial<ExerciseDefinition> & { metricMode: MetricMode }): ExerciseDefinition {
+  const { metricMode, ...rest } = overrides;
+  return {
+    id: 'def-1',
+    exercisePerformanceKey: 'def-1',
+    scope: 'SYSTEM',
+    canonicalName: 'Back squat',
+    normalizedName: 'back squat',
+    active: true,
+    metadata: {
+      category: 'STRENGTH',
+      metricMode,
+      primaryMovementPattern: 'SQUAT',
+      secondaryMovementPatterns: [],
+      primaryMuscleGroups: [],
+      secondaryMuscleGroups: [],
+      requiredEquipment: [],
+      optionalEquipment: [],
+      laterality: 'BILATERAL',
+      kineticChainType: 'CLOSED_CHAIN',
+      impactLevel: 'LOW_IMPACT',
+      difficulty: 'INTERMEDIATE',
+    },
+    ...rest,
+  };
+}
 
 describe('ExercisePrescriptionForm', () => {
   it('shows weight fields for WEIGHT_AND_REPETITIONS', () => {
     render(
       <ExercisePrescriptionForm
         mode="create"
-        definition={{
+        definition={definitionFixture({
           id: 'def-1',
           exercisePerformanceKey: 'def-1',
-          scope: 'SYSTEM',
           canonicalName: 'Back squat',
           normalizedName: 'back squat',
-          metadata: { metricMode: 'WEIGHT_AND_REPETITIONS' },
-          active: true,
-        }}
+          metricMode: 'WEIGHT_AND_REPETITIONS',
+        })}
         onSubmit={async () => undefined}
       />,
     );
@@ -30,15 +56,13 @@ describe('ExercisePrescriptionForm', () => {
     render(
       <ExercisePrescriptionForm
         mode="create"
-        definition={{
+        definition={definitionFixture({
           id: 'def-2',
           exercisePerformanceKey: 'def-2',
-          scope: 'SYSTEM',
           canonicalName: 'Plank',
           normalizedName: 'plank',
-          metadata: { metricMode: 'DURATION' },
-          active: true,
-        }}
+          metricMode: 'DURATION',
+        })}
         onSubmit={async () => undefined}
       />,
     );
@@ -57,15 +81,13 @@ describe('ExercisePrescriptionForm', () => {
     render(
       <ExercisePrescriptionForm
         mode="create"
-        definition={{
+        definition={definitionFixture({
           id: '44444444-4444-4444-8444-444444444444',
           exercisePerformanceKey: '44444444-4444-4444-8444-444444444444',
-          scope: 'SYSTEM',
           canonicalName: 'Back squat',
           normalizedName: 'back squat',
-          metadata: { metricMode: 'REPETITIONS' },
-          active: true,
-        }}
+          metricMode: 'REPETITIONS',
+        })}
         onSubmit={onSubmit}
       />,
     );

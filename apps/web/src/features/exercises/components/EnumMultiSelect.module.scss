@@ -1,0 +1,57 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--uap-space-2);
+}
+
+.label {
+  font-weight: 600;
+  color: var(--uap-text-primary);
+}
+
+.count {
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.clearButton {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--uap-accent);
+  cursor: pointer;
+  font-size: var(--uap-font-size-sm);
+  padding: 0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--uap-space-1) var(--uap-space-3);
+  max-height: 220px;
+  overflow-y: auto;
+  padding: var(--uap-space-2);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface);
+}
+
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--uap-space-2);
+  font-size: var(--uap-font-size-sm);
+  cursor: pointer;
+}
+
+.empty {
+  margin: 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
+}

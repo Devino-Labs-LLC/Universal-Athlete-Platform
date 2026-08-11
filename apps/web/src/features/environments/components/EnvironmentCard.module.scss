@@ -1,0 +1,46 @@
+.card {
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  padding: var(--uap-space-4);
+  background: var(--uap-surface);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--uap-space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.meta {
+  margin: 0.35rem 0 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.actions {
+  display: flex;
+  gap: var(--uap-space-3);
+  margin-top: var(--uap-space-3);
+  font-size: var(--uap-font-size-sm);
+}
+
+.actions a {
+  color: var(--uap-accent);
+  font-weight: 600;
+}
+
+.actions button {
+  background: none;
+  border: none;
+  color: var(--uap-accent);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+}
