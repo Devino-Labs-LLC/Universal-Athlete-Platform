@@ -1,8 +1,8 @@
-# Universal Athlete — Mobile (M5)
+# Universal Athlete — Mobile (M6)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M5 adds **live workout execution and set logging**: start/complete/skip occurrence, per-exercise set logging (PATCH actuals auto-start sets), session effort, and training load summary. M4 added the Training tab browse stack and launch prep. M3 added the production Home / Today dashboard.
+M6 adds the **Recovery tab**: daily check-in CRUD, recovery overview with baselines/trends, explicit insights pipeline (check-in → athlete state → readiness → guidance), history, analytics, and readiness/guidance detail screens. M5 added live workout execution and set logging. M4 added the Training tab browse stack and launch prep. M3 added the production Home / Today dashboard.
 
 ## Stack versions
 
@@ -102,8 +102,43 @@ src/features/onboarding/ Onboarding state resolver, routes, provider wiring
 src/features/profile/    Athlete profile/sports/goals API, schemas, hooks
 src/features/training/   Bootstrap/today API, browse APIs, schemas, screens
 src/features/home/       Today dashboard (cards, hooks, generation actions)
+src/features/recovery/   Recovery overview, check-in, history, readiness/guidance detail
 __tests__/               Jest unit/integration tests
 ```
+
+### Recovery stack (M6)
+
+The Recovery tab (`/(tabs)/recovery`) is a nested Stack (tab header hidden, like Training):
+
+1. **Overview (default)** — **GET** `/api/v1/training/client/recovery-overview?date=&trendDays=` — check-in summary, insights pipeline, readiness/guidance summaries, baselines, trends, discomfort, training load context. Pull-to-refresh also refetches today dashboard for action flags.
+2. **Check-in** — create/edit daily recovery check-in (RHF form). **POST** `/api/v1/training/recovery-check-ins`, **PATCH** `/api/v1/training/recovery-check-ins/{id}` with `expectedVersion`, **GET** by date/id. Optional post-save prompt to generate/regenerate daily athlete state (no auto-chaining to readiness/guidance).
+3. **History** — **GET** `/api/v1/training/recovery-check-ins/history?startDate=&endDate=&includeTrainingLoad=true` (last 30 days).
+4. **Analytics** — 7D/14D/28D window selector refetching overview `trendDays` for baselines and trends (textual, no charts).
+5. **Readiness detail** — **GET** `/api/v1/training/readiness/assessments/{assessmentId}`.
+6. **Guidance detail** — **GET** `/api/v1/training/recommendations/{recommendationId}` (no adaptation CTA).
+
+Derived state generation reuses Home APIs (`derivedStateApi.ts`):
+
+- **POST** `/api/v1/training/athlete-state/daily/{date}` — body `{ baselineWindowDays: 7|14|28 }`
+- **POST** `/api/v1/training/athlete-state/daily/{date}/regenerate` — same body (after check-in update when snapshot exists)
+- **POST** `/api/v1/training/readiness/daily/{date}`
+- **POST** `/api/v1/training/recommendations/daily/{date}`
+
+Successful derived mutations invalidate both `todayQueryKeys` and `recoveryKeys.overview` prefix.
+
+Route layout under `src/app/(tabs)/recovery/`:
+
+```
+_layout.tsx
+index.tsx                         RecoveryOverviewScreen
+check-in.tsx                      RecoveryCheckInScreen (?date=)
+history.tsx                       RecoveryHistoryScreen
+analytics.tsx                     RecoveryAnalyticsScreen
+readiness/[assessmentId].tsx      ReadinessDetailScreen
+guidance/[recommendationId].tsx   TrainingGuidanceScreen
+```
+
+Home integration: Recovery card and Quick Actions **Check In** route to `/(tabs)/recovery/check-in`.
 
 ### Training browse stack (M4)
 
@@ -170,7 +205,7 @@ After onboarding completes and bootstrap V1 loads, the Home tab (`/(tabs)/index`
    - **POST** `/api/v1/training/readiness/daily/{date}`
    - **POST** `/api/v1/training/recommendations/daily/{date}`
 4. Each successful generation invalidates the today query; pull-to-refresh refetches read-only data
-5. Workout / adaptation CTAs route into the Training stack (overview → launch prep); recovery check-in routes to Recovery
+5. Workout / adaptation CTAs route into the Training stack (overview → launch prep); recovery check-in routes to `/(tabs)/recovery/check-in`
 
 ### Bootstrap + onboarding flow (M2)
 
@@ -263,7 +298,7 @@ Refresh: single-flight `POST /api/v1/identity/refresh`.
 
 ## Testing
 
-Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, prescription formatting, and M5 execution schemas, set formatting, error mapping, invalidation helpers, SetRow/SetEditor, and WorkoutExecutionScreen states.
+Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, prescription formatting, M5 execution schemas/set formatting/error mapping/invalidation/SetRow/SetEditor/WorkoutExecutionScreen, and M6 recovery schemas, rating labels, sleep duration, check-in form, overview sections, insights pipeline step isolation, recovery error mapping, and Home check-in routes.
 
 ```bash
 pnpm test
@@ -272,5 +307,5 @@ pnpm test
 ## Notes
 
 - Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Recovery, Performance) remain intentional beyond M5 scope. Adaptation apply (M7) is a stubbed route only. Workout execution (M5) is implemented on the execute screen.
+- Placeholder tabs (Performance) remain intentional beyond M6 scope. Adaptation apply (M7) is a stubbed route only. Workout execution (M5) is implemented on the execute screen. Recovery (M6) is fully implemented on the Recovery stack.
 - Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.

@@ -6,35 +6,42 @@ import {
   generateAthleteStateSnapshot,
   generateReadinessAssessment,
   generateTrainingRecommendation,
+  regenerateAthleteStateSnapshot,
 } from '@/src/features/home/api/derivedStateApi';
-import { todayQueryKeys } from '@/src/features/home/models/queryKeys';
+import { invalidateAfterDerivedStateMutation } from '@/src/features/recovery/models/invalidation';
 
 export function useDerivedStateMutations(date: string) {
   const { apiClient } = useAuthSession();
   const queryClient = useQueryClient();
   const dateOnly = parseDateOnly(date);
 
-  const invalidateToday = async () => {
-    await queryClient.invalidateQueries({ queryKey: todayQueryKeys.all });
+  const invalidateDerived = async () => {
+    await invalidateAfterDerivedStateMutation(queryClient);
   };
 
   const athleteStateMutation = useMutation({
     mutationFn: () => generateAthleteStateSnapshot(apiClient, dateOnly),
-    onSuccess: invalidateToday,
+    onSuccess: invalidateDerived,
+  });
+
+  const regenerateAthleteStateMutation = useMutation({
+    mutationFn: () => regenerateAthleteStateSnapshot(apiClient, dateOnly),
+    onSuccess: invalidateDerived,
   });
 
   const readinessMutation = useMutation({
     mutationFn: () => generateReadinessAssessment(apiClient, dateOnly),
-    onSuccess: invalidateToday,
+    onSuccess: invalidateDerived,
   });
 
   const recommendationMutation = useMutation({
     mutationFn: () => generateTrainingRecommendation(apiClient, dateOnly),
-    onSuccess: invalidateToday,
+    onSuccess: invalidateDerived,
   });
 
   const mutationError =
     athleteStateMutation.error ??
+    regenerateAthleteStateMutation.error ??
     readinessMutation.error ??
     recommendationMutation.error;
 
@@ -43,6 +50,7 @@ export function useDerivedStateMutations(date: string) {
 
   return {
     athleteStateMutation,
+    regenerateAthleteStateMutation,
     readinessMutation,
     recommendationMutation,
     errorMessage,

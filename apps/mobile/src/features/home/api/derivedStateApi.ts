@@ -13,6 +13,16 @@ export async function generateAthleteStateSnapshot(
   });
 }
 
+export async function regenerateAthleteStateSnapshot(
+  client: ApiClient,
+  date: DateOnly,
+  baselineWindowDays: BaselineWindowDays = 7,
+): Promise<void> {
+  await client.axios.post(`/api/v1/training/athlete-state/daily/${date}/regenerate`, {
+    baselineWindowDays,
+  });
+}
+
 export async function generateReadinessAssessment(
   client: ApiClient,
   date: DateOnly,

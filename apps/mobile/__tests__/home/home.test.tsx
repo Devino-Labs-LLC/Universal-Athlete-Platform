@@ -73,6 +73,7 @@ function setupTodayQuery(overrides: Record<string, unknown> = {}) {
 function setupMutations(overrides: Record<string, unknown> = {}) {
   useDerivedStateMutations.mockReturnValue({
     athleteStateMutation: { mutate: mockMutateAthleteState, isPending: false, error: null },
+    regenerateAthleteStateMutation: { mutate: jest.fn(), isPending: false, error: null },
     readinessMutation: { mutate: mockMutateReadiness, isPending: false, error: null },
     recommendationMutation: { mutate: mockMutateRecommendation, isPending: false, error: null },
     errorMessage: null,

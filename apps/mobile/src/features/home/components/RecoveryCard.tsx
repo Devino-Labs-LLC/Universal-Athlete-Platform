@@ -28,7 +28,7 @@ export function RecoveryCard({
   const theme = useAppTheme();
 
   const navigateToRecovery = () => {
-    router.push('/(tabs)/recovery');
+    router.push('/(tabs)/recovery/check-in');
   };
 
   const metrics = [

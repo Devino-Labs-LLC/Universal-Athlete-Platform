@@ -69,7 +69,7 @@ export function HomeQuickActions({
       key: 'check-in',
       label: actions.canCreateRecoveryCheckIn.allowed ? 'Check In' : 'Update Check In',
       allowed: true,
-      onPress: () => router.push('/(tabs)/recovery'),
+      onPress: () => router.push('/(tabs)/recovery/check-in'),
     });
   }
 
