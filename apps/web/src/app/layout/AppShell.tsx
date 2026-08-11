@@ -8,6 +8,9 @@ import { TopBar } from '@/app/layout/TopBar';
 const PAGE_TITLES: Record<string, string> = {
   '/app/home': 'Home',
   '/app/training': 'Training',
+  '/app/training/plans': 'Training plans',
+  '/app/training/plans/new': 'Create plan',
+  '/app/training/calendar': 'Training calendar',
   '/app/recovery': 'Recovery',
   '/app/performance': 'Performance',
   '/app/environments': 'Environments',
@@ -17,10 +20,29 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/profile/goals': 'Manage goals',
 };
 
+function resolvePageTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) {
+    return PAGE_TITLES[pathname]!;
+  }
+  if (pathname.includes('/schedule')) {
+    return 'Plan schedule';
+  }
+  if (pathname.includes('/occurrences/')) {
+    return 'Workout occurrence';
+  }
+  if (pathname.includes('/plans/') && pathname.endsWith('/edit')) {
+    return 'Edit plan';
+  }
+  if (pathname.includes('/plans/')) {
+    return 'Plan builder';
+  }
+  return 'Universal Athlete Platform';
+}
+
 export function AppShell() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const title = PAGE_TITLES[location.pathname] ?? 'Universal Athlete Platform';
+  const title = resolvePageTitle(location.pathname);
 
   const closeDrawer = () => setDrawerOpen(false);
 

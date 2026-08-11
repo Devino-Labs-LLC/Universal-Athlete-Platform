@@ -1,0 +1,76 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.weekdayHeader {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--uap-text-muted);
+  padding: 0.25rem;
+}
+
+.dayCell {
+  min-height: 3.5rem;
+  border: 1px solid var(--uap-border);
+  border-radius: var(--uap-radius-sm);
+  background: var(--uap-surface);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.dayCell.outsideMonth {
+  opacity: 0.45;
+}
+
+.dayCell.selected {
+  border-color: var(--uap-accent);
+  box-shadow: inset 0 0 0 1px var(--uap-accent);
+}
+
+.dayCell.today .dayNumber {
+  font-weight: 700;
+  color: var(--uap-accent);
+}
+
+.dayNumber {
+  font-size: 0.875rem;
+}
+
+.dot {
+  font-size: 0.65rem;
+  color: var(--uap-accent);
+}
+
+.sidePanel {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  border: 1px solid var(--uap-border);
+  border-radius: var(--uap-radius-md);
+  padding: 1rem;
+}
+
+.sidePanel h3 {
+  margin: 0 0 0.75rem;
+}
+
+.occurrenceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    gap: 0.2rem;
+  }
+
+  .dayCell {
+    min-height: 2.75rem;
+  }
+}

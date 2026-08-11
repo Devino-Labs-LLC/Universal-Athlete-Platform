@@ -1,0 +1,65 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.daysPanel,
+.exercisesPanel,
+.sideForm {
+  border: 1px solid var(--uap-border);
+  border-radius: var(--uap-radius-md);
+  padding: 1rem;
+  background: var(--uap-surface);
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.exerciseList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.headerActions a {
+  color: var(--uap-accent);
+}
+
+.manualOccurrence {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--uap-border);
+}
+
+.manualOccurrence h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sideForm {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,4 +1,4 @@
-# Universal Athlete Platform — Web (W1 + W2)
+# Universal Athlete Platform — Web (W1 + W2 + W3)
 
 Vite + React 19 + TypeScript foundation for the browser client (`uap_web`).
 
@@ -80,7 +80,15 @@ On `401`, one refresh runs at `POST /api/v1/identity/refresh`:
 | `/auth/login`, `/register`, `/verify-email` | Auth |
 | `/app/*` | Authenticated shell |
 | `/app/home` | Today dashboard |
-| `/app/training`, `/recovery`, `/performance`, `/environments` | W1 placeholders |
+| `/app/training` | Training overview landing (W3) |
+| `/app/training/plans` | Plan list (W3) |
+| `/app/training/plans/new` | Create plan (W3) |
+| `/app/training/plans/:planId` | Plan builder (W3) |
+| `/app/training/plans/:planId/edit` | Edit plan metadata (W3) |
+| `/app/training/plans/:planId/schedule` | Schedule management (W3) |
+| `/app/training/calendar` | Training calendar (W3) |
+| `/app/training/plans/:planId/days/:dayId/occurrences/:occurrenceId` | Occurrence detail (W3) |
+| `/app/recovery`, `/app/performance`, `/app/environments` | Placeholders |
 | `/app/profile`, `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` | Profile (W2) |
 | `/onboarding/profile`, `/onboarding/sports`, `/onboarding/goals` | Onboarding (W2) |
 | `/incompatible` | Client contract mismatch |
@@ -127,7 +135,23 @@ Derived-state mutations (mobile-aligned paths):
 - `POST /api/v1/training/readiness/daily/{date}`
 - `POST /api/v1/training/recommendations/daily/{date}`
 
-Training execution, recovery check-in forms, and adaptation review flows are deferred to W3+.
+Training execution, recovery check-in forms, and adaptation review flows remain deferred to W4+.
+
+## Training (W3)
+
+Desktop training planner and calendar under `/app/training`:
+
+- **Landing** — `GET /api/v1/training/client/training-overview?date=`
+- **Plans** — CRUD-ish plan metadata, day/exercise builder, move up/down reorder via `PUT .../order`
+- **Exercise chooser** — paginated `GET /api/v1/training/exercise-definitions` (active only)
+- **Schedule** — activate/pause/resume/complete/generate under `/plans/{planId}/schedule`
+- **Calendar** — month view + side panel via `GET /api/v1/training/calendar`
+- **Occurrences** — read-only detail, reschedule/delete when `SCHEDULED` and untouched
+- **Environments** — thin picker list via `GET /api/v1/training/environments?activeOnly=true`
+
+Prescription edits invalidate plan/day/exercise queries only — occurrence snapshots are not assumed to change.
+
+W4+ deferred: workout execution/set logging (mobile owns), environment CRUD UI, adaptation review.
 
 ## Profile (W2)
 
@@ -153,7 +177,7 @@ Athlete onboarding was not implemented in W1. W2 adds the full flow above.
 
 ## Tests
 
-Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing (including athlete query keys), bootstrap contract checks, onboarding state/routes, athlete schemas, profile form dirty-safe hydrate, home dashboard schema/labels, derived-state API paths, home page rendering, login a11y basics, and logger redaction.
+Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing (including athlete query keys), bootstrap contract checks, onboarding state/routes, athlete schemas, profile form dirty-safe hydrate, home dashboard schema/labels, derived-state API paths, home page rendering, login a11y basics, logger redaction, and W3 training schemas/prescription formatting/calendar range/reorder helpers/training error codes/invalidation/exercise chooser/prescription form/landing smoke.
 
 ```bash
 pnpm --filter uap_web test

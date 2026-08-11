@@ -26,7 +26,14 @@ import { ManageGoalsPage } from '@/features/profile/pages/ManageGoalsPage';
 import { ManageSportsPage } from '@/features/profile/pages/ManageSportsPage';
 import { ProfilePage } from '@/features/profile/pages/ProfilePage';
 import { RecoveryPlaceholderPage } from '@/features/recovery/pages/RecoveryPlaceholderPage';
-import { TrainingPlaceholderPage } from '@/features/training/pages/TrainingPlaceholderPage';
+import { TrainingCalendarPage } from '@/features/training/calendar/TrainingCalendarPage';
+import { CreatePlanPage } from '@/features/training/pages/CreatePlanPage';
+import { OccurrenceDetailPage } from '@/features/training/pages/OccurrenceDetailPage';
+import { PlanEditPage } from '@/features/training/pages/PlanEditPage';
+import { PlanListPage } from '@/features/training/pages/PlanListPage';
+import { ScheduleManagementPage } from '@/features/training/pages/ScheduleManagementPage';
+import { TrainingLandingPage } from '@/features/training/pages/TrainingLandingPage';
+import { PlanBuilderPage } from '@/features/training/planner/PlanBuilderPage';
 
 export function AppRouter() {
   return (
@@ -58,7 +65,17 @@ export function AppRouter() {
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
-              <Route path="training" element={<TrainingPlaceholderPage />} />
+              <Route path="training" element={<TrainingLandingPage />} />
+              <Route path="training/plans" element={<PlanListPage />} />
+              <Route path="training/plans/new" element={<CreatePlanPage />} />
+              <Route path="training/plans/:planId" element={<PlanBuilderPage />} />
+              <Route path="training/plans/:planId/edit" element={<PlanEditPage />} />
+              <Route path="training/plans/:planId/schedule" element={<ScheduleManagementPage />} />
+              <Route path="training/calendar" element={<TrainingCalendarPage />} />
+              <Route
+                path="training/plans/:planId/days/:dayId/occurrences/:occurrenceId"
+                element={<OccurrenceDetailPage />}
+              />
               <Route path="recovery" element={<RecoveryPlaceholderPage />} />
               <Route path="performance" element={<PerformancePlaceholderPage />} />
               <Route path="environments" element={<EnvironmentsPlaceholderPage />} />
