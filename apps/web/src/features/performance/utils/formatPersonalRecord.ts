@@ -166,7 +166,7 @@ export function formatPersonalRecord(record: PersonalRecord): string {
         record.normalizedValue,
         record.normalizedUnit,
       );
-      return fallback ?? formatDecimal(record.normalizedValue ?? 0);
+      return fallback ?? (record.normalizedValue != null ? formatDecimal(record.normalizedValue) : '—');
     }
   }
 }

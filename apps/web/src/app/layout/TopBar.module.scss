@@ -47,3 +47,20 @@
     display: inline-flex;
   }
 }
+
+@media (max-width: 600px) {
+  .topBar {
+    flex-wrap: wrap;
+    padding: var(--uap-space-3) var(--uap-space-4);
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: var(--uap-space-2);
+  }
+
+  .account {
+    display: none;
+  }
+}

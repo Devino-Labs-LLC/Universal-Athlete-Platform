@@ -97,7 +97,7 @@ textarea {
 
 .fieldError {
   margin: 0;
-  color: #dc2626;
+  color: var(--uap-danger);
   font-size: var(--uap-font-size-sm);
 }
 
@@ -105,8 +105,8 @@ textarea {
   margin: 0;
   padding: var(--uap-space-3);
   border-radius: var(--uap-radius-md);
-  background: rgb(220 38 38 / 8%);
-  color: #b91c1c;
+  background: var(--uap-danger-muted);
+  color: var(--uap-danger);
 }
 
 .statGrid {

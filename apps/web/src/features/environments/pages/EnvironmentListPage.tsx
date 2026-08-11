@@ -9,9 +9,11 @@ import { Page } from '@/core/components/Page';
 import { EnvironmentCard } from '@/features/environments/components/EnvironmentCard';
 import { useEnvironments } from '@/features/environments/hooks/useEnvironments';
 import { useSetDefaultEnvironmentMutation } from '@/features/environments/hooks/useEnvironmentMutations';
+import { environmentErrorMessage } from '@/features/environments/models/errors';
 
 export function EnvironmentListPage() {
   const [showArchived, setShowArchived] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const environmentsQuery = useEnvironments({ activeOnly: !showArchived });
   const setDefaultMutation = useSetDefaultEnvironmentMutation();
 
@@ -37,6 +39,11 @@ export function EnvironmentListPage() {
         </Link>
       }
     >
+      {errorMessage ? (
+        <p className="formError" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
       <div className="field" style={{ marginBottom: '1rem' }}>
         <label className="label" htmlFor="show-archived-environments">
           <input
@@ -67,7 +74,11 @@ export function EnvironmentListPage() {
               environment={environment}
               onSetDefault={
                 environment.active
-                  ? (target) => void setDefaultMutation.mutateAsync(target.id)
+                  ? (target) =>
+                      setDefaultMutation.mutate(target.id, {
+                        onError: (error) =>
+                          setErrorMessage(environmentErrorMessage(error, 'Unable to set default environment')),
+                      })
                   : undefined
               }
             />

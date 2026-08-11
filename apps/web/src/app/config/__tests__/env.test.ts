@@ -52,6 +52,54 @@ describe('loadAppConfig', () => {
     ).toThrow(/Localhost API URLs are not allowed/);
   });
 
+  it('rejects non-HTTPS API URL outside development', () => {
+    expect(() =>
+      loadAppConfig({
+        VITE_UAP_ENV: 'staging',
+        VITE_UAP_API_BASE_URL: 'http://api.example.com',
+      }),
+    ).toThrow(/HTTPS API URL is required/);
+  });
+
+  it('rejects malformed release URLs and embedded credentials', () => {
+    expect(() =>
+      loadAppConfig({
+        VITE_UAP_ENV: 'production',
+        VITE_UAP_API_BASE_URL: 'https:///',
+      }),
+    ).toThrow(/valid absolute API URL/);
+
+    expect(() =>
+      loadAppConfig({
+        VITE_UAP_ENV: 'production',
+        VITE_UAP_API_BASE_URL: 'https://user:secret@api.example.com',
+      }),
+    ).toThrow(/must not contain embedded credentials/);
+  });
+
+  it('rejects IPv6 and wildcard loopback API URLs outside development', () => {
+    for (const url of ['https://[::1]', 'https://0.0.0.0']) {
+      expect(() =>
+        loadAppConfig({
+          VITE_UAP_ENV: 'staging',
+          VITE_UAP_API_BASE_URL: url,
+        }),
+      ).toThrow(/Localhost API URLs are not allowed/);
+    }
+  });
+
+  it('rejects development env in release builds', () => {
+    expect(() =>
+      loadAppConfig(
+        {
+          VITE_UAP_ENV: 'development',
+          VITE_UAP_API_BASE_URL: '',
+        },
+        { releaseBuild: true },
+      ),
+    ).toThrow(/development is not allowed in release builds/);
+  });
+
   it('accepts explicit production HTTPS URL', () => {
     const config = loadAppConfig({
       VITE_UAP_ENV: 'production',

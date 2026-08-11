@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import styles from '@/app/layout/AppShell.module.scss';
 import { Sidebar } from '@/app/layout/Sidebar';
 import { TopBar } from '@/app/layout/TopBar';
+import { LoadingView } from '@/core/components/LoadingView';
 
 const PAGE_TITLES: Record<string, string> = {
   '/app/home': 'Home',
@@ -108,7 +109,9 @@ export function AppShell() {
       <div className={styles.mainColumn}>
         <TopBar title={title} onMenuClick={() => setDrawerOpen(true)} />
         <main className={styles.content}>
-          <Outlet />
+          <Suspense fallback={<LoadingView message="Loading page…" />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

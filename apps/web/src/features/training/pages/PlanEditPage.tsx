@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/core/components/Button';
 import { ErrorView } from '@/core/components/ErrorView';
@@ -23,6 +23,10 @@ export function PlanEditPage() {
 
   if (planQuery.isError || !planQuery.data) {
     return <ErrorView message="Unable to load plan." onRetry={() => planQuery.refetch()} />;
+  }
+
+  if (planQuery.data.status === 'ARCHIVED') {
+    return <Navigate to={`/app/training/plans/${planId}`} replace />;
   }
 
   return (

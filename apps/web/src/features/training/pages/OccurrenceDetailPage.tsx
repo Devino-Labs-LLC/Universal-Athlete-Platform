@@ -152,9 +152,15 @@ export function OccurrenceDetailPage() {
         confirmLabel="Delete"
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => {
-          void mutations.remove.mutateAsync(occurrenceId).then(() => {
-            navigate(`/app/training/calendar`);
-          });
+          void mutations.remove
+            .mutateAsync(occurrenceId)
+            .then(() => {
+              navigate('/app/training/calendar');
+            })
+            .catch((error: unknown) => {
+              setErrorMessage(trainingErrorMessage(error));
+              setConfirmDelete(false);
+            });
         }}
       />
     </Page>

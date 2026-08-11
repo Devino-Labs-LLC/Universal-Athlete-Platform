@@ -1,6 +1,8 @@
-# Universal Athlete Platform — Web (W1 + W2 + W3)
+# Universal Athlete Platform — Web (W1–W6 / V1 RC)
 
-Vite + React 19 + TypeScript foundation for the browser client (`uap_web`).
+Vite + React 19 + TypeScript browser client (`uap_web`).
+
+See **[docs/WEB_V1_RUNBOOK.md](./docs/WEB_V1_RUNBOOK.md)** for development, auth/CSRF, deployment, and release gates.
 
 ## Stack
 
@@ -41,7 +43,8 @@ Copy `.env.example` to `.env.local` (or export vars in your shell).
 Rules (`src/app/config/env.ts`):
 
 - Release builds fail closed if `VITE_UAP_ENV` is missing.
-- Staging/production require `VITE_UAP_API_BASE_URL`.
+- Release builds reject `VITE_UAP_ENV=development`.
+- Staging/production require `VITE_UAP_API_BASE_URL` over **HTTPS**.
 - `localhost`, `127.0.0.1`, and `10.0.2.2` are forbidden outside development.
 - Development defaults to **empty** `apiBaseUrl` (`''`) so Axios uses same-origin relative URLs.
 
@@ -71,6 +74,7 @@ On `401`, one refresh runs at `POST /api/v1/identity/refresh`:
 - Uses `__uapRetried` metadata to retry the original request once.
 - Concurrent 401s join the same refresh promise.
 - Refresh failure calls `onSessionExpired` → local session teardown (`EXPIRED`).
+- Logout/login cancel in-flight queries before clearing the QueryClient (cross-account safety).
 
 ## Routing
 
@@ -80,17 +84,20 @@ On `401`, one refresh runs at `POST /api/v1/identity/refresh`:
 | `/auth/login`, `/register`, `/verify-email` | Auth |
 | `/app/*` | Authenticated shell |
 | `/app/home` | Today dashboard |
-| `/app/training` | Training overview landing (W3) |
-| `/app/training/plans` | Plan list (W3) |
-| `/app/training/plans/new` | Create plan (W3) |
-| `/app/training/plans/:planId` | Plan builder (W3) |
-| `/app/training/plans/:planId/edit` | Edit plan metadata (W3) |
-| `/app/training/plans/:planId/schedule` | Schedule management (W3) |
-| `/app/training/calendar` | Training calendar (W3) |
-| `/app/training/plans/:planId/days/:dayId/occurrences/:occurrenceId` | Occurrence detail (W3) |
-| `/app/recovery`, `/app/performance`, `/app/environments` | Placeholders |
-| `/app/profile`, `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` | Profile (W2) |
-| `/onboarding/profile`, `/onboarding/sports`, `/onboarding/goals` | Onboarding (W2) |
+| `/app/training` | Training overview |
+| `/app/training/plans` | Plan list |
+| `/app/training/plans/new` | Create plan |
+| `/app/training/plans/:planId` | Plan builder |
+| `/app/training/plans/:planId/edit` | Edit plan metadata |
+| `/app/training/plans/:planId/schedule` | Schedule management |
+| `/app/training/calendar` | Training calendar |
+| `/app/training/plans/:planId/days/:dayId/occurrences/:occurrenceId` | Occurrence detail |
+| `/app/exercises` (+ `/new`, `/:id`, `/edit`, `/substitutions`) | Exercise catalog |
+| `/app/environments` (+ `/new`, `/:id`, `/edit`) | Training environments |
+| `/app/recovery` (+ history, analytics, readiness, guidance, state) | Recovery analytics |
+| `/app/performance` (+ records, exercises, load, sessions) | Performance analytics |
+| `/app/profile`, `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` | Profile |
+| `/onboarding/profile`, `/onboarding/sports`, `/onboarding/goals` | Onboarding |
 | `/incompatible` | Client contract mismatch |
 
 Guards:
@@ -135,7 +142,7 @@ Derived-state mutations (mobile-aligned paths):
 - `POST /api/v1/training/readiness/daily/{date}`
 - `POST /api/v1/training/recommendations/daily/{date}`
 
-Training execution, recovery check-in forms, and adaptation review flows remain deferred to W4+.
+Training execution and live adaptation review remain mobile-owned in web v1; dashboard CTAs deep-link to read-only workout context.
 
 ## Training (W3)
 
@@ -151,20 +158,16 @@ Desktop training planner and calendar under `/app/training`:
 
 Prescription edits invalidate plan/day/exercise queries only — occurrence snapshots are not assumed to change.
 
-W4+ deferred: workout execution/set logging (mobile owns), environment CRUD UI, adaptation review.
+Workout execution/set logging and adaptation review remain mobile-owned. Web v1 includes exercise catalog, environment lifecycle, recovery analytics, and performance analytics.
 
 ## Profile (W2)
 
 - `/app/profile` — account, athlete summary, sports/goals lists, logout
 - `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` — management
 
-## Onboarding (deferred W1 note — superseded)
-
-Athlete onboarding was not implemented in W1. W2 adds the full flow above.
-
 ## Build notes
 
-- Production build runs `tsc -b && vite build`.
+- Production build runs `tsc --noEmit && vite build` and requires explicit staging/production environment variables.
 - **Source maps are disabled** in production (`vite.config.ts` → `build.sourcemap: false`) to reduce leaked source exposure. Enable locally only when debugging production bundles.
 
 ## Security / deployment
@@ -177,7 +180,7 @@ Athlete onboarding was not implemented in W1. W2 adds the full flow above.
 
 ## Tests
 
-Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing (including athlete query keys), bootstrap contract checks, onboarding state/routes, athlete schemas, profile form dirty-safe hydrate, home dashboard schema/labels, derived-state API paths, home page rendering, login a11y basics, logger redaction, and W3 training schemas/prescription formatting/calendar range/reorder helpers/training error codes/invalidation/exercise chooser/prescription form/landing smoke.
+Vitest suites cover fail-closed configuration, cookie/CSRF request behavior, refresh/session teardown, cross-account cache and direct-request isolation, guarded routes, onboarding resume, dirty-form hydration, Today, planner/calendar lifecycle, catalog/environments, recovery/readiness null semantics, performance identity/load semantics, malformed responses, URL parameters, dialogs, theme, and responsive rendering contracts.
 
 ```bash
 pnpm --filter uap_web test

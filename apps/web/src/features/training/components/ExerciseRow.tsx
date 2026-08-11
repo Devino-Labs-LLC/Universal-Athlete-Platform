@@ -11,6 +11,7 @@ interface ExerciseRowProps {
   onDelete: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  readOnly?: boolean;
 }
 
 export function ExerciseRow({
@@ -21,6 +22,7 @@ export function ExerciseRow({
   onDelete,
   canMoveUp,
   canMoveDown,
+  readOnly = false,
 }: ExerciseRowProps) {
   return (
     <article className={styles.row}>
@@ -28,7 +30,7 @@ export function ExerciseRow({
         <h4 className={styles.name}>{exercise.exerciseName}</h4>
         <PrescriptionSummary exercise={exercise} />
       </div>
-      <div className={styles.actions}>
+      {!readOnly ? <div className={styles.actions}>
         <Button type="button" variant="ghost" disabled={!canMoveUp} aria-label="Move up" onClick={onMoveUp}>
           ↑
         </Button>
@@ -41,7 +43,7 @@ export function ExerciseRow({
         <Button type="button" variant="secondary" onClick={onDelete}>
           Delete
         </Button>
-      </div>
+      </div> : null}
     </article>
   );
 }

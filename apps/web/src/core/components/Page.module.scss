@@ -6,6 +6,23 @@
   max-width: 960px;
 }
 
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--uap-space-4);
+}
+
+.pageActions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pageActions > * {
+  flex-wrap: wrap;
+}
+
 .pageTitle {
   margin: 0;
   font-size: var(--uap-font-size-xl);
@@ -22,4 +39,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--uap-space-4);
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--uap-space-4);
+  }
+
+  .pageActions {
+    width: 100%;
+  }
 }

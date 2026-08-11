@@ -68,4 +68,23 @@ describe('refresh single-flight', () => {
     expect(b).toBe(true);
     expect(runs).toBe(1);
   });
+
+  it('tears down the session when refresh fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const onSessionExpired = vi.fn();
+    const { axios } = createApiClient({ baseURL: '', onSessionExpired });
+    const mock = new MockAdapter(axios);
+
+    mock.onGet('/api/v1/protected').reply(401);
+    mock.onPost('/api/v1/identity/refresh').reply(401);
+
+    await expect(axios.get('/api/v1/protected')).rejects.toMatchObject({
+      category: 'UNAUTHORIZED',
+      status: 401,
+    });
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    warnSpy.mockRestore();
+    mock.restore();
+  });
 });

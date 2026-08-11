@@ -19,6 +19,9 @@ export async function clearLocalAuthState(options: {
 }): Promise<void> {
   const nextStatus = options.status ?? 'UNAUTHENTICATED';
   clearCsrfToken();
+  // Cancel in-flight queries before clear so Athlete A responses cannot
+  // repopulate the cache after logout / Athlete B login.
+  await options.queryClient.cancelQueries();
   options.queryClient.clear();
   options.setAccount(null);
   options.setStatus(nextStatus);

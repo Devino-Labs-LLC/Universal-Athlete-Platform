@@ -10,11 +10,11 @@
 }
 
 .compatible {
-  color: #16a34a;
+  color: var(--uap-success);
 }
 
 .incompatible {
-  color: #b45309;
+  color: var(--uap-warning);
 }
 
 .missing {
@@ -24,5 +24,5 @@
 }
 
 .error {
-  color: #b91c1c;
+  color: var(--uap-danger);
 }

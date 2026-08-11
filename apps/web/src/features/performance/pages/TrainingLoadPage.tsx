@@ -39,7 +39,7 @@ export function TrainingLoadPage() {
     if (next.range != null) {
       params.set('range', String(next.range));
     }
-    setSearchParams(params, { replace: true });
+    setSearchParams(params);
   }
 
   return (

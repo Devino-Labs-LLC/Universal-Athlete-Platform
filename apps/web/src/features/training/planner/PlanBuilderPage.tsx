@@ -82,6 +82,7 @@ export function PlanBuilderPage() {
   }
 
   const plan = planQuery.data;
+  const readOnly = plan.status === 'ARCHIVED';
 
   const handleReorderDays = async (dayId: string, direction: 'up' | 'down') => {
     const reordered =
@@ -111,19 +112,26 @@ export function PlanBuilderPage() {
       description="Build workout days and exercise prescriptions."
       actions={
         <div className={styles.headerActions}>
-          <Link to={`/app/training/plans/${planId}/edit`}>Edit metadata</Link>
+          {!readOnly ? <Link to={`/app/training/plans/${planId}/edit`}>Edit metadata</Link> : null}
           <Link to={`/app/training/plans/${planId}/schedule`}>Schedule</Link>
         </div>
       }
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
+      {readOnly ? (
+        <p className="card" role="status">
+          This plan is archived and is available for reference only.
+        </p>
+      ) : null}
       <div className={styles.layout}>
         <section className={styles.daysPanel} aria-label="Workout days">
           <div className={styles.panelHeader}>
             <h2>Workout days</h2>
-            <Button type="button" onClick={() => setPanelMode({ kind: 'create-day' })}>
-              Add day
-            </Button>
+            {!readOnly ? (
+              <Button type="button" onClick={() => setPanelMode({ kind: 'create-day' })}>
+                Add day
+              </Button>
+            ) : null}
           </div>
           <DayList
             days={days}
@@ -133,6 +141,7 @@ export function PlanBuilderPage() {
             onMoveDown={(dayId) => void handleReorderDays(dayId, 'down')}
             onEditDay={(day) => setPanelMode({ kind: 'edit-day', day })}
             onDeleteDay={setDeleteDayTarget}
+            readOnly={readOnly}
           />
         </section>
 
@@ -141,9 +150,11 @@ export function PlanBuilderPage() {
             <>
               <div className={styles.panelHeader}>
                 <h2>Exercises</h2>
-                <Button type="button" onClick={() => setChooserOpen(true)}>
-                  Add exercise
-                </Button>
+                {!readOnly ? (
+                  <Button type="button" onClick={() => setChooserOpen(true)}>
+                    Add exercise
+                  </Button>
+                ) : null}
               </div>
               {exercisesQuery.isLoading ? <LoadingView message="Loading exercises…" /> : null}
               {sortedExercises.length === 0 ? (
@@ -160,11 +171,12 @@ export function PlanBuilderPage() {
                       onMoveDown={() => void handleReorderExercise(exercise.id, 'down')}
                       onEdit={() => setPanelMode({ kind: 'edit-exercise', exercise })}
                       onDelete={() => setDeleteExerciseTarget(exercise)}
+                      readOnly={readOnly}
                     />
                   ))}
                 </div>
               )}
-              {selectedDayId ? (
+              {selectedDayId && !readOnly ? (
                 <div className={styles.manualOccurrence}>
                   <h3>Manual occurrence</h3>
                   <CreateOccurrenceForm
@@ -184,7 +196,7 @@ export function PlanBuilderPage() {
           )}
         </section>
 
-        {panelMode.kind !== 'none' ? (
+        {!readOnly && panelMode.kind !== 'none' ? (
           <aside className={styles.sideForm} aria-label="Editor panel">
             {panelMode.kind === 'create-day' ? (
               <DayForm
@@ -260,7 +272,7 @@ export function PlanBuilderPage() {
       </div>
 
       <ExerciseChooserModal
-        open={chooserOpen}
+        open={!readOnly && chooserOpen}
         onClose={() => setChooserOpen(false)}
         onSelect={(definition) => {
           setChooserOpen(false);
@@ -278,12 +290,18 @@ export function PlanBuilderPage() {
           if (!deleteDayTarget) {
             return;
           }
-          void dayMutations.remove.mutateAsync(deleteDayTarget.id).then(() => {
-            if (selectedDayId === deleteDayTarget.id) {
-              setSelectedDayId(null);
-            }
-            setDeleteDayTarget(null);
-          });
+          void dayMutations.remove
+            .mutateAsync(deleteDayTarget.id)
+            .then(() => {
+              if (selectedDayId === deleteDayTarget.id) {
+                setSelectedDayId(null);
+              }
+              setDeleteDayTarget(null);
+            })
+            .catch((error: unknown) => {
+              setErrorMessage(trainingErrorMessage(error));
+              setDeleteDayTarget(null);
+            });
         }}
       />
 
@@ -297,9 +315,15 @@ export function PlanBuilderPage() {
           if (!deleteExerciseTarget) {
             return;
           }
-          void exerciseMutations.remove.mutateAsync(deleteExerciseTarget.id).then(() => {
-            setDeleteExerciseTarget(null);
-          });
+          void exerciseMutations.remove
+            .mutateAsync(deleteExerciseTarget.id)
+            .then(() => {
+              setDeleteExerciseTarget(null);
+            })
+            .catch((error: unknown) => {
+              setErrorMessage(trainingErrorMessage(error));
+              setDeleteExerciseTarget(null);
+            });
         }}
       />
     </Page>

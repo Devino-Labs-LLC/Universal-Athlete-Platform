@@ -8,14 +8,16 @@ export function isCustomScope(definition: Pick<ExerciseDefinition, 'scope'>): bo
   return definition.scope === 'ATHLETE_CUSTOM';
 }
 
-export function canEditExerciseDefinition(definition: Pick<ExerciseDefinition, 'scope'>): boolean {
-  return isCustomScope(definition);
+export function canEditExerciseDefinition(
+  definition: Pick<ExerciseDefinition, 'scope' | 'active' | 'archivedAt'>,
+): boolean {
+  return isCustomScope(definition) && isActiveDefinition(definition);
 }
 
 export function canArchiveExerciseDefinition(
-  definition: Pick<ExerciseDefinition, 'scope' | 'active'>,
+  definition: Pick<ExerciseDefinition, 'scope' | 'active' | 'archivedAt'>,
 ): boolean {
-  return isCustomScope(definition) && definition.active;
+  return isCustomScope(definition) && isActiveDefinition(definition);
 }
 
 export function isActiveDefinition(

@@ -11,6 +11,7 @@ interface DayListProps {
   onMoveDown: (dayId: string) => void;
   onEditDay: (day: WorkoutDay) => void;
   onDeleteDay: (day: WorkoutDay) => void;
+  readOnly?: boolean;
 }
 
 export function DayList({
@@ -21,6 +22,7 @@ export function DayList({
   onMoveDown,
   onEditDay,
   onDeleteDay,
+  readOnly = false,
 }: DayListProps) {
   const grouped = days.reduce<Record<number, WorkoutDay[]>>((acc, day) => {
     const week = day.planWeekNumber ?? 1;
@@ -64,7 +66,7 @@ export function DayList({
                         : 'Unscheduled'}
                     </span>
                   </button>
-                  <div className={styles.actions}>
+                  {!readOnly ? <div className={styles.actions}>
                     <Button
                       type="button"
                       variant="ghost"
@@ -89,7 +91,7 @@ export function DayList({
                     <Button type="button" variant="secondary" onClick={() => onDeleteDay(day)}>
                       Delete
                     </Button>
-                  </div>
+                  </div> : null}
                 </li>
               ))}
           </ul>

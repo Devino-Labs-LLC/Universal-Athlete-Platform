@@ -108,7 +108,6 @@ describe('ExerciseDetailPage', () => {
 
     expect(screen.getByText('Archived')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
-    // Custom exercises remain editable even while archived — only archive is scope+active gated.
-    expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument();
   });
 });

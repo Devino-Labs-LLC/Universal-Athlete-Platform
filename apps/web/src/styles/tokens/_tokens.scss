@@ -18,6 +18,7 @@
   --uap-radius-sm: 0.375rem;
   --uap-radius-md: 0.625rem;
   --uap-radius-lg: 0.875rem;
+  --uap-radius-full: 9999px;
 
   --uap-shadow-sm: 0 1px 2px rgb(15 23 42 / 8%);
   --uap-shadow-md: 0 8px 24px rgb(15 23 42 / 10%);
@@ -41,14 +42,23 @@
   --uap-surface-muted: var(--uap-slate-100);
   --uap-border-subtle: var(--uap-slate-200);
   --uap-border-strong: var(--uap-slate-300);
+  --uap-border: var(--uap-border-subtle);
   --uap-text-primary: var(--uap-slate-900);
   --uap-text-secondary: var(--uap-slate-500);
+  --uap-text: var(--uap-text-primary);
+  --uap-text-muted: var(--uap-text-secondary);
   --uap-accent: var(--uap-teal-600);
   --uap-accent-hover: var(--uap-teal-700);
   --uap-accent-contrast: #ffffff;
+  --uap-accent-muted: rgb(20 184 166 / 16%);
+  --uap-danger: #b91c1c;
+  --uap-danger-muted: rgb(220 38 38 / 10%);
+  --uap-success: #15803d;
+  --uap-warning: #b45309;
   --uap-sidebar-bg: var(--uap-slate-900);
   --uap-sidebar-text: #e2e8f0;
   --uap-sidebar-active: rgb(20 184 166 / 18%);
+  --uap-sidebar-active-text: #ffffff;
 }
 
 [data-theme='dark'] {
@@ -65,9 +75,15 @@
   --uap-accent: var(--uap-teal-400);
   --uap-accent-hover: var(--uap-teal-500);
   --uap-accent-contrast: #042f2e;
+  --uap-accent-muted: rgb(45 212 191 / 16%);
+  --uap-danger: #f87171;
+  --uap-danger-muted: rgb(248 113 113 / 14%);
+  --uap-success: #4ade80;
+  --uap-warning: #fbbf24;
   --uap-sidebar-bg: #020617;
   --uap-sidebar-text: #cbd5e1;
   --uap-sidebar-active: rgb(45 212 191 / 16%);
+  --uap-sidebar-active-text: #f8fafc;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,8 +101,14 @@
     --uap-accent: var(--uap-teal-400);
     --uap-accent-hover: var(--uap-teal-500);
     --uap-accent-contrast: #042f2e;
+    --uap-accent-muted: rgb(45 212 191 / 16%);
+    --uap-danger: #f87171;
+    --uap-danger-muted: rgb(248 113 113 / 14%);
+    --uap-success: #4ade80;
+    --uap-warning: #fbbf24;
     --uap-sidebar-bg: #020617;
     --uap-sidebar-text: #cbd5e1;
     --uap-sidebar-active: rgb(45 212 191 / 16%);
+    --uap-sidebar-active-text: #f8fafc;
   }
 }

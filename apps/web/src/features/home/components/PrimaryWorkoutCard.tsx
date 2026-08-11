@@ -39,6 +39,8 @@ export function PrimaryWorkoutCard({
     ? (FEASIBILITY_STATUS_LABELS[occurrence.feasibilityStatus] ?? occurrence.feasibilityStatus)
     : null;
 
+  const occurrencePath = `/app/training/plans/${occurrence.trainingPlanId}/days/${occurrence.workoutDayId}/occurrences/${occurrence.occurrenceId}`;
+
   const showContinue = canContinueWorkout?.allowed && occurrence.status === 'IN_PROGRESS';
   const showStart =
     canStartWorkout?.allowed &&
@@ -70,14 +72,14 @@ export function PrimaryWorkoutCard({
         <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No environment selected</p>
       )}
       {showContinue ? (
-        <Button onClick={() => navigate('/app/training')}>Continue Workout</Button>
+        <Button onClick={() => navigate(occurrencePath)}>Continue Workout</Button>
       ) : null}
       {!showContinue && showStart ? (
-        <Button onClick={() => navigate('/app/training')}>Start Workout</Button>
+        <Button onClick={() => navigate(occurrencePath)}>Start Workout</Button>
       ) : null}
       {!showContinue && !showStart ? (
-        <Button variant="secondary" onClick={() => navigate('/app/training')}>
-          View Training
+        <Button variant="secondary" onClick={() => navigate(occurrencePath)}>
+          View Workout
         </Button>
       ) : null}
     </HomeCard>

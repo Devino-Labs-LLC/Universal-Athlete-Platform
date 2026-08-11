@@ -29,7 +29,7 @@ export function RecoveryHistoryPage() {
   function handleRangeChange(next: RecoveryHistoryRangeDays) {
     const params = new URLSearchParams(searchParams);
     params.set('range', String(next));
-    setSearchParams(params, { replace: true });
+    setSearchParams(params);
   }
 
   return (

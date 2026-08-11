@@ -7,7 +7,7 @@ import { EnvironmentDetailPage } from '@/features/environments/pages/Environment
 
 let mockEnvironment: Record<string, unknown> = {};
 const archiveMutateAsync = vi.fn().mockResolvedValue(undefined);
-const setDefaultMutateAsync = vi.fn().mockResolvedValue(undefined);
+const setDefaultMutate = vi.fn();
 
 vi.mock('@/features/environments/hooks/useEnvironment', () => ({
   useEnvironment: () => ({ data: mockEnvironment, isLoading: false, isError: false, refetch: vi.fn() }),
@@ -15,7 +15,7 @@ vi.mock('@/features/environments/hooks/useEnvironment', () => ({
 
 vi.mock('@/features/environments/hooks/useEnvironmentMutations', () => ({
   useArchiveEnvironmentMutation: () => ({ mutateAsync: archiveMutateAsync }),
-  useSetDefaultEnvironmentMutation: () => ({ mutateAsync: setDefaultMutateAsync }),
+  useSetDefaultEnvironmentMutation: () => ({ mutate: setDefaultMutate }),
 }));
 
 vi.mock('@/features/exercises/hooks/useExerciseDefinitions', () => ({
@@ -64,7 +64,7 @@ describe('EnvironmentDetailPage', () => {
     renderPage('env-2');
 
     await user.click(screen.getByRole('button', { name: 'Set as default' }));
-    await waitFor(() => expect(setDefaultMutateAsync).toHaveBeenCalledWith('env-2'));
+    await waitFor(() => expect(setDefaultMutate).toHaveBeenCalledWith('env-2', expect.any(Object)));
   });
 
   it('archives the environment via the confirmation dialog and navigates away', async () => {
@@ -98,5 +98,23 @@ describe('EnvironmentDetailPage', () => {
     };
     renderPage('env-4');
     expect(screen.getByText('No equipment listed.')).toBeInTheDocument();
+  });
+
+  it('does not expose edit, archive, or default actions for an archived environment', () => {
+    mockEnvironment = {
+      id: 'env-5',
+      name: 'Archived gym',
+      type: 'HOME_GYM',
+      availableEquipment: [],
+      defaultEnvironment: false,
+      active: false,
+      archivedAt: '2026-01-01T00:00:00Z',
+    };
+    renderPage('env-5');
+
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Set as default' })).not.toBeInTheDocument();
   });
 });

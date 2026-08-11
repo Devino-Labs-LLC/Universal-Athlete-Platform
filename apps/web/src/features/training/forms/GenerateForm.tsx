@@ -31,9 +31,8 @@ export function GenerateForm({ defaultFrom, defaultTo, onSubmit }: GenerateFormP
       onSubmit={handleSubmit(async (values) => {
         try {
           await onSubmit(values);
-        } catch (error) {
+        } catch {
           setError('scheduledTo', { message: 'Generation failed. Check the date range.' });
-          throw error;
         }
       })}
     >

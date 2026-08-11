@@ -43,7 +43,7 @@
 
 .navLinkActive {
   background: var(--uap-sidebar-active);
-  color: #ffffff;
+  color: var(--uap-sidebar-active-text);
 }
 
 @media (max-width: 900px) {

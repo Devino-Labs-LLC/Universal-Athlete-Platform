@@ -11,37 +11,94 @@ import {
   RequireOnboardingIncomplete,
 } from '@/app/router/guards';
 import { LoadingView } from '@/core/components/LoadingView';
-import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { RegisterPage } from '@/features/auth/pages/RegisterPage';
-import { VerifyEmailPage } from '@/features/auth/pages/VerifyEmailPage';
 import { BootstrapPage } from '@/features/bootstrap/pages/BootstrapPage';
 import { IncompatiblePage } from '@/features/bootstrap/pages/IncompatiblePage';
-import { CreateEnvironmentPage } from '@/features/environments/pages/CreateEnvironmentPage';
-import { EditEnvironmentPage } from '@/features/environments/pages/EditEnvironmentPage';
-import { EnvironmentDetailPage } from '@/features/environments/pages/EnvironmentDetailPage';
-import { EnvironmentListPage } from '@/features/environments/pages/EnvironmentListPage';
-import { CreateExercisePage } from '@/features/exercises/pages/CreateExercisePage';
-import { EditExercisePage } from '@/features/exercises/pages/EditExercisePage';
-import { ExerciseCatalogPage } from '@/features/exercises/pages/ExerciseCatalogPage';
-import { ExerciseDetailPage } from '@/features/exercises/pages/ExerciseDetailPage';
-import { ExerciseSubstitutionsPage } from '@/features/exercises/pages/ExerciseSubstitutionsPage';
-import { HomePage } from '@/features/home/pages/HomePage';
 import { OnboardingLayout } from '@/features/onboarding/layout/OnboardingLayout';
-import { OnboardingGoalsPage } from '@/features/onboarding/pages/OnboardingGoalsPage';
-import { OnboardingProfilePage } from '@/features/onboarding/pages/OnboardingProfilePage';
-import { OnboardingSportsPage } from '@/features/onboarding/pages/OnboardingSportsPage';
-import { EditProfilePage } from '@/features/profile/pages/EditProfilePage';
-import { ManageGoalsPage } from '@/features/profile/pages/ManageGoalsPage';
-import { ManageSportsPage } from '@/features/profile/pages/ManageSportsPage';
-import { ProfilePage } from '@/features/profile/pages/ProfilePage';
-import { TrainingCalendarPage } from '@/features/training/calendar/TrainingCalendarPage';
-import { CreatePlanPage } from '@/features/training/pages/CreatePlanPage';
-import { OccurrenceDetailPage } from '@/features/training/pages/OccurrenceDetailPage';
-import { PlanEditPage } from '@/features/training/pages/PlanEditPage';
-import { PlanListPage } from '@/features/training/pages/PlanListPage';
-import { ScheduleManagementPage } from '@/features/training/pages/ScheduleManagementPage';
-import { TrainingLandingPage } from '@/features/training/pages/TrainingLandingPage';
-import { PlanBuilderPage } from '@/features/training/planner/PlanBuilderPage';
+
+const LoginPage = lazy(() =>
+  import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import('@/features/auth/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+);
+const VerifyEmailPage = lazy(() =>
+  import('@/features/auth/pages/VerifyEmailPage').then((m) => ({ default: m.VerifyEmailPage })),
+);
+const HomePage = lazy(() =>
+  import('@/features/home/pages/HomePage').then((m) => ({ default: m.HomePage })),
+);
+const OnboardingProfilePage = lazy(() =>
+  import('@/features/onboarding/pages/OnboardingProfilePage').then((m) => ({ default: m.OnboardingProfilePage })),
+);
+const OnboardingSportsPage = lazy(() =>
+  import('@/features/onboarding/pages/OnboardingSportsPage').then((m) => ({ default: m.OnboardingSportsPage })),
+);
+const OnboardingGoalsPage = lazy(() =>
+  import('@/features/onboarding/pages/OnboardingGoalsPage').then((m) => ({ default: m.OnboardingGoalsPage })),
+);
+const ProfilePage = lazy(() =>
+  import('@/features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
+const EditProfilePage = lazy(() =>
+  import('@/features/profile/pages/EditProfilePage').then((m) => ({ default: m.EditProfilePage })),
+);
+const ManageSportsPage = lazy(() =>
+  import('@/features/profile/pages/ManageSportsPage').then((m) => ({ default: m.ManageSportsPage })),
+);
+const ManageGoalsPage = lazy(() =>
+  import('@/features/profile/pages/ManageGoalsPage').then((m) => ({ default: m.ManageGoalsPage })),
+);
+const TrainingLandingPage = lazy(() =>
+  import('@/features/training/pages/TrainingLandingPage').then((m) => ({ default: m.TrainingLandingPage })),
+);
+const PlanListPage = lazy(() =>
+  import('@/features/training/pages/PlanListPage').then((m) => ({ default: m.PlanListPage })),
+);
+const CreatePlanPage = lazy(() =>
+  import('@/features/training/pages/CreatePlanPage').then((m) => ({ default: m.CreatePlanPage })),
+);
+const PlanBuilderPage = lazy(() =>
+  import('@/features/training/planner/PlanBuilderPage').then((m) => ({ default: m.PlanBuilderPage })),
+);
+const PlanEditPage = lazy(() =>
+  import('@/features/training/pages/PlanEditPage').then((m) => ({ default: m.PlanEditPage })),
+);
+const ScheduleManagementPage = lazy(() =>
+  import('@/features/training/pages/ScheduleManagementPage').then((m) => ({ default: m.ScheduleManagementPage })),
+);
+const TrainingCalendarPage = lazy(() =>
+  import('@/features/training/calendar/TrainingCalendarPage').then((m) => ({ default: m.TrainingCalendarPage })),
+);
+const OccurrenceDetailPage = lazy(() =>
+  import('@/features/training/pages/OccurrenceDetailPage').then((m) => ({ default: m.OccurrenceDetailPage })),
+);
+const ExerciseCatalogPage = lazy(() =>
+  import('@/features/exercises/pages/ExerciseCatalogPage').then((m) => ({ default: m.ExerciseCatalogPage })),
+);
+const CreateExercisePage = lazy(() =>
+  import('@/features/exercises/pages/CreateExercisePage').then((m) => ({ default: m.CreateExercisePage })),
+);
+const ExerciseDetailPage = lazy(() =>
+  import('@/features/exercises/pages/ExerciseDetailPage').then((m) => ({ default: m.ExerciseDetailPage })),
+);
+const EditExercisePage = lazy(() =>
+  import('@/features/exercises/pages/EditExercisePage').then((m) => ({ default: m.EditExercisePage })),
+);
+const ExerciseSubstitutionsPage = lazy(() =>
+  import('@/features/exercises/pages/ExerciseSubstitutionsPage').then((m) => ({ default: m.ExerciseSubstitutionsPage })),
+);
+const EnvironmentListPage = lazy(() =>
+  import('@/features/environments/pages/EnvironmentListPage').then((m) => ({ default: m.EnvironmentListPage })),
+);
+const CreateEnvironmentPage = lazy(() =>
+  import('@/features/environments/pages/CreateEnvironmentPage').then((m) => ({ default: m.CreateEnvironmentPage })),
+);
+const EnvironmentDetailPage = lazy(() =>
+  import('@/features/environments/pages/EnvironmentDetailPage').then((m) => ({ default: m.EnvironmentDetailPage })),
+);
+const EditEnvironmentPage = lazy(() =>
+  import('@/features/environments/pages/EditEnvironmentPage').then((m) => ({ default: m.EditEnvironmentPage })),
+);
 
 const RecoveryLandingPage = lazy(() =>
   import('@/features/recovery/pages/RecoveryLandingPage').then((m) => ({ default: m.RecoveryLandingPage })),
@@ -87,7 +144,8 @@ function LazyPage({ children }: { children: ReactNode }) {
 
 export function AppRouter() {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingView message="Loading…" />}>
+      <Routes>
       <Route element={<BootstrapGate />}>
         <Route path="/" element={<BootstrapPage />} />
       </Route>
@@ -244,6 +302,7 @@ export function AppRouter() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

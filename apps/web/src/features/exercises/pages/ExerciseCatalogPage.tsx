@@ -23,23 +23,31 @@ import type { ExerciseDefinitionListFilters } from '@/features/exercises/models/
 
 const PAGE_SIZE = 20;
 
-function optionalParam<T extends string>(value: string | null): T | undefined {
-  return (value || undefined) as T | undefined;
+function enumParam<T extends string>(
+  value: string | null,
+  options: readonly { value: T }[],
+): T | undefined {
+  return value && options.some((option) => option.value === value) ? (value as T) : undefined;
+}
+
+function pageParam(value: string | null): number {
+  const parsed = Number(value ?? '0');
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
 }
 
 function filtersFromParams(params: URLSearchParams): ExerciseDefinitionListFilters {
   return {
     name: params.get('name') || undefined,
-    scope: optionalParam(params.get('scope')),
-    category: optionalParam(params.get('category')),
-    metricMode: optionalParam(params.get('metricMode')),
-    movementPattern: optionalParam(params.get('movementPattern')),
-    muscleGroup: optionalParam(params.get('muscleGroup')),
-    equipment: optionalParam(params.get('equipment')),
-    laterality: optionalParam(params.get('laterality')),
-    impactLevel: optionalParam(params.get('impactLevel')),
-    difficulty: optionalParam(params.get('difficulty')),
-    page: Number(params.get('page') ?? '0') || 0,
+    scope: enumParam(params.get('scope'), exerciseScopeOptions),
+    category: enumParam(params.get('category'), exerciseCategoryOptions),
+    metricMode: enumParam(params.get('metricMode'), metricModeOptions),
+    movementPattern: enumParam(params.get('movementPattern'), movementPatternOptions),
+    muscleGroup: enumParam(params.get('muscleGroup'), muscleGroupOptions),
+    equipment: enumParam(params.get('equipment'), equipmentTypeOptions),
+    laterality: enumParam(params.get('laterality'), lateralityOptions),
+    impactLevel: enumParam(params.get('impactLevel'), impactLevelOptions),
+    difficulty: enumParam(params.get('difficulty'), difficultyOptions),
+    page: pageParam(params.get('page')),
     size: PAGE_SIZE,
   };
 }
@@ -83,13 +91,13 @@ export function ExerciseCatalogPage() {
       next.delete(key);
     }
     next.delete('page');
-    setSearchParams(next, { replace: true });
+    setSearchParams(next);
   };
 
   const goToPage = (page: number) => {
     const next = new URLSearchParams(searchParams);
     next.set('page', String(page));
-    setSearchParams(next, { replace: true });
+    setSearchParams(next);
   };
 
   return (

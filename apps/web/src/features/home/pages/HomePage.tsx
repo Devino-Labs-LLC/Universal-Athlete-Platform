@@ -68,7 +68,10 @@ export function HomePage() {
       <RecommendationCard recommendation={data.recommendation} />
       <RecoveryCard recovery={data.recovery} />
       <TrainingLoadCard trainingLoad={data.trainingLoad} />
-      <AdaptationCard adaptation={data.adaptation} />
+      <AdaptationCard
+        adaptation={data.adaptation}
+        linkedOccurrence={data.training.primaryOccurrence}
+      />
       <RecentPerformanceCard records={data.recentPerformance} />
 
       <div className={styles.spanTwo}>

@@ -5,14 +5,14 @@ import { renderWithProviders, screen, waitFor } from '@/test/utils';
 import { EnvironmentListPage } from '@/features/environments/pages/EnvironmentListPage';
 
 const useEnvironments = vi.fn();
-const setDefaultMutateAsync = vi.fn().mockResolvedValue(undefined);
+const setDefaultMutate = vi.fn();
 
 vi.mock('@/features/environments/hooks/useEnvironments', () => ({
   useEnvironments: (...args: unknown[]) => useEnvironments(...args),
 }));
 
 vi.mock('@/features/environments/hooks/useEnvironmentMutations', () => ({
-  useSetDefaultEnvironmentMutation: () => ({ mutateAsync: setDefaultMutateAsync }),
+  useSetDefaultEnvironmentMutation: () => ({ mutate: setDefaultMutate }),
 }));
 
 describe('EnvironmentListPage', () => {
@@ -48,7 +48,7 @@ describe('EnvironmentListPage', () => {
     expect(screen.getByText('Default')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Set as default' }));
-    await waitFor(() => expect(setDefaultMutateAsync).toHaveBeenCalledWith('env-2'));
+    await waitFor(() => expect(setDefaultMutate).toHaveBeenCalledWith('env-2', expect.any(Object)));
   });
 
   it('shows an error view when the query fails', () => {

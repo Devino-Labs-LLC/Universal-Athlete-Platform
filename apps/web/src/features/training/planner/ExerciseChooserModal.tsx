@@ -12,10 +12,20 @@ interface ExerciseChooserModalProps {
   onSelect: (definition: ExerciseDefinition) => void;
 }
 
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  );
+}
+
 export function ExerciseChooserModal({ open, onClose, onSelect }: ExerciseChooserModalProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   const { data, isLoading } = useExerciseDefinitions({
     name: search || undefined,
@@ -24,10 +34,46 @@ export function ExerciseChooserModal({ open, onClose, onSelect }: ExerciseChoose
   });
 
   useEffect(() => {
-    if (open) {
-      searchInputRef.current?.focus();
+    if (!open) {
+      return;
     }
-  }, [open]);
+
+    previouslyFocused.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    searchInputRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) {
+        return;
+      }
+
+      const focusable = getFocusable(dialogRef.current);
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused.current?.focus();
+    };
+  }, [open, onClose]);
 
   if (!open) {
     return null;
@@ -39,6 +85,7 @@ export function ExerciseChooserModal({ open, onClose, onSelect }: ExerciseChoose
   return (
     <div className={styles.overlay} role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"

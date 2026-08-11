@@ -31,6 +31,7 @@ export function ScheduleManagementPage() {
 
   const plan = planQuery.data;
   const scheduleStatus = plan.scheduleStatus ?? 'DRAFT';
+  const planIsMutable = plan.status !== 'ARCHIVED';
 
   return (
     <Page
@@ -79,7 +80,7 @@ export function ScheduleManagementPage() {
         </dl>
       </section>
 
-      {scheduleStatus === 'DRAFT' ? (
+      {planIsMutable && scheduleStatus === 'DRAFT' ? (
         <section className="card" style={{ marginBottom: '1rem' }}>
           <h2 className="cardTitle">Activate schedule</h2>
           <ScheduleActivateForm
@@ -98,9 +99,10 @@ export function ScheduleManagementPage() {
         </section>
       ) : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Schedule actions</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+      {planIsMutable && (scheduleStatus === 'ACTIVE' || scheduleStatus === 'PAUSED') ? (
+        <section className="card" style={{ marginBottom: '1rem' }}>
+          <h2 className="cardTitle">Schedule actions</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {scheduleStatus === 'ACTIVE' ? (
             <Button
               type="button"
@@ -139,10 +141,11 @@ export function ScheduleManagementPage() {
               Complete schedule
             </Button>
           ) : null}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
-      {scheduleStatus !== 'DRAFT' ? (
+      {planIsMutable && scheduleStatus === 'ACTIVE' ? (
         <section className="card">
           <h2 className="cardTitle">Generate occurrences</h2>
           <GenerateForm

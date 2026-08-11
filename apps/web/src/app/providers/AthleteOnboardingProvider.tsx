@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -45,9 +46,18 @@ export function AthleteOnboardingProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const loadVersionRef = useRef(0);
 
   const loadOnboarding = useCallback(async () => {
+    const loadVersion = ++loadVersionRef.current;
+
     if (authStatus === 'INITIALIZING' || authStatus === 'REFRESHING') {
+      // Clear prior athlete PII while auth is transitioning (login / restore)
+      // so Athlete A data cannot flash for Athlete B.
+      setSnapshot(EMPTY_SNAPSHOT);
+      setIsLoading(true);
+      setHasError(false);
+      setErrorMessage(null);
       return;
     }
 
@@ -65,22 +75,40 @@ export function AthleteOnboardingProvider({ children }: PropsWithChildren) {
 
     try {
       const profile = await fetchAthleteProfile(apiClient);
+      if (loadVersion !== loadVersionRef.current) {
+        return;
+      }
       const sports = profile ? await fetchAthleteSports(apiClient) : [];
+      if (loadVersion !== loadVersionRef.current) {
+        return;
+      }
       const goals = profile ? await fetchAthleteGoals(apiClient) : [];
+      if (loadVersion !== loadVersionRef.current) {
+        return;
+      }
 
       setSnapshot({ profile, sports, goals });
     } catch (error) {
+      if (loadVersion !== loadVersionRef.current) {
+        return;
+      }
       log.error('Failed to load athlete onboarding data', error);
       setHasError(true);
       setErrorMessage(error instanceof Error ? error.message : 'Unable to load onboarding data');
       setSnapshot(EMPTY_SNAPSHOT);
     } finally {
-      setIsLoading(false);
+      if (loadVersion === loadVersionRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [apiClient, authStatus]);
 
   useEffect(() => {
     void loadOnboarding();
+    return () => {
+      // Invalidate direct (non-QueryClient) requests on auth/account changes and unmount.
+      loadVersionRef.current += 1;
+    };
   }, [loadOnboarding]);
 
   const state = useMemo(

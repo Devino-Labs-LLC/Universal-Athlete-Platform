@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/core/components/Button';
@@ -89,37 +89,50 @@ export function ExercisePrescriptionForm({
       : {},
   });
 
+  const lastDefinitionId = useRef<string | null>(null);
+  const lastExerciseId = useRef<string | null>(null);
+
   useEffect(() => {
     if (isCreate && definition) {
-      form.reset({
-        exerciseDefinitionId: definition.id,
-        exerciseName: definition.canonicalName,
-        category: 'STRENGTH',
-        type: 'BARBELL',
-        sets: 3,
-      });
+      const keepDirtyValues = lastDefinitionId.current === definition.id;
+      lastDefinitionId.current = definition.id;
+      form.reset(
+        {
+          exerciseDefinitionId: definition.id,
+          exerciseName: definition.canonicalName,
+          category: 'STRENGTH',
+          type: 'BARBELL',
+          sets: 3,
+        },
+        { keepDirtyValues },
+      );
       return;
     }
     if (!initialExercise || isCreate) {
       return;
     }
-    form.reset({
-      exerciseName: initialExercise.exerciseName,
-      category: initialExercise.category ?? 'STRENGTH',
-      type: initialExercise.type ?? 'BARBELL',
-      sets: initialExercise.sets ?? undefined,
-      minimumReps: initialExercise.minimumReps ?? undefined,
-      maximumReps: initialExercise.maximumReps ?? undefined,
-      targetWeight: initialExercise.targetWeight ?? undefined,
-      weightUnit: initialExercise.weightUnit ?? undefined,
-      targetDurationSeconds: initialExercise.targetDurationSeconds ?? undefined,
-      targetDistance: initialExercise.targetDistance ?? undefined,
-      distanceUnit: initialExercise.distanceUnit ?? undefined,
-      targetRestSeconds: initialExercise.targetRestSeconds ?? undefined,
-      targetRpe: initialExercise.targetRpe ?? undefined,
-      tempo: initialExercise.tempo ?? undefined,
-      coachingNotes: initialExercise.coachingNotes ?? undefined,
-    });
+    const keepDirtyValues = lastExerciseId.current === initialExercise.id;
+    lastExerciseId.current = initialExercise.id;
+    form.reset(
+      {
+        exerciseName: initialExercise.exerciseName,
+        category: initialExercise.category ?? 'STRENGTH',
+        type: initialExercise.type ?? 'BARBELL',
+        sets: initialExercise.sets ?? undefined,
+        minimumReps: initialExercise.minimumReps ?? undefined,
+        maximumReps: initialExercise.maximumReps ?? undefined,
+        targetWeight: initialExercise.targetWeight ?? undefined,
+        weightUnit: initialExercise.weightUnit ?? undefined,
+        targetDurationSeconds: initialExercise.targetDurationSeconds ?? undefined,
+        targetDistance: initialExercise.targetDistance ?? undefined,
+        distanceUnit: initialExercise.distanceUnit ?? undefined,
+        targetRestSeconds: initialExercise.targetRestSeconds ?? undefined,
+        targetRpe: initialExercise.targetRpe ?? undefined,
+        tempo: initialExercise.tempo ?? '',
+        coachingNotes: initialExercise.coachingNotes ?? '',
+      },
+      { keepDirtyValues },
+    );
   }, [initialExercise, isCreate, form, definition]);
 
   const { register, handleSubmit, control, formState } = form;

@@ -60,7 +60,8 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
   const [status, setStatus] = useState<AuthSessionStatus>('INITIALIZING');
   const [account, setAccount] = useState<MeResponse | null>(null);
 
-  const clearSessionCache = useCallback(() => {
+  const clearSessionCache = useCallback(async () => {
+    await queryClient.cancelQueries();
     queryClient.clear();
   }, [queryClient]);
 
@@ -110,12 +111,19 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
   const login = useCallback(
     async (request: LoginRequest) => {
       setStatus('REFRESHING');
-      clearSessionCache();
-      const me = await loginRequest(apiClient, request);
-      setAccount(me);
-      setStatus('AUTHENTICATED');
+      await clearSessionCache();
+      try {
+        const me = await loginRequest(apiClient, request);
+        setAccount(me);
+        setStatus('AUTHENTICATED');
+      } catch (error) {
+        // A rejected login must return the public route guard to a usable state.
+        // Leaving REFRESHING set would replace the form with an endless loading view.
+        await teardownLocalSession('UNAUTHENTICATED');
+        throw error;
+      }
     },
-    [apiClient, clearSessionCache],
+    [apiClient, clearSessionCache, teardownLocalSession],
   );
 
   const logout = useCallback(async () => {

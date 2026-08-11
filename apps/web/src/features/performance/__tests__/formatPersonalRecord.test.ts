@@ -108,9 +108,13 @@ describe('formatPersonalRecord — unknown record type fallback', () => {
     expect(formatPersonalRecord(record)).toBe('3');
   });
 
-  it('falls back to a decimal "0.0" when neither measured nor normalized values exist', () => {
-    const record = baseRecord({ recordType: 'SOME_NEW_TYPE' as PersonalRecord['recordType'] });
-    expect(formatPersonalRecord(record)).toBe('0.0');
+  it('falls back to an em dash when neither measured nor normalized values exist', () => {
+    const record = baseRecord({
+      recordType: 'SOME_NEW_TYPE' as PersonalRecord['recordType'],
+      normalizedValue: null,
+      measuredValue: null,
+    });
+    expect(formatPersonalRecord(record)).toBe('—');
   });
 });
 

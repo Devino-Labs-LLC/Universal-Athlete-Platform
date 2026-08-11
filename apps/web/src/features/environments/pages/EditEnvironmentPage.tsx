@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
@@ -23,6 +23,10 @@ export function EditEnvironmentPage() {
 
   if (environmentQuery.isError || !environmentQuery.data) {
     return <ErrorView message="Unable to load environment." onRetry={() => environmentQuery.refetch()} />;
+  }
+
+  if (!environmentQuery.data.active || environmentQuery.data.archivedAt) {
+    return <Navigate to={`/app/environments/${environmentId}`} replace />;
   }
 
   return (

@@ -34,6 +34,7 @@ export function EnvironmentDetailPage() {
   }
 
   const environment = environmentQuery.data;
+  const isActive = environment.active && !environment.archivedAt;
 
   return (
     <Page
@@ -41,12 +42,16 @@ export function EnvironmentDetailPage() {
       description={trainingEnvironmentTypeLabel(environment.type)}
       actions={
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <Link to={`/app/environments/${environmentId}/edit`}>
-            <Button type="button">Edit</Button>
-          </Link>
-          <Button type="button" variant="ghost" onClick={() => setArchiveOpen(true)}>
-            Archive
-          </Button>
+          {isActive ? (
+            <>
+              <Link to={`/app/environments/${environmentId}/edit`}>
+                <Button type="button">Edit</Button>
+              </Link>
+              <Button type="button" variant="ghost" onClick={() => setArchiveOpen(true)}>
+                Archive
+              </Button>
+            </>
+          ) : null}
         </div>
       }
     >
@@ -56,15 +61,20 @@ export function EnvironmentDetailPage() {
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
           {environment.defaultEnvironment ? (
             <DefaultBadge />
-          ) : (
+          ) : isActive ? (
             <Button
               type="button"
               variant="secondary"
-              onClick={() => void setDefaultMutation.mutateAsync(environmentId)}
+              onClick={() =>
+                setDefaultMutation.mutate(environmentId, {
+                  onError: (error) =>
+                    setErrorMessage(environmentErrorMessage(error, 'Unable to set default environment')),
+                })
+              }
             >
               Set as default
             </Button>
-          )}
+          ) : null}
           {!environment.active || environment.archivedAt ? <span>Archived</span> : null}
         </div>
 

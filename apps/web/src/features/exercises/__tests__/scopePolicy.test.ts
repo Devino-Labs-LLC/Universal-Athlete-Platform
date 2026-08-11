@@ -22,11 +22,18 @@ describe('exercise scope policy', () => {
   });
 
   it('SYSTEM exercises are not editable', () => {
-    expect(canEditExerciseDefinition({ scope: 'SYSTEM' })).toBe(false);
+    expect(canEditExerciseDefinition({ scope: 'SYSTEM', active: true })).toBe(false);
   });
 
-  it('ATHLETE_CUSTOM exercises are editable', () => {
-    expect(canEditExerciseDefinition({ scope: 'ATHLETE_CUSTOM' })).toBe(true);
+  it('ATHLETE_CUSTOM exercises are editable only while active', () => {
+    expect(canEditExerciseDefinition({ scope: 'ATHLETE_CUSTOM', active: true })).toBe(true);
+    expect(
+      canEditExerciseDefinition({
+        scope: 'ATHLETE_CUSTOM',
+        active: false,
+        archivedAt: '2026-01-01T00:00:00Z',
+      }),
+    ).toBe(false);
   });
 
   it('SYSTEM exercises are never archivable', () => {
