@@ -36,8 +36,10 @@ uap:
         cookie-name: ${UAP_CSRF_COOKIE_NAME:XSRF-TOKEN}
         header-name: ${UAP_CSRF_HEADER_NAME:X-XSRF-TOKEN}
       cors:
+        # Default origin matches Vite web (port 3000). Override via UAP_CORS_ALLOWED_ORIGINS
+        # (comma-separated) for additional origins such as http://127.0.0.1:3000.
         allowed-origins: ${UAP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
-        allowed-methods: GET,POST,PATCH,OPTIONS
+        allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
         allowed-headers: Authorization,Content-Type,X-XSRF-TOKEN,X-Requested-With
         allow-credentials: true
       rate-limit:

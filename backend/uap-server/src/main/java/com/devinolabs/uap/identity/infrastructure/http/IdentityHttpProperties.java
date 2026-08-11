@@ -199,8 +199,10 @@ public class IdentityHttpProperties {
 
 	public static class Cors {
 
-		private List<String> allowedOrigins = new ArrayList<>(List.of("http://localhost:3000"));
-		private List<String> allowedMethods = new ArrayList<>(List.of("GET", "POST", "PATCH", "OPTIONS"));
+		private List<String> allowedOrigins = new ArrayList<>(
+				List.of("http://localhost:3000", "http://127.0.0.1:3000"));
+		private List<String> allowedMethods = new ArrayList<>(
+				List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		private List<String> allowedHeaders = new ArrayList<>(
 				List.of("Authorization", "Content-Type", "X-XSRF-TOKEN", "X-Requested-With"));
 		private boolean allowCredentials = true;

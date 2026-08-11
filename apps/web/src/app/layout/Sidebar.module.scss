@@ -1,0 +1,54 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  padding: var(--uap-space-6) var(--uap-space-4);
+  background: var(--uap-sidebar-bg);
+  color: var(--uap-sidebar-text);
+  border-right: 1px solid rgb(255 255 255 / 6%);
+  min-height: 100vh;
+}
+
+.brand {
+  margin: 0;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: rgb(226 232 240 / 72%);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+  margin-top: var(--uap-space-4);
+}
+
+.navLink {
+  display: block;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--uap-radius-md);
+  color: var(--uap-sidebar-text);
+  font-weight: 500;
+}
+
+.navLink:hover {
+  background: rgb(255 255 255 / 6%);
+}
+
+.navLinkActive {
+  background: var(--uap-sidebar-active);
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    min-height: 100%;
+    box-shadow: var(--uap-shadow-md);
+  }
+}

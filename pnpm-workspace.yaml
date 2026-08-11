@@ -3,7 +3,9 @@ packages:
   - "packages/*"
 allowBuilds:
   '@ampproject/toolbox-optimizer': true
+  '@parcel/watcher': true
   es5-ext: true
+  esbuild: true
   fsevents: true
   sharp: true
   unrs-resolver: true

@@ -1,0 +1,25 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  padding: var(--uap-space-6);
+  max-width: 960px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: var(--uap-font-size-xl);
+  font-weight: 600;
+  color: var(--uap-text-primary);
+}
+
+.pageDescription {
+  margin: 0;
+  color: var(--uap-text-secondary);
+}
+
+.pageContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+}

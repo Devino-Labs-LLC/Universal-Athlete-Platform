@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Universal Athlete Platform — Web (W1)
 
-## Getting Started
+Vite + React 19 + TypeScript foundation for the browser client (`uap_web`).
 
-First, run the development server:
+## Stack
+
+- Vite 7, React 19, TypeScript (strict)
+- React Router 7
+- TanStack Query v5
+- Axios, Zod, React Hook Form, `@hookform/resolvers`
+- SCSS modules (no Tailwind)
+- Vitest, React Testing Library, jsdom, `@testing-library/user-event`
+- ESLint flat config
+
+Path alias: `@/` → `src/`.
+
+## Scripts
+
+From repo root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm --filter uap_web dev
+pnpm --filter uap_web build
+pnpm --filter uap_web preview
+pnpm --filter uap_web test
+pnpm --filter uap_web typecheck
+pnpm --filter uap_web lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or use root shortcuts: `web:dev`, `web:build`, `web:lint`, `web:test`, `web:typecheck`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` (or export vars in your shell).
 
-## Learn More
+| Variable | Required | Values |
+|----------|----------|--------|
+| `VITE_UAP_ENV` | Release builds | `development` \| `staging` \| `production` |
+| `VITE_UAP_API_BASE_URL` | Staging/production | HTTPS API origin |
 
-To learn more about Next.js, take a look at the following resources:
+Rules (`src/app/config/env.ts`):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Release builds fail closed if `VITE_UAP_ENV` is missing.
+- Staging/production require `VITE_UAP_API_BASE_URL`.
+- `localhost`, `127.0.0.1`, and `10.0.2.2` are forbidden outside development.
+- Development defaults to **empty** `apiBaseUrl` (`''`) so Axios uses same-origin relative URLs.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Dev proxy / CORS decision
 
-## Deploy on Vercel
+- Vite dev server runs on **port 3000** (matches backend CORS default `http://localhost:3000`).
+- `/api` is proxied to `http://localhost:8080`.
+- Axios uses `withCredentials: true` and relative `/api/...` paths in development.
+- This keeps cookies and CSRF on the **same origin** (`localhost:3000`) while the backend serves API on `:8080` behind the proxy.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Production/staging should set `VITE_UAP_API_BASE_URL` to the deployed API origin and configure backend CORS for the web origin.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+W1 also corrected backend default CORS **methods** to include `PUT` and `DELETE` (previously only `GET,POST,PATCH,OPTIONS`), which is required for training mutations behind credentialed CORS. Dev still defaults origin to `http://localhost:3000`.
+
+## Cookie auth & CSRF
+
+- Session cookies are managed by the browser (`withCredentials: true`).
+- CSRF cookie: `XSRF-TOKEN`; header: `X-XSRF-TOKEN`.
+- Token sources: readable `document.cookie`, then response header `X-XSRF-TOKEN` stored in memory (for cases where the cookie is HttpOnly or cross-origin headers arrive without readable cookies).
+- CSRF attached on `POST`/`PUT`/`PATCH`/`DELETE`, exempt: login, register, verify-email.
+
+## Refresh single-flight
+
+On `401`, one refresh runs at `POST /api/v1/identity/refresh`:
+
+- Skips login/register/verify-email/refresh paths.
+- Uses `__uapRetried` metadata to retry the original request once.
+- Concurrent 401s join the same refresh promise.
+- Refresh failure calls `onSessionExpired` → local session teardown (`EXPIRED`).
+
+## Routing
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Bootstrap gate |
+| `/auth/login`, `/register`, `/verify-email` | Auth |
+| `/app/*` | Authenticated shell |
+| `/app/home` | Today diagnostic |
+| `/app/training`, `/recovery`, `/performance`, `/environments`, `/profile` | W1 placeholders |
+| `/incompatible` | Client contract mismatch |
+
+Guards:
+
+- Unauthenticated → login
+- Incompatible bootstrap contract → `/incompatible`
+- Authenticated + bootstrap V1 ready → `/app/home`
+
+## Bootstrap
+
+`GET /api/v1/training/client/bootstrap` must return `clientContractVersion === 'V1'`.
+
+Statuses: `IDLE`, `BOOTSTRAPPING`, `UNAUTHENTICATED`, `AUTHENTICATED_READY`, `INCOMPATIBLE_CLIENT`, `BOOTSTRAP_ERROR`.
+
+## Onboarding (deferred W2)
+
+Athlete onboarding is **not** implemented in W1. After authentication and bootstrap V1, users enter the app shell directly. Mobile onboarding gates will be added in W2.
+
+## Home diagnostic
+
+`GET /api/v1/training/client/today` with passthrough Zod parsing shows:
+
+- Date
+- Recovery present
+- Readiness band
+- Recommendation action
+- Scheduled workout count
+
+## Build notes
+
+- Production build runs `tsc -b && vite build`.
+- **Source maps are disabled** in production (`vite.config.ts` → `build.sourcemap: false`) to reduce leaked source exposure. Enable locally only when debugging production bundles.
+
+## Security / deployment
+
+- Never log passwords, tokens, cookies, CSRF values, or athlete notes (see `core/logging/logger.ts`).
+- Deploy over HTTPS.
+- Set explicit `VITE_UAP_ENV` and API URL for staging/production builds.
+- Ensure backend CORS allows credentials from the deployed web origin.
+- Keep CSRF double-submit enabled for mutating API calls.
+
+## Tests
+
+Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing, bootstrap contract checks, home diagnostic rendering, login a11y basics, and logger redaction.
+
+```bash
+pnpm --filter uap_web test
+```
