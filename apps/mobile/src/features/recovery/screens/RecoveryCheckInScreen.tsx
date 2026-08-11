@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -71,9 +71,20 @@ export function RecoveryCheckInScreen() {
 
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Reset only when check-in identity/version changes — never wipe dirty edits on refetch.
+  const sourceKey = `${checkInDate}:${existingCheckIn?.id ?? 'new'}:${existingCheckIn?.version ?? 0}`;
+  const lastAppliedSourceKey = useRef<string | null>(null);
+
   useEffect(() => {
+    if (checkInQuery.isLoading) {
+      return;
+    }
+    if (lastAppliedSourceKey.current === sourceKey) {
+      return;
+    }
     form.reset(defaultValues);
-  }, [defaultValues, form]);
+    lastAppliedSourceKey.current = sourceKey;
+  }, [checkInQuery.isLoading, defaultValues, form, sourceKey]);
 
   const validateDate = (): boolean => {
     const today = todayDateOnly();

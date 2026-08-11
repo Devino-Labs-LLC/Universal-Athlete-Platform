@@ -11,7 +11,7 @@ import { QueryClient } from '@tanstack/react-query';
 
 import { loadAppConfig } from '@/src/app/config/env';
 import { ApiClient, createApiClient } from '@/src/core/api/apiClient';
-import { createCookieStore } from '@/src/core/api/cookieStore';
+import { CookieStore, createCookieStore } from '@/src/core/api/cookieStore';
 import { isUnauthorizedError } from '@/src/core/api/errorMapper';
 import {
   fetchMe,
@@ -58,6 +58,25 @@ interface AuthSessionProviderProps extends PropsWithChildren {
   queryClient: QueryClient;
 }
 
+/** Best-effort local session teardown used by logout and session-expiry paths. */
+export async function clearLocalAuthState(options: {
+  queryClient: QueryClient;
+  cookieStore: CookieStore;
+  setAccount: (account: MeResponse | null) => void;
+  setStatus: (status: AuthSessionStatus) => void;
+  status?: AuthSessionStatus;
+}): Promise<void> {
+  const nextStatus = options.status ?? 'UNAUTHENTICATED';
+  try {
+    await options.cookieStore.clearAll();
+  } catch (error) {
+    log.warn('Failed to clear cookie store during local session teardown', error);
+  }
+  options.queryClient.clear();
+  options.setAccount(null);
+  options.setStatus(nextStatus);
+}
+
 export function AuthSessionProvider({ children, queryClient }: AuthSessionProviderProps) {
   const appConfig = useMemo(() => loadAppConfig(), []);
   const cookieStore = useMemo(() => createCookieStore(), []);
@@ -68,18 +87,29 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
     queryClient.clear();
   }, [queryClient]);
 
+  const teardownLocalSession = useCallback(
+    async (nextStatus: AuthSessionStatus = 'UNAUTHENTICATED') => {
+      await clearLocalAuthState({
+        queryClient,
+        cookieStore,
+        setAccount,
+        setStatus,
+        status: nextStatus,
+      });
+    },
+    [cookieStore, queryClient],
+  );
+
   const apiClient = useMemo(
     () =>
       createApiClient({
         baseURL: appConfig.apiBaseUrl,
         cookieStore,
         onSessionExpired: () => {
-          clearSessionCache();
-          setAccount(null);
-          setStatus('EXPIRED');
+          void teardownLocalSession('EXPIRED');
         },
       }),
-    [appConfig.apiBaseUrl, clearSessionCache, cookieStore],
+    [appConfig.apiBaseUrl, cookieStore, teardownLocalSession],
   );
 
   const restore = useCallback(async () => {
@@ -90,15 +120,13 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
       setStatus('AUTHENTICATED');
     } catch (error) {
       if (isUnauthorizedError(error)) {
-        setAccount(null);
-        setStatus('UNAUTHENTICATED');
+        await teardownLocalSession('UNAUTHENTICATED');
         return;
       }
       log.error('Failed to restore session', error);
-      setAccount(null);
-      setStatus('UNAUTHENTICATED');
+      await teardownLocalSession('UNAUTHENTICATED');
     }
-  }, [apiClient]);
+  }, [apiClient, teardownLocalSession]);
 
   useEffect(() => {
     void restore();
@@ -122,12 +150,9 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
     } catch (error) {
       log.warn('Logout request failed; clearing local session anyway', error);
     } finally {
-      await cookieStore.clearAll();
-      clearSessionCache();
-      setAccount(null);
-      setStatus('UNAUTHENTICATED');
+      await teardownLocalSession('UNAUTHENTICATED');
     }
-  }, [apiClient, clearSessionCache, cookieStore]);
+  }, [apiClient, teardownLocalSession]);
 
   const logoutAll = useCallback(async () => {
     try {
@@ -135,12 +160,9 @@ export function AuthSessionProvider({ children, queryClient }: AuthSessionProvid
     } catch (error) {
       log.warn('Logout-all request failed; clearing local session anyway', error);
     } finally {
-      await cookieStore.clearAll();
-      clearSessionCache();
-      setAccount(null);
-      setStatus('UNAUTHENTICATED');
+      await teardownLocalSession('UNAUTHENTICATED');
     }
-  }, [apiClient, clearSessionCache, cookieStore]);
+  }, [apiClient, teardownLocalSession]);
 
   const register = useCallback(
     async (request: RegisterRequest) => registerRequest(apiClient, request),

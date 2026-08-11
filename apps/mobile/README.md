@@ -1,474 +1,245 @@
-# Universal Athlete — Mobile (M9)
+# Universal Athlete — Mobile (M10) / v1 release candidate
 
-React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
+React Native / Expo client for the Universal Athlete Platform. **Not Flutter.**
 
-M9 adds **Training Environments** under Profile plus occurrence environment selection from workout launch. M8 added the Performance tab. M7 added adaptation & substitution. M6 added Recovery. M5 added live workout execution. M4 added the Training browse stack.
+**M10 is hardening and feature-freeze** for the v1 release candidate: stability, config fail-closed behavior, auth/session correctness, and release readiness — not new product features.
 
-## M9 — Training environments & settings
+Operational procedures (smoke checklists, common errors, EAS notes) live in [`docs/MOBILE_V1_RUNBOOK.md`](docs/MOBILE_V1_RUNBOOK.md).
 
-### REST endpoints
+## Stack
 
-| Action | Method | Path |
-| --- | --- | --- |
-| Create | POST | `/api/v1/training/environments` |
-| List | GET | `/api/v1/training/environments?type=&equipment=&activeOnly=&page=&size=` |
-| Get | GET | `/api/v1/training/environments/{id}` |
-| Update | PATCH | `/api/v1/training/environments/{id}` (bare PatchValue fields) |
-| Archive | DELETE | `/api/v1/training/environments/{id}` |
-| Set default | POST | `/api/v1/training/environments/{id}/default` |
-| Set occurrence actual env | PUT | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/environment` → `WorkoutOccurrenceResponse` |
-| Clear occurrence actual env | DELETE | same path → `WorkoutOccurrenceResponse` |
-| Set occurrence env | PUT | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/environment` |
-| Clear occurrence env | DELETE | same path |
-
-Default list UI uses `activeOnly=true`. PATCH sends bare JSON values/null — not `{ value: T }` wrappers (same semantics as M6 recovery check-in). BODYWEIGHT is selectable equipment but never auto-inserted.
-
-### Routes
-
-Profile converted to a stack (`headerShown: false` on the tab):
-
-```
-(tabs)/profile/
-  index.tsx
-  environments/index.tsx
-  environments/create.tsx
-  environments/[environmentId]/index.tsx
-  environments/[environmentId]/edit.tsx
-```
-
-Training occurrence environment picker:
-
-```
-plans/.../occurrences/[occurrenceId]/environment.tsx
-```
-
-### Feature layout
-
-`src/features/environments/` — `api/`, `hooks/`, `models/`, `components/`, `forms/`, `screens/`, `utils/`
-
-### Plan/day environment preferences
-
-**Read-only / deferred.** Plan `defaultTrainingEnvironmentId` and day `trainingEnvironmentOverrideId` are visible on existing plan/day browse responses but there is **no plan editor** in mobile v1. Occurrence actual environment is set from launch prep only.
-
-### Invalidation
-
-Environment create/update/archive/default → `environmentKeys.all`, detail, `trainingKeys.overview`, `todayQueryKeys.all`.
-
-Occurrence set/clear → occurrence, launch, today, overview, `adaptationKeys.all`, proposal list, substitution candidates prefix.
-
-### Integrations
-
-- **Profile** — Training section with link to environments list and optional default environment summary; app version when `Constants.expoConfig?.version` is available.
-- **WorkoutLaunchScreen** — **Choose Environment** when `canChangeEnvironment.allowed`; locked reason shows muted note.
-
-### Tests
-
-`__tests__/environments/` — schemas, labels, errors, patch request, EquipmentPicker, EnvironmentCard, form validation, invalidation, profile training section.
-
-### Remaining v1 gaps (M10+)
-
-- Athlete timezone and unit preferences (unsupported backend)
-- Plan/day environment preference editor (deferred)
-- Exercise environment compatibility detail from exercise context (optional; not required for M9)
-- Performance charts (deferred from M8)
-
-## M8 — Performance, PRs & training load
-
-### REST endpoints
-
-| Action | Method | Path |
-| --- | --- | --- |
-| Recent PRs | GET | `/api/v1/training/performance/personal-records/recent?days=&limit=` |
-| All PRs | GET | `/api/v1/training/performance/personal-records?exercisePerformanceKey=&recordType=` |
-| Exercise PRs | GET | `/api/v1/training/performance/exercises/{exercisePerformanceKey}/personal-records` |
-| Exercise history | GET | `/api/v1/training/performance/exercises/{exercisePerformanceKey}?scheduledFrom=&scheduledTo=&page=&size=` |
-| Occurrence performance | GET | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/performance` |
-| Training load history | GET | `/api/v1/training/training-load/history?startDate=&endDate=&granularity=&page=&size=` |
-
-Granularity: `OCCURRENCE` (sessions), `DAILY`, `WEEKLY`.
-
-### Routes
-
-```
-(tabs)/performance/
-  index.tsx                 # overview
-  records.tsx               # all personal records
-  load.tsx                  # training load history
-  exercises/[exercisePerformanceKey].tsx
-```
-
-### Feature layout
-
-`src/features/performance/` — `api/`, `hooks/`, `models/`, `components/`, `screens/`, `utils/`
-
-### Charts decision
-
-**Deferred.** M8 uses textual trend summaries, compact lists, and load snapshot cards — no new chart library. Category breakdown is a simple list, not a pie chart. Revisit when a shared chart component or design spec is ready.
-
-### Invalidation
-
-`invalidateOccurrenceTerminal` and session-effort submit/update also invalidate `performanceKeys.all` (recent records, personal records, load history). Set-level updates do **not** invalidate performance queries.
-
-### Integrations
-
-- **Home RecentPerformanceCard** — pressable rows navigate to exercise performance when `exercisePerformanceKey` is present; otherwise records screen. "View all" → records.
-- **OccurrenceDetailScreen** — completed workouts show `OccurrencePerformanceSummary` plus optional link to load history.
-
-### Tests
-
-`__tests__/performance/` — schemas, PR formatting, load metrics (rated/unrated/null RPE), date ranges, labels, invalidation, component smoke tests, home navigation.
-
-## M7 — Adaptation & substitution
-
-### REST endpoints
-
-| Action | Method | Path |
-| --- | --- | --- |
-| Generate (manual) | POST | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/adaptation-proposals` |
-| Generate (guidance) | POST | `/api/v1/training/recommendations/{recommendationId}/occurrences/{occurrenceId}/adaptation-proposals` |
-| Get proposal | GET | `/api/v1/training/adaptation-proposals/{proposalId}` |
-| List proposals | GET | `/api/v1/training/adaptation-proposals?occurrenceId=&status=` |
-| Update item | PATCH | `/api/v1/training/adaptation-proposals/{proposalId}/items/{itemId}` |
-| Cancel | POST | `/api/v1/training/adaptation-proposals/{proposalId}/cancel` |
-| Regenerate | POST | `/api/v1/training/adaptation-proposals/{proposalId}/regenerate` |
-| Apply | POST | `/api/v1/training/plans/.../adaptation-proposals/{proposalId}/apply` |
-| Substitution candidates | GET | `/api/v1/training/plans/.../exercises/{executionId}/substitution-candidates` |
-| Substitute | POST | `/api/v1/training/plans/.../exercises/{executionId}/substitute` |
-| Revert substitution | POST | `/api/v1/training/plans/.../exercises/{executionId}/substitute/revert` |
-| Substitution history | GET | `/api/v1/training/plans/.../exercises/{executionId}/substitutions` |
-
-### Routes
-
-```
-plans/.../occurrences/[occurrenceId]/adaptation/[proposalId].tsx
-plans/.../occurrences/[occurrenceId]/adaptation/[proposalId]/items/[itemId]/candidates.tsx
-plans/.../occurrences/[occurrenceId]/exercises/[executionId]/substitute.tsx
-```
-
-### Feature layout
-
-`src/features/adaptation/` — `api/`, `hooks/`, `models/`, `components/`, `screens/`, `utils/`
-
-### Invalidation
-
-Proposal mutations invalidate `adaptationKeys.proposal/list`, `trainingKeys.launch`, and `todayQueryKeys.all`. Apply also invalidates occurrence, overview, calendar, and execution keys. Direct substitution invalidates occurrence, launch, today, candidates, and history.
-
-### Integrations
-
-- **Home AdaptationCard** → deep-link to proposal (fallback GET proposal for plan/day IDs)
-- **HomeQuickActions** → generate manual proposal for primary occurrence
-- **WorkoutLaunchScreen** → Review Adaptation / Find Workout Alternatives
-- **TrainingGuidanceScreen** → Review Workout Adaptation when `MODIFY_SESSION`
-- **Training overview** → outstanding adaptations open proposal directly
-- **Workout execution** → Substitute Exercise when `canSubstituteExercise` allowed
-
-### Tests
-
-`__tests__/adaptation/` — schemas, labels, errors, item card, context-only messaging, proposal screen apply path, navigation helpers, invalidation, substitution reason labels.
-
-## Stack versions
-
-| Package | Version |
+| Layer | Choice |
 | --- | --- |
-| Expo SDK | ~57.0.12 |
-| React Native | 0.86.2 |
-| React | 19.2.3 |
-| TypeScript | ~6.0.3 |
-| TanStack Query | ^5 |
-| Axios | ^1.19 |
-| Zod | ^4 |
-| Jest + jest-expo | ^29 / ^57 |
+| Expo SDK | ~57 |
+| React Native | 0.86 |
+| React | 19 |
+| TypeScript | strict (`~6`) |
+| Navigation | Expo Router |
+| Server state | TanStack Query |
+| HTTP | Axios (`withCredentials`) |
+| Validation | Zod |
+| Forms | React Hook Form (+ Zod resolvers) |
+| Auth | Cookie session + CSRF double-submit |
+| Refresh | Single-flight `POST /api/v1/identity/refresh` |
+| Native runtime | Expo Dev Build (`expo-dev-client`) — **Expo Go is not supported** for real auth |
 
-## Monorepo usage
+Pinned package versions are in `package.json` (Expo `~57.0.12`, RN `0.86.2`, React `19.2.3`).
 
-From the repository root:
+## Milestone coverage (M1R–M9)
 
-```bash
-pnpm --filter uap_mobile install
-pnpm --filter uap_mobile start
-```
+| Milestone | Scope |
+| --- | --- |
+| **M1R** | App shell, env config, Axios client, cookies/CSRF, refresh single-flight, Expo Dev Build baseline |
+| **M2** | Auth (register/login/verify), onboarding (profile → sports → goals), bootstrap V1 gate, logout cache clear |
+| **M3** | Home / Today dashboard, explicit derived-state / readiness / guidance generation |
+| **M4** | Training browse stack (overview, calendar, plan/day/occurrence, launch prep) |
+| **M5** | Live workout execution (start/complete/skip, sets, session effort, training load) |
+| **M6** | Recovery tab (check-in, history, analytics text, readiness/guidance detail) |
+| **M7** | Adaptation proposals + exercise substitution / revert |
+| **M8** | Performance tab (PRs, exercise history, training load history — textual, no charts) |
+| **M9** | Training environments (Profile CRUD) + occurrence environment selection at launch |
+| **M10** | RC hardening / feature-freeze (this release) |
 
-Or from this directory:
+Tabs: **Home**, **Training**, **Recovery**, **Performance**, **Profile**. Performance is a full feature surface (M8), not a placeholder.
 
-```bash
-pnpm install
-pnpm start
-```
+## Compatibility matrix
 
-## Environment variables
+| Contract | Version |
+| --- | --- |
+| Client contract | `V1` (`clientContractVersion` from bootstrap) |
+| Readiness | `READINESS_V1` |
+| Recommendation | `TRAINING_RECOMMENDATION_V1` |
+| Backend Flyway | `V29` (minimum) |
 
-Set these via `.env`, shell exports, or your CI/dev build profile:
+Runtime negotiation is the existing bootstrap `clientContractVersion === 'V1'` check. Unknown versions route to `/incompatible`. No additional semver negotiation in M10.
+
+Mobile minimum backend: **v1 release candidate with Flyway ≥ V29 and client contract V1**.
+
+## Environment configuration
+
+Set via `.env`, shell exports, EAS env/secrets, or CI. Rules are enforced in `src/config/env.ts`.
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `EXPO_PUBLIC_UAP_ENV` | No (defaults to `development`) | `development`, `staging`, or `production` |
-| `EXPO_PUBLIC_UAP_API_BASE_URL` | Yes for staging/production | API origin, e.g. `http://127.0.0.1:8080` |
+| `EXPO_PUBLIC_UAP_ENV` | **Yes in release builds** | `development` \| `staging` \| `production` |
+| `EXPO_PUBLIC_UAP_API_BASE_URL` | Yes for staging/production | API origin (trailing slash normalized away) |
 
-Rules (`src/config/env.ts`):
+Rules:
 
-- **development**: defaults to `http://127.0.0.1:8080` when the URL is omitted
-- **staging / production**: throws if the URL is missing (no production fallback)
-- Trailing slashes are normalized away
+- **Release builds fail closed** if `EXPO_PUBLIC_UAP_ENV` is missing (no silent default).
+- **Local Metro / `__DEV__` only**: missing env defaults to `development`.
+- **development**: API URL defaults to `http://127.0.0.1:8080` when omitted.
+- **staging / production**: API URL is required; no production fallback.
+- **Localhost forbidden outside development** — `localhost`, `127.0.0.1`, and `10.0.2.2` are rejected when env is not `development`.
 
-Example:
+### Local API URL examples
 
-```bash
-EXPO_PUBLIC_UAP_ENV=development EXPO_PUBLIC_UAP_API_BASE_URL=http://127.0.0.1:8080 pnpm start
-```
-
-## Local API connectivity
-
-| Target | URL |
+| Target | Typical `EXPO_PUBLIC_UAP_API_BASE_URL` |
 | --- | --- |
 | iOS Simulator | `http://127.0.0.1:8080` |
 | Android Emulator | `http://10.0.2.2:8080` |
 | Physical device | `http://<your-lan-ip>:8080` |
 
+Example:
+
+```bash
+EXPO_PUBLIC_UAP_ENV=development \
+EXPO_PUBLIC_UAP_API_BASE_URL=http://127.0.0.1:8080 \
+pnpm start
+```
+
 ### Cleartext HTTP (development only)
 
 `app.config.ts` enables insecure local HTTP **only** when `EXPO_PUBLIC_UAP_ENV=development`:
 
-- **iOS**: `NSAppTransportSecurity` exceptions for `localhost` and `127.0.0.1`
+- **iOS**: `NSAppTransportSecurity` exceptions for `localhost` / `127.0.0.1`
 - **Android**: `usesCleartextTraffic: true`
 
-Do not rely on cleartext outside development. Staging/production builds should use HTTPS endpoints via `EXPO_PUBLIC_UAP_API_BASE_URL`.
+Staging/production builds should use HTTPS endpoints.
 
-## Expo Dev Build required (cookies)
+## Running
 
-Authentication uses Spring session cookies stored in the **native cookie jar** via `@react-native-cookies/cookies`.
-
-- **Expo Go is not supported** for real auth flows — the native cookie module is unavailable there.
-- Use an **Expo Development Build** (`expo-dev-client`) on iOS/Android simulators or devices.
-- **Web / static export** uses an in-memory cookie stub so `expo export` can succeed; native cookie behavior is not available on web.
-
-Cookie strategy:
-
-1. Login/register responses populate the native jar (Set-Cookie handling is platform-dependent; the native store is authoritative).
-2. Axios sends `withCredentials: true`; mutating requests attach `X-XSRF-TOKEN` from the `XSRF-TOKEN` cookie.
-3. Logout calls the server, then `CookieManager.clearAll(true)`.
-4. Refresh failure clears cookies and marks the session **EXPIRED**.
-
-## Architecture
-
-Expo Router lives in `src/app/` (required when using the `src/` layout). Shared application code uses path aliases so imports like `@/src/app/config/env` resolve to `src/config/env.ts`:
-
-```
-src/app/                 Expo Router screens & layouts
-src/config/              Environment + QueryClient
-src/providers/           App, auth session, bootstrap
-src/theme/               Slate/teal tokens + ThemeProvider
-src/core/api/            Axios client, CSRF, cookies, errors
-src/core/components/     Screen, buttons, loading/error/empty
-src/features/auth/       Identity API, Zod schemas, form fields, error copy
-src/features/onboarding/ Onboarding state resolver, routes, provider wiring
-src/features/profile/    Athlete profile/sports/goals API, schemas, hooks
-src/features/training/   Bootstrap/today API, browse APIs, schemas, screens
-src/features/home/       Today dashboard (cards, hooks, generation actions)
-src/features/recovery/   Recovery overview, check-in, history, readiness/guidance detail
-__tests__/               Jest unit/integration tests
-```
-
-### Recovery stack (M6)
-
-The Recovery tab (`/(tabs)/recovery`) is a nested Stack (tab header hidden, like Training):
-
-1. **Overview (default)** — **GET** `/api/v1/training/client/recovery-overview?date=&trendDays=` — check-in summary, insights pipeline, readiness/guidance summaries, baselines, trends, discomfort, training load context. Pull-to-refresh also refetches today dashboard for action flags.
-2. **Check-in** — create/edit daily recovery check-in (RHF form). **POST** `/api/v1/training/recovery-check-ins`, **PATCH** `/api/v1/training/recovery-check-ins/{id}` with `expectedVersion`, **GET** by date/id. Optional post-save prompt to generate/regenerate daily athlete state (no auto-chaining to readiness/guidance).
-3. **History** — **GET** `/api/v1/training/recovery-check-ins/history?startDate=&endDate=&includeTrainingLoad=true` (last 30 days).
-4. **Analytics** — 7D/14D/28D window selector refetching overview `trendDays` for baselines and trends (textual, no charts).
-5. **Readiness detail** — **GET** `/api/v1/training/readiness/assessments/{assessmentId}`.
-6. **Guidance detail** — **GET** `/api/v1/training/recommendations/{recommendationId}` (no adaptation CTA).
-
-Derived state generation reuses Home APIs (`derivedStateApi.ts`):
-
-- **POST** `/api/v1/training/athlete-state/daily/{date}` — body `{ baselineWindowDays: 7|14|28 }`
-- **POST** `/api/v1/training/athlete-state/daily/{date}/regenerate` — same body (after check-in update when snapshot exists)
-- **POST** `/api/v1/training/readiness/daily/{date}`
-- **POST** `/api/v1/training/recommendations/daily/{date}`
-
-Successful derived mutations invalidate both `todayQueryKeys` and `recoveryKeys.overview` prefix.
-
-Route layout under `src/app/(tabs)/recovery/`:
-
-```
-_layout.tsx
-index.tsx                         RecoveryOverviewScreen
-check-in.tsx                      RecoveryCheckInScreen (?date=)
-history.tsx                       RecoveryHistoryScreen
-analytics.tsx                     RecoveryAnalyticsScreen
-readiness/[assessmentId].tsx      ReadinessDetailScreen
-guidance/[recommendationId].tsx   TrainingGuidanceScreen
-```
-
-Home integration: Recovery card and Quick Actions **Check In** route to `/(tabs)/recovery/check-in`.
-
-### Training browse stack (M4)
-
-The Training tab (`/(tabs)/training`) is a nested Stack:
-
-1. **Overview (default)** — **GET** `/api/v1/training/client/training-overview?date=` — next workout, upcoming list, active plans, recent completed, weekly load, outstanding adaptations. Pull-to-refresh on overview only.
-2. **Calendar** — **GET** `/api/v1/training/calendar?scheduledFrom=&scheduledTo=` — visible week strip (7 days), prev/next week, day-filtered occurrence list.
-3. **Plan detail** — **GET** `/api/v1/training/plans/{planId}` + `/days` — list workout days.
-4. **Day detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/exercises` — ordered prescriptions.
-5. **Occurrence detail** — **GET** `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}` — status, environment, execution summary. CTA routes to launch prep.
-6. **Launch prep** — **GET** `/api/v1/training/client/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/launch-context` — eligibility, environment, feasibility, recommendation, adaptation, prescriptions. Start/Continue routes to execute; Review Adaptation / Find Workout Alternatives route to M7 adaptation screens.
-7. **Execute (M5)** — live workout logging at `/occurrences/{occurrenceId}/execute` — see [Workout execution (M5)](#workout-execution-m5).
-
-Route layout under `src/app/(tabs)/training/`:
-
-```
-_layout.tsx                 Stack navigator
-index.tsx                   TrainingOverviewScreen
-calendar.tsx                TrainingCalendarScreen
-plans/[planId]/index.tsx    TrainingPlanDetailScreen
-plans/[planId]/days/[dayId]/index.tsx
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/index.tsx
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/launch.tsx
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/execute.tsx   (M5 live execution)
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/adaptation/[proposalId].tsx
-plans/[planId]/days/[dayId]/occurrences/[occurrenceId]/exercises/[executionId]/substitute.tsx
-```
-
-Feature code lives in `src/features/training/` (`api/`, `hooks/`, `models/browseSchemas.ts`, `components/`, `screens/`, `utils/`). M5 execution code lives in `src/features/training/execution/`.
-
-### Workout execution (M5)
-
-Base path: `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}`
-
-| Action | Method | Path |
-| --- | --- | --- |
-| Start workout | POST | `.../start` |
-| Complete workout | POST | `.../complete` |
-| Skip workout | POST | `.../skip` |
-| List sets | GET | `.../exercises/{executionId}/sets` |
-| Add set | POST | `.../exercises/{executionId}/sets` (body optional `{}`) |
-| Update set actuals | PATCH | `.../exercises/{executionId}/sets/{setId}` |
-| Complete set | POST | `.../exercises/{executionId}/sets/{setId}/complete` |
-| Skip set | POST | `.../exercises/{executionId}/sets/{setId}/skip` |
-| Delete set | DELETE | `.../exercises/{executionId}/sets/{setId}` (NOT_STARTED only, ≥1 set) |
-| Session effort | POST/PATCH/GET | `.../session-effort` |
-| Training load | GET | `.../training-load` |
-
-**PATCH auto-start:** Updating set actuals via PATCH promotes `NOT_STARTED → IN_PROGRESS` and auto-promotes parent occurrence/execution. The mobile client does **not** call `POST .../sets/{setId}/start` separately.
-
-**Invalidation:** Scoped helpers in `execution/models/invalidation.ts` invalidate occurrence, launch, calendar (prefix), overview (prefix), today, sets, load, and effort as appropriate. No global `invalidateQueries()`.
-
-**Deferred:** Set reorder, occurrence cancel, offline sync.
-
-**UX:** Start workout is explicit on the execute screen (SCHEDULED state). Launch prep Start/Continue navigates to execute without calling start — the athlete starts from execute when ready.
-
-### Home / Today dashboard (M3)
-
-After onboarding completes and bootstrap V1 loads, the Home tab (`/(tabs)/index`) renders `HomeScreen`:
-
-1. **GET** `/api/v1/training/client/today` — full today DTO (recovery, readiness, recommendation, training, load, adaptation, PRs, action flags)
-2. Card hierarchy: header → quick actions / primary workout → readiness → guidance → recovery → load → adaptation → recent performance
-3. **Explicit generation only** (no auto-chaining on mount):
-   - **POST** `/api/v1/training/athlete-state/daily/{date}` — body `{ baselineWindowDays: 7 }`
-   - **POST** `/api/v1/training/readiness/daily/{date}`
-   - **POST** `/api/v1/training/recommendations/daily/{date}`
-4. Each successful generation invalidates the today query; pull-to-refresh refetches read-only data
-5. Workout / adaptation CTAs route into the Training stack (overview → launch prep); recovery check-in routes to `/(tabs)/recovery/check-in`
-
-### Bootstrap + onboarding flow (M2)
-
-1. `src/app/index.tsx` → `/bootstrap`
-2. Restore session (`GET /api/v1/identity/me`)
-3. Load athlete profile, sports, and goals; derive onboarding state client-side (backend has no onboarding flag):
-   - `PROFILE_REQUIRED` — `GET /api/v1/athletes/me` → 404
-   - `SPORTS_REQUIRED` — profile OK, zero sports
-   - `GOALS_REQUIRED` — ≥1 sport, zero goals
-   - `COMPLETE` — profile + ≥1 sport + ≥1 goal
-4. Incomplete onboarding → `/(onboarding)/profile|sports|goals`
-5. When onboarding is **COMPLETE**, load bootstrap (`GET /api/v1/training/client/bootstrap`)
-6. Require `clientContractVersion === 'V1'`
-7. Route to `/(auth)/login`, onboarding step, `/(tabs)`, or `/incompatible`
-
-Training bootstrap is **not** fetched during onboarding. This avoids failures when the athlete profile does not exist yet.
-
-### Auth + verify email (M2)
-
-- Register/login/verify screens use `react-hook-form` + Zod (`registerRequestSchema` enforces 12–128 char password policy matching backend).
-- Identity errors map to stable user copy (`src/features/auth/errorMessages.ts`).
-- **No resend verification API.** In development, read the token from backend logs (`InMemoryVerificationNotifier`) or your configured notifier output, then paste it on **Verify email**.
-- Password policy: 12–128 characters, upper, lower, digit, special.
-
-### Athlete profile contract notes
-
-- Profile create/update uses metric fields only (`heightCm`, `weightKg`). There are **no timezone or unit preference** fields in M2.
-- Sports and goals use backend enums exactly (`SportType`, `ParticipationLevel`, `SeasonStatus`, `GoalType`, `GoalPriority`).
-
-### Logout security (M2)
-
-Logout and logout-all call the backend (best effort), clear cookies, and `queryClient.clear()` so Athlete A cached data cannot appear for Athlete B after account switch.
-
-### Bootstrap flow (M1R baseline)
-
-### API client highlights
-
-- 30s timeout, JSON headers, `withCredentials: true`
-- CSRF on POST/PUT/PATCH/DELETE (exempt: register, verify-email, login)
-- Single-flight refresh on 401 via `POST /api/v1/identity/refresh`, one retry per request
-
-## Scripts
+### From repository root
 
 ```bash
-pnpm typecheck   # tsc --noEmit
-pnpm test        # jest (jest-expo preset)
-pnpm lint        # expo lint
-pnpm export      # static web export
-pnpm start       # Expo dev server
+pnpm mobile:start       # Expo dev server
+pnpm mobile:test        # Jest
+pnpm mobile:typecheck   # tsc --noEmit
 ```
 
-## Auth / cookie smoke procedures
+### From `apps/mobile`
 
-### A. HTTP jar smoke (backend contract)
+```bash
+pnpm start       # expo start
+pnpm test        # jest --watchman=false
+pnpm typecheck   # tsc --noEmit
+pnpm lint        # expo lint
+pnpm export      # expo export (static web export smoke)
+npx expo-doctor  # Expo health check
+```
 
-With a running backend on port `8080` (MySQL required):
+### EAS build profiles (`eas.json`)
+
+| Profile | Purpose | `EXPO_PUBLIC_UAP_ENV` in profile |
+| --- | --- | --- |
+| `development` | Dev client, internal | `development` |
+| `preview` | Internal staging-like | `staging` |
+| `production` | Production | `production` |
+
+Provide `EXPO_PUBLIC_UAP_API_BASE_URL` via **EAS environment / secrets** (or other build-time env). Do **not** put API URLs or secrets in `eas.json`.
+
+Do not submit to stores from M10 hardening alone — see the runbook.
+
+## Auth: cookies, CSRF, refresh
+
+Authentication uses Spring session cookies in the **native cookie jar** (`@react-native-cookies/cookies`).
+
+- **Expo Go is not supported** for real auth — use an **Expo Development Build**.
+- Web / static export uses an in-memory cookie stub so `pnpm export` can succeed; native cookie behavior is not available on web.
+
+Behavior summary:
+
+1. Login/register populate the native jar; Axios uses `withCredentials: true`.
+2. Mutating requests attach `X-XSRF-TOKEN` from the `XSRF-TOKEN` cookie (CSRF exempt: register, verify-email, login).
+3. On **401**, a **single-flight** `POST /api/v1/identity/refresh` runs; the original request retries at most once; refresh itself is never recursively retried.
+4. Logout / logout-all / refresh failure clear cookies (best effort) and TanStack Query cache so Athlete A data cannot leak to Athlete B.
+
+Full smoke checklist and troubleshooting: [`docs/MOBILE_V1_RUNBOOK.md`](docs/MOBILE_V1_RUNBOOK.md).
+
+Optional HTTP jar smoke (backend on `:8080`):
 
 ```bash
 pnpm exec node scripts/cookie-auth-smoke.mjs http://127.0.0.1:8080
 ```
 
-Validates register → login → cookies (`uap_at` / `uap_rt`) → `/me` → CSRF refresh → logout → bootstrap V1 → today.
+## Feature-freeze policy (post-M10)
 
-Note: live register may stop at `EMAIL_NOT_VERIFIED` unless the verification token is available from your notifier/dev tooling.
+**Allowed**
 
-### B. Native Expo Dev Build smoke (required for CookieManager)
+- P0/P1 bug fixes and integration defects
+- Production / staging config and release blockers
+- Accessibility and security blockers
 
-Expo Go is **not** supported. Use a development build:
+**Not allowed**
 
-```bash
-EXPO_PUBLIC_UAP_ENV=development \
-EXPO_PUBLIC_UAP_API_BASE_URL=http://127.0.0.1:8080 \
-npx expo run:ios
-# Android emulator:
-EXPO_PUBLIC_UAP_API_BASE_URL=http://10.0.2.2:8080 npx expo run:android
+- New product features
+- Charts / visualization polish
+- Timezone or unit-preference backend expansion
+- Plan/day environment preference editing
+- Push notifications
+- Offline sync
+- AI features
+- New readiness / recommendation contract versions
+
+## Deferred (P2/P3) — out of v1 RC scope
+
+| Gap | Notes |
+| --- | --- |
+| Charts | Performance/recovery remain textual summaries and lists |
+| Timezone / units | Backend has no athlete timezone or unit preferences; profile is metric-only |
+| Plan env editor | Plan/day default/override env IDs are read-only; occurrence env set at launch only |
+| Push notifications | Not in v1 |
+| Offline sync | Not in v1 (set reorder / occurrence cancel also deferred) |
+| Store assets | Icons, screenshots, listing copy — separate from M10 hardening |
+
+## Architecture (concise)
+
+```
+src/app/                 Expo Router screens & layouts
+src/config/              Environment + QueryClient
+src/providers/           App, auth session, onboarding, bootstrap
+src/theme/               Design tokens + ThemeProvider
+src/core/api/            Axios client, CSRF, cookies, errors
+src/core/components/     Shared UI primitives
+src/features/auth/       Identity API, schemas, forms
+src/features/onboarding/ Onboarding state resolver & routes
+src/features/profile/    Athlete profile / sports / goals
+src/features/home/       Today dashboard
+src/features/training/   Browse + execution (`execution/`)
+src/features/recovery/   Recovery overview, check-in, history
+src/features/adaptation/ Proposals + substitution
+src/features/performance/ PRs, exercise history, training load
+src/features/environments/ Training environments CRUD
+__tests__/               Jest (incl. `__tests__/rc/` RC suite)
 ```
 
-Then (M2 smoke):
+Path aliases map `@/src/app/...` into `src/` (see `tsconfig`).
 
-1. Register with a policy-compliant password → verify email using dev token from backend logs → login
-2. Complete onboarding: profile → sport → goal
-3. Confirm bootstrap V1 loads only after onboarding completes, then Home/today diagnostics work
-4. Profile tab shows account, athlete summary, sports/goals, client contract + environment
-5. Logout / logout-all clears session and returns to login; login as a different user shows no stale cache
-6. Edit profile or add another sport/goal from Profile without forced re-onboarding (unless you delete the last sport or goal)
+### Core flows
 
-Cookie mechanism: `@react-native-cookies/cookies` + Axios Cookie/`X-XSRF-TOKEN` interceptors.  
-CSRF: double-submit `XSRF-TOKEN` cookie → `X-XSRF-TOKEN` header.  
-Refresh: single-flight `POST /api/v1/identity/refresh`.
+1. **Bootstrap**: restore session → onboarding state → when complete, `GET /api/v1/training/client/bootstrap` → require contract `V1` → tabs or `/incompatible`.
+2. **Home**: `GET /api/v1/training/client/today`; generation of athlete state / readiness / guidance is **explicit only** (no auto-chain on mount).
+3. **Training**: overview → calendar / plan / day / occurrence → launch → execute (M5) → adaptation / substitute (M7) → environment picker (M9).
+4. **Recovery**: overview → check-in / history / analytics → readiness & guidance detail.
+5. **Performance**: recent PRs, all records, exercise history, load history (`OCCURRENCE` / `DAILY` / `WEEKLY`). Null session RPE must not render as zero.
+6. **Profile**: account, athlete summary, sports/goals, training environments, client contract + environment diagnostics.
+
+### Milestone technical notes (kept short)
+
+**M5 execution** — Base path `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}`. PATCH set actuals auto-starts `NOT_STARTED → IN_PROGRESS`. Launch Start/Continue navigates to execute without calling start; the athlete starts explicitly on the execute screen. Invalidation is scoped (no global `invalidateQueries()`).
+
+**M6 recovery** — Nested stack under `/(tabs)/recovery`. Check-in uses RHF; PATCH sends bare JSON values/null with `expectedVersion` (same patch style as environments). Optional post-save prompt to generate/regenerate daily athlete state — no auto-chain to readiness/guidance.
+
+**M7 adaptation** — Manual or guidance-linked proposal generation; apply is never automatic. Home AdaptationCard, launch prep, training overview, and execute substitute CTAs deep-link into proposal / substitute screens.
+
+**M8 performance** — Textual trends and lists only; no chart library. Occurrence terminal + session-effort mutations invalidate `performanceKeys.all`; set-level updates do not.
+
+**M9 environments** — Profile stack for environment CRUD + default; occurrence env via launch prep when `canChangeEnvironment.allowed`. BODYWEIGHT is selectable equipment but never auto-inserted. Plan/day env preference editor remains deferred.
 
 ## Testing
 
-Tests live under `__tests__/` and cover environment loading, date-only parsing, CSRF rules, error mapping, refresh single-flight, auth schemas/error copy/login form validation, onboarding resolver + routing + resume, profile/sports/goals schemas, logout cache clearing, logging redaction, today dashboard schemas, Home cards/greeting/mutations, pull-to-refresh, training browse schemas, calendar range helpers, overview screen states, occurrence card CTAs, prescription formatting, M5 execution schemas/set formatting/error mapping/invalidation/SetRow/SetEditor/WorkoutExecutionScreen, and M6 recovery schemas, rating labels, sleep duration, check-in form, overview sections, insights pipeline step isolation, recovery error mapping, and Home check-in routes.
-
 ```bash
+# from apps/mobile
 pnpm test
+pnpm typecheck
+pnpm lint
 ```
+
+Coverage includes env fail-closed rules, CSRF/refresh, auth/onboarding, today/home, training browse + execution, recovery, adaptation, performance, environments, logout cache clearing, and the focused RC suite under `__tests__/rc/`.
 
 ## Notes
 
-- Passwords are never persisted. Secure storage is restricted to non-sensitive keys (optional last email is disabled by default).
-- Placeholder tabs (Performance) remain intentional beyond M7 scope. Workout adaptation review and direct substitution are implemented in M7. Workout execution (M5) is on the execute screen. Recovery (M6) is on the Recovery stack.
-- Static export uses the web cookie stub; use native dev builds for end-to-end auth validation.
+- Passwords are never persisted. Secure storage is restricted to non-sensitive keys.
+- There is **no resend verification API** — in development, read the token from backend logs / notifier output and paste it on Verify email.
+- Password policy: 12–128 characters, upper, lower, digit, special.
+- Static export uses the web cookie stub; use native Dev Builds for end-to-end auth validation.

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
+import { loadAppConfig } from '@/src/app/config/env';
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
@@ -14,7 +15,12 @@ import { Screen } from '@/src/core/components/Screen';
 
 export default function VerifyEmailScreen() {
   const theme = useAppTheme();
+  const appConfig = loadAppConfig();
   const { verifyEmail } = useAuthSession();
+  const helpCopy =
+    appConfig.environment === 'development'
+      ? 'Paste the verification token from your email or local backend logs. Resend is not available in v1.'
+      : 'Paste the verification token from your email. Resend is not available in v1.';
   const [message, setMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,9 +51,7 @@ export default function VerifyEmailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
       <Screen title="Verify email" scroll>
-        <Text style={[styles.help, { color: theme.colors.textMuted }]}>
-          Paste the verification token from your email or backend dev logs. There is no resend API.
-        </Text>
+        <Text style={[styles.help, { color: theme.colors.textMuted }]}>{helpCopy}</Text>
         <FormTextField
           control={form.control}
           name="token"

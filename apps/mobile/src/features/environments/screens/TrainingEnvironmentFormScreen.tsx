@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert } from 'react-native';
 
@@ -45,10 +45,18 @@ export function TrainingEnvironmentFormScreen({
     defaultValues,
   });
 
+  // Hydrate once per environment id so background refetches do not wipe dirty edits.
+  const hydratedEnvironmentId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (mode === 'edit' && detailQuery.data) {
-      form.reset(mapEnvironmentToFormValues(detailQuery.data));
+    if (mode !== 'edit' || !detailQuery.data) {
+      return;
     }
+    if (hydratedEnvironmentId.current === detailQuery.data.id) {
+      return;
+    }
+    form.reset(mapEnvironmentToFormValues(detailQuery.data));
+    hydratedEnvironmentId.current = detailQuery.data.id;
   }, [detailQuery.data, form, mode]);
 
   if (mode === 'edit') {

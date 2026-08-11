@@ -1,5 +1,9 @@
 const SENSITIVE_KEY_PATTERN =
-  /password|token|secret|authorization|cookie|csrf|xsrf|session/i;
+  /password|token|secret|authorization|cookie|csrf|xsrf|session|set-cookie|notes|athleteNotes|discomfort/i;
+
+function isDevLoggingEnabled(): boolean {
+  return typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+}
 
 function redactValue(value: unknown, parentKey?: string): unknown {
   if (value == null) {
@@ -41,8 +45,11 @@ export function createLogger(scope: string): Logger {
   const prefix = `[UAP:${scope}]`;
 
   const write = (level: 'debug' | 'info' | 'warn' | 'error', message: string, context?: unknown) => {
+    if ((level === 'debug' || level === 'info') && !isDevLoggingEnabled()) {
+      return;
+    }
     const payload = context === undefined ? undefined : redactValue(context);
-    const line = payload === undefined ? `${prefix} ${message}` : `${prefix} ${message}`;
+    const line = `${prefix} ${message}`;
     // eslint-disable-next-line no-console
     console[level](line, payload ?? '');
   };

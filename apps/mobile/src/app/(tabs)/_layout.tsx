@@ -21,6 +21,11 @@ export default function TabsLayout() {
     return <LoadingView message="Loading app…" />;
   }
 
+  // Fail closed: never keep the authenticated shell mounted after logout/expiry.
+  if (authStatus === 'UNAUTHENTICATED' || authStatus === 'EXPIRED') {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   if (
     onboardingState === 'PROFILE_REQUIRED' ||
     onboardingState === 'SPORTS_REQUIRED' ||

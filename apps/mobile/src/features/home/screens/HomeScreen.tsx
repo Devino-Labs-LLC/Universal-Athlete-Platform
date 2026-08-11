@@ -184,7 +184,6 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   error: {
-    color: '#DC2626',
     fontSize: 14,
   },
 });
