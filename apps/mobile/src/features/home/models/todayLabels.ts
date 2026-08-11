@@ -57,6 +57,4 @@ export function adjustmentTypeLabel(type: string): string {
   return formatEnumLabel(type);
 }
 
-export function personalRecordTypeLabel(type: string): string {
-  return formatEnumLabel(type);
-}
+export { personalRecordTypeLabel } from '@/src/features/performance/models/performanceLabels';

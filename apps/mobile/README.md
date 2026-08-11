@@ -1,8 +1,54 @@
-# Universal Athlete — Mobile (M7)
+# Universal Athlete — Mobile (M8)
 
 React Native mobile client for the Universal Athlete Platform, built with **Expo SDK ~57**, **React Native 0.86.2**, **React 19.2.3**, and **TypeScript (strict)**.
 
-M7 adds **workout adaptation review and exercise substitution**: generate/review/apply adaptation proposals, per-item accept/override/reject, direct in-workout substitution, and Home/Launch/Guidance integrations. M6 added the Recovery tab. M5 added live workout execution. M4 added the Training browse stack.
+M8 adds the **Performance tab**: personal records, exercise performance history, training load history, and occurrence performance summaries. M7 added adaptation & substitution. M6 added Recovery. M5 added live workout execution. M4 added the Training browse stack.
+
+## M8 — Performance, PRs & training load
+
+### REST endpoints
+
+| Action | Method | Path |
+| --- | --- | --- |
+| Recent PRs | GET | `/api/v1/training/performance/personal-records/recent?days=&limit=` |
+| All PRs | GET | `/api/v1/training/performance/personal-records?exercisePerformanceKey=&recordType=` |
+| Exercise PRs | GET | `/api/v1/training/performance/exercises/{exercisePerformanceKey}/personal-records` |
+| Exercise history | GET | `/api/v1/training/performance/exercises/{exercisePerformanceKey}?scheduledFrom=&scheduledTo=&page=&size=` |
+| Occurrence performance | GET | `/api/v1/training/plans/{planId}/days/{dayId}/occurrences/{occurrenceId}/performance` |
+| Training load history | GET | `/api/v1/training/training-load/history?startDate=&endDate=&granularity=&page=&size=` |
+
+Granularity: `OCCURRENCE` (sessions), `DAILY`, `WEEKLY`.
+
+### Routes
+
+```
+(tabs)/performance/
+  index.tsx                 # overview
+  records.tsx               # all personal records
+  load.tsx                  # training load history
+  exercises/[exercisePerformanceKey].tsx
+```
+
+### Feature layout
+
+`src/features/performance/` — `api/`, `hooks/`, `models/`, `components/`, `screens/`, `utils/`
+
+### Charts decision
+
+**Deferred.** M8 uses textual trend summaries, compact lists, and load snapshot cards — no new chart library. Category breakdown is a simple list, not a pie chart. Revisit when a shared chart component or design spec is ready.
+
+### Invalidation
+
+`invalidateOccurrenceTerminal` and session-effort submit/update also invalidate `performanceKeys.all` (recent records, personal records, load history). Set-level updates do **not** invalidate performance queries.
+
+### Integrations
+
+- **Home RecentPerformanceCard** — pressable rows navigate to exercise performance when `exercisePerformanceKey` is present; otherwise records screen. "View all" → records.
+- **OccurrenceDetailScreen** — completed workouts show `OccurrencePerformanceSummary` plus optional link to load history.
+
+### Tests
+
+`__tests__/performance/` — schemas, PR formatting, load metrics (rated/unrated/null RPE), date ranges, labels, invalidation, component smoke tests, home navigation.
 
 ## M7 — Adaptation & substitution
 

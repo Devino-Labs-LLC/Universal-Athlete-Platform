@@ -186,6 +186,7 @@ const trainingDashboardAdaptationSchema = z
 const trainingDashboardPersonalRecordSchema = z
   .object({
     personalRecordId: z.string(),
+    exercisePerformanceKey: z.string().optional(),
     exerciseName: z.string(),
     recordType: z.string(),
     recordQualifier: z.string().nullable().optional(),

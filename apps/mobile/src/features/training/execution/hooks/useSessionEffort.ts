@@ -7,6 +7,7 @@ import {
   updateSessionEffort,
 } from '@/src/features/training/execution/api/sessionEffortApi';
 import { SessionEffortRequest } from '@/src/features/training/execution/models/executionSchemas';
+import { invalidatePerformanceQueries } from '@/src/features/performance/models/invalidation';
 import { OccurrenceScope } from '@/src/features/training/execution/models/invalidation';
 import { trainingKeys } from '@/src/features/training/models/queryKeys';
 
@@ -34,6 +35,7 @@ export function useSessionEffort(scope: OccurrenceScope, enabled = true) {
       await queryClient.invalidateQueries({
         queryKey: trainingKeys.trainingLoad(planId, dayId, occurrenceId),
       });
+      await invalidatePerformanceQueries(queryClient);
     },
   });
 
@@ -47,6 +49,7 @@ export function useSessionEffort(scope: OccurrenceScope, enabled = true) {
       await queryClient.invalidateQueries({
         queryKey: trainingKeys.trainingLoad(planId, dayId, occurrenceId),
       });
+      await invalidatePerformanceQueries(queryClient);
     },
   });
 

@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { todayQueryKeys } from '@/src/features/home/models/queryKeys';
+import { invalidatePerformanceQueries } from '@/src/features/performance/models/invalidation';
 import { trainingKeys } from '@/src/features/training/models/queryKeys';
 
 export interface OccurrenceScope {
@@ -101,6 +102,7 @@ export async function invalidateOccurrenceTerminal(
     queryClient.invalidateQueries({
       queryKey: trainingKeys.sessionEffort(planId, dayId, occurrenceId),
     }),
+    invalidatePerformanceQueries(queryClient),
   ]);
 }
 

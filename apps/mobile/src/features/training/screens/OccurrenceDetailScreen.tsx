@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ErrorView } from '@/src/core/components/ErrorView';
@@ -9,6 +10,8 @@ import { isApiError } from '@/src/core/api/errors';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { occurrenceStatusLabel } from '@/src/features/home/models/todayLabels';
+import { OccurrencePerformanceSummary } from '@/src/features/performance/components/OccurrencePerformanceSummary';
+import { useOccurrencePerformance } from '@/src/features/performance/hooks/useOccurrencePerformance';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
 import { useOccurrenceDetail } from '@/src/features/training/hooks/useOccurrenceDetail';
 import { navigateToOccurrenceLaunch } from '@/src/features/training/utils/trainingNavigation';
@@ -37,19 +40,21 @@ export function OccurrenceDetailScreen({
 }: OccurrenceDetailScreenProps) {
   const theme = useAppTheme();
   const detailQuery = useOccurrenceDetail(planId, dayId, occurrenceId);
+  const detail = detailQuery.data;
+  const isCompleted = detail?.status === 'COMPLETED';
+  const performanceQuery = useOccurrencePerformance(planId, dayId, occurrenceId, isCompleted);
 
-  if (detailQuery.isLoading && !detailQuery.data) {
+  if (detailQuery.isLoading && !detail) {
     return <LoadingView message="Loading workout…" />;
   }
 
-  if (detailQuery.isError && !detailQuery.data) {
+  if (detailQuery.isError && !detail) {
     const message = isApiError(detailQuery.error)
       ? detailQuery.error.message
       : 'Failed to load workout occurrence';
     return <ErrorView message={message} onRetry={() => detailQuery.refetch()} />;
   }
 
-  const detail = detailQuery.data;
   if (!detail) {
     return <LoadingView message="Loading workout…" />;
   }
@@ -122,6 +127,17 @@ export function OccurrenceDetailScreen({
           ))
         )}
       </HomeCard>
+
+      {isCompleted && performanceQuery.data ? (
+        <OccurrencePerformanceSummary performance={performanceQuery.data} />
+      ) : null}
+
+      {isCompleted ? (
+        <PrimaryButton
+          label="View load history"
+          onPress={() => router.push('/(tabs)/performance/load')}
+        />
+      ) : null}
 
       <PrimaryButton
         label={launchButtonLabel(detail.status)}
