@@ -12,6 +12,9 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/performance': 'Performance',
   '/app/environments': 'Environments',
   '/app/profile': 'Profile',
+  '/app/profile/edit': 'Edit profile',
+  '/app/profile/sports': 'Manage sports',
+  '/app/profile/goals': 'Manage goals',
 };
 
 export function AppShell() {

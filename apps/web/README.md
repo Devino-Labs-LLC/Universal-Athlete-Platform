@@ -1,4 +1,4 @@
-# Universal Athlete Platform — Web (W1)
+# Universal Athlete Platform — Web (W1 + W2)
 
 Vite + React 19 + TypeScript foundation for the browser client (`uap_web`).
 
@@ -79,15 +79,18 @@ On `401`, one refresh runs at `POST /api/v1/identity/refresh`:
 | `/` | Bootstrap gate |
 | `/auth/login`, `/register`, `/verify-email` | Auth |
 | `/app/*` | Authenticated shell |
-| `/app/home` | Today diagnostic |
-| `/app/training`, `/recovery`, `/performance`, `/environments`, `/profile` | W1 placeholders |
+| `/app/home` | Today dashboard |
+| `/app/training`, `/recovery`, `/performance`, `/environments` | W1 placeholders |
+| `/app/profile`, `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` | Profile (W2) |
+| `/onboarding/profile`, `/onboarding/sports`, `/onboarding/goals` | Onboarding (W2) |
 | `/incompatible` | Client contract mismatch |
 
 Guards:
 
 - Unauthenticated → login
 - Incompatible bootstrap contract → `/incompatible`
-- Authenticated + bootstrap V1 ready → `/app/home`
+- Authenticated + bootstrap V1 ready + onboarding complete → `/app/home`
+- Authenticated + bootstrap V1 ready + onboarding incomplete → `/onboarding/*`
 
 ## Bootstrap
 
@@ -95,19 +98,45 @@ Guards:
 
 Statuses: `IDLE`, `BOOTSTRAPPING`, `UNAUTHENTICATED`, `AUTHENTICATED_READY`, `INCOMPATIBLE_CLIENT`, `BOOTSTRAP_ERROR`.
 
-## Onboarding (deferred W2)
+## Onboarding (W2)
 
-Athlete onboarding is **not** implemented in W1. After authentication and bootstrap V1, users enter the app shell directly. Mobile onboarding gates will be added in W2.
+Athlete onboarding gates the app after auth + bootstrap V1:
 
-## Home diagnostic
+| State | Route |
+|-------|-------|
+| `PROFILE_REQUIRED` | `/onboarding/profile` |
+| `SPORTS_REQUIRED` | `/onboarding/sports` |
+| `GOALS_REQUIRED` | `/onboarding/goals` |
+| `COMPLETE` | `/app/home` |
 
-`GET /api/v1/training/client/today` with passthrough Zod parsing shows:
+`AthleteOnboardingProvider` loads profile/sports/goals when authenticated. Profile 404 (`ATHLETE_PROFILE_NOT_FOUND`) is treated as `profile: null`, not an error.
 
-- Date
-- Recovery present
-- Readiness band
-- Recommendation action
-- Scheduled workout count
+Guard order: auth → bootstrap V1 → onboarding → app.
+
+## Home (W2)
+
+`GET /api/v1/training/client/today` drives a desktop dashboard grid:
+
+- Greeting (profile first name + authoritative `date`)
+- Primary workout, readiness, recommendation, recovery, training load, adaptation, recent performance
+- Quick actions for explicit derived-state generation when `actions.*.allowed`
+
+Derived-state mutations (mobile-aligned paths):
+
+- `POST /api/v1/training/athlete-state/daily/{date}`
+- `POST /api/v1/training/readiness/daily/{date}`
+- `POST /api/v1/training/recommendations/daily/{date}`
+
+Training execution, recovery check-in forms, and adaptation review flows are deferred to W3+.
+
+## Profile (W2)
+
+- `/app/profile` — account, athlete summary, sports/goals lists, logout
+- `/app/profile/edit`, `/app/profile/sports`, `/app/profile/goals` — management
+
+## Onboarding (deferred W1 note — superseded)
+
+Athlete onboarding was not implemented in W1. W2 adds the full flow above.
 
 ## Build notes
 
@@ -124,7 +153,7 @@ Athlete onboarding is **not** implemented in W1. After authentication and bootst
 
 ## Tests
 
-Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing, bootstrap contract checks, home diagnostic rendering, login a11y basics, and logger redaction.
+Vitest suites cover env fail-closed rules, date-only handling, error mapping, CSRF, refresh single-flight, session cache clearing (including athlete query keys), bootstrap contract checks, onboarding state/routes, athlete schemas, profile form dirty-safe hydrate, home dashboard schema/labels, derived-state API paths, home page rendering, login a11y basics, and logger redaction.
 
 ```bash
 pnpm --filter uap_web test

@@ -1,0 +1,23 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--uap-space-6) var(--uap-space-4);
+  background: var(--uap-bg);
+}
+
+.container {
+  width: min(100%, 40rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-5);
+}
+
+.main {
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  padding: var(--uap-space-5);
+  box-shadow: var(--uap-shadow-sm);
+}

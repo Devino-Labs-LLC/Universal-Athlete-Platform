@@ -1,0 +1,37 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  padding: var(--uap-space-4);
+  box-shadow: var(--uap-shadow-sm);
+  min-height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--uap-space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--uap-font-size-md);
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: var(--uap-space-1) 0 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  flex: 1;
+}

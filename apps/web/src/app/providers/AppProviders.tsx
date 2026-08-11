@@ -2,6 +2,7 @@ import { type PropsWithChildren, useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthSessionProvider } from '@/app/providers/AuthSessionProvider';
+import { AthleteOnboardingProvider } from '@/app/providers/AthleteOnboardingProvider';
 import { BootstrapProvider } from '@/app/providers/BootstrapProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 
@@ -23,7 +24,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthSessionProvider queryClient={queryClient}>
-          <BootstrapProvider>{children}</BootstrapProvider>
+          <BootstrapProvider>
+            <AthleteOnboardingProvider>{children}</AthleteOnboardingProvider>
+          </BootstrapProvider>
         </AuthSessionProvider>
       </ThemeProvider>
     </QueryClientProvider>

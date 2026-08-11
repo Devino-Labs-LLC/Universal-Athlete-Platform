@@ -1,0 +1,56 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--uap-space-4);
+  background: rgb(0 0 0 / 45%);
+}
+
+.dialog {
+  width: min(100%, 28rem);
+  padding: var(--uap-space-5);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  box-shadow: var(--uap-shadow-md);
+}
+
+.title {
+  margin: 0 0 var(--uap-space-3);
+  font-size: var(--uap-font-size-lg);
+  font-weight: 600;
+}
+
+.message {
+  margin: 0 0 var(--uap-space-5);
+  color: var(--uap-text-secondary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--uap-space-3);
+}
+
+.cancelButton,
+.confirmButton {
+  padding: 0.625rem 1rem;
+  border-radius: var(--uap-radius-md);
+  border: 1px solid var(--uap-border-subtle);
+  cursor: pointer;
+  font: inherit;
+}
+
+.cancelButton {
+  background: var(--uap-surface);
+  color: var(--uap-text-primary);
+}
+
+.confirmButton {
+  background: var(--uap-accent);
+  color: var(--uap-accent-text, #fff);
+  border-color: var(--uap-accent);
+}

@@ -1,0 +1,86 @@
+import { useAuthSession } from '@/app/providers/AuthSessionProvider';
+import { useAthleteOnboarding } from '@/app/providers/AthleteOnboardingProvider';
+import { isApiError } from '@/core/api/errors';
+import { ErrorView } from '@/core/components/ErrorView';
+import { LoadingView } from '@/core/components/LoadingView';
+import { AdaptationCard } from '@/features/home/components/AdaptationCard';
+import { GreetingHeader } from '@/features/home/components/GreetingHeader';
+import { HomeQuickActions } from '@/features/home/components/HomeQuickActions';
+import { PrimaryWorkoutCard } from '@/features/home/components/PrimaryWorkoutCard';
+import { ReadinessCard } from '@/features/home/components/ReadinessCard';
+import { RecentPerformanceCard } from '@/features/home/components/RecentPerformanceCard';
+import { RecommendationCard } from '@/features/home/components/RecommendationCard';
+import { RecoveryCard } from '@/features/home/components/RecoveryCard';
+import { TrainingLoadCard } from '@/features/home/components/TrainingLoadCard';
+import { useDerivedStateMutations } from '@/features/home/hooks/useDerivedStateMutations';
+import { useTodayDashboard } from '@/features/home/hooks/useTodayDashboard';
+import styles from '@/features/home/pages/HomePage.module.scss';
+
+export function HomePage() {
+  const { account } = useAuthSession();
+  const { snapshot } = useAthleteOnboarding();
+  const todayQuery = useTodayDashboard();
+
+  const data = todayQuery.data;
+  const mutations = useDerivedStateMutations(data?.date ?? '');
+
+  const pendingAction = mutations.athleteStateMutation.isPending
+    ? 'state'
+    : mutations.readinessMutation.isPending
+      ? 'readiness'
+      : mutations.recommendationMutation.isPending
+        ? 'guidance'
+        : null;
+
+  if (todayQuery.isLoading && !data) {
+    return <LoadingView message="Loading today dashboard…" />;
+  }
+
+  if (todayQuery.isError && !data) {
+    const message = isApiError(todayQuery.error)
+      ? todayQuery.error.message
+      : 'Failed to load today dashboard';
+    return <ErrorView message={message} onRetry={() => void todayQuery.refetch()} />;
+  }
+
+  if (!data) {
+    return <LoadingView message="Loading today dashboard…" />;
+  }
+
+  return (
+    <div className={styles.homeGrid}>
+      <GreetingHeader
+        profileFirstName={snapshot.profile?.firstName}
+        athleteDisplayName={data.athlete?.displayName}
+        accountEmail={account?.email}
+        date={data.date}
+      />
+
+      <div className={styles.spanTwo}>
+        <PrimaryWorkoutCard
+          occurrence={data.training.primaryOccurrence}
+          canStartWorkout={data.actions?.canStartWorkout}
+          canContinueWorkout={data.actions?.canContinueWorkout}
+        />
+      </div>
+
+      <ReadinessCard readiness={data.readiness} />
+      <RecommendationCard recommendation={data.recommendation} />
+      <RecoveryCard recovery={data.recovery} />
+      <TrainingLoadCard trainingLoad={data.trainingLoad} />
+      <AdaptationCard adaptation={data.adaptation} />
+      <RecentPerformanceCard records={data.recentPerformance} />
+
+      <div className={styles.spanTwo}>
+        <HomeQuickActions
+          actions={data.actions}
+          pendingAction={pendingAction}
+          errorMessage={mutations.errorMessage}
+          onGenerateState={() => mutations.athleteStateMutation.mutate()}
+          onGenerateReadiness={() => mutations.readinessMutation.mutate()}
+          onGenerateRecommendation={() => mutations.recommendationMutation.mutate()}
+        />
+      </div>
+    </div>
+  );
+}
