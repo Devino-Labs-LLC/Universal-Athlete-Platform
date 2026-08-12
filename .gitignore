@@ -72,7 +72,7 @@ hs_err_pid*
 replay_pid*
 
 # Keep Gradle wrapper JAR committed.
-!gradle/wrapper/gradle-wrapper.jar
+!backend/uap-server/gradle/wrapper/gradle-wrapper.jar
 
 # =========================
 # Terraform
@@ -103,3 +103,8 @@ ios/Pods/
 ios/build/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+
+# =========================
+# Scripts
+# =========================
+SQL_Script/
