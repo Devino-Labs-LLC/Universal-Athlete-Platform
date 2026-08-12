@@ -39,6 +39,7 @@ class DailyAthleteStateDiscomfortJpaEntity {
 	@Column(name = "body_side", nullable = false, length = 32)
 	private BodySide bodySide;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "intensity", nullable = false)
 	private int intensity;
 

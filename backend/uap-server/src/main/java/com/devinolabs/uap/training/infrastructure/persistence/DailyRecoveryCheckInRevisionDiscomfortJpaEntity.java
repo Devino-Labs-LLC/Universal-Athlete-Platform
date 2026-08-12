@@ -48,6 +48,7 @@ class DailyRecoveryCheckInRevisionDiscomfortJpaEntity implements Persistable<UUI
 	@Column(name = "body_side", nullable = false, updatable = false, length = 32)
 	private BodySide bodySide;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "intensity", nullable = false, updatable = false)
 	private int intensity;
 

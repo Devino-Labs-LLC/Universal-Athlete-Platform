@@ -53,21 +53,27 @@ class DailyRecoveryCheckInJpaEntity implements Persistable<UUID> {
 	@Column(name = "sleep_duration_minutes")
 	private Integer sleepDurationMinutes;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "sleep_quality")
 	private Integer sleepQuality;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "fatigue", nullable = false)
 	private int fatigue;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "muscle_soreness", nullable = false)
 	private int muscleSoreness;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "stress", nullable = false)
 	private int stress;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "mood", nullable = false)
 	private int mood;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "motivation", nullable = false)
 	private int motivation;
 

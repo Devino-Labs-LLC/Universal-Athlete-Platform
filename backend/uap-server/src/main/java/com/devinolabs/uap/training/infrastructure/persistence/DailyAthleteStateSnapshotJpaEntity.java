@@ -86,21 +86,27 @@ class DailyAthleteStateSnapshotJpaEntity implements Persistable<UUID> {
 	@Column(name = "sleep_duration_minutes", updatable = false)
 	private Integer sleepDurationMinutes;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "sleep_quality", updatable = false)
 	private Integer sleepQuality;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "fatigue", updatable = false)
 	private Integer fatigue;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "muscle_soreness", updatable = false)
 	private Integer muscleSoreness;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "stress", updatable = false)
 	private Integer stress;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "mood", updatable = false)
 	private Integer mood;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "motivation", updatable = false)
 	private Integer motivation;
 

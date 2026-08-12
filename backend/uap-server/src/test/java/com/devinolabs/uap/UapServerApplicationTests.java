@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Types;
 
 import javax.sql.DataSource;
 
@@ -123,6 +124,12 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create athlete sports");
 			assertThat(versions.getBoolean("success")).isTrue();
+		}
+
+		try (Connection connection = dataSource.getConnection();
+				ResultSet columns = connection.getMetaData().getColumns(null, null, "athlete_sports", "years_experience")) {
+			assertThat(columns.next()).isTrue();
+			assertThat(columns.getInt("DATA_TYPE")).isEqualTo(Types.SMALLINT);
 		}
 	}
 
@@ -707,6 +714,35 @@ class UapServerApplicationTests {
 			assertThat(versions.getString("description"))
 					.isEqualTo("link training recommendations to adaptation proposals");
 			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayNumericColumnTypesMatchHibernateMappings() throws Exception {
+		assertColumnType("athlete_sports", "years_experience", Types.SMALLINT);
+
+		String[][] tinyIntColumns = {
+				{ "daily_recovery_check_ins", "sleep_quality" },
+				{ "daily_recovery_check_ins", "fatigue" },
+				{ "daily_recovery_check_in_discomfort", "intensity" },
+				{ "daily_recovery_check_in_revisions", "prior_sleep_quality" },
+				{ "daily_recovery_check_in_revisions", "new_motivation" },
+				{ "daily_recovery_check_in_revision_discomfort", "intensity" },
+				{ "daily_athlete_state_snapshots", "sleep_quality" },
+				{ "daily_athlete_state_snapshots", "motivation" },
+				{ "daily_athlete_state_discomfort", "intensity" }
+		};
+
+		for (String[] column : tinyIntColumns) {
+			assertColumnType(column[0], column[1], Types.TINYINT);
+		}
+	}
+
+	private void assertColumnType(String table, String column, int expectedType) throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet columns = connection.getMetaData().getColumns(null, null, table, column)) {
+			assertThat(columns.next()).isTrue();
+			assertThat(columns.getInt("DATA_TYPE")).isEqualTo(expectedType);
 		}
 	}
 

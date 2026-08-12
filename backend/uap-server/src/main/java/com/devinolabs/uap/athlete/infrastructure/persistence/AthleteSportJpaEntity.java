@@ -55,6 +55,7 @@ class AthleteSportJpaEntity implements Persistable<UUID> {
 	@Column(name = "preferred_position", length = 100)
 	private String preferredPosition;
 
+	@JdbcTypeCode(SqlTypes.SMALLINT)
 	@Column(name = "years_experience", nullable = false)
 	private int yearsExperience;
 

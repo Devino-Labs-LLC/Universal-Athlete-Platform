@@ -57,39 +57,51 @@ class DailyRecoveryCheckInRevisionJpaEntity implements Persistable<UUID> {
 	@Column(name = "new_sleep_duration_minutes", updatable = false)
 	private Integer newSleepDurationMinutes;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_sleep_quality", updatable = false)
 	private Integer priorSleepQuality;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_sleep_quality", updatable = false)
 	private Integer newSleepQuality;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_fatigue", nullable = false, updatable = false)
 	private int priorFatigue;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_fatigue", nullable = false, updatable = false)
 	private int newFatigue;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_muscle_soreness", nullable = false, updatable = false)
 	private int priorMuscleSoreness;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_muscle_soreness", nullable = false, updatable = false)
 	private int newMuscleSoreness;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_stress", nullable = false, updatable = false)
 	private int priorStress;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_stress", nullable = false, updatable = false)
 	private int newStress;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_mood", nullable = false, updatable = false)
 	private int priorMood;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_mood", nullable = false, updatable = false)
 	private int newMood;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "prior_motivation", nullable = false, updatable = false)
 	private int priorMotivation;
 
+	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "new_motivation", nullable = false, updatable = false)
 	private int newMotivation;
 
