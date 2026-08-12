@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
+import { Platform } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
@@ -43,16 +44,32 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarActiveTintColor: theme.colors.accentCyan,
+        tabBarInactiveTintColor: theme.colors.tabBarInactive,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
+          backgroundColor: theme.colors.tabBarBackground,
+          borderTopColor: theme.colors.tabBarBorder,
+          borderTopWidth: 1,
+          minHeight: Platform.OS === 'ios' ? 84 : 64,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === 'ios' ? 22 : 10,
+        },
+        tabBarItemStyle: {
+          minHeight: 44,
         },
         headerStyle: {
           backgroundColor: theme.colors.surface,
         },
-        headerTintColor: theme.colors.text,
+        headerTitleStyle: {
+          fontWeight: '700',
+          color: theme.colors.text,
+        },
+        headerShadowVisible: false,
+        headerTintColor: theme.colors.accentCyan,
       }}>
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="training" options={{ title: 'Training', headerShown: false }} />

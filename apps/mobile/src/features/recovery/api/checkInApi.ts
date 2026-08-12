@@ -20,12 +20,12 @@ export interface UpdateDailyRecoveryCheckInRequest {
   stress?: number;
   mood?: number;
   motivation?: number;
-  discomfortAreas?: Array<{
+  discomfortAreas?: {
     bodyArea: string;
     side: string;
     intensity: number;
     notes?: string;
-  }> | null;
+  }[] | null;
   notes?: string | null;
   expectedVersion?: number;
 }
@@ -72,7 +72,7 @@ export function buildUpdateRequestFromForm(
     motivation: number;
     sleepDurationMinutes?: number;
     sleepQuality?: number;
-    discomfortAreas: Array<{ bodyArea: string; side: string; intensity: number; notes?: string }>;
+    discomfortAreas: { bodyArea: string; side: string; intensity: number; notes?: string }[];
     notes?: string;
   },
   expectedVersion: number,
@@ -105,7 +105,7 @@ export function buildCreateRequestFromForm(values: {
   motivation: number;
   sleepDurationMinutes?: number;
   sleepQuality?: number;
-  discomfortAreas: Array<{ bodyArea: string; side: string; intensity: number; notes?: string }>;
+  discomfortAreas: { bodyArea: string; side: string; intensity: number; notes?: string }[];
   notes?: string;
 }): CreateDailyRecoveryCheckInRequest {
   return {

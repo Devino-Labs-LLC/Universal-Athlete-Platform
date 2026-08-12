@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { EyebrowText } from '@/src/core/components/Surface';
 import { PersonalRecord } from '@/src/features/performance/models/performanceSchemas';
 import { personalRecordTypeLabel } from '@/src/features/performance/models/performanceLabels';
 import { formatPersonalRecord } from '@/src/features/performance/utils/formatPersonalRecord';
@@ -21,16 +22,34 @@ export function PersonalRecordCard({ record, onPress, testID }: PersonalRecordCa
       : null;
 
   const content = (
-    <View style={styles.container}>
-      <Text style={[styles.exercise, { color: theme.colors.text }]}>{record.exerciseName}</Text>
-      <Text style={[styles.type, { color: theme.colors.textMuted }]}>
-        {personalRecordTypeLabel(record.recordType)}
-        {record.estimated ? ' · Estimated' : ''}
+    <View
+      testID={onPress ? undefined : testID}
+      style={[
+        styles.container,
+        {
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surfaceMuted,
+        },
+      ]}>
+      <EyebrowText tone="cyan">{personalRecordTypeLabel(record.recordType)}</EyebrowText>
+      <Text style={[styles.exercise, { color: theme.colors.text }]} numberOfLines={2}>
+        {record.exerciseName}
       </Text>
-      <Text style={[styles.value, { color: theme.colors.text }]}>{formatPersonalRecord(record)}</Text>
-      {dateLabel ? (
-        <Text style={[styles.date, { color: theme.colors.textMuted }]}>{dateLabel}</Text>
-      ) : null}
+      <Text
+        style={[
+          styles.value,
+          { color: theme.colors.text, fontSize: theme.typography.sectionTitle },
+        ]}>
+        {formatPersonalRecord(record)}
+      </Text>
+      <View style={styles.metaRow}>
+        {record.estimated ? (
+          <Text style={[styles.meta, { color: theme.colors.textMuted }]}>Estimated</Text>
+        ) : null}
+        {dateLabel ? (
+          <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{dateLabel}</Text>
+        ) : null}
+      </View>
     </View>
   );
 
@@ -38,38 +57,40 @@ export function PersonalRecordCard({ record, onPress, testID }: PersonalRecordCa
     return (
       <Pressable
         testID={testID}
+        accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
+        style={({ pressed }) => [pressed && styles.pressed]}>
         {content}
       </Pressable>
     );
   }
 
-  return <View testID={testID}>{content}</View>;
+  return content;
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: 8,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
   container: {
-    gap: 2,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
   },
   exercise: {
     fontSize: 15,
     fontWeight: '600',
   },
-  type: {
-    fontSize: 13,
-  },
   value: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '700',
   },
-  date: {
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  meta: {
     fontSize: 12,
+  },
+  pressed: {
+    opacity: 0.85,
   },
 });

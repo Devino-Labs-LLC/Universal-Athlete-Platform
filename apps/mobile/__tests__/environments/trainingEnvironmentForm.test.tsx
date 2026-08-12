@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { useForm } from 'react-hook-form';
 import { Text, View } from 'react-native';
 
@@ -10,6 +10,11 @@ import {
   trainingEnvironmentFormSchema,
 } from '@/src/features/environments/models/environmentSchemas';
 
+/**
+ * Probe mounts the real form fields without EquipmentPicker.
+ * The picker renders every equipment enum row and dominates cold-start cost;
+ * name-length validation does not need it.
+ */
 function FormProbe({ onSubmit }: { onSubmit: (values: TrainingEnvironmentFormValues) => void }) {
   const form = useForm<TrainingEnvironmentFormValues>({
     resolver: zodResolver(trainingEnvironmentFormSchema),
@@ -25,9 +30,10 @@ function FormProbe({ onSubmit }: { onSubmit: (values: TrainingEnvironmentFormVal
     <View>
       <TrainingEnvironmentForm
         control={form.control}
-        values={form.watch()}
+        values={form.getValues()}
         setValue={(name, value) => form.setValue(name, value)}
         showDefaultSwitch
+        showEquipmentPicker={false}
       />
       <Text testID="submit" onPress={() => void form.handleSubmit(onSubmit)()}>
         Save
@@ -37,9 +43,13 @@ function FormProbe({ onSubmit }: { onSubmit: (values: TrainingEnvironmentFormVal
 }
 
 describe('TrainingEnvironmentForm validation', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('blocks submit when name is too short', async () => {
     const onSubmit = jest.fn();
-    const { getByTestId } = await render(
+    const { getByTestId, getByText } = await render(
       <ThemeProvider>
         <FormProbe onSubmit={onSubmit} />
       </ThemeProvider>,
@@ -47,8 +57,10 @@ describe('TrainingEnvironmentForm validation', () => {
 
     fireEvent.press(getByTestId('submit'));
 
+    // Positive assertion: Zod min(2) surfaces through RHF → FormTextField.
     await waitFor(() => {
-      expect(onSubmit).not.toHaveBeenCalled();
+      expect(getByText('Name must be at least 2 characters')).toBeTruthy();
     });
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

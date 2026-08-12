@@ -2,6 +2,7 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
+import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { onboardingRouteForState } from '@/src/features/onboarding/onboardingRoutes';
 import { LoadingView } from '@/src/core/components/LoadingView';
 
@@ -11,6 +12,7 @@ import { LoadingView } from '@/src/core/components/LoadingView';
  * Completed athletes may open any step for edits without being kicked to tabs.
  */
 export default function OnboardingLayout() {
+  const theme = useAppTheme();
   const pathname = usePathname();
   const { status: authStatus } = useAuthSession();
   const { state: onboardingState } = useAthleteOnboarding();
@@ -45,7 +47,16 @@ export default function OnboardingLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: true, title: 'Setup' }}>
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        title: 'Setup',
+        headerStyle: { backgroundColor: theme.colors.background },
+        headerTintColor: theme.colors.accentCyan,
+        headerTitleStyle: { color: theme.colors.text, fontWeight: '600' },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}>
       <Stack.Screen name="profile" options={{ title: 'Athlete profile' }} />
       <Stack.Screen name="sports" options={{ title: 'Sports' }} />
       <Stack.Screen name="goals" options={{ title: 'Goals' }} />

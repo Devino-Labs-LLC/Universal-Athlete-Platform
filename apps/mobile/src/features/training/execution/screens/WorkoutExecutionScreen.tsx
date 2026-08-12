@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { CompletionSummaryCard } from '@/src/features/training/execution/components/CompletionSummaryCard';
@@ -154,14 +154,16 @@ export function WorkoutExecutionScreen({
           <PrimaryButton
             label="Start workout"
             onPress={handleStartWorkout}
+            loading={startMutation.isPending}
             disabled={startMutation.isPending}
           />
         </>
       ) : null}
 
       {canChangeEnvironment && !readOnly ? (
-        <PrimaryButton
+        <Button
           label="Choose Environment"
+          variant="secondary"
           onPress={() => navigateToOccurrenceEnvironment(planId, dayId, occurrenceId)}
         />
       ) : null}
@@ -206,6 +208,7 @@ export function WorkoutExecutionScreen({
             <PrimaryButton
               label="Complete workout"
               onPress={handleCompleteWorkout}
+              loading={completeMutation.isPending}
               disabled={completeMutation.isPending}
             />
           ) : (
@@ -214,7 +217,12 @@ export function WorkoutExecutionScreen({
             </Text>
           )}
           {canSkipWorkout ? (
-            <Pressable accessibilityRole="button" onPress={handleSkipWorkout}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip workout"
+              onPress={handleSkipWorkout}
+              disabled={skipMutation.isPending}
+              style={styles.skipHit}>
               <Text style={[styles.skipLabel, { color: theme.colors.danger }]}>Skip workout</Text>
             </Pressable>
           ) : null}
@@ -267,10 +275,14 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
+  skipHit: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   skipLabel: {
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
-    paddingVertical: 10,
   },
 });

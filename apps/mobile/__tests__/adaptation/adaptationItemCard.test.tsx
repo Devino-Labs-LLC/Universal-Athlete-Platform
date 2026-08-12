@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/src/app/theme/ThemeProvider';
 import { AdaptationItemCard } from '@/src/features/adaptation/components/AdaptationItemCard';

@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { isApiError } from '@/src/core/api/errors';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
 import { useSessionEffort } from '@/src/features/training/execution/hooks/useSessionEffort';
 import { SessionEffort, SessionEffortRequest } from '@/src/features/training/execution/models/executionSchemas';
@@ -81,15 +81,13 @@ export function SessionEffortSheet({
 
   return (
     <Modal animationType="slide" visible={visible} transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.colors.surfaceElevated }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.colors.text }]}>
               {isEdit ? 'Edit session effort' : 'Log session effort'}
             </Text>
-            <Pressable accessibilityRole="button" onPress={onClose}>
-              <Text style={[styles.skip, { color: theme.colors.textMuted }]}>Skip for now</Text>
-            </Pressable>
+            <Button variant="ghost" label="Skip for now" onPress={onClose} />
           </View>
           <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
             <FormTextField
@@ -116,7 +114,7 @@ export function SessionEffortSheet({
           <PrimaryButton
             label={isEdit ? 'Update effort' : 'Submit effort'}
             onPress={handleSubmit}
-            disabled={isPending}
+            loading={isPending}
           />
         </View>
       </View>
@@ -128,7 +126,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   sheet: {
     borderTopLeftRadius: 16,
@@ -141,14 +138,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     flex: 1,
-  },
-  skip: {
-    fontSize: 14,
   },
   form: {
     gap: 12,

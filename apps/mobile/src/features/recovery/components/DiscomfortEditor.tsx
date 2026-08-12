@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Surface } from '@/src/core/components/Surface';
 import {
   BODY_AREAS,
   BODY_SIDES,
@@ -68,89 +69,77 @@ export function DiscomfortEditor({ value, onChange, testID }: DiscomfortEditorPr
       ) : null}
 
       {value.map((entry, index) => (
-        <View
-          key={`${entry.bodyArea}-${entry.side}-${index}`}
-          style={[styles.entry, { borderColor: theme.colors.border }]}>
+        <Surface key={`${entry.bodyArea}-${entry.side}-${index}`} elevated style={styles.entry}>
           <Text style={[styles.entryTitle, { color: theme.colors.text }]}>
             Area {index + 1}
           </Text>
 
           <Text style={[styles.label, { color: theme.colors.textMuted }]}>Body area</Text>
           <View style={styles.chipRow}>
-            {BODY_AREAS.slice(0, 8).map((area) => (
-              <Pressable
-                key={area}
-                accessibilityRole="button"
-                onPress={() => updateEntry(index, { bodyArea: area })}
-                style={[
-                  styles.chip,
-                  {
-                    borderColor: entry.bodyArea === area ? theme.colors.primary : theme.colors.border,
-                    backgroundColor:
-                      entry.bodyArea === area ? theme.colors.primary : theme.colors.surface,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: entry.bodyArea === area ? theme.colors.primaryText : theme.colors.text,
-                    fontSize: 11,
-                  }}>
-                  {bodyAreaLabel(area)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <View style={styles.chipRow}>
-            {BODY_AREAS.slice(8).map((area) => (
-              <Pressable
-                key={area}
-                accessibilityRole="button"
-                onPress={() => updateEntry(index, { bodyArea: area })}
-                style={[
-                  styles.chip,
-                  {
-                    borderColor: entry.bodyArea === area ? theme.colors.primary : theme.colors.border,
-                    backgroundColor:
-                      entry.bodyArea === area ? theme.colors.primary : theme.colors.surface,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: entry.bodyArea === area ? theme.colors.primaryText : theme.colors.text,
-                    fontSize: 11,
-                  }}>
-                  {bodyAreaLabel(area)}
-                </Text>
-              </Pressable>
-            ))}
+            {BODY_AREAS.map((area) => {
+              const selected = entry.bodyArea === area;
+              return (
+                <Pressable
+                  key={area}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => updateEntry(index, { bodyArea: area })}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                      backgroundColor: selected
+                        ? theme.colors.accentCyanMuted
+                        : theme.colors.surface,
+                      minHeight: 44,
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: selected ? theme.colors.accentCyan : theme.colors.text,
+                      fontSize: 12,
+                      fontWeight: selected ? '700' : '500',
+                    }}>
+                    {bodyAreaLabel(area)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           {entry.bodyArea !== 'GENERAL_FULL_BODY' ? (
             <>
               <Text style={[styles.label, { color: theme.colors.textMuted }]}>Side</Text>
               <View style={styles.chipRow}>
-                {BODY_SIDES.filter((s) => s !== 'NOT_APPLICABLE').map((side) => (
-                  <Pressable
-                    key={side}
-                    accessibilityRole="button"
-                    onPress={() => updateEntry(index, { side })}
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: entry.side === side ? theme.colors.primary : theme.colors.border,
-                        backgroundColor:
-                          entry.side === side ? theme.colors.primary : theme.colors.surface,
-                      },
-                    ]}>
-                    <Text
-                      style={{
-                        color: entry.side === side ? theme.colors.primaryText : theme.colors.text,
-                        fontSize: 11,
-                      }}>
-                      {bodySideLabel(side)}
-                    </Text>
-                  </Pressable>
-                ))}
+                {BODY_SIDES.filter((s) => s !== 'NOT_APPLICABLE').map((side) => {
+                  const selected = entry.side === side;
+                  return (
+                    <Pressable
+                      key={side}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() => updateEntry(index, { side })}
+                      style={[
+                        styles.chip,
+                        {
+                          borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                          backgroundColor: selected
+                            ? theme.colors.accentCyanMuted
+                            : theme.colors.surface,
+                          minHeight: 44,
+                        },
+                      ]}>
+                      <Text
+                        style={{
+                          color: selected ? theme.colors.accentCyan : theme.colors.text,
+                          fontSize: 12,
+                          fontWeight: selected ? '700' : '500',
+                        }}>
+                        {bodySideLabel(side)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </>
           ) : (
@@ -161,28 +150,34 @@ export function DiscomfortEditor({ value, onChange, testID }: DiscomfortEditorPr
 
           <Text style={[styles.label, { color: theme.colors.textMuted }]}>Intensity (1–5)</Text>
           <View style={styles.intensityRow}>
-            {[1, 2, 3, 4, 5].map((level) => (
-              <Pressable
-                key={level}
-                accessibilityRole="button"
-                onPress={() => updateEntry(index, { intensity: level })}
-                style={[
-                  styles.intensityButton,
-                  {
-                    borderColor: entry.intensity === level ? theme.colors.primary : theme.colors.border,
-                    backgroundColor:
-                      entry.intensity === level ? theme.colors.primary : theme.colors.surface,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: entry.intensity === level ? theme.colors.primaryText : theme.colors.text,
-                    fontWeight: '700',
-                  }}>
-                  {level}
-                </Text>
-              </Pressable>
-            ))}
+            {[1, 2, 3, 4, 5].map((level) => {
+              const selected = entry.intensity === level;
+              return (
+                <Pressable
+                  key={level}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => updateEntry(index, { intensity: level })}
+                  style={[
+                    styles.intensityButton,
+                    {
+                      borderColor: selected ? theme.colors.primary : theme.colors.border,
+                      backgroundColor: selected
+                        ? theme.colors.primaryMuted
+                        : theme.colors.surface,
+                      minHeight: 44,
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: selected ? theme.colors.primary : theme.colors.text,
+                      fontWeight: '700',
+                    }}>
+                    {level}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <TextInput
@@ -201,10 +196,13 @@ export function DiscomfortEditor({ value, onChange, testID }: DiscomfortEditorPr
             ]}
           />
 
-          <Pressable accessibilityRole="button" onPress={() => removeEntry(index)}>
-            <Text style={[styles.remove, { color: theme.colors.danger }]}>Remove</Text>
-          </Pressable>
-        </View>
+          <Button
+            variant="ghost"
+            label="Remove"
+            onPress={() => removeEntry(index)}
+            accessibilityLabel="Remove discomfort area"
+          />
+        </Surface>
       ))}
 
       <PrimaryButton
@@ -228,9 +226,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   entry: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
     gap: 8,
   },
   entryTitle: {
@@ -247,10 +242,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chip: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    justifyContent: 'center',
   },
   intensityRow: {
     flexDirection: 'row',
@@ -258,20 +254,18 @@ const styles = StyleSheet.create({
   },
   intensityButton: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   notesInput: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
-  },
-  remove: {
-    fontSize: 14,
-    fontWeight: '600',
+    minHeight: 44,
   },
 });

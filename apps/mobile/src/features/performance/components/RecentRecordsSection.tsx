@@ -2,8 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { Button } from '@/src/core/components/PrimaryButton';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { PersonalRecordCard } from '@/src/features/performance/components/PersonalRecordCard';
 import { PersonalRecord } from '@/src/features/performance/models/performanceSchemas';
 
@@ -20,7 +20,10 @@ export function RecentRecordsSection({ records, loading }: RecentRecordsSectionP
   const theme = useAppTheme();
 
   return (
-    <HomeCard testID="recent-records-section" title="Recent personal records">
+    <HomeCard
+      testID="recent-records-section"
+      eyebrow="Records"
+      title="Recent personal records">
       {records.length === 0 ? (
         <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
           {loading ? 'Loading records…' : 'No personal records in the last 30 days.'}
@@ -36,7 +39,8 @@ export function RecentRecordsSection({ records, loading }: RecentRecordsSectionP
           ))}
         </View>
       )}
-      <PrimaryButton
+      <Button
+        variant="secondary"
         label="View all records"
         onPress={() => router.push('/(tabs)/performance/records')}
       />

@@ -6,13 +6,12 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { AuthShell } from '@/src/features/auth/components/AuthShell';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
 import { PasswordField } from '@/src/features/auth/components/PasswordField';
 import { identityErrorMessage } from '@/src/features/auth/errorMessages';
-import { PASSWORD_MIN_LENGTH } from '@/src/features/auth/schemas';
-import { RegisterRequest, registerRequestSchema } from '@/src/features/auth/schemas';
+import { PASSWORD_MIN_LENGTH , RegisterRequest, registerRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
-import { Screen } from '@/src/core/components/Screen';
 
 export default function RegisterScreen() {
   const theme = useAppTheme();
@@ -47,7 +46,10 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title="Create account" scroll>
+      <AuthShell
+        title="Create account"
+        subtitle="Join Universal Athlete to manage training and recovery."
+        testID="register-screen">
         <FormTextField
           control={form.control}
           name="email"
@@ -65,20 +67,23 @@ export default function RegisterScreen() {
           textContentType="newPassword"
         />
         {submitError ? (
-          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+          <Text accessibilityRole="alert" style={[styles.error, { color: theme.colors.danger }]}>
+            {submitError}
+          </Text>
         ) : null}
         {message ? (
           <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
         ) : null}
         <PrimaryButton
           label={submitting ? 'Creating…' : 'Create account'}
+          loading={submitting}
           disabled={submitting}
           onPress={() => void onSubmit()}
         />
-        <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
+        <Link href="/(auth)/login" style={{ color: theme.colors.accentCyan }}>
           Back to sign in
         </Link>
-      </Screen>
+      </AuthShell>
     </KeyboardAvoidingView>
   );
 }

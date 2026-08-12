@@ -319,7 +319,7 @@ export function discomfortKey(area: string, side: string): string {
 }
 
 export function validateDiscomfortUniqueness(
-  areas: Array<{ bodyArea: string; side: string }>,
+  areas: { bodyArea: string; side: string }[],
 ): boolean {
   const keys = new Set<string>();
   for (const item of areas) {

@@ -8,10 +8,10 @@ import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
 import { PasswordField } from '@/src/features/auth/components/PasswordField';
+import { AuthShell } from '@/src/features/auth/components/AuthShell';
 import { identityErrorMessage } from '@/src/features/auth/errorMessages';
 import { LoginRequest, loginRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
-import { Screen } from '@/src/core/components/Screen';
 
 export default function LoginScreen() {
   const theme = useAppTheme();
@@ -44,7 +44,10 @@ export default function LoginScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title="Welcome back" scroll>
+      <AuthShell
+        title="Welcome back"
+        subtitle="Sign in to continue training, recovery, and performance."
+        testID="login-screen">
         <FormTextField
           control={form.control}
           name="email"
@@ -61,22 +64,25 @@ export default function LoginScreen() {
           textContentType="password"
         />
         {submitError ? (
-          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+          <Text accessibilityRole="alert" style={[styles.error, { color: theme.colors.danger }]}>
+            {submitError}
+          </Text>
         ) : null}
         <PrimaryButton
           label={submitting ? 'Signing in…' : 'Sign in'}
+          loading={submitting}
           disabled={submitting}
           onPress={() => void onSubmit()}
         />
         <View style={styles.links}>
-          <Link href="/(auth)/register" style={{ color: theme.colors.primary }}>
+          <Link href="/(auth)/register" style={{ color: theme.colors.accentCyan }}>
             Create account
           </Link>
-          <Link href="/(auth)/verify-email" style={{ color: theme.colors.primary }}>
+          <Link href="/(auth)/verify-email" style={{ color: theme.colors.accentCyan }}>
             Verify email
           </Link>
         </View>
-      </Screen>
+      </AuthShell>
     </KeyboardAvoidingView>
   );
 }
@@ -89,7 +95,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   links: {
-    marginTop: 8,
-    gap: 8,
+    marginTop: 4,
+    gap: 10,
   },
 });

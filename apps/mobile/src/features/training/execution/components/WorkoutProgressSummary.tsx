@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { CompactInfoRow, MetricTile } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { ExerciseExecution } from '@/src/features/training/models/browseSchemas';
 
@@ -13,8 +13,6 @@ function isTerminal(status: string): boolean {
 }
 
 export function WorkoutProgressSummary({ executions }: WorkoutProgressSummaryProps) {
-  const theme = useAppTheme();
-
   const total = executions.length;
   const completed = executions.filter((e) => e.status === 'COMPLETED').length;
   const skipped = executions.filter((e) => e.status === 'SKIPPED').length;
@@ -25,37 +23,34 @@ export function WorkoutProgressSummary({ executions }: WorkoutProgressSummaryPro
   const skippedSets = executions.reduce((sum, e) => sum + (e.skippedSetCount ?? 0), 0);
 
   return (
-    <HomeCard title="Progress" testID="workout-progress-summary">
-      <View style={styles.row}>
-        <Text style={[styles.label, { color: theme.colors.textMuted }]}>Exercises</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>
-          {terminal}/{total} done ({completed} completed{skipped > 0 ? `, ${skipped} skipped` : ''})
-        </Text>
+    <HomeCard eyebrow="Session" title="Progress" testID="workout-progress-summary">
+      <View style={styles.metrics}>
+        <MetricTile
+          label="Exercises"
+          value={`${terminal}/${total}`}
+          caption={
+            skipped > 0
+              ? `${completed} completed, ${skipped} skipped`
+              : `${completed} completed`
+          }
+        />
+        <MetricTile
+          label="Sets"
+          value={`${completedSets + skippedSets}/${totalSets}`}
+          caption="Logged"
+        />
       </View>
-      <View style={styles.row}>
-        <Text style={[styles.label, { color: theme.colors.textMuted }]}>Sets</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>
-          {completedSets + skippedSets}/{totalSets} logged
-        </Text>
-      </View>
+      <CompactInfoRow
+        label="Remaining"
+        value={`${Math.max(0, total - terminal)} exercises`}
+      />
     </HomeCard>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  metrics: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  label: {
-    fontSize: 14,
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: '600',
-    flexShrink: 1,
-    textAlign: 'right',
+    gap: 10,
   },
 });

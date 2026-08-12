@@ -3,8 +3,7 @@ import { DateOnly } from '@/src/core/date/dateOnly';
 import {
   RecoveryOverview,
   recoveryOverviewSchema,
-} from '@/src/features/recovery/models/recoverySchemas';
-import { TrendDays } from '@/src/features/recovery/models/recoverySchemas';
+ TrendDays } from '@/src/features/recovery/models/recoverySchemas';
 
 const OVERVIEW_PATH = '/api/v1/training/client/recovery-overview';
 

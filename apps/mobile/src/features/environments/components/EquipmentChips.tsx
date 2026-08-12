@@ -29,8 +29,14 @@ export function EquipmentChips({ equipment, maxVisible = 4, testID }: EquipmentC
       {visible.map((item) => (
         <View
           key={item}
-          style={[styles.chip, { backgroundColor: `${theme.colors.primary}18` }]}>
-          <Text style={[styles.chipText, { color: theme.colors.primary }]}>
+          style={[
+            styles.chip,
+            {
+              backgroundColor: theme.colors.accentCyanMuted,
+              borderColor: theme.colors.border,
+            },
+          ]}>
+          <Text style={[styles.chipText, { color: theme.colors.accentCyan }]}>
             {equipmentTypeLabel(item)}
           </Text>
         </View>
@@ -51,8 +57,11 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    minHeight: 28,
+    justifyContent: 'center',
   },
   chipText: {
     fontSize: 12,

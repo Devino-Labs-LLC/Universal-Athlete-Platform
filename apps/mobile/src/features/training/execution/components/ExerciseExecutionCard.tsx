@@ -1,7 +1,7 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { SetRow } from '@/src/features/training/execution/components/SetRow';
@@ -129,6 +129,7 @@ export function ExerciseExecutionCard({
 
   return (
     <HomeCard
+      eyebrow="Exercise"
       title={performedName}
       testID={`exercise-execution-card-${execution.id}`}>
       {showPrescribed ? (
@@ -171,40 +172,41 @@ export function ExerciseExecutionCard({
 
       {!readOnly && !terminal ? (
         <View style={styles.actions}>
-          {canSubstitute ? (
+          {canCompleteExercise ? (
             <PrimaryButton
+              label="Complete exercise"
+              onPress={handleCompleteExercise}
+              loading={completeMutation.isPending}
+              disabled={completeMutation.isPending}
+            />
+          ) : null}
+          {canAddSet ? (
+            <Button
+              label="Add set"
+              variant="secondary"
+              onPress={handleAddSet}
+              loading={addMutation.isPending}
+              disabled={addMutation.isPending}
+            />
+          ) : null}
+          {canSubstitute ? (
+            <Button
               testID={`substitute-exercise-${execution.id}`}
-              label="Substitute Exercise"
+              label="Substitute exercise"
+              variant="secondary"
               onPress={() =>
                 navigateToDirectSubstitution(planId, dayId, occurrenceId, execution.id)
               }
             />
           ) : null}
-          {canAddSet ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleAddSet}
-              disabled={addMutation.isPending}
-              style={styles.secondaryAction}>
-              <Text style={[styles.secondaryLabel, { color: theme.colors.primary }]}>Add set</Text>
-            </Pressable>
-          ) : null}
-          {canCompleteExercise ? (
-            <PrimaryButton
-              label="Complete exercise"
-              onPress={handleCompleteExercise}
-              disabled={completeMutation.isPending}
-            />
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label="Skip exercise"
+            variant="ghost"
             onPress={handleSkipExercise}
             disabled={skipMutation.isPending}
-            style={styles.secondaryAction}>
-            <Text style={[styles.secondaryLabel, { color: theme.colors.danger }]}>
-              Skip exercise
-            </Text>
-          </Pressable>
+            accessibilityLabel="Skip exercise"
+            style={styles.skipButton}
+          />
         </View>
       ) : null}
     </HomeCard>
@@ -233,12 +235,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
-  secondaryAction: {
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  secondaryLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+  skipButton: {
+    alignSelf: 'center',
   },
 });

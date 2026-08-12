@@ -5,7 +5,6 @@ import {
   formatVolumeKg,
 } from '@/src/features/home/utils/formatMetrics';
 import {
-  DailyTrainingLoadSummary,
   WeeklyTrainingLoadSummary,
   WorkoutOccurrenceLoadSummary,
 } from '@/src/features/performance/models/performanceSchemas';

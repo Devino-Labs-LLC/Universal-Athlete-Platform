@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { occurrenceStatusLabel } from '@/src/features/home/models/todayLabels';
@@ -26,6 +26,8 @@ interface WorkoutOccurrenceCardProps {
   onPrimaryAction?: () => void;
   showPrimaryAction?: boolean;
   primaryActionLabel?: string;
+  /** Highlight the next/current session. */
+  dominant?: boolean;
   testID?: string;
 }
 
@@ -55,35 +57,68 @@ function defaultActionLabel(status: string): string | null {
   }
 }
 
+function eyebrowFor(status: string, dominant?: boolean): string {
+  if (dominant && status === 'IN_PROGRESS') {
+    return 'In progress';
+  }
+  if (dominant) {
+    return 'Next session';
+  }
+  return 'Session';
+}
+
 export function WorkoutOccurrenceCard({
   occurrence,
   onPress,
   onPrimaryAction,
   showPrimaryAction = true,
   primaryActionLabel,
+  dominant = false,
   testID,
 }: WorkoutOccurrenceCardProps) {
   const theme = useAppTheme();
   const actionLabel = primaryActionLabel ?? defaultActionLabel(occurrence.status);
+  const exerciseCount =
+    occurrence.exerciseCount == null ? null : occurrence.exerciseCount;
+  const completedCount =
+    occurrence.completedExerciseCount == null ? null : occurrence.completedExerciseCount;
+  const progressLabel =
+    exerciseCount == null
+      ? 'Exercise count unavailable'
+      : completedCount == null
+        ? `${exerciseCount} exercises`
+        : `${completedCount}/${exerciseCount} exercises`;
 
   const content = (
     <>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>{occurrence.workoutDayName}</Text>
+        <Text
+          style={[
+            styles.title,
+            {
+              color: theme.colors.text,
+              fontSize: dominant ? theme.typography.sectionTitle : 16,
+            },
+          ]}
+          numberOfLines={2}>
+          {occurrence.workoutDayName}
+        </Text>
         <StatusChip
           testID={`${testID ?? 'occurrence-card'}-status`}
           label={occurrenceStatusLabel(occurrence.status)}
           variant={statusVariant(occurrence.status)}
         />
       </View>
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+      <Text style={[styles.meta, { color: theme.colors.textMuted }]} numberOfLines={2}>
         {occurrence.trainingPlanName} · {occurrence.scheduledDate}
       </Text>
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-        {occurrence.completedExerciseCount}/{occurrence.exerciseCount} exercises
-      </Text>
+      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{progressLabel}</Text>
       {showPrimaryAction && actionLabel && onPrimaryAction ? (
-        <PrimaryButton label={actionLabel} onPress={onPrimaryAction} />
+        dominant ? (
+          <PrimaryButton label={actionLabel} onPress={onPrimaryAction} />
+        ) : (
+          <Button label={actionLabel} onPress={onPrimaryAction} variant="secondary" />
+        )
       ) : null}
     </>
   );
@@ -92,15 +127,20 @@ export function WorkoutOccurrenceCard({
     return (
       <Pressable
         testID={testID ?? 'workout-occurrence-card'}
+        accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
-        <HomeCard>{content}</HomeCard>
+        <HomeCard eyebrow={eyebrowFor(occurrence.status, dominant)}>{content}</HomeCard>
       </Pressable>
     );
   }
 
   return (
-    <HomeCard testID={testID ?? 'workout-occurrence-card'}>{content}</HomeCard>
+    <HomeCard
+      testID={testID ?? 'workout-occurrence-card'}
+      eyebrow={eyebrowFor(occurrence.status, dominant)}>
+      {content}
+    </HomeCard>
   );
 }
 
@@ -113,8 +153,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   meta: {
     fontSize: 14,

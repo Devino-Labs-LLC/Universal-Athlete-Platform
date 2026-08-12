@@ -1,6 +1,5 @@
 import {
   formatDecimal,
-  formatDistance,
   formatDurationSeconds,
   formatVolumeKg,
 } from '@/src/features/home/utils/formatMetrics';

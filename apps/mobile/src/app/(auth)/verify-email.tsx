@@ -7,11 +7,11 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 import { loadAppConfig } from '@/src/app/config/env';
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { AuthShell } from '@/src/features/auth/components/AuthShell';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
 import { identityErrorMessage } from '@/src/features/auth/errorMessages';
 import { VerifyEmailRequest, verifyEmailRequestSchema } from '@/src/features/auth/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
-import { Screen } from '@/src/core/components/Screen';
 
 export default function VerifyEmailScreen() {
   const theme = useAppTheme();
@@ -50,8 +50,7 @@ export default function VerifyEmailScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title="Verify email" scroll>
-        <Text style={[styles.help, { color: theme.colors.textMuted }]}>{helpCopy}</Text>
+      <AuthShell title="Verify email" subtitle={helpCopy} testID="verify-email-screen">
         <FormTextField
           control={form.control}
           name="token"
@@ -60,20 +59,23 @@ export default function VerifyEmailScreen() {
           autoCorrect={false}
         />
         {submitError ? (
-          <Text style={[styles.error, { color: theme.colors.danger }]}>{submitError}</Text>
+          <Text accessibilityRole="alert" style={[styles.error, { color: theme.colors.danger }]}>
+            {submitError}
+          </Text>
         ) : null}
         {message ? (
           <Text style={[styles.message, { color: theme.colors.success }]}>{message}</Text>
         ) : null}
         <PrimaryButton
           label={submitting ? 'Verifying…' : 'Verify email'}
+          loading={submitting}
           disabled={submitting}
           onPress={() => void onSubmit()}
         />
-        <Link href="/(auth)/login" style={{ color: theme.colors.primary }}>
+        <Link href="/(auth)/login" style={{ color: theme.colors.accentCyan }}>
           Back to sign in
         </Link>
-      </Screen>
+      </AuthShell>
     </KeyboardAvoidingView>
   );
 }
@@ -81,10 +83,6 @@ export default function VerifyEmailScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-  },
-  help: {
-    fontSize: 14,
-    lineHeight: 20,
   },
   error: {
     fontSize: 14,

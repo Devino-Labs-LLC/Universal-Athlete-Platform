@@ -64,4 +64,13 @@ describe('loadAppConfig', () => {
     expect(config.environment).toBe('production');
     expect(config.apiBaseUrl).toBe('https://api.example.com');
   });
+
+  it('rejects insecure HTTP API URL outside development', () => {
+    expect(() =>
+      loadAppConfig({
+        EXPO_PUBLIC_UAP_ENV: 'staging',
+        EXPO_PUBLIC_UAP_API_BASE_URL: 'http://api.staging.example.com',
+      }),
+    ).toThrow(/HTTPS API URLs are required/);
+  });
 });

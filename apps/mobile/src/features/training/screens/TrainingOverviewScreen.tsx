@@ -5,12 +5,11 @@ import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { EmptyView } from '@/src/core/components/EmptyView';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
-import { occurrenceStatusLabel } from '@/src/features/home/models/todayLabels';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
 import { TrainingPlanCard } from '@/src/features/training/components/TrainingPlanCard';
 import { WeeklyLoadSummaryCard } from '@/src/features/training/components/WeeklyLoadSummaryCard';
@@ -104,6 +103,7 @@ export function TrainingOverviewScreen() {
       {nextOccurrence ? (
         <WorkoutOccurrenceCard
           testID="next-workout-card"
+          dominant
           occurrence={nextOccurrence}
           onPress={() =>
             navigateToOccurrenceDetail(
@@ -124,9 +124,13 @@ export function TrainingOverviewScreen() {
         <EmptyView message="No upcoming workouts scheduled." />
       )}
 
-      <PrimaryButton label="Open Calendar" onPress={() => router.push('/(tabs)/training/calendar')} />
+      <Button
+        label="Open Calendar"
+        variant="secondary"
+        onPress={() => router.push('/(tabs)/training/calendar')}
+      />
 
-      <HomeCard title="Upcoming" testID="upcoming-section">
+      <HomeCard eyebrow="Schedule" title="Upcoming" testID="upcoming-section">
         {upcoming.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             No upcoming workouts in the next few weeks.
@@ -155,7 +159,7 @@ export function TrainingOverviewScreen() {
         )}
       </HomeCard>
 
-      <HomeCard title="Active plans" testID="active-plans-section">
+      <HomeCard eyebrow="Plans" title="Active plans" testID="active-plans-section">
         {activePlans.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>No active training plans.</Text>
         ) : (
@@ -163,7 +167,7 @@ export function TrainingOverviewScreen() {
         )}
       </HomeCard>
 
-      <HomeCard title="Recently completed" testID="completed-section">
+      <HomeCard eyebrow="History" title="Recently completed" testID="completed-section">
         {completed.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             No recently completed sessions.
@@ -208,7 +212,10 @@ export function TrainingOverviewScreen() {
       ) : null}
 
       {adaptations.length > 0 ? (
-        <HomeCard title="Outstanding adaptations" testID="adaptations-section">
+        <HomeCard
+          eyebrow="Adaptation"
+          title="Outstanding adaptations"
+          testID="adaptations-section">
           {adaptations.map((adaptation) => {
             const route = resolveAdaptationRoute(adaptation, data);
             return (
@@ -235,8 +242,9 @@ export function TrainingOverviewScreen() {
                     }
                   />
                 ) : (
-                  <PrimaryButton
+                  <Button
                     label="Find in calendar"
+                    variant="secondary"
                     onPress={() => router.push('/(tabs)/training/calendar')}
                   />
                 )}

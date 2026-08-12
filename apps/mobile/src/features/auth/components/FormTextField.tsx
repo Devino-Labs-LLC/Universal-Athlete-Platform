@@ -34,16 +34,20 @@ export function FormTextField<TFieldValues extends FieldValues>({
           <TextInput
             accessibilityLabel={label}
             placeholderTextColor={theme.colors.textMuted}
+            {...inputProps}
             style={[
               styles.input,
               {
                 borderColor: error ? theme.colors.danger : theme.colors.border,
                 color: theme.colors.text,
-                backgroundColor: theme.colors.surface,
+                backgroundColor: theme.colors.surfaceElevated,
+                minHeight: inputProps.multiline ? 88 : 44,
               },
+              inputProps.style,
             ]}
             value={value === undefined || value === null ? '' : String(value)}
             onBlur={onBlur}
+            selectionColor={theme.colors.accentCyan}
             onChangeText={(text) => {
               if (numeric) {
                 onChange(text === '' ? undefined : Number(text));
@@ -51,7 +55,6 @@ export function FormTextField<TFieldValues extends FieldValues>({
               }
               onChange(text);
             }}
-            {...inputProps}
           />
           {error ? (
             <Text style={[styles.error, { color: theme.colors.danger }]}>{error.message}</Text>

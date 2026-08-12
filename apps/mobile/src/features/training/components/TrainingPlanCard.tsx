@@ -20,8 +20,10 @@ export function TrainingPlanCard({ plan }: TrainingPlanCardProps) {
 
   return (
     <Pressable onPress={navigateToPlan} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
-      <HomeCard testID={`training-plan-card-${plan.trainingPlanId}`}>
-        <Text style={[styles.name, { color: theme.colors.text }]}>{plan.name}</Text>
+      <HomeCard testID={`training-plan-card-${plan.trainingPlanId}`} eyebrow="Plan">
+        <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
+          {plan.name}
+        </Text>
         <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
           {formatEnumLabel(plan.type)} · {plan.startDate}
           {plan.endDate ? ` – ${plan.endDate}` : ''}

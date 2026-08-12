@@ -1,12 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { EmptyView } from '@/src/core/components/EmptyView';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { EnvironmentCard } from '@/src/features/environments/components/EnvironmentCard';
@@ -14,7 +13,6 @@ import { useTrainingEnvironments } from '@/src/features/environments/hooks/useTr
 import { environmentErrorMessage } from '@/src/features/environments/utils/environmentErrors';
 
 export function TrainingEnvironmentsScreen() {
-  const theme = useAppTheme();
   const [showArchived, setShowArchived] = useState(false);
   const query = useTrainingEnvironments({ activeOnly: !showArchived });
 
@@ -34,22 +32,18 @@ export function TrainingEnvironmentsScreen() {
   return (
     <Screen
       scroll
+      title="Training Environments"
       testID="training-environments-screen"
       refreshing={query.isFetching}
-      onRefresh={() => query.refetch()}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Training Environments</Text>
-        <Pressable
-          accessibilityRole="switch"
-          accessibilityState={{ checked: showArchived }}
+      onRefresh={() => query.refetch()}
+      headerRight={
+        <Button
+          variant="ghost"
+          label={showArchived ? 'Hide archived' : 'Show archived'}
           onPress={() => setShowArchived((value) => !value)}
-          testID="toggle-show-archived">
-          <Text style={{ color: theme.colors.primary }}>
-            {showArchived ? 'Hide archived' : 'Show archived'}
-          </Text>
-        </Pressable>
-      </View>
-
+          testID="toggle-show-archived"
+        />
+      }>
       <PrimaryButton
         label="Create environment"
         onPress={() => router.push('/(tabs)/profile/environments/create')}
@@ -83,16 +77,7 @@ export function TrainingEnvironmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
   list: {
     gap: 12,
-    marginTop: 12,
   },
 });

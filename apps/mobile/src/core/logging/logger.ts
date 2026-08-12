@@ -50,7 +50,7 @@ export function createLogger(scope: string): Logger {
     }
     const payload = context === undefined ? undefined : redactValue(context);
     const line = `${prefix} ${message}`;
-    // eslint-disable-next-line no-console
+     
     console[level](line, payload ?? '');
   };
 

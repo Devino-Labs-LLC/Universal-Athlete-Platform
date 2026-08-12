@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { KeyboardScreen, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { parseDateOnly, todayDateOnly } from '@/src/core/date/dateOnly';
@@ -195,11 +195,12 @@ export function RecoveryCheckInScreen() {
   const watchedValues = form.watch();
 
   return (
-    <View style={styles.container}>
-      <Screen scroll testID="recovery-check-in-screen">
-        <Text style={[styles.dateLabel, { color: theme.colors.textMuted }]}>
-          Date: {checkInDate}
-        </Text>
+    <KeyboardScreen style={styles.container}>
+      <Screen
+        scroll
+        title="Check-in"
+        description={`Date: ${checkInDate}`}
+        testID="recovery-check-in-screen">
         <RecoveryCheckInForm
           control={form.control}
           values={watchedValues}
@@ -213,24 +214,27 @@ export function RecoveryCheckInScreen() {
         <View style={styles.bottomSpacer} />
       </Screen>
 
-      <View style={[styles.stickyBar, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
+      <View
+        style={[
+          styles.stickyBar,
+          {
+            backgroundColor: theme.colors.background,
+            borderTopColor: theme.colors.border,
+          },
+        ]}>
         <PrimaryButton
-          label={saveMutation.isPending ? 'Saving…' : existingCheckIn ? 'Save changes' : 'Save check-in'}
+          label={existingCheckIn ? 'Save changes' : 'Save check-in'}
           onPress={() => void form.handleSubmit(onSubmit)()}
-          disabled={saveMutation.isPending}
+          loading={saveMutation.isPending}
         />
       </View>
-    </View>
+    </KeyboardScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  dateLabel: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   error: {
     fontSize: 14,

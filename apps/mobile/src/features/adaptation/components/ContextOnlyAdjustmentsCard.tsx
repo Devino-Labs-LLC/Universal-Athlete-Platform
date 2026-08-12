@@ -17,7 +17,7 @@ export function ContextOnlyAdjustmentsCard({ adjustments }: ContextOnlyAdjustmen
   }
 
   return (
-    <HomeCard testID="context-only-adjustments-card" title="Guidance context">
+    <HomeCard testID="context-only-adjustments-card" eyebrow="Guidance" title="Guidance context">
       <Text style={[styles.notice, { color: theme.colors.text }]}>
         These guidance notes are for context only. Applying this adaptation will not change sets,
         reps, load, or duration.

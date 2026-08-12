@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { EyebrowText } from '@/src/core/components/Surface';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { occurrenceStatusLabel } from '@/src/features/home/models/todayLabels';
 import { WorkoutOccurrenceDetail } from '@/src/features/training/models/browseSchemas';
@@ -11,15 +12,32 @@ interface WorkoutExecutionHeaderProps {
 
 export function WorkoutExecutionHeader({ detail }: WorkoutExecutionHeaderProps) {
   const theme = useAppTheme();
+  const statusVariant =
+    detail.status === 'IN_PROGRESS'
+      ? 'info'
+      : detail.status === 'COMPLETED'
+        ? 'success'
+        : detail.status === 'SKIPPED' || detail.status === 'CANCELLED'
+          ? 'warning'
+          : 'default';
 
   return (
     <View style={styles.container} testID="workout-execution-header">
+      <EyebrowText tone="cyan">Active workout</EyebrowText>
       <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Workout session</Text>
-        <StatusChip
-          label={occurrenceStatusLabel(detail.status)}
-          variant={detail.status === 'IN_PROGRESS' ? 'info' : 'default'}
-        />
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.title,
+            {
+              color: theme.colors.text,
+              fontSize: theme.typography.pageTitle,
+            },
+          ]}
+          numberOfLines={2}>
+          Workout session
+        </Text>
+        <StatusChip label={occurrenceStatusLabel(detail.status)} variant={statusVariant} />
       </View>
       <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
         Scheduled {detail.scheduledDate}
@@ -42,16 +60,15 @@ export function WorkoutExecutionHeader({ detail }: WorkoutExecutionHeaderProps) 
 const styles = StyleSheet.create({
   container: {
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
   },
   title: {
-    fontSize: 20,
     fontWeight: '700',
     flex: 1,
   },

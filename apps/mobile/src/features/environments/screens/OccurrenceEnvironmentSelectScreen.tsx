@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { EmptyView } from '@/src/core/components/EmptyView';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { EnvironmentCard } from '@/src/features/environments/components/EnvironmentCard';
@@ -83,20 +83,19 @@ export function OccurrenceEnvironmentSelectScreen({
   };
 
   return (
-    <Screen scroll testID="occurrence-environment-select-screen">
-      <Text style={[styles.title, { color: theme.colors.text }]}>Choose Environment</Text>
-      <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
-        Select where you will perform this workout. Equipment availability affects exercise
-        feasibility.
-      </Text>
-
+    <Screen
+      scroll
+      title="Choose Environment"
+      description="Select where you will perform this workout. Equipment availability affects exercise feasibility."
+      testID="occurrence-environment-select-screen">
       {actualEnvironmentId ? (
         <View style={styles.clearBlock}>
-          <Pressable accessibilityRole="button" onPress={handleClear} disabled={busy}>
-            <Text style={[styles.clearLink, { color: theme.colors.danger }]}>
-              Clear Actual Environment
-            </Text>
-          </Pressable>
+          <Button
+            variant="ghost"
+            label="Clear Actual Environment"
+            onPress={handleClear}
+            disabled={busy}
+          />
           <Text style={[styles.clearHint, { color: theme.colors.textMuted }]}>
             Clears the actual environment only. The planned environment stays intact.
           </Text>
@@ -128,22 +127,8 @@ export function OccurrenceEnvironmentSelectScreen({
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 4,
-    marginBottom: 12,
-  },
   clearBlock: {
-    marginBottom: 12,
     gap: 4,
-  },
-  clearLink: {
-    fontSize: 15,
-    fontWeight: '600',
   },
   clearHint: {
     fontSize: 13,

@@ -10,6 +10,8 @@
       "web:typecheck": "pnpm --filter uap_web typecheck",
       "mobile:start": "pnpm --filter uap_mobile start",
       "mobile:test": "pnpm --filter uap_mobile test",
-      "mobile:typecheck": "pnpm --filter uap_mobile typecheck"
+      "mobile:typecheck": "pnpm --filter uap_mobile typecheck",
+      "mobile:lint": "pnpm --filter uap_mobile lint",
+      "mobile:export": "pnpm --filter uap_mobile export"
     }
   }

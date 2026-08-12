@@ -53,11 +53,10 @@ export function TrainingLoadHistoryScreen() {
   return (
     <Screen
       scroll
+      title="Training load history"
       testID="training-load-history-screen"
       refreshing={loadQuery.isFetching}
       onRefresh={() => loadQuery.refetch()}>
-      <Text style={[styles.heading, { color: theme.colors.text }]}>Training load history</Text>
-
       <LoadModeSelector value={granularity} onChange={setGranularity} />
       <LoadRangeSelector value={range} onChange={setRange} />
 
@@ -93,10 +92,6 @@ export function TrainingLoadHistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
   empty: {
     fontSize: 14,
     marginTop: 8,

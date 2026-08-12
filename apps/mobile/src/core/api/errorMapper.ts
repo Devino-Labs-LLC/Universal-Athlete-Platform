@@ -1,4 +1,4 @@
-import axios, { AxiosError, isAxiosError } from 'axios';
+import { AxiosError, isAxiosError } from 'axios';
 
 import { ApiError, ApiErrorCategory, isApiError } from '@/src/core/api/errors';
 

@@ -6,14 +6,16 @@ import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ConfirmationDialog } from '@/src/core/components/ConfirmationDialog';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { CompactInfoRow } from '@/src/core/components/Surface';
 import { isApiError } from '@/src/core/api/errors';
 import { ArchivedBadge, DefaultBadge } from '@/src/features/environments/components/DefaultBadge';
 import { EquipmentChips } from '@/src/features/environments/components/EquipmentChips';
 import { useEnvironmentMutations } from '@/src/features/environments/hooks/useEnvironmentMutations';
 import { useTrainingEnvironment } from '@/src/features/environments/hooks/useTrainingEnvironment';
 import { trainingEnvironmentTypeLabel } from '@/src/features/environments/models/environmentLabels';
+import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { environmentErrorMessage } from '@/src/features/environments/utils/environmentErrors';
 
 interface TrainingEnvironmentDetailScreenProps {
@@ -67,30 +69,28 @@ export function TrainingEnvironmentDetailScreen({
   };
 
   return (
-    <Screen scroll testID="training-environment-detail-screen">
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>{environment.name}</Text>
-        <View style={styles.badges}>
-          {environment.defaultEnvironment ? <DefaultBadge /> : null}
-          {!isActive ? <ArchivedBadge /> : null}
-        </View>
+    <Screen scroll testID="training-environment-detail-screen" title={environment.name}>
+      <View style={styles.badges}>
+        {environment.defaultEnvironment ? <DefaultBadge /> : null}
+        {!isActive ? <ArchivedBadge /> : null}
       </View>
 
-      <LabelValue label="Type" value={trainingEnvironmentTypeLabel(environment.type)} />
-      <LabelValue
-        label="Equipment"
-        value={`${environment.availableEquipment.length} item${
-          environment.availableEquipment.length === 1 ? '' : 's'
-        }`}
-      />
-      <EquipmentChips equipment={environment.availableEquipment} maxVisible={20} />
-
-      {environment.description ? (
-        <LabelValue label="Description" value={environment.description} />
-      ) : null}
-      {environment.facilityNotes ? (
-        <LabelValue label="Facility notes" value={environment.facilityNotes} />
-      ) : null}
+      <HomeCard eyebrow="Details" title="Environment">
+        <CompactInfoRow label="Type" value={trainingEnvironmentTypeLabel(environment.type)} />
+        <CompactInfoRow
+          label="Equipment"
+          value={`${environment.availableEquipment.length} item${
+            environment.availableEquipment.length === 1 ? '' : 's'
+          }`}
+        />
+        <EquipmentChips equipment={environment.availableEquipment} maxVisible={20} />
+        {environment.description ? (
+          <CompactInfoRow label="Description" value={environment.description} />
+        ) : null}
+        {environment.facilityNotes ? (
+          <CompactInfoRow label="Facility notes" value={environment.facilityNotes} />
+        ) : null}
+      </HomeCard>
 
       {isActive ? (
         <View style={styles.actions}>
@@ -101,16 +101,18 @@ export function TrainingEnvironmentDetailScreen({
             }
           />
           {!environment.defaultEnvironment ? (
-            <PrimaryButton
+            <Button
+              variant="secondary"
               label="Set as Default"
               onPress={handleSetDefault}
-              disabled={setDefaultMutation.isPending}
+              loading={setDefaultMutation.isPending}
             />
           ) : null}
-          <PrimaryButton
+          <Button
+            variant="destructive"
             label="Archive Environment"
             onPress={() => setConfirmArchive(true)}
-            disabled={archiveMutation.isPending}
+            loading={archiveMutation.isPending}
           />
         </View>
       ) : (
@@ -132,48 +134,16 @@ export function TrainingEnvironmentDetailScreen({
   );
 }
 
-function LabelValue({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.labelValue}>
-      <Text style={[styles.label, { color: theme.colors.textMuted }]}>{label}</Text>
-      <Text style={[styles.value, { color: theme.colors.text }]}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
   badges: {
     flexDirection: 'row',
     gap: 8,
   },
-  labelValue: {
-    gap: 4,
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  value: {
-    fontSize: 16,
-  },
   actions: {
     gap: 10,
-    marginTop: 16,
   },
   readOnly: {
     fontSize: 14,
-    marginTop: 16,
     fontStyle: 'italic',
   },
 });

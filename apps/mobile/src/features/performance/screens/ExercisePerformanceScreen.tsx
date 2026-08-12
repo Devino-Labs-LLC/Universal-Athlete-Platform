@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { ErrorView } from '@/src/core/components/ErrorView';
-import { LoadingView } from '@/src/core/components/LoadingView';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { ErrorView } from '@/src/core/components/ErrorView';
+import { LoadingView } from '@/src/core/components/LoadingView';
 import { isApiError } from '@/src/core/api/errors';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { ExerciseHistoryRow } from '@/src/features/performance/components/ExerciseHistoryRow';
@@ -18,7 +18,6 @@ interface ExercisePerformanceScreenProps {
 }
 
 export function ExercisePerformanceScreen({ exercisePerformanceKey }: ExercisePerformanceScreenProps) {
-  const theme = useAppTheme();
   const recordsQuery = useExercisePersonalRecords(exercisePerformanceKey);
   const historyQuery = useExercisePerformanceHistory(exercisePerformanceKey);
 
@@ -57,19 +56,16 @@ export function ExercisePerformanceScreen({ exercisePerformanceKey }: ExercisePe
   return (
     <Screen
       scroll
+      title={exerciseName}
       testID="exercise-performance-screen"
       refreshing={recordsQuery.isFetching || historyQuery.isFetching}
       onRefresh={() => {
         void recordsQuery.refetch();
         void historyQuery.refetch();
       }}>
-      <Text style={[styles.heading, { color: theme.colors.text }]}>{exerciseName}</Text>
-
-      <HomeCard title="Current personal records">
+      <HomeCard eyebrow="Records" title="Current personal records">
         {records.length === 0 ? (
-          <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
-            No personal records for this exercise yet.
-          </Text>
+          <EmptyText message="No personal records for this exercise yet." />
         ) : (
           <View style={styles.list}>
             {records.map((record) => (
@@ -79,18 +75,17 @@ export function ExercisePerformanceScreen({ exercisePerformanceKey }: ExercisePe
         )}
       </HomeCard>
 
-      <HomeCard title="Performance history">
+      <HomeCard eyebrow="History" title="Performance history">
         {historyEntries.length === 0 ? (
-          <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
-            No completed executions recorded yet.
-          </Text>
+          <EmptyText message="No completed executions recorded yet." />
         ) : (
           historyEntries.map((entry) => <ExerciseHistoryRow key={entry.executionId} entry={entry} />)
         )}
         {historyQuery.hasNextPage ? (
           <PrimaryButton
-            label={historyQuery.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            label="Load more"
             onPress={() => historyQuery.fetchNextPage()}
+            loading={historyQuery.isFetchingNextPage}
           />
         ) : null}
       </HomeCard>
@@ -98,11 +93,12 @@ export function ExercisePerformanceScreen({ exercisePerformanceKey }: ExercisePe
   );
 }
 
+function EmptyText({ message }: { message: string }) {
+  const theme = useAppTheme();
+  return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{message}</Text>;
+}
+
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
   empty: {
     fontSize: 14,
   },

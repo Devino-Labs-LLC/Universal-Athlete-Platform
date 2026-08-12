@@ -7,19 +7,31 @@ interface ErrorViewProps {
   title?: string;
   message: string;
   onRetry?: () => void;
+  testID?: string;
 }
 
 export function ErrorView({
   title = 'Something went wrong',
   message,
   onRetry,
+  testID,
 }: ErrorViewProps) {
   const theme = useAppTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.title, { color: theme.colors.danger }]}>{title}</Text>
-      <Text style={[styles.message, { color: theme.colors.text }]}>{message}</Text>
+    <View
+      testID={testID}
+      accessibilityRole="alert"
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+      ]}>
+      <Text style={[styles.eyebrow, { color: theme.colors.danger }]}>Error</Text>
+      <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+      <Text style={[styles.message, { color: theme.colors.textMuted }]}>{message}</Text>
       {onRetry ? <PrimaryButton label="Retry" onPress={onRetry} /> : null}
     </View>
   );
@@ -27,18 +39,28 @@ export function ErrorView({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    padding: 24,
+    gap: 10,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    margin: 16,
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   message: {
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 21,
     textAlign: 'center',
   },
 });

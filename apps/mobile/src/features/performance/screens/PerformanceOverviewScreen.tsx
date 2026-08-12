@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { Button } from '@/src/core/components/PrimaryButton';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
 import { Screen } from '@/src/core/components/Screen';
@@ -15,7 +15,6 @@ import { dateRangeForLoadHistory } from '@/src/features/performance/utils/dateRa
 import { performanceErrorMessage } from '@/src/features/performance/utils/performanceErrors';
 
 export function PerformanceOverviewScreen() {
-  const theme = useAppTheme();
   const { startDate, endDate } = dateRangeForLoadHistory('28D', todayDateOnly());
 
   const recentQuery = useRecentPersonalRecords(30, 5);
@@ -51,46 +50,32 @@ export function PerformanceOverviewScreen() {
   return (
     <Screen
       scroll
+      title="Performance"
+      description="Personal records and training load"
       testID="performance-overview-screen"
       refreshing={refreshing}
       onRefresh={onRefresh}>
-      <Text style={[styles.heading, { color: theme.colors.text }]}>Performance</Text>
-      <Text style={[styles.subheading, { color: theme.colors.textMuted }]}>
-        Personal records and training load
-      </Text>
-
       <RecentRecordsSection records={recentRecords} loading={recentQuery.isLoading} />
       <LoadSnapshotCard summaries={weeklySummaries} loading={loadQuery.isLoading} />
 
       <View style={styles.links}>
-        <Text
-          style={[styles.link, { color: theme.colors.primary }]}
-          onPress={() => router.push('/(tabs)/performance/records')}>
-          View all records
-        </Text>
-        <Text
-          style={[styles.link, { color: theme.colors.primary }]}
-          onPress={() => router.push('/(tabs)/performance/load')}>
-          Load history
-        </Text>
+        <Button
+          variant="secondary"
+          label="View all records"
+          onPress={() => router.push('/(tabs)/performance/records')}
+        />
+        <Button
+          variant="secondary"
+          label="Load history"
+          onPress={() => router.push('/(tabs)/performance/load')}
+        />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subheading: {
-    fontSize: 14,
-  },
   links: {
     gap: 8,
-  },
-  link: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

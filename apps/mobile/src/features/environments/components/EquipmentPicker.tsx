@@ -61,13 +61,22 @@ export function EquipmentPicker({ selected, onChange, testID }: EquipmentPickerP
               style={[
                 styles.row,
                 {
-                  borderColor: isSelected ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: isSelected ? `${theme.colors.primary}12` : theme.colors.surface,
+                  borderColor: isSelected ? theme.colors.accentCyan : theme.colors.border,
+                  backgroundColor: isSelected
+                    ? theme.colors.accentCyanMuted
+                    : theme.colors.surface,
+                  minHeight: 44,
                 },
               ]}
               testID={`equipment-option-${item}`}>
-              <Text style={{ color: theme.colors.text }}>{equipmentTypeLabel(item)}</Text>
-              <Text style={{ color: isSelected ? theme.colors.primary : theme.colors.textMuted }}>
+              <Text style={{ color: theme.colors.text, flex: 1 }}>
+                {equipmentTypeLabel(item)}
+              </Text>
+              <Text
+                style={{
+                  color: isSelected ? theme.colors.accentCyan : theme.colors.textMuted,
+                  fontWeight: isSelected ? '700' : '500',
+                }}>
                 {isSelected ? 'Selected' : 'Tap to select'}
               </Text>
             </Pressable>
@@ -86,8 +95,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 16,
+    minHeight: 44,
   },
   count: {
     fontSize: 13,
@@ -97,12 +107,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   row: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
   },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import {
@@ -56,6 +56,7 @@ export function AdaptationItemCard({
   return (
     <HomeCard
       testID={`adaptation-item-card-${item.id}`}
+      eyebrow="Exercise"
       title={`${item.executionOrder}. ${currentName}`}>
       <View style={styles.chips}>
         <StatusChip label={adaptationActionLabel(item.action)} variant="info" />
@@ -114,15 +115,17 @@ export function AdaptationItemCard({
             testID={`accept-item-${item.id}`}
             label="Accept Suggested Alternative"
             onPress={() => onAccept?.()}
-            disabled={pending}
+            loading={pending}
           />
-          <PrimaryButton
+          <Button
+            variant="secondary"
             testID={`choose-item-${item.id}`}
             label="Choose Another"
             onPress={() => onChooseAnother?.()}
             disabled={pending}
           />
-          <PrimaryButton
+          <Button
+            variant="ghost"
             testID={`reject-item-${item.id}`}
             label="Keep Current Exercise"
             onPress={() => onReject?.()}
@@ -132,7 +135,8 @@ export function AdaptationItemCard({
       ) : null}
 
       {mutable && decided && item.action === 'SUBSTITUTE' ? (
-        <PrimaryButton
+        <Button
+          variant="ghost"
           testID={`reset-item-${item.id}`}
           label="Reset Decision"
           onPress={() => onReset?.()}

@@ -1,6 +1,4 @@
-import { AthleteGoal } from '@/src/features/profile/schemas';
-import { AthleteProfile } from '@/src/features/profile/schemas';
-import { AthleteSport } from '@/src/features/profile/schemas';
+import { AthleteGoal , AthleteProfile , AthleteSport } from '@/src/features/profile/schemas';
 
 export type AthleteOnboardingState =
   | 'LOADING'

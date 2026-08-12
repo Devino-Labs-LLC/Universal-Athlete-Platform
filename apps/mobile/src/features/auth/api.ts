@@ -1,7 +1,6 @@
 import { ApiClient } from '@/src/core/api/apiClient';
 import {
   LoginRequest,
-  loginResponseSchema,
   MeResponse,
   meResponseSchema,
   RegisterRequest,

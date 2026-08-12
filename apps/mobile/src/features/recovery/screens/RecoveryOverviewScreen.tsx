@@ -3,10 +3,15 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import {
+  CompactInfoRow,
+  MetricTile,
+  ScoreRing,
+} from '@/src/core/components/Surface';
 import { isApiError } from '@/src/core/api/errors';
 import { todayDateOnly } from '@/src/core/date/dateOnly';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
@@ -62,34 +67,51 @@ export function RecoveryOverviewScreen() {
   }
 
   const checkIn = data.checkIn;
+  const readinessScore =
+    data.readiness?.readinessScore != null && !Number.isNaN(Number(data.readiness.readinessScore))
+      ? Number(data.readiness.readinessScore)
+      : null;
 
   return (
-    <Screen scroll testID="recovery-overview-screen" refreshing={refreshing} onRefresh={onRefresh}>
-      <Text style={[styles.heading, { color: theme.colors.text }]}>Recovery</Text>
-      <Text style={[styles.subheading, { color: theme.colors.textMuted }]}>
-        {formatDateDisplay(data.date)}
-      </Text>
-
-      <HomeCard testID="recovery-check-in-section" title="Today's check-in">
+    <Screen
+      scroll
+      title="Recovery"
+      description={formatDateDisplay(data.date)}
+      testID="recovery-overview-screen"
+      refreshing={refreshing}
+      onRefresh={onRefresh}>
+      <HomeCard
+        testID="recovery-check-in-section"
+        eyebrow="Today"
+        title="Today's check-in">
         {data.checkInPresent && checkIn ? (
           <>
             <StatusChip label={checkIn.completeness.replace(/_/g, ' ')} variant="success" />
-            <View style={styles.metrics}>
-              {checkIn.fatigue != null ? (
-                <Text style={[styles.metric, { color: theme.colors.text }]}>
-                  Fatigue: {ratingLabelForMetric('fatigue', checkIn.fatigue)}
-                </Text>
-              ) : null}
-              {checkIn.muscleSoreness != null ? (
-                <Text style={[styles.metric, { color: theme.colors.text }]}>
-                  Soreness: {ratingLabelForMetric('muscleSoreness', checkIn.muscleSoreness)}
-                </Text>
-              ) : null}
-              {checkIn.sleepDurationMinutes != null ? (
-                <Text style={[styles.metric, { color: theme.colors.text }]}>
-                  Sleep: {formatSleepDuration(checkIn.sleepDurationMinutes)}
-                </Text>
-              ) : null}
+            <View style={styles.metricRow}>
+              <MetricTile
+                label="Fatigue"
+                value={
+                  checkIn.fatigue != null
+                    ? ratingLabelForMetric('fatigue', checkIn.fatigue)
+                    : null
+                }
+              />
+              <MetricTile
+                label="Soreness"
+                value={
+                  checkIn.muscleSoreness != null
+                    ? ratingLabelForMetric('muscleSoreness', checkIn.muscleSoreness)
+                    : null
+                }
+              />
+              <MetricTile
+                label="Sleep"
+                value={
+                  checkIn.sleepDurationMinutes != null
+                    ? formatSleepDuration(checkIn.sleepDurationMinutes)
+                    : null
+                }
+              />
             </View>
             <PrimaryButton
               label="Update Check In"
@@ -121,13 +143,9 @@ export function RecoveryOverviewScreen() {
       />
 
       {data.readinessPresent && data.readiness ? (
-        <HomeCard testID="recovery-readiness-summary" title="Readiness">
+        <HomeCard testID="recovery-readiness-summary" eyebrow="Athlete state" title="Readiness">
           <StatusChip label={readinessBandLabel(data.readiness.readinessBand)} variant="info" />
-          {data.readiness.readinessScore != null ? (
-            <Text style={[styles.score, { color: theme.colors.text }]}>
-              {Math.round(Number(data.readiness.readinessScore))}
-            </Text>
-          ) : null}
+          <ScoreRing score={readinessScore} label="Score" />
           <PrimaryButton
             label="View readiness details"
             onPress={() =>
@@ -138,7 +156,10 @@ export function RecoveryOverviewScreen() {
       ) : null}
 
       {data.recommendationPresent && data.recommendation ? (
-        <HomeCard testID="recovery-guidance-summary" title="Training guidance">
+        <HomeCard
+          testID="recovery-guidance-summary"
+          eyebrow="Guidance"
+          title="Training guidance">
           <StatusChip
             label={recommendationActionLabel(data.recommendation.overallAction)}
             variant="info"
@@ -153,11 +174,12 @@ export function RecoveryOverviewScreen() {
       ) : null}
 
       {data.deviations.length > 0 ? (
-        <HomeCard testID="recovery-baselines-section" title="Personal baseline">
+        <HomeCard testID="recovery-baselines-section" eyebrow="Baselines" title="Personal baseline">
           {data.deviations.map((deviation) => (
             <BaselineMetricRow key={deviation.metricType} deviation={deviation} />
           ))}
-          <PrimaryButton
+          <Button
+            variant="secondary"
             label="View analytics"
             onPress={() => router.push('/(tabs)/recovery/analytics')}
           />
@@ -165,7 +187,7 @@ export function RecoveryOverviewScreen() {
       ) : null}
 
       {data.trends.length > 0 ? (
-        <HomeCard testID="recovery-trends-section" title="Trends">
+        <HomeCard testID="recovery-trends-section" eyebrow="Trends" title="Trends">
           {data.trends.map((trend) => (
             <TrendRow key={trend.metricType} trend={trend} />
           ))}
@@ -173,15 +195,13 @@ export function RecoveryOverviewScreen() {
       ) : null}
 
       {data.discomfort.length > 0 ? (
-        <HomeCard testID="recovery-discomfort-section" title="Discomfort">
+        <HomeCard testID="recovery-discomfort-section" eyebrow="Body" title="Discomfort">
           {data.discomfort.map((item) => (
-            <Text
+            <CompactInfoRow
               key={`${item.bodyArea}-${item.bodySide}-${item.orderIndex}`}
-              style={[styles.metric, { color: theme.colors.text }]}>
-              {bodyAreaLabel(item.bodyArea)} ({bodySideLabel(item.bodySide)}): intensity{' '}
-              {item.intensity}
-              {item.notes ? ` — ${item.notes}` : ''}
-            </Text>
+              label={`${bodyAreaLabel(item.bodyArea)} (${bodySideLabel(item.bodySide)})`}
+              value={`Intensity ${item.intensity}${item.notes ? ` — ${item.notes}` : ''}`}
+            />
           ))}
         </HomeCard>
       ) : null}
@@ -191,8 +211,13 @@ export function RecoveryOverviewScreen() {
       ) : null}
 
       <View style={styles.links}>
-        <PrimaryButton label="History" onPress={() => router.push('/(tabs)/recovery/history')} />
-        <PrimaryButton
+        <Button
+          variant="secondary"
+          label="History"
+          onPress={() => router.push('/(tabs)/recovery/history')}
+        />
+        <Button
+          variant="secondary"
           label="Analytics"
           onPress={() => router.push('/(tabs)/recovery/analytics')}
         />
@@ -202,25 +227,13 @@ export function RecoveryOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subheading: {
-    fontSize: 14,
-  },
   body: {
     fontSize: 15,
   },
-  metrics: {
-    gap: 4,
-  },
-  metric: {
-    fontSize: 14,
-  },
-  score: {
-    fontSize: 28,
-    fontWeight: '700',
+  metricRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   links: {
     gap: 8,

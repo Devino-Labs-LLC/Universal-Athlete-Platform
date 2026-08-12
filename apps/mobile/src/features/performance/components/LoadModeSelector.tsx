@@ -21,19 +21,24 @@ export function LoadModeSelector({ value, onChange }: LoadModeSelectorProps) {
         return (
           <Pressable
             key={mode}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
             testID={`load-mode-${mode}`}
             onPress={() => onChange(mode)}
             style={[
               styles.chip,
               {
-                backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
-                borderColor: theme.colors.border,
+                backgroundColor: selected
+                  ? theme.colors.accentCyanMuted
+                  : theme.colors.surface,
+                borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                minHeight: 44,
               },
             ]}>
             <Text
               style={[
                 styles.label,
-                { color: selected ? theme.colors.surface : theme.colors.text },
+                { color: selected ? theme.colors.accentCyan : theme.colors.text },
               ]}>
               {trainingLoadGranularityLabel(mode)}
             </Text>
@@ -51,13 +56,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    justifyContent: 'center',
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

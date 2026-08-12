@@ -1,6 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
-
-import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { StatusBadge } from '@/src/core/components/Surface';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 
 export function DefaultBadge({ testID }: { testID?: string }) {
@@ -12,25 +10,5 @@ interface ArchivedBadgeProps {
 }
 
 export function ArchivedBadge({ testID }: ArchivedBadgeProps) {
-  const theme = useAppTheme();
-  return (
-    <View
-      testID={testID ?? 'archived-badge'}
-      style={[styles.archived, { backgroundColor: `${theme.colors.textMuted}22` }]}>
-      <Text style={[styles.label, { color: theme.colors.textMuted }]}>Archived</Text>
-    </View>
-  );
+  return <StatusBadge testID={testID ?? 'archived-badge'} label="Archived" tone="default" />;
 }
-
-const styles = StyleSheet.create({
-  archived: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});

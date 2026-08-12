@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button } from '@/src/core/components/PrimaryButton';
 
 interface ConfirmationDialogProps {
   visible: boolean;
@@ -28,18 +28,28 @@ export function ConfirmationDialog({
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay }]}>
+        <View
+          accessibilityRole="summary"
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderColor: theme.colors.border,
+            },
+          ]}>
+          <Text style={[styles.eyebrow, { color: theme.colors.textMuted }]}>
+            {destructive ? 'Confirm action' : 'Please confirm'}
+          </Text>
           <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
           <Text style={[styles.message, { color: theme.colors.textMuted }]}>{message}</Text>
           <View style={styles.actions}>
-            <Pressable accessibilityRole="button" onPress={onCancel} style={styles.cancel}>
-              <Text style={{ color: theme.colors.text }}>{cancelLabel}</Text>
-            </Pressable>
-            <PrimaryButton
+            <Button label={cancelLabel} variant="secondary" onPress={onCancel} style={styles.flex} />
+            <Button
               label={confirmLabel}
+              variant={destructive ? 'destructive' : 'primary'}
               onPress={onConfirm}
-              disabled={false}
+              style={styles.flex}
             />
           </View>
           {destructive ? (
@@ -47,6 +57,10 @@ export function ConfirmationDialog({
               This action cannot be undone from the app.
             </Text>
           ) : null}
+          {/* Keep cancel reachable without relying on color alone */}
+          <Pressable accessibilityRole="button" onPress={onCancel} style={styles.dismissHit}>
+            <Text style={{ color: theme.colors.textMuted, fontSize: 13 }}>Dismiss</Text>
+          </Pressable>
         </View>
       </View>
     </Modal>
@@ -56,14 +70,20 @@ export function ConfirmationDialog({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'center',
     padding: 24,
   },
   card: {
     borderRadius: 16,
+    borderWidth: 1,
     padding: 20,
     gap: 12,
+  },
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 18,
@@ -75,15 +95,18 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
     gap: 12,
+    marginTop: 4,
   },
-  cancel: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+  flex: {
+    flex: 1,
   },
   hint: {
     fontSize: 12,
+  },
+  dismissHit: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

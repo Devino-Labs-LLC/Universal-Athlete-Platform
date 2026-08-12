@@ -5,6 +5,7 @@ import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
 import { Screen } from '@/src/core/components/Screen';
+import { CompactInfoRow } from '@/src/core/components/Surface';
 import { isApiError } from '@/src/core/api/errors';
 import { todayDateOnly } from '@/src/core/date/dateOnly';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
@@ -41,11 +42,10 @@ export function RecoveryAnalyticsScreen() {
   return (
     <Screen
       scroll
+      title="Recovery analytics"
       testID="recovery-analytics-screen"
       refreshing={overviewQuery.isFetching}
       onRefresh={() => overviewQuery.refetch()}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>Recovery analytics</Text>
-
       <View style={styles.windowRow}>
         {WINDOW_OPTIONS.map((days) => {
           const selected = trendDays === days;
@@ -59,14 +59,17 @@ export function RecoveryAnalyticsScreen() {
               style={[
                 styles.windowChip,
                 {
-                  borderColor: selected ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+                  borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                  backgroundColor: selected
+                    ? theme.colors.accentCyanMuted
+                    : theme.colors.surface,
+                  minHeight: 44,
                 },
               ]}>
               <Text
                 style={{
-                  color: selected ? theme.colors.primaryText : theme.colors.text,
-                  fontWeight: '600',
+                  color: selected ? theme.colors.accentCyan : theme.colors.text,
+                  fontWeight: '700',
                 }}>
                 {days}D
               </Text>
@@ -75,7 +78,9 @@ export function RecoveryAnalyticsScreen() {
         })}
       </View>
 
-      <HomeCard title={`Baseline comparison (${trendDays} days)`}>
+      <HomeCard
+        eyebrow="Baselines"
+        title={`Baseline comparison (${trendDays} days)`}>
         {data.deviations.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             Not enough data for baseline comparison yet.
@@ -87,7 +92,7 @@ export function RecoveryAnalyticsScreen() {
         )}
       </HomeCard>
 
-      <HomeCard title="Trends">
+      <HomeCard eyebrow="Trends" title="Trends">
         {data.trends.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             Trend data is not available yet.
@@ -98,14 +103,21 @@ export function RecoveryAnalyticsScreen() {
       </HomeCard>
 
       {data.baselines.length > 0 ? (
-        <HomeCard title="Baseline statistics">
+        <HomeCard eyebrow="Statistics" title="Baseline statistics">
           {data.baselines.map((baseline) => (
             <View key={`${baseline.metricType}-${baseline.windowDays}`} style={styles.baselineRow}>
               <Text style={[styles.metric, { color: theme.colors.text }]}>
                 {baseline.metricType.replace(/_/g, ' ')}
               </Text>
+              <CompactInfoRow
+                label="Mean"
+                value={baseline.mean != null ? String(baseline.mean) : '—'}
+              />
+              <CompactInfoRow
+                label="Observations"
+                value={String(baseline.observationCount)}
+              />
               <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-                Mean {baseline.mean ?? '—'} · {baseline.observationCount} observations ·{' '}
                 {baseline.dataSufficiency.replace(/_/g, ' ').toLowerCase()}
               </Text>
             </View>
@@ -117,25 +129,25 @@ export function RecoveryAnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
   windowRow: {
     flexDirection: 'row',
     gap: 8,
   },
   windowChip: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderWidth: 1.5,
+    borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 64,
   },
   empty: {
     fontSize: 14,
   },
   baselineRow: {
-    gap: 2,
+    gap: 4,
+    paddingVertical: 4,
   },
   metric: {
     fontSize: 14,

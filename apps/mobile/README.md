@@ -95,7 +95,7 @@ pnpm start
 - **iOS**: `NSAppTransportSecurity` exceptions for `localhost` / `127.0.0.1`
 - **Android**: `usesCleartextTraffic: true`
 
-Staging/production builds should use HTTPS endpoints.
+Staging/production builds **must** use HTTPS endpoints. `loadAppConfig` rejects non-HTTPS API URLs when `EXPO_PUBLIC_UAP_ENV` is `staging` or `production`.
 
 ## Running
 
@@ -113,10 +113,12 @@ pnpm mobile:typecheck   # tsc --noEmit
 pnpm start       # expo start
 pnpm test        # jest --watchman=false
 pnpm typecheck   # tsc --noEmit
-pnpm lint        # expo lint
+pnpm lint        # eslint . (Expo flat config; non-interactive)
 pnpm export      # expo export (static web export smoke)
 npx expo-doctor  # Expo health check
 ```
+
+From repository root: `pnpm mobile:lint`, `pnpm mobile:test`, `pnpm mobile:typecheck`, `pnpm mobile:export`.
 
 ### EAS build profiles (`eas.json`)
 
@@ -180,7 +182,8 @@ pnpm exec node scripts/cookie-auth-smoke.mjs http://127.0.0.1:8080
 | Plan env editor | Plan/day default/override env IDs are read-only; occurrence env set at launch only |
 | Push notifications | Not in v1 |
 | Offline sync | Not in v1 (set reorder / occurrence cancel also deferred) |
-| Store assets | Icons, screenshots, listing copy — separate from M10 hardening |
+| Store assets | Icons, screenshots, listing copy — separate from M10/M4 hardening |
+| Cookie manager package | `@react-native-cookies/cookies` is metadata-deprecated; migrate post-RC if maintenance risk materializes |
 
 ## Architecture (concise)
 

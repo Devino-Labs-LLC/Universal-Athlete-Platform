@@ -2,51 +2,50 @@ import { PropsWithChildren } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { EyebrowText, Surface } from '@/src/core/components/Surface';
 
 interface HomeCardProps extends PropsWithChildren {
   title?: string;
   subtitle?: string;
+  eyebrow?: string;
   style?: ViewStyle;
   testID?: string;
 }
 
-export function HomeCard({ title, subtitle, style, testID, children }: HomeCardProps) {
+export function HomeCard({
+  title,
+  subtitle,
+  eyebrow,
+  style,
+  testID,
+  children,
+}: HomeCardProps) {
   const theme = useAppTheme();
 
   return (
-    <View
-      testID={testID}
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-        },
-        style,
-      ]}>
+    <Surface testID={testID} elevated style={style}>
+      {eyebrow ? <EyebrowText tone="cyan">{eyebrow}</EyebrowText> : null}
       {title ? (
         <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
       ) : null}
       {subtitle ? (
         <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>{subtitle}</Text>
       ) : null}
-      {children}
-    </View>
+      <View style={styles.body}>{children}</View>
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
   title: {
     fontSize: 17,
     fontWeight: '700',
   },
   subtitle: {
     fontSize: 13,
+    lineHeight: 18,
+  },
+  body: {
+    gap: 8,
   },
 });

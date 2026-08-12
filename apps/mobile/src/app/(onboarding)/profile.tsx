@@ -25,6 +25,8 @@ import {
 } from '@/src/features/profile/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { Surface } from '@/src/core/components/Surface';
+import { OnboardingProgress } from '@/src/features/onboarding/components/OnboardingProgress';
 
 export default function OnboardingProfileScreen() {
   const theme = useAppTheme();
@@ -105,7 +107,12 @@ export default function OnboardingProfileScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title={isEditing ? 'Edit profile' : 'Tell us about you'} scroll>
+      <Screen
+        title={isEditing ? 'Edit profile' : 'Tell us about you'}
+        description="Basic athlete identity used across training and recovery."
+        scroll>
+        {!isEditing ? <OnboardingProgress current="profile" /> : null}
+        <Surface elevated style={styles.formSurface}>
         {isEditing ? (
           <>
             <FormTextField control={updateForm.control} name="firstName" label="First name" />
@@ -189,9 +196,11 @@ export default function OnboardingProfileScreen() {
 
         <PrimaryButton
           label={submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Continue'}
+          loading={submitting}
           disabled={submitting}
           onPress={() => void (isEditing ? onUpdate() : onCreate())}
         />
+        </Surface>
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -200,6 +209,9 @@ export default function OnboardingProfileScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  formSurface: {
+    gap: 14,
   },
   error: {
     fontSize: 14,

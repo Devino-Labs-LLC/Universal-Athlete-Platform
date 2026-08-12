@@ -33,13 +33,13 @@ export function HomeQuickActions({
     return null;
   }
 
-  const items: Array<{
+  const items: {
     key: string;
     label: string;
     allowed: boolean;
     onPress: () => void;
     loading?: boolean;
-  }> = [];
+  }[] = [];
 
   if (actions.canGenerateAthleteStateSnapshot.allowed) {
     items.push({

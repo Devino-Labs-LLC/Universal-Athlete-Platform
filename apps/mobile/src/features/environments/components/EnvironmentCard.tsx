@@ -19,15 +19,12 @@ export function EnvironmentCard({ environment, onPress, testID }: EnvironmentCar
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress} testID={testID}>
-      <HomeCard title={environment.name}>
-        <View style={styles.header}>
-          <Text style={[styles.type, { color: theme.colors.textMuted }]}>
-            {trainingEnvironmentTypeLabel(environment.type)}
-          </Text>
-          <View style={styles.badges}>
-            {environment.defaultEnvironment ? <DefaultBadge /> : null}
-            {!environment.active ? <ArchivedBadge /> : null}
-          </View>
+      <HomeCard
+        eyebrow={trainingEnvironmentTypeLabel(environment.type)}
+        title={environment.name}>
+        <View style={styles.badges}>
+          {environment.defaultEnvironment ? <DefaultBadge /> : null}
+          {!environment.active ? <ArchivedBadge /> : null}
         </View>
         <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
           {environment.availableEquipment.length} equipment item
@@ -45,18 +42,9 @@ export function EnvironmentCard({ environment, onPress, testID }: EnvironmentCar
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  type: {
-    fontSize: 14,
-    flex: 1,
-  },
   badges: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   meta: {
@@ -64,6 +52,5 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 13,
-    marginTop: 4,
   },
 });

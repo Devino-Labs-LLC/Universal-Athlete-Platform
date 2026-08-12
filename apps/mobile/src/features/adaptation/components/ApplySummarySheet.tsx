@@ -1,7 +1,8 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { CompactInfoRow } from '@/src/core/components/Surface';
 import { WorkoutAdaptationProposal } from '@/src/features/adaptation/models/adaptationSchemas';
 
 interface ApplySummarySheetProps {
@@ -28,26 +29,25 @@ export function ApplySummarySheet({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onDismiss}>
-      <View style={styles.backdrop}>
-        <View style={[styles.sheet, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.colors.surfaceElevated }]}>
           <Text style={[styles.title, { color: theme.colors.text }]}>Apply adaptation?</Text>
           <Text style={[styles.body, { color: theme.colors.textMuted }]}>
             This will update your workout exercises based on your review decisions.
           </Text>
 
-          <Text style={[styles.stat, { color: theme.colors.text }]}>
-            {accepted.length} substitution(s) will be applied
-          </Text>
+          <CompactInfoRow
+            label="Substitutions"
+            value={`${accepted.length} will be applied`}
+          />
           {kept.length > 0 ? (
-            <Text style={[styles.stat, { color: theme.colors.textMuted }]}>
-              {kept.length} exercise(s) will stay as-is
-            </Text>
+            <CompactInfoRow label="Kept as-is" value={`${kept.length} exercise(s)`} />
           ) : null}
           {proposal.expectedFeasibilityPercentage != null ? (
-            <Text style={[styles.stat, { color: theme.colors.textMuted }]}>
-              Expected feasibility after apply:{' '}
-              {Math.round(proposal.expectedFeasibilityPercentage)}%
-            </Text>
+            <CompactInfoRow
+              label="Expected feasibility"
+              value={`${Math.round(proposal.expectedFeasibilityPercentage)}%`}
+            />
           ) : null}
 
           <View style={styles.actions}>
@@ -55,11 +55,9 @@ export function ApplySummarySheet({
               testID="confirm-apply-adaptation"
               label="Apply Adaptation"
               onPress={onConfirm}
-              disabled={pending}
+              loading={pending}
             />
-            <Pressable accessibilityRole="button" onPress={onDismiss} disabled={pending}>
-              <Text style={[styles.cancel, { color: theme.colors.textMuted }]}>Cancel</Text>
-            </Pressable>
+            <Button variant="ghost" label="Cancel" onPress={onDismiss} disabled={pending} />
           </View>
         </View>
       </View>
@@ -71,7 +69,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
     borderTopLeftRadius: 16,
@@ -87,16 +84,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  stat: {
-    fontSize: 14,
-  },
   actions: {
-    gap: 12,
+    gap: 8,
     marginTop: 8,
-  },
-  cancel: {
-    textAlign: 'center',
-    fontSize: 15,
-    paddingVertical: 10,
   },
 });

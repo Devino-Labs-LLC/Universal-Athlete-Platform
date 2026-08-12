@@ -20,6 +20,8 @@ import {
 } from '@/src/features/profile/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { Surface } from '@/src/core/components/Surface';
+import { OnboardingProgress } from '@/src/features/onboarding/components/OnboardingProgress';
 
 export default function OnboardingSportsScreen() {
   const theme = useAppTheme();
@@ -66,7 +68,12 @@ export default function OnboardingSportsScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title="Add your sport" scroll>
+      <Screen
+        title="Add your sport"
+        description="Sports inform training context and recommendations."
+        scroll>
+        {state !== 'COMPLETE' ? <OnboardingProgress current="sports" /> : null}
+        <Surface elevated style={styles.formSurface}>
         {snapshot.sports.length > 0 ? (
           <View style={styles.summary}>
             <Text style={{ color: theme.colors.textMuted }}>
@@ -124,9 +131,11 @@ export default function OnboardingSportsScreen() {
 
         <PrimaryButton
           label={addSportMutation.isPending ? 'Saving…' : 'Continue'}
+          loading={addSportMutation.isPending}
           disabled={addSportMutation.isPending}
           onPress={() => void onSubmit()}
         />
+        </Surface>
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -135,6 +144,9 @@ export default function OnboardingSportsScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  formSurface: {
+    gap: 14,
   },
   summary: {
     marginBottom: 4,

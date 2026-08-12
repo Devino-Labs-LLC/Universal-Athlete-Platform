@@ -1,7 +1,5 @@
-import { StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 
-import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { EmptyView } from '@/src/core/components/EmptyView';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
@@ -13,7 +11,6 @@ import { useRecoveryHistory } from '@/src/features/recovery/hooks/useRecoveryHis
 import { addDays } from '@/src/features/training/utils/calendarRange';
 
 export function RecoveryHistoryScreen() {
-  const theme = useAppTheme();
   const today = todayDateOnly();
   const startDate = addDays(today, -29);
 
@@ -32,12 +29,11 @@ export function RecoveryHistoryScreen() {
   }
 
   return (
-    <Screen scroll testID="recovery-history-screen">
-      <Text style={[styles.title, { color: theme.colors.text }]}>Recovery history</Text>
-      <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
-        Last 30 days
-      </Text>
-
+    <Screen
+      scroll
+      title="Recovery history"
+      description="Last 30 days"
+      testID="recovery-history-screen">
       {days.length === 0 ? (
         <EmptyView message="No check-ins in this period." />
       ) : (
@@ -52,13 +48,3 @@ export function RecoveryHistoryScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-  },
-});

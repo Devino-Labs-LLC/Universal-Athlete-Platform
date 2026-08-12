@@ -48,7 +48,10 @@ export function PrimaryWorkoutCard({
 
   if (!occurrence) {
     return (
-      <HomeCard testID="primary-workout-card" title="Today's workout">
+      <HomeCard
+        testID="primary-workout-card"
+        eyebrow="Training"
+        title="Today's workout">
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>
           No workout scheduled for today.
         </Text>
@@ -72,6 +75,7 @@ export function PrimaryWorkoutCard({
   return (
     <HomeCard
       testID="primary-workout-card"
+      eyebrow="Training"
       title={dominant ? "Today's workout" : occurrence.workoutDayName}
       subtitle={occurrence.trainingPlanName}
       style={dominant ? styles.dominant : undefined}>

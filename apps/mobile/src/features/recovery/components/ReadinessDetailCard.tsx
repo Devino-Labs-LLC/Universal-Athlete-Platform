@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { CompactInfoRow, ScoreRing, SectionHeader } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { readinessBandLabel } from '@/src/features/home/models/todayLabels';
@@ -18,21 +19,18 @@ export function ReadinessDimensionRow({
   comparisonBand,
   available = true,
 }: ReadinessDimensionRowProps) {
-  const theme = useAppTheme();
-
   return (
-    <View style={styles.row} testID={`readiness-dimension-${dimensionType}`}>
-      <Text style={[styles.name, { color: theme.colors.text }]}>
-        {readinessDimensionLabel(dimensionType)}
-      </Text>
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-        {available
+    <CompactInfoRow
+      testID={`readiness-dimension-${dimensionType}`}
+      label={readinessDimensionLabel(dimensionType)}
+      value={
+        available
           ? comparisonBand
             ? comparisonBand.replace(/_/g, ' ').toLowerCase()
             : 'Contributing'
-          : 'Not available'}
-      </Text>
-    </View>
+          : 'Not available'
+      }
+    />
   );
 }
 
@@ -44,11 +42,11 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
   const theme = useAppTheme();
   const score =
     assessment.readinessScore != null && !Number.isNaN(Number(assessment.readinessScore))
-      ? Math.round(Number(assessment.readinessScore))
+      ? Number(assessment.readinessScore)
       : null;
 
   return (
-    <HomeCard testID="readiness-detail-card" title="Readiness">
+    <HomeCard testID="readiness-detail-card" eyebrow="Athlete state" title="Readiness">
       <StatusChip
         label={readinessBandLabel(assessment.readinessBand)}
         variant={
@@ -60,15 +58,11 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
         }
       />
 
-      {score != null ? (
-        <Text style={[styles.score, { color: theme.colors.text }]}>{score}</Text>
-      ) : null}
+      <ScoreRing score={score} label="Score" />
 
       {assessment.limitingDimensions.length > 0 ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>
-            Limiting dimensions
-          </Text>
+          <SectionHeader title="Limiting dimensions" />
           {assessment.limitingDimensions.map((dim) => (
             <Text key={dim} style={[styles.item, { color: theme.colors.text }]}>
               • {readinessDimensionLabel(dim)}
@@ -79,9 +73,7 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
 
       {assessment.strongestDimensions.length > 0 ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>
-            Strongest dimensions
-          </Text>
+          <SectionHeader title="Strongest dimensions" />
           {assessment.strongestDimensions.map((dim) => (
             <Text key={dim} style={[styles.item, { color: theme.colors.text }]}>
               • {readinessDimensionLabel(dim)}
@@ -92,9 +84,7 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
 
       {assessment.contributions.length > 0 ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>
-            Contributions
-          </Text>
+          <SectionHeader title="Contributions" />
           {assessment.contributions.map((contribution) => (
             <ReadinessDimensionRow
               key={contribution.dimensionType}
@@ -110,31 +100,10 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
 }
 
 const styles = StyleSheet.create({
-  score: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
   section: {
     gap: 4,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
   item: {
     fontSize: 14,
-  },
-  row: {
-    gap: 2,
-    paddingVertical: 4,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  meta: {
-    fontSize: 13,
   },
 });

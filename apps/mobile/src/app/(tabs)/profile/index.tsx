@@ -1,8 +1,7 @@
 import Constants from 'expo-constants';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { PropsWithChildren } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { loadAppConfig } from '@/src/app/config/env';
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
@@ -10,11 +9,13 @@ import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvi
 import { useBootstrap } from '@/src/app/providers/BootstrapProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ConfirmationDialog } from '@/src/core/components/ConfirmationDialog';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { CompactInfoRow } from '@/src/core/components/Surface';
 import { EXPECTED_CLIENT_CONTRACT_VERSION } from '@/src/features/training/api';
 import { useTrainingEnvironments } from '@/src/features/environments/hooks/useTrainingEnvironments';
 import { trainingEnvironmentTypeLabel } from '@/src/features/environments/models/environmentLabels';
+import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
 import {
   useDeleteAthleteGoalMutation,
@@ -62,38 +63,35 @@ export default function ProfileScreen() {
     }
   };
 
+  const displayName = snapshot.profile
+    ? `${snapshot.profile.firstName} ${snapshot.profile.lastName}`
+    : account?.email ?? 'Athlete';
+
   return (
     <Screen title="Profile" scroll>
-      <Section title="Account">
-        <LabelValue label="Email" value={account?.email ?? 'Unknown'} />
-        <LabelValue label="Status" value={account?.status ?? 'Unknown'} />
-      </Section>
-
-      <Section title="Athlete">
+      <HomeCard eyebrow="Identity" title={displayName}>
+        <CompactInfoRow label="Email" value={account?.email ?? 'Unknown'} />
+        <CompactInfoRow label="Status" value={account?.status ?? 'Unknown'} />
         {snapshot.profile ? (
           <>
-            <LabelValue
-              label="Name"
-              value={`${snapshot.profile.firstName} ${snapshot.profile.lastName}`}
-            />
-            <LabelValue label="Date of birth" value={snapshot.profile.dateOfBirth} />
-            <LabelValue label="Sex" value={formatEnumLabel(snapshot.profile.sex)} />
-            <LabelValue
+            <CompactInfoRow label="Date of birth" value={snapshot.profile.dateOfBirth} />
+            <CompactInfoRow label="Sex" value={formatEnumLabel(snapshot.profile.sex)} />
+            <CompactInfoRow
               label="Height / weight"
               value={`${snapshot.profile.heightCm} cm · ${snapshot.profile.weightKg} kg`}
             />
-            <Link href="/(onboarding)/profile" asChild>
-              <Pressable accessibilityRole="button">
-                <Text style={{ color: theme.colors.primary }}>Edit profile</Text>
-              </Pressable>
-            </Link>
+            <Button
+              variant="secondary"
+              label="Edit profile"
+              onPress={() => router.push('/(onboarding)/profile')}
+            />
           </>
         ) : (
           <Text style={{ color: theme.colors.textMuted }}>No athlete profile yet.</Text>
         )}
-      </Section>
+      </HomeCard>
 
-      <Section title="Sports">
+      <HomeCard eyebrow="Sports" title="Sports summary">
         {snapshot.sports.length === 0 ? (
           <Text style={{ color: theme.colors.textMuted }}>No sports added.</Text>
         ) : (
@@ -107,24 +105,24 @@ export default function ProfileScreen() {
                   {formatEnumLabel(sport.participationLevel)} · {sport.yearsExperience} yrs
                 </Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="ghost"
+                label="Remove"
                 onPress={() => {
                   void deleteSportMutation.mutateAsync(sport.id).then(() => refresh());
-                }}>
-                <Text style={{ color: theme.colors.danger }}>Remove</Text>
-              </Pressable>
+                }}
+              />
             </View>
           ))
         )}
-        <Link href="/(onboarding)/sports" asChild>
-          <Pressable accessibilityRole="button">
-            <Text style={{ color: theme.colors.primary }}>Add sport</Text>
-          </Pressable>
-        </Link>
-      </Section>
+        <Button
+          variant="secondary"
+          label="Add sport"
+          onPress={() => router.push('/(onboarding)/sports')}
+        />
+      </HomeCard>
 
-      <Section title="Goals">
+      <HomeCard eyebrow="Goals" title="Goals summary">
         {snapshot.goals.length === 0 ? (
           <Text style={{ color: theme.colors.textMuted }}>No goals added.</Text>
         ) : (
@@ -137,56 +135,63 @@ export default function ProfileScreen() {
                   {goal.priority ? ` · ${formatEnumLabel(goal.priority)}` : ''}
                 </Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="ghost"
+                label="Remove"
                 onPress={() => {
                   void deleteGoalMutation.mutateAsync(goal.id).then(() => refresh());
-                }}>
-                <Text style={{ color: theme.colors.danger }}>Remove</Text>
-              </Pressable>
+                }}
+              />
             </View>
           ))
         )}
-        <Link href="/(onboarding)/goals" asChild>
-          <Pressable accessibilityRole="button">
-            <Text style={{ color: theme.colors.primary }}>Add goal</Text>
-          </Pressable>
-        </Link>
-      </Section>
+        <Button
+          variant="secondary"
+          label="Add goal"
+          onPress={() => router.push('/(onboarding)/goals')}
+        />
+      </HomeCard>
 
-      <Section title="Training">
-        <Link href="/(tabs)/profile/environments" asChild>
-          <Pressable accessibilityRole="button" testID="profile-training-environments-link">
-            <Text style={{ color: theme.colors.primary }}>Training Environments</Text>
-          </Pressable>
-        </Link>
+      <HomeCard eyebrow="Training" title="Environments">
+        <Button
+          variant="secondary"
+          label="Training Environments"
+          testID="profile-training-environments-link"
+          onPress={() => router.push('/(tabs)/profile/environments')}
+        />
         {defaultEnvironment ? (
-          <LabelValue
+          <CompactInfoRow
             label="Default environment"
             value={`${defaultEnvironment.name} · ${trainingEnvironmentTypeLabel(defaultEnvironment.type)}`}
           />
         ) : (
           <Text style={{ color: theme.colors.textMuted }}>No default environment set.</Text>
         )}
-      </Section>
+      </HomeCard>
 
-      <Section title="Client">
-        <LabelValue label="Environment" value={appConfig.environment} />
-        <LabelValue
+      <HomeCard eyebrow="Client" title="App info">
+        <CompactInfoRow label="Environment" value={appConfig.environment} />
+        <CompactInfoRow
           label="Client contract"
           value={bootstrap?.clientContractVersion ?? EXPECTED_CLIENT_CONTRACT_VERSION}
         />
-        {appVersion ? <LabelValue label="App version" value={appVersion} /> : null}
-      </Section>
+        {appVersion ? <CompactInfoRow label="App version" value={appVersion} /> : null}
+      </HomeCard>
 
-      <PrimaryButton
-        label="Sign out"
-        disabled={busy}
-        onPress={() => setConfirmAction('logout')}
-      />
-      <Pressable accessibilityRole="button" onPress={() => setConfirmAction('logoutAll')}>
-        <Text style={[styles.logoutAll, { color: theme.colors.danger }]}>Sign out everywhere</Text>
-      </Pressable>
+      <View style={styles.accountActions}>
+        <Button
+          variant="secondary"
+          label="Sign out"
+          disabled={busy}
+          onPress={() => setConfirmAction('logout')}
+        />
+        <Button
+          variant="destructive"
+          label="Sign out everywhere"
+          disabled={busy}
+          onPress={() => setConfirmAction('logoutAll')}
+        />
+      </View>
 
       <ConfirmationDialog
         visible={confirmAction === 'logout'}
@@ -209,59 +214,16 @@ export default function ProfileScreen() {
   );
 }
 
-function Section({ title, children }: PropsWithChildren<{ title: string }>) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function LabelValue({ label, value }: { label: string; value: string }) {
-  const theme = useAppTheme();
-  return (
-    <View style={styles.labelValue}>
-      <Text style={[styles.label, { color: theme.colors.textMuted }]}>{label}</Text>
-      <Text style={[styles.value, { color: theme.colors.text }]}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  section: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  labelValue: {
-    gap: 2,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  value: {
-    fontSize: 16,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   flex: {
     flex: 1,
   },
-  logoutAll: {
-    textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '600',
-    paddingVertical: 8,
+  accountActions: {
+    gap: 8,
   },
 });

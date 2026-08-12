@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { FormTextField } from '@/src/features/auth/components/FormTextField';
 import { useSetMutations } from '@/src/features/training/execution/hooks/useSetMutations';
 import {
@@ -151,8 +151,21 @@ export function SetEditor({
     <Modal animationType="slide" visible={visible} onRequestClose={handleClose}>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Set {set.setNumber}</Text>
-          <Pressable accessibilityRole="button" onPress={handleClose}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.colors.text,
+                fontSize: theme.typography.pageTitle,
+              },
+            ]}>
+            Set {set.setNumber}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            onPress={handleClose}
+            style={styles.cancelHit}>
             <Text style={[styles.cancel, { color: theme.colors.textMuted }]}>Cancel</Text>
           </Pressable>
         </View>
@@ -224,10 +237,16 @@ export function SetEditor({
           </Text>
         </ScrollView>
         <View style={styles.actions}>
-          <PrimaryButton label="Save" onPress={handleSave} disabled={isPending} />
           <PrimaryButton
             label="Save & complete"
             onPress={handleSaveAndComplete}
+            loading={isPending}
+            disabled={isPending}
+          />
+          <Button
+            label="Save"
+            variant="secondary"
+            onPress={handleSave}
             disabled={isPending}
           />
         </View>
@@ -249,8 +268,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    fontSize: 20,
     fontWeight: '700',
+  },
+  cancelHit: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   cancel: {
     fontSize: 16,

@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { StatusBadge } from '@/src/core/components/Surface';
 import { useDerivedStateMutations } from '@/src/features/home/hooks/useDerivedStateMutations';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { TrainingTodayDashboard } from '@/src/features/training/schemas';
@@ -122,7 +123,7 @@ export function InsightsStepList({
   });
 
   return (
-    <HomeCard testID="insights-step-list" title="Insights pipeline">
+    <HomeCard testID="insights-step-list" eyebrow="Pipeline" title="Insights pipeline">
       {visibleSteps.map((step, index) => (
         <View key={step.key} style={styles.step}>
           <View style={styles.stepHeader}>
@@ -130,30 +131,28 @@ export function InsightsStepList({
               {index + 1}.
             </Text>
             <Text style={[styles.stepTitle, { color: theme.colors.text }]}>{step.title}</Text>
-            <Text
-              style={[
-                styles.stepStatus,
-                {
-                  color:
-                    step.status === 'complete'
-                      ? theme.colors.success
-                      : step.status === 'current'
-                        ? theme.colors.primary
-                        : theme.colors.textMuted,
-                },
-              ]}>
-              {step.status === 'complete'
-                ? 'Done'
-                : step.status === 'current'
-                  ? 'Next'
-                  : 'Waiting'}
-            </Text>
+            <StatusBadge
+              label={
+                step.status === 'complete'
+                  ? 'Done'
+                  : step.status === 'current'
+                    ? 'Next'
+                    : 'Waiting'
+              }
+              tone={
+                step.status === 'complete'
+                  ? 'success'
+                  : step.status === 'current'
+                    ? 'info'
+                    : 'default'
+              }
+            />
           </View>
           {step.ctaLabel && step.onPress ? (
             <PrimaryButton
-              label={step.loading ? `${step.ctaLabel}…` : step.ctaLabel}
+              label={step.ctaLabel}
               onPress={step.onPress}
-              disabled={step.loading}
+              loading={step.loading}
             />
           ) : null}
         </View>
@@ -183,10 +182,6 @@ const styles = StyleSheet.create({
   stepTitle: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-  },
-  stepStatus: {
-    fontSize: 12,
     fontWeight: '600',
   },
   error: {

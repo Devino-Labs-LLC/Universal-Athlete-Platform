@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { Surface } from '@/src/core/components/Surface';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import { ExerciseExecutionPerformance } from '@/src/features/performance/models/performanceSchemas';
 import {
@@ -18,7 +19,7 @@ export function ExerciseHistoryRow({ entry }: ExerciseHistoryRowProps) {
   const indicators = performanceMetricsPrIndicators(entry.metrics);
 
   return (
-    <View style={styles.row} testID={`exercise-history-row-${entry.executionId}`}>
+    <Surface elevated style={styles.row} testID={`exercise-history-row-${entry.executionId}`}>
       <Text style={[styles.date, { color: theme.colors.text }]}>
         {formatDateDisplay(entry.scheduledDate)}
       </Text>
@@ -32,14 +33,14 @@ export function ExerciseHistoryRow({ entry }: ExerciseHistoryRowProps) {
           ))}
         </View>
       ) : null}
-    </View>
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     gap: 4,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   date: {
     fontSize: 14,

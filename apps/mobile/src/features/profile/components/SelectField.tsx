@@ -42,14 +42,19 @@ export function SelectField<TFieldValues extends FieldValues, TValue extends str
                   style={[
                     styles.chip,
                     {
-                      borderColor: selected ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+                      minHeight: 44,
+                      justifyContent: 'center',
+                      borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                      backgroundColor: selected
+                        ? theme.colors.accentCyanMuted
+                        : theme.colors.surface,
                     },
                   ]}>
                   <Text
                     style={{
-                      color: selected ? theme.colors.primaryText : theme.colors.text,
+                      color: selected ? theme.colors.accentCyan : theme.colors.text,
                       fontSize: 13,
+                      fontWeight: selected ? '700' : '500',
                     }}>
                     {option.label}
                   </Text>

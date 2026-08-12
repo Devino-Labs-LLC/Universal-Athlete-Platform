@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ErrorView } from '@/src/core/components/ErrorView';
 import { LoadingView } from '@/src/core/components/LoadingView';
-import { PrimaryButton } from '@/src/core/components/PrimaryButton';
+import { Button, PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { AdaptationItemCard } from '@/src/features/adaptation/components/AdaptationItemCard';
@@ -192,6 +192,7 @@ export function AdaptationProposalScreen({
           testID="regenerate-adaptation"
           label="Regenerate Proposal"
           onPress={handleRegenerate}
+          loading={regenerateMutation.isPending}
           disabled={anyPending}
         />
       ) : null}
@@ -206,7 +207,8 @@ export function AdaptationProposalScreen({
               disabled={anyPending}
             />
           ) : null}
-          <PrimaryButton
+          <Button
+            variant="destructive"
             testID="cancel-adaptation"
             label="Cancel Proposal"
             onPress={handleCancel}

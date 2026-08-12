@@ -3,9 +3,11 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
 import { useBootstrap } from '@/src/app/providers/BootstrapProvider';
+import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { LoadingView } from '@/src/core/components/LoadingView';
 
 export default function AuthLayout() {
+  const theme = useAppTheme();
   const { status: authStatus } = useAuthSession();
   const { state: onboardingState } = useAthleteOnboarding();
   const { status: bootstrapStatus } = useBootstrap();
@@ -29,7 +31,15 @@ export default function AuthLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: true }}>
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        headerStyle: { backgroundColor: theme.colors.background },
+        headerTintColor: theme.colors.accentCyan,
+        headerTitleStyle: { color: theme.colors.text, fontWeight: '600' },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}>
       <Stack.Screen name="login" options={{ title: 'Sign in' }} />
       <Stack.Screen name="register" options={{ title: 'Create account' }} />
       <Stack.Screen name="verify-email" options={{ title: 'Verify email' }} />

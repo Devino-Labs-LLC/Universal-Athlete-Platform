@@ -19,6 +19,8 @@ import {
 } from '@/src/features/profile/schemas';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { Screen } from '@/src/core/components/Screen';
+import { Surface } from '@/src/core/components/Surface';
+import { OnboardingProgress } from '@/src/features/onboarding/components/OnboardingProgress';
 
 export default function OnboardingGoalsScreen() {
   const theme = useAppTheme();
@@ -66,7 +68,12 @@ export default function OnboardingGoalsScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.flex}>
-      <Screen title="Set a goal" scroll>
+      <Screen
+        title="Set a goal"
+        description="Goals help prioritize training adaptations."
+        scroll>
+        {state !== 'COMPLETE' ? <OnboardingProgress current="goals" /> : null}
+        <Surface elevated style={styles.formSurface}>
         <SelectField
           control={form.control}
           name="goalType"
@@ -100,9 +107,11 @@ export default function OnboardingGoalsScreen() {
 
         <PrimaryButton
           label={createGoalMutation.isPending ? 'Saving…' : 'Finish setup'}
+          loading={createGoalMutation.isPending}
           disabled={createGoalMutation.isPending}
           onPress={() => void onSubmit()}
         />
+        </Surface>
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -111,6 +120,9 @@ export default function OnboardingGoalsScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  formSurface: {
+    gap: 14,
   },
   error: {
     fontSize: 14,

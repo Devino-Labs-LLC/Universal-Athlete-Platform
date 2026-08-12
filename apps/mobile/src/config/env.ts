@@ -40,6 +40,14 @@ function isLocalhostUrl(url: string): boolean {
   }
 }
 
+function isHttpsUrl(url: string): boolean {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return /^https:\/\//i.test(url);
+  }
+}
+
 export function loadAppConfig(
   env: Record<string, string | undefined> = process.env,
 ): AppConfig {
@@ -51,6 +59,11 @@ export function loadAppConfig(
     if (environment !== 'development' && isLocalhostUrl(apiBaseUrl)) {
       throw new Error(
         `Localhost API URLs are not allowed when EXPO_PUBLIC_UAP_ENV=${environment}`,
+      );
+    }
+    if (environment !== 'development' && !isHttpsUrl(apiBaseUrl)) {
+      throw new Error(
+        `HTTPS API URLs are required when EXPO_PUBLIC_UAP_ENV=${environment}`,
       );
     }
     return {

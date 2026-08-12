@@ -132,27 +132,70 @@ Do **not** submit to stores from M10 hardening alone.
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `EXPO_PUBLIC_UAP_ENV` | Yes in release | `development` \| `staging` \| `production` |
-| `EXPO_PUBLIC_UAP_API_BASE_URL` | Yes for staging/production | HTTPS recommended; localhost forbidden outside development |
+| `EXPO_PUBLIC_UAP_API_BASE_URL` | Yes for staging/production | **HTTPS required** outside development; localhost / `10.0.2.2` forbidden outside development |
+
+### EAS secrets (do not put in `eas.json`)
+
+| Secret / env | Profiles | Notes |
+| --- | --- | --- |
+| `EXPO_PUBLIC_UAP_API_BASE_URL` | preview, production | Staging/production HTTPS origin |
+| Apple / Google credentials | production (submit) | Managed via EAS credentials, not repo |
+
+`eas.json` only sets `EXPO_PUBLIC_UAP_ENV` per profile. Missing API URL fails closed at runtime for staging/production.
 
 ## Native cookie/CSRF acceptance checklist
 
-Use Development Build + live backend:
+Use Development Build + live backend (**not** Expo Go, **not** web export):
 
 1. Login
-2. Cookies issued
+2. Cookies issued (`uap_at` / `uap_rt` / `XSRF-TOKEN` present in native jar — do not log values)
 3. `/identity/me` authenticated
-4. CSRF-protected mutation succeeds
-5. Access expiry / refresh succeeds
+4. CSRF-protected mutation succeeds (Cookie + `X-XSRF-TOKEN`)
+5. Access expiry / refresh succeeds (single-flight; one retry)
 6. Authenticated request after refresh succeeds
 7. Terminate app
-8. Restart → session restores
-9. Logout → protected request fails
-10. Login again works
+8. Restart → session restores from cookies
+9. Logout → Query cache cleared; protected request fails
+10. Cross-account: Athlete A logout → Athlete B login shows no Athlete A PII
+11. Login again works
 
 Document platform, API URL, CookieManager behavior, XSRF behavior, and persistence result for each release candidate.
 
-## Feature freeze (post-M10)
+## M4 release hardening checklist
+
+### Config / builds
+
+- [ ] `com.devinolabs.uap` bundle/application id confirmed in prebuild
+- [ ] Development ATS/cleartext only for local HTTP
+- [ ] Staging/production HTTPS fail-closed (`loadAppConfig`)
+- [ ] EAS development / preview / production profiles
+- [ ] `EXPO_PUBLIC_UAP_API_BASE_URL` set in EAS env for preview+production
+- [ ] Android diagnostic prebuild (or EAS) succeeds
+- [ ] iOS diagnostic prebuild (or EAS) succeeds; signing credentials available for device/store
+
+### Native acceptance (Dev Client + live API)
+
+- [ ] Cookie login / me / bootstrap V1 / Today
+- [ ] CSRF mutation (check-in or environment)
+- [ ] Kill/relaunch session restore
+- [ ] Cross-account isolation after logout
+- [ ] Training execute path (start → set log → complete → effort)
+- [ ] Recovery check-in create/edit
+- [ ] Performance empty/null semantics
+
+### Gates
+
+- [ ] typecheck / lint (0 errors) / Jest stable ×3 / export
+
+## Feature freeze (post-M10 / M4)
 
 Allowed: P0/P1 bugs, integration defects, production config, accessibility/security blockers.
 
 Not allowed: new features, charts-for-polish, timezone/unit backend expansion, plan editing, notifications, offline sync, AI, new readiness/recommendation versions.
+
+### Known M4 deferred items (P2)
+
+- `@react-native-cookies/cookies` npm deprecation metadata → migrate later to a maintained manager if needed; not a current security blocker
+- Optional OS theme toggle
+- Calendar / launch visual polish leftovers from M3
+- Full App Store / Play listing assets and store submission

@@ -120,7 +120,7 @@ export function TrainingEnvironmentFormScreen({
       <PrimaryButton
         label={mode === 'create' ? 'Create environment' : 'Save changes'}
         onPress={() => void onSubmit()}
-        disabled={busy}
+        loading={busy}
         testID="save-environment-button"
       />
     </Screen>

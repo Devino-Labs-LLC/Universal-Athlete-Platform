@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { CompactInfoRow } from '@/src/core/components/Surface';
 import { formatEnumLabel } from '@/src/features/profile/enumLabels';
 import { WorkoutLoadCategorySummary } from '@/src/features/performance/models/performanceSchemas';
 import { formatLoadVolume } from '@/src/features/performance/utils/formatLoadMetrics';
@@ -33,9 +34,11 @@ export function CategoryBreakdownList({ summaries }: CategoryBreakdownListProps)
           parts.push(formatDurationSeconds(item.durationSeconds));
         }
         return (
-          <Text key={item.category} style={[styles.item, { color: theme.colors.text }]}>
-            {formatEnumLabel(item.category)}: {parts.join(' · ')}
-          </Text>
+          <CompactInfoRow
+            key={item.category}
+            label={formatEnumLabel(item.category)}
+            value={parts.join(' · ')}
+          />
         );
       })}
     </View>
@@ -45,13 +48,12 @@ export function CategoryBreakdownList({ summaries }: CategoryBreakdownListProps)
 const styles = StyleSheet.create({
   container: {
     marginTop: 6,
-    gap: 2,
+    gap: 6,
   },
   heading: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  item: {
-    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
 });

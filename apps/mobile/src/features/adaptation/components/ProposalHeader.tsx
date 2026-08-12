@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { CompactInfoRow, MetricTile } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import {
@@ -21,7 +22,7 @@ export function ProposalHeader({ proposal }: ProposalHeaderProps) {
   const feasibility = proposal.expectedFeasibilityPercentage;
 
   return (
-    <HomeCard testID="adaptation-proposal-header" title="Workout adaptation">
+    <HomeCard testID="adaptation-proposal-header" eyebrow="Adaptation" title="Workout adaptation">
       <View style={styles.chips}>
         <StatusChip
           label={adaptationStatusLabel(proposal.status)}
@@ -30,19 +31,16 @@ export function ProposalHeader({ proposal }: ProposalHeaderProps) {
         <StatusChip label={adaptationOriginLabel(proposal.origin)} variant="info" />
       </View>
 
-      {envName ? (
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>Environment: {envName}</Text>
-      ) : null}
-
       {feasibility != null ? (
-        <Text style={[styles.meta, { color: theme.colors.text }]}>
-          Expected feasibility: {Math.round(feasibility)}%
-        </Text>
+        <MetricTile label="Expected feasibility" value={`${Math.round(feasibility)}%`} />
       ) : null}
 
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-        {proposal.proposedSubstitutions} substitution(s) · {proposal.unresolvedCount} unresolved
-      </Text>
+      {envName ? <CompactInfoRow label="Environment" value={envName} /> : null}
+
+      <CompactInfoRow
+        label="Substitutions"
+        value={`${proposal.proposedSubstitutions} · ${proposal.unresolvedCount} unresolved`}
+      />
 
       {proposal.expiresAt ? (
         <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
@@ -57,10 +55,10 @@ export function ProposalHeader({ proposal }: ProposalHeaderProps) {
       ) : null}
 
       {proposal.recommendationProvenance?.overallAction ? (
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-          Guidance action:{' '}
-          {formatEnumLabel(proposal.recommendationProvenance.overallAction)}
-        </Text>
+        <CompactInfoRow
+          label="Guidance action"
+          value={formatEnumLabel(proposal.recommendationProvenance.overallAction)}
+        />
       ) : null}
     </HomeCard>
   );

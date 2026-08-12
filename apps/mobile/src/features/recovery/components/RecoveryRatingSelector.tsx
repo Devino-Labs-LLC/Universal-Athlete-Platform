@@ -43,21 +43,23 @@ export function RecoveryRatingSelector({
                 styles.button,
                 {
                   borderColor: selected ? theme.colors.primary : theme.colors.border,
-                  backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+                  backgroundColor: selected
+                    ? theme.colors.primaryMuted
+                    : theme.colors.surface,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}>
               <Text
                 style={[
                   styles.ratingNumber,
-                  { color: selected ? theme.colors.primaryText : theme.colors.text },
+                  { color: selected ? theme.colors.primary : theme.colors.text },
                 ]}>
                 {rating}
               </Text>
               <Text
                 style={[
                   styles.ratingLabel,
-                  { color: selected ? theme.colors.primaryText : theme.colors.textMuted },
+                  { color: selected ? theme.colors.primary : theme.colors.textMuted },
                 ]}
                 numberOfLines={2}>
                 {label}

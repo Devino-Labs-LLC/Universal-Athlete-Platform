@@ -2,6 +2,7 @@ import { Control } from 'react-hook-form';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { ControlledRatingSelector } from '@/src/features/recovery/components/ControlledRatingSelector';
 import { DiscomfortEditor } from '@/src/features/recovery/components/DiscomfortEditor';
 import { RecoveryRatingSelector } from '@/src/features/recovery/components/RecoveryRatingSelector';
@@ -22,44 +23,47 @@ export function RecoveryCheckInForm({ control, values, setValue }: RecoveryCheck
 
   return (
     <View style={styles.form} testID="recovery-check-in-form">
-      <ControlledRatingSelector control={control} name="fatigue" metric="fatigue" testID="rating-fatigue" />
-      <ControlledRatingSelector
-        control={control}
-        name="muscleSoreness"
-        metric="muscleSoreness"
-        testID="rating-soreness"
-      />
-      <ControlledRatingSelector control={control} name="stress" metric="stress" testID="rating-stress" />
-      <ControlledRatingSelector control={control} name="mood" metric="mood" testID="rating-mood" />
-      <ControlledRatingSelector
-        control={control}
-        name="motivation"
-        metric="motivation"
-        testID="rating-motivation"
-      />
+      <HomeCard eyebrow="Ratings" title="How you feel">
+        <ControlledRatingSelector control={control} name="fatigue" metric="fatigue" testID="rating-fatigue" />
+        <ControlledRatingSelector
+          control={control}
+          name="muscleSoreness"
+          metric="muscleSoreness"
+          testID="rating-soreness"
+        />
+        <ControlledRatingSelector control={control} name="stress" metric="stress" testID="rating-stress" />
+        <ControlledRatingSelector control={control} name="mood" metric="mood" testID="rating-mood" />
+        <ControlledRatingSelector
+          control={control}
+          name="motivation"
+          metric="motivation"
+          testID="rating-motivation"
+        />
+      </HomeCard>
 
-      <SleepDurationInput
-        totalMinutes={values.sleepDurationMinutes}
-        onChange={(minutes) => setValue('sleepDurationMinutes', minutes)}
-        testID="sleep-duration"
-      />
-
-      <View style={styles.field}>
+      <HomeCard eyebrow="Sleep" title="Rest">
+        <SleepDurationInput
+          totalMinutes={values.sleepDurationMinutes}
+          onChange={(minutes) => setValue('sleepDurationMinutes', minutes)}
+          testID="sleep-duration"
+        />
         <RecoveryRatingSelector
           metric="sleepQuality"
           value={values.sleepQuality}
           onChange={(value) => setValue('sleepQuality', value)}
           testID="rating-sleep-quality"
         />
-      </View>
+      </HomeCard>
 
-      <DiscomfortEditor
-        value={values.discomfortAreas ?? []}
-        onChange={(entries) => setValue('discomfortAreas', entries)}
-        testID="discomfort-editor"
-      />
+      <HomeCard eyebrow="Body" title="Discomfort">
+        <DiscomfortEditor
+          value={values.discomfortAreas ?? []}
+          onChange={(entries) => setValue('discomfortAreas', entries)}
+          testID="discomfort-editor"
+        />
+      </HomeCard>
 
-      <View style={styles.field}>
+      <HomeCard eyebrow="Notes" title="Anything else">
         <Text style={[styles.label, { color: theme.colors.textMuted }]}>Notes (optional)</Text>
         <TextInput
           accessibilityLabel="Recovery notes"
@@ -79,7 +83,7 @@ export function RecoveryCheckInForm({ control, values, setValue }: RecoveryCheck
           ]}
           testID="check-in-notes"
         />
-      </View>
+      </HomeCard>
     </View>
   );
 }
@@ -87,9 +91,6 @@ export function RecoveryCheckInForm({ control, values, setValue }: RecoveryCheck
 const styles = StyleSheet.create({
   form: {
     gap: 16,
-  },
-  field: {
-    gap: 6,
   },
   label: {
     fontSize: 13,
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 15,
     minHeight: 96,
     textAlignVertical: 'top',
