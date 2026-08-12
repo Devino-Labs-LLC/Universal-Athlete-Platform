@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import { Button } from '@/core/components/Button';
-import { Page } from '@/core/components/Page';
+import { AuthPage } from '@/features/auth/components/AuthPage';
 import { FormTextField } from '@/features/auth/components/FormTextField';
 import { PasswordField } from '@/features/auth/components/PasswordField';
 import { identityErrorMessage } from '@/features/auth/errorMessages';
@@ -51,7 +51,7 @@ export function RegisterPage() {
   });
 
   return (
-    <Page title="Create account" description="Register for Universal Athlete Platform.">
+    <AuthPage title="Create account" description="Register for Universal Athlete Platform.">
       <form className="form" onSubmit={onSubmit} noValidate>
         <FormTextField
           label="Email"
@@ -82,6 +82,6 @@ export function RegisterPage() {
           Already registered? <Link to="/auth/login">Sign in</Link>
         </p>
       </form>
-    </Page>
+    </AuthPage>
   );
 }

@@ -12,12 +12,14 @@ import {
   isOccurrenceDeletable,
   isOccurrenceReschedulable,
 } from '@/features/training/api/occurrencesApi';
+import { MetricPill } from '@/features/training/components/MetricPill';
+import { TrainingStatusBadge } from '@/features/training/components/TrainingStatusBadge';
 import { RescheduleForm } from '@/features/training/forms/RescheduleForm';
 import { useOccurrenceDetail, useOccurrenceMutations } from '@/features/training/hooks/useOccurrences';
 import { usePlan } from '@/features/training/hooks/usePlans';
-import { OCCURRENCE_STATUS_LABELS } from '@/features/training/models/labels';
 import { trainingErrorMessage } from '@/features/training/models/trainingErrors';
 import { formatExecutionPrescription } from '@/features/training/utils/prescriptionFormat';
+import styles from '@/features/training/pages/OccurrenceDetailPage.module.scss';
 
 export function OccurrenceDetailPage() {
   const { planId = '', dayId = '', occurrenceId = '' } = useParams();
@@ -43,11 +45,14 @@ export function OccurrenceDetailPage() {
   const canReschedule = isOccurrenceReschedulable(occurrence);
   const canDelete = isOccurrenceDeletable(occurrence);
   const isCompleted = occurrence.status === 'COMPLETED';
+  const executions = occurrence.executions ?? [];
+  const completedCount = executions.filter((item) => item.status === 'COMPLETED').length;
 
   return (
     <Page
       title="Workout occurrence"
-      description="Read-only planner view with snapshot prescriptions."
+      description="Session review and preparation — read-only planner view with snapshot prescriptions."
+      width="wide"
       actions={
         <Link to={`/app/training/plans/${planId}`}>
           <Button type="button" variant="secondary">
@@ -58,42 +63,57 @@ export function OccurrenceDetailPage() {
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">{planQuery.data?.name ?? 'Training plan'}</h2>
-        <dl className="statGrid">
-          <div>
-            <dt>Status</dt>
-            <dd>{OCCURRENCE_STATUS_LABELS[occurrence.status] ?? occurrence.status}</dd>
+      <section className={styles.hero} aria-labelledby="occurrence-heading">
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Session</p>
+          <h2 className={styles.heroTitle} id="occurrence-heading">
+            {planQuery.data?.name ?? 'Training plan'}
+          </h2>
+          <div className={styles.metaRow}>
+            <TrainingStatusBadge kind="occurrence" status={occurrence.status} />
+            <span className={styles.metaText}>{occurrence.scheduledDate}</span>
+            {occurrence.plannedStartTime ? (
+              <span className={styles.metaText}>{occurrence.plannedStartTime}</span>
+            ) : null}
+            <MetricPill label="Progress">
+              {completedCount}/{executions.length || '—'}
+            </MetricPill>
           </div>
-          <div>
-            <dt>Scheduled date</dt>
-            <dd>{occurrence.scheduledDate}</dd>
-          </div>
-          <div>
-            <dt>Planned start</dt>
-            <dd>{occurrence.plannedStartTime ?? '—'}</dd>
-          </div>
+        </div>
+        <dl className={styles.statGrid}>
           <div>
             <dt>Origin</dt>
             <dd>{occurrence.origin ?? '—'}</dd>
           </div>
+          <div>
+            <dt>Planned environment</dt>
+            <dd>{occurrence.environment?.plannedEnvironment?.name ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>Actual environment</dt>
+            <dd>{occurrence.environment?.actualEnvironment?.name ?? '—'}</dd>
+          </div>
         </dl>
-        {occurrence.environment?.plannedEnvironment?.name ? (
-          <p>Planned environment: {occurrence.environment.plannedEnvironment.name}</p>
-        ) : null}
-        {occurrence.athleteNotes ? <p>Notes: {occurrence.athleteNotes}</p> : null}
+        {occurrence.athleteNotes ? <p className={styles.notes}>Notes: {occurrence.athleteNotes}</p> : null}
       </section>
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Snapshot prescriptions</h2>
-        {(occurrence.executions ?? []).length === 0 ? (
-          <p>No execution snapshots yet.</p>
+      <section className={styles.panel} aria-labelledby="snapshot-heading">
+        <h2 className={styles.panelTitle} id="snapshot-heading">
+          Snapshot prescriptions
+        </h2>
+        {executions.length === 0 ? (
+          <p className={styles.empty}>No execution snapshots yet.</p>
         ) : (
-          <ul>
-            {(occurrence.executions ?? []).map((execution) => (
-              <li key={execution.id} style={{ marginBottom: '0.5rem' }}>
-                <strong>{execution.exerciseName}</strong>
-                <p>{formatExecutionPrescription(execution)}</p>
+          <ul className={styles.prescriptionList}>
+            {executions.map((execution, index) => (
+              <li key={execution.id} className={styles.prescriptionRow}>
+                <span className={styles.order} aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <strong className={styles.exerciseName}>{execution.exerciseName}</strong>
+                  <p className={styles.prescription}>{formatExecutionPrescription(execution)}</p>
+                </div>
               </li>
             ))}
           </ul>
@@ -101,46 +121,45 @@ export function OccurrenceDetailPage() {
       </section>
 
       {isCompleted ? (
-        <section className="card" style={{ marginBottom: '1rem' }}>
-          <h2 className="cardTitle">Performance</h2>
+        <section className={styles.panel} aria-labelledby="performance-heading">
+          <h2 className={styles.panelTitle} id="performance-heading">
+            Performance
+          </h2>
           <OccurrencePerformanceSection planId={planId} dayId={dayId} occurrenceId={occurrenceId} />
         </section>
       ) : null}
 
       {canReschedule || canDelete ? (
-        <section className="card">
-          <h2 className="cardTitle">Manage occurrence</h2>
-          {canReschedule ? (
-            <>
+        <section className={styles.panel} aria-labelledby="manage-heading">
+          <h2 className={styles.panelTitle} id="manage-heading">
+            Manage occurrence
+          </h2>
+          <div className={styles.actionBar}>
+            {canReschedule ? (
               <Button type="button" variant="secondary" onClick={() => setShowReschedule((v) => !v)}>
                 {showReschedule ? 'Hide reschedule' : 'Reschedule'}
               </Button>
-              {showReschedule ? (
-                <div style={{ marginTop: '1rem' }}>
-                  <RescheduleForm
-                    defaultDate={occurrence.scheduledDate}
-                    onSubmit={async (values) => {
-                      try {
-                        await mutations.reschedule.mutateAsync({ occurrenceId, request: values });
-                        setShowReschedule(false);
-                      } catch (error) {
-                        setErrorMessage(trainingErrorMessage(error));
-                      }
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          ) : null}
-          {canDelete ? (
-            <Button
-              type="button"
-              variant="secondary"
-              style={{ marginLeft: '0.5rem' }}
-              onClick={() => setConfirmDelete(true)}
-            >
-              Delete
-            </Button>
+            ) : null}
+            {canDelete ? (
+              <Button type="button" variant="secondary" onClick={() => setConfirmDelete(true)}>
+                Delete
+              </Button>
+            ) : null}
+          </div>
+          {canReschedule && showReschedule ? (
+            <div className={styles.rescheduleForm}>
+              <RescheduleForm
+                defaultDate={occurrence.scheduledDate}
+                onSubmit={async (values) => {
+                  try {
+                    await mutations.reschedule.mutateAsync({ occurrenceId, request: values });
+                    setShowReschedule(false);
+                  } catch (error) {
+                    setErrorMessage(trainingErrorMessage(error));
+                  }
+                }}
+              />
+            </div>
           ) : null}
         </section>
       ) : null}
@@ -181,13 +200,13 @@ function OccurrencePerformanceSection({ planId, dayId, occurrenceId }: Occurrenc
   }
 
   if (performanceQuery.isError || !performanceQuery.data) {
-    return <p>Performance summary is not available for this session yet.</p>;
+    return <p className={styles.empty}>Performance summary is not available for this session yet.</p>;
   }
 
   return (
     <>
       <OccurrencePerformanceSummary performance={performanceQuery.data} />
-      <p style={{ marginTop: '1rem' }}>
+      <p className={styles.performanceLink}>
         <Link to={`/app/performance/sessions/${planId}/${dayId}/${occurrenceId}`}>View performance details</Link>
       </p>
     </>

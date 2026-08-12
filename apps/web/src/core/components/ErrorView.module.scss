@@ -7,6 +7,9 @@
   min-height: 240px;
   padding: var(--uap-space-6);
   text-align: center;
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
 }
 
 .title {

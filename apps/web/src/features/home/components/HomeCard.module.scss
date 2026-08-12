@@ -5,8 +5,8 @@
   background: var(--uap-surface);
   border: 1px solid var(--uap-border-subtle);
   border-radius: var(--uap-radius-lg);
-  padding: var(--uap-space-4);
-  box-shadow: var(--uap-shadow-sm);
+  padding: var(--uap-space-4) var(--uap-space-5);
+  box-shadow: none;
   min-height: 100%;
 }
 
@@ -19,14 +19,20 @@
 
 .title {
   margin: 0;
-  font-size: var(--uap-font-size-md);
-  font-weight: 600;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
 }
 
 .subtitle {
   margin: var(--uap-space-1) 0 0;
   font-size: var(--uap-font-size-sm);
-  color: var(--uap-text-secondary);
+  color: var(--uap-text-primary);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .body {

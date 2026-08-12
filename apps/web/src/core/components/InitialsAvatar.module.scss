@@ -1,0 +1,25 @@
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: var(--uap-radius-full);
+  border: 1px solid var(--uap-border-subtle);
+  background: var(--uap-surface-muted);
+  color: var(--uap-accent-cyan);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  user-select: none;
+}
+
+.md {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: var(--uap-font-size-sm);
+}
+
+.lg {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: var(--uap-font-size-lg);
+}

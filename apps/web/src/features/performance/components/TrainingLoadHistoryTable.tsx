@@ -6,6 +6,7 @@ import {
   formatWeeklyLoadSummary,
 } from '@/features/performance/utils/formatLoadMetrics';
 import type { TrainingLoadHistory } from '@/features/performance/models/schemas';
+import surfaces from '@/features/performance/styles/performanceSurfaces.module.scss';
 
 interface TrainingLoadHistoryTableProps {
   history: TrainingLoadHistory;
@@ -18,23 +19,25 @@ export function TrainingLoadHistoryTable({ history }: TrainingLoadHistoryTablePr
       return <p className={tableStyles.subtle}>No sessions found in this date range.</p>;
     }
     return (
-      <table className={tableStyles.table}>
-        <caption className="srOnly">Session-level training load</caption>
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Summary</th>
-          </tr>
-        </thead>
-        <tbody>
-          {occurrences.map((occurrence) => (
-            <tr key={occurrence.summary.id}>
-              <th scope="row">{formatDateDisplay(parseDateOnly(occurrence.summary.scheduledDate))}</th>
-              <td>{formatOccurrenceLoadSummary(occurrence.summary).join(' \u00b7 ')}</td>
+      <div className={surfaces.tableWrap}>
+        <table className={tableStyles.table}>
+          <caption className="srOnly">Session-level training load</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Summary</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {occurrences.map((occurrence) => (
+              <tr key={occurrence.summary.id}>
+                <th scope="row">{formatDateDisplay(parseDateOnly(occurrence.summary.scheduledDate))}</th>
+                <td>{formatOccurrenceLoadSummary(occurrence.summary).join(' \u00b7 ')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   }
 
@@ -44,23 +47,25 @@ export function TrainingLoadHistoryTable({ history }: TrainingLoadHistoryTablePr
       return <p className={tableStyles.subtle}>No training load recorded in this date range.</p>;
     }
     return (
-      <table className={tableStyles.table}>
-        <caption className="srOnly">Daily training load</caption>
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Summary</th>
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <tr key={day.date}>
-              <th scope="row">{formatDateDisplay(parseDateOnly(day.date))}</th>
-              <td>{formatDailyLoadSummary(day).join(' \u00b7 ')}</td>
+      <div className={surfaces.tableWrap}>
+        <table className={tableStyles.table}>
+          <caption className="srOnly">Daily training load</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Summary</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day.date}>
+                <th scope="row">{formatDateDisplay(parseDateOnly(day.date))}</th>
+                <td>{formatDailyLoadSummary(day).join(' \u00b7 ')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   }
 
@@ -69,24 +74,27 @@ export function TrainingLoadHistoryTable({ history }: TrainingLoadHistoryTablePr
     return <p className={tableStyles.subtle}>No training load recorded in this date range.</p>;
   }
   return (
-    <table className={tableStyles.table}>
-      <caption className="srOnly">Weekly training load</caption>
-      <thead>
-        <tr>
-          <th scope="col">Week</th>
-          <th scope="col">Summary</th>
-        </tr>
-      </thead>
-      <tbody>
-        {weeks.map((week) => (
-          <tr key={week.weekStartDate}>
-            <th scope="row">
-              {formatDateDisplay(parseDateOnly(week.weekStartDate))} – {formatDateDisplay(parseDateOnly(week.weekEndDate))}
-            </th>
-            <td>{formatWeeklyLoadSummary(week).join(' \u00b7 ')}</td>
+    <div className={surfaces.tableWrap}>
+      <table className={tableStyles.table}>
+        <caption className="srOnly">Weekly training load</caption>
+        <thead>
+          <tr>
+            <th scope="col">Week</th>
+            <th scope="col">Summary</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {weeks.map((week) => (
+            <tr key={week.weekStartDate}>
+              <th scope="row">
+                {formatDateDisplay(parseDateOnly(week.weekStartDate))} –{' '}
+                {formatDateDisplay(parseDateOnly(week.weekEndDate))}
+              </th>
+              <td>{formatWeeklyLoadSummary(week).join(' \u00b7 ')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

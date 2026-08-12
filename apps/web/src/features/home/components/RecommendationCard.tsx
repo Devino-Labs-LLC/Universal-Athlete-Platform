@@ -15,9 +15,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
   if (!recommendation.recommendationPresent) {
     return (
       <HomeCard title="Recommendation">
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
-          No training recommendation yet.
-        </p>
+        <p className="emptyHint">No training recommendation yet.</p>
         <Link to="/app/recovery">View recovery</Link>
       </HomeCard>
     );

@@ -91,4 +91,114 @@ describe('RecoveryLandingPage', () => {
     expect(screen.getByText('boom')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
+
+  it('renders a readiness score ring when a score is present', () => {
+    mockOverviewState = {
+      isLoading: false,
+      isError: false,
+      data: {
+        date: '2026-02-01',
+        trendDays: 7,
+        checkInPresent: true,
+        checkIn: {
+          recoveryCheckInId: 'ci-1',
+          completeness: 'COMPLETE',
+          fatigue: 3,
+          muscleSoreness: null,
+          stress: 2,
+          mood: 4,
+          motivation: 4,
+          sleepDurationMinutes: 480,
+          sleepQuality: 4,
+          discomfortPresent: false,
+        },
+        baselines: [],
+        deviations: [],
+        readinessPresent: true,
+        readiness: {
+          readinessAssessmentId: 'ra-1',
+          readinessScore: 82,
+          readinessBand: 'HIGH',
+          dataSufficiency: 'SUFFICIENT',
+          limitingDimensions: [],
+        },
+        recommendationPresent: false,
+        recommendation: null,
+        trends: [{ metricType: 'FATIGUE', trendDirection: 'STABLE', observationCount: 5 }],
+        discomfort: [],
+      },
+      refetch,
+    };
+    render(<RecoveryLandingPage />);
+    expect(screen.getByRole('img', { name: /Readiness: 82 of 100/i })).toBeInTheDocument();
+    expect(screen.getByText('High')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: "Today's signals" })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recovery trends' })).toBeInTheDocument();
+    expect(screen.getByText('8h')).toBeInTheDocument();
+    expect(screen.queryByText('0h')).not.toBeInTheDocument();
+  });
+
+  it('renders an empty score ring without fabricating zero when readiness is missing', () => {
+    mockOverviewState = {
+      isLoading: false,
+      isError: false,
+      data: {
+        date: '2026-02-01',
+        trendDays: 7,
+        checkInPresent: false,
+        checkIn: null,
+        baselines: [],
+        deviations: [],
+        readinessPresent: false,
+        readiness: null,
+        recommendationPresent: false,
+        recommendation: null,
+        trends: [],
+        discomfort: [],
+        trainingLoadContext: null,
+      },
+      refetch,
+    };
+    render(<RecoveryLandingPage />);
+    expect(screen.getByRole('img', { name: /Readiness: not available/i })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Readiness: 0 of 100/i })).not.toBeInTheDocument();
+  });
+
+  it('shows training-load context with dashes for missing volume and load', () => {
+    mockOverviewState = {
+      isLoading: false,
+      isError: false,
+      data: {
+        date: '2026-02-01',
+        trendDays: 7,
+        checkInPresent: false,
+        checkIn: null,
+        baselines: [],
+        deviations: [],
+        readinessPresent: false,
+        readiness: null,
+        recommendationPresent: false,
+        recommendation: null,
+        trends: [],
+        discomfort: [],
+        trainingLoadContext: {
+          date: '2026-02-01',
+          occurrenceCount: 1,
+          ratedOccurrenceCount: 0,
+          unratedOccurrenceCount: 1,
+          completedExerciseCount: 0,
+          completedSetCount: 0,
+          totalVolumeKilograms: null,
+          totalDurationSeconds: 1800,
+          totalDistanceMeters: null,
+          totalSessionRpeLoad: null,
+        },
+      },
+      refetch,
+    };
+    render(<RecoveryLandingPage />);
+    expect(screen.getByRole('heading', { name: 'Training load context' })).toBeInTheDocument();
+    expect(screen.getByText('30 min')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
 });

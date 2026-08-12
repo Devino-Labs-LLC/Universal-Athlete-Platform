@@ -1,12 +1,12 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 45%);
+  background: rgb(10 12 16 / 72%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
-  padding: 1rem;
+  padding: var(--uap-space-4);
 }
 
 .modal {
@@ -14,25 +14,27 @@
   max-height: 85vh;
   overflow: auto;
   background: var(--uap-surface);
-  border-radius: var(--uap-radius-md);
-  border: 1px solid var(--uap-border);
-  padding: 1rem;
+  border-radius: var(--uap-radius-lg);
+  border: 1px solid var(--uap-border-subtle);
+  padding: var(--uap-space-4);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--uap-space-3);
+  gap: var(--uap-space-3);
 }
 
 .header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
 }
 
 .searchRow {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--uap-space-3);
 }
 
 .list {
@@ -41,42 +43,63 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--uap-space-1);
 }
 
 .itemButton {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--uap-border);
+  border: 1px solid transparent;
   border-radius: var(--uap-radius-sm);
-  padding: 0.65rem 0.75rem;
-  background: var(--uap-surface);
+  padding: var(--uap-space-3);
+  background: var(--uap-surface-elevated);
   cursor: pointer;
+  color: inherit;
 }
 
 .itemButton:hover,
 .itemButton:focus-visible {
-  border-color: var(--uap-accent);
+  border-color: var(--uap-accent-cyan);
+  background: var(--uap-accent-cyan-muted);
 }
 
 .name {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: var(--uap-font-size-sm);
 }
 
 .meta {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--uap-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  margin-top: 0.25rem;
+  font-size: var(--uap-font-size-xs);
+  color: var(--uap-text-secondary);
+}
+
+.scope {
+  display: inline-flex;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--uap-radius-sm);
+  border: 1px solid var(--uap-border-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
 }
 
 .empty {
-  color: var(--uap-text-muted);
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
 }
 
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.75rem;
+  gap: var(--uap-space-2);
+  margin-top: var(--uap-space-3);
+  flex-wrap: wrap;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
 }

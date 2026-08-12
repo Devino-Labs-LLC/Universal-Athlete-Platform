@@ -1,65 +1,128 @@
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
-  gap: 1rem;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.4fr) minmax(260px, 0.95fr);
+  gap: var(--uap-space-4);
   align-items: start;
+}
+
+.layoutTwoCol {
+  grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.4fr);
 }
 
 .daysPanel,
 .exercisesPanel,
-.sideForm {
-  border: 1px solid var(--uap-border);
-  border-radius: var(--uap-radius-md);
-  padding: 1rem;
+.sideForm,
+.contextPanel {
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  padding: var(--uap-space-4);
   background: var(--uap-surface);
+  min-width: 0;
 }
 
 .panelHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: var(--uap-space-3);
+  margin-bottom: var(--uap-space-3);
+  flex-wrap: wrap;
+}
+
+.panelLabel {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
 }
 
 .panelHeader h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--uap-font-size-md);
+  font-weight: 700;
 }
 
 .exerciseList {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--uap-space-2);
 }
 
 .headerActions {
   display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
 }
 
-.headerActions a {
-  color: var(--uap-accent);
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  margin-bottom: var(--uap-space-3);
+}
+
+.contextList {
+  margin: 0;
+  display: grid;
+  gap: var(--uap-space-3);
+}
+
+.contextList dt {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.contextList dd {
+  margin: var(--uap-space-1) 0 0;
+  font-size: var(--uap-font-size-sm);
+  font-weight: 600;
 }
 
 .manualOccurrence {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--uap-border);
+  margin-top: var(--uap-space-4);
+  padding-top: var(--uap-space-4);
+  border-top: 1px solid var(--uap-border-subtle);
 }
 
 .manualOccurrence h3 {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+  margin: 0 0 var(--uap-space-3);
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
 }
 
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
+.archivedNotice {
+  margin: 0 0 var(--uap-space-3);
+  padding: var(--uap-space-3);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface-muted);
+  font-size: var(--uap-font-size-sm);
+}
+
+@media (max-width: 1100px) {
+  .layout,
+  .layoutTwoCol {
+    grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.2fr);
   }
 
-  .sideForm {
+  .sideForm,
+  .contextPanel {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout,
+  .layoutTwoCol {
+    grid-template-columns: 1fr;
   }
 }

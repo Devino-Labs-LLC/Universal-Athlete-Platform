@@ -27,7 +27,7 @@ function resolveTheme(preference: ThemePreference): 'light' | 'dark' {
   }
 
   if (typeof window === 'undefined') {
-    return 'light';
+    return 'dark';
   }
 
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -35,7 +35,7 @@ function resolveTheme(preference: ThemePreference): 'light' | 'dark' {
 
 function readStoredPreference(): ThemePreference {
   if (typeof window === 'undefined') {
-    return 'system';
+    return 'dark';
   }
 
   const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -43,7 +43,8 @@ function readStoredPreference(): ThemePreference {
     return stored;
   }
 
-  return 'system';
+  // Product visual target is the dark sports-performance system.
+  return 'dark';
 }
 
 export function ThemeProvider({ children }: PropsWithChildren) {

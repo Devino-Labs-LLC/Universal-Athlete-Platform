@@ -13,11 +13,11 @@ export function RecoveryCard({ recovery }: RecoveryCardProps) {
 
   return (
     <HomeCard title="Recovery">
-      <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
+      <p className="emptyHint">
         {recovery.checkInPresent ? 'Check-in completed for today.' : 'No recovery check-in yet.'}
       </p>
       {recovery.fatigue != null ? (
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>Fatigue: {recovery.fatigue}</p>
+        <p className="emptyHint">Fatigue: {recovery.fatigue}</p>
       ) : null}
       <Button variant="secondary" onClick={() => navigate('/app/recovery')}>
         View recovery

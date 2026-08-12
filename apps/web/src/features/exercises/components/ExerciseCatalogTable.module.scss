@@ -4,6 +4,15 @@
   font-size: var(--uap-font-size-sm);
 }
 
+.wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+}
+
 .table th,
 .table td {
   text-align: left;
@@ -20,6 +29,6 @@
 }
 
 .viewLink {
-  color: var(--uap-accent);
+  color: var(--uap-accent-cyan);
   font-weight: 600;
 }

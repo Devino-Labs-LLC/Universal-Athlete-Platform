@@ -4,6 +4,7 @@ import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
 import { todayDateOnly } from '@/core/date/dateOnly';
+import { TRAINING_LOAD_MAX_PAGE_SIZE } from '@/features/performance/api/trainingLoadApi';
 import { CategoryDistributionTable, MovementDistributionTable } from '@/features/performance/components/LoadDistributionTable';
 import { PerformanceSubNav } from '@/features/performance/components/PerformanceSubNav';
 import { TrainingLoadHistoryTable } from '@/features/performance/components/TrainingLoadHistoryTable';
@@ -11,6 +12,7 @@ import { useTrainingLoadHistory } from '@/features/performance/hooks/useTraining
 import { loadRangeLabel, trainingLoadGranularityLabel } from '@/features/performance/models/labels';
 import { performanceErrorMessage } from '@/features/performance/models/errors';
 import { isTrainingLoadGranularity, TRAINING_LOAD_GRANULARITIES, type TrainingLoadGranularity } from '@/features/performance/models/schemas';
+import surfaces from '@/features/performance/styles/performanceSurfaces.module.scss';
 import { aggregateCategorySummaries, aggregateMovementSummaries } from '@/features/performance/utils/aggregateDistributions';
 import { dateRangeForLoadHistory, isLoadRangeDays, LOAD_RANGE_OPTIONS, type LoadRangeDays } from '@/features/performance/utils/dateRanges';
 
@@ -29,7 +31,10 @@ export function TrainingLoadPage() {
   const rangeDays = parseRangeParam(searchParams.get('range'));
   const { startDate, endDate } = dateRangeForLoadHistory(rangeDays, todayDateOnly());
 
-  const historyQuery = useTrainingLoadHistory(mode, startDate, endDate, { size: 200 });
+  // Backend rejects size outside 1..MAX_PAGE_SIZE (100) with INVALID_TRAINING_LOAD_DATE_RANGE.
+  const historyQuery = useTrainingLoadHistory(mode, startDate, endDate, {
+    size: TRAINING_LOAD_MAX_PAGE_SIZE,
+  });
 
   function updateParams(next: { mode?: TrainingLoadGranularity; range?: LoadRangeDays }) {
     const params = new URLSearchParams(searchParams);
@@ -46,10 +51,14 @@ export function TrainingLoadPage() {
     <Page
       title="Training load"
       description={`Load history from ${startDate} to ${endDate}.`}
-      actions={
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className="label">Granularity</span>
+      width="wide"
+    >
+      <PerformanceSubNav />
+
+      <div className={surfaces.hub}>
+        <section className={surfaces.toolbar} aria-label="Load filters">
+          <label className={surfaces.filter}>
+            <span className={surfaces.filterLabel}>Granularity</span>
             <select
               className="input"
               value={mode}
@@ -67,8 +76,8 @@ export function TrainingLoadPage() {
             </select>
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className="label">Range</span>
+          <label className={surfaces.filter}>
+            <span className={surfaces.filterLabel}>Range</span>
             <select
               className="input"
               value={rangeDays}
@@ -86,34 +95,47 @@ export function TrainingLoadPage() {
               ))}
             </select>
           </label>
-        </div>
-      }
-    >
-      <PerformanceSubNav />
+        </section>
 
-      {historyQuery.isLoading ? <LoadingView message="Loading training load…" /> : null}
-      {historyQuery.isError ? (
-        <ErrorView message={performanceErrorMessage(historyQuery.error)} onRetry={() => historyQuery.refetch()} />
-      ) : null}
+        {historyQuery.isLoading ? <LoadingView message="Loading training load…" /> : null}
+        {historyQuery.isError ? (
+          <ErrorView message={performanceErrorMessage(historyQuery.error)} onRetry={() => historyQuery.refetch()} />
+        ) : null}
 
-      {historyQuery.data ? (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <section className="card">
-            <h2 className="cardTitle">{trainingLoadGranularityLabel(mode)} summary</h2>
-            <TrainingLoadHistoryTable history={historyQuery.data} />
-          </section>
+        {historyQuery.data ? (
+          <>
+            <section className={surfaces.panel} aria-labelledby="load-summary-heading">
+              <div className={surfaces.panelHeader}>
+                <h2 className={surfaces.panelTitle} id="load-summary-heading">
+                  {trainingLoadGranularityLabel(mode)} summary
+                </h2>
+                <span className={surfaces.panelHint}>
+                  {startDate} → {endDate}
+                </span>
+              </div>
+              <TrainingLoadHistoryTable history={historyQuery.data} />
+            </section>
 
-          <section className="card">
-            <h2 className="cardTitle">By category</h2>
-            <CategoryDistributionTable summaries={aggregateCategorySummaries(historyQuery.data)} />
-          </section>
+            <section className={surfaces.panel} aria-labelledby="load-category-heading">
+              <div className={surfaces.panelHeader}>
+                <h2 className={surfaces.panelTitle} id="load-category-heading">
+                  By category
+                </h2>
+              </div>
+              <CategoryDistributionTable summaries={aggregateCategorySummaries(historyQuery.data)} />
+            </section>
 
-          <section className="card">
-            <h2 className="cardTitle">By movement pattern</h2>
-            <MovementDistributionTable summaries={aggregateMovementSummaries(historyQuery.data)} />
-          </section>
-        </div>
-      ) : null}
+            <section className={surfaces.panel} aria-labelledby="load-movement-heading">
+              <div className={surfaces.panelHeader}>
+                <h2 className={surfaces.panelTitle} id="load-movement-heading">
+                  By movement pattern
+                </h2>
+              </div>
+              <MovementDistributionTable summaries={aggregateMovementSummaries(historyQuery.data)} />
+            </section>
+          </>
+        ) : null}
+      </div>
     </Page>
   );
 }

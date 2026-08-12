@@ -11,7 +11,7 @@ export function TrainingLoadCard({ trainingLoad }: TrainingLoadCardProps) {
   if (!trainingLoad?.loadPresent) {
     return (
       <HomeCard title="Training load">
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No training load data yet.</p>
+        <p className="emptyHint">No training load data yet.</p>
         <Link to="/app/performance/load">View training load</Link>
       </HomeCard>
     );

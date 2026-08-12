@@ -1,52 +1,67 @@
 .card {
-  border: 1px solid var(--uap-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  padding: var(--uap-space-4);
+  border: 1px solid var(--uap-border-subtle);
   border-radius: var(--uap-radius-md);
-  padding: 1rem;
-  background: var(--uap-surface);
+  background: var(--uap-surface-elevated);
+}
+
+.archived {
+  opacity: 0.72;
+}
+
+.draft {
+  border-style: dashed;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: var(--uap-space-3);
+  flex-wrap: wrap;
+}
+
+.titleBlock {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-1);
 }
 
 .title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .title a {
-  color: var(--uap-text);
+  color: var(--uap-text-primary);
   text-decoration: none;
 }
 
 .title a:hover {
-  text-decoration: underline;
+  color: var(--uap-accent-cyan);
 }
 
-.badge {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--uap-radius-sm);
-  background: var(--uap-surface-muted);
-  color: var(--uap-text-muted);
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
 }
 
 .meta {
-  margin: 0.5rem 0;
-  color: var(--uap-text-muted);
-  font-size: 0.875rem;
+  margin: 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
 }
 
 .actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.actions a {
-  color: var(--uap-accent);
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
 }

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { useAthleteOnboarding } from '@/app/providers/AthleteOnboardingProvider';
+import { Badge } from '@/core/components/Badge';
 import { Button } from '@/core/components/Button';
 import { Page } from '@/core/components/Page';
 import { AddSportForm } from '@/features/profile/forms/AddSportForm';
@@ -14,6 +15,7 @@ import {
   useDeleteAthleteSportMutation,
   useSetPrimaryAthleteSportMutation,
 } from '@/features/profile/hooks/useAthleteSports';
+import manageStyles from '@/features/profile/pages/ManageResource.module.scss';
 import { addAthleteSportSchema, type AddAthleteSportRequest } from '@/features/profile/schemas';
 
 export function ManageSportsPage() {
@@ -79,67 +81,70 @@ export function ManageSportsPage() {
 
   return (
     <Page title="Manage sports">
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Your sports</h2>
-        {snapshot.sports.length === 0 ? (
-          <p style={{ color: 'var(--uap-text-secondary)' }}>No sports yet.</p>
-        ) : (
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.75rem' }}>
-            {snapshot.sports.map((sport) => (
-              <li
-                key={sport.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '1rem',
-                }}
-              >
-                <span>
-                  {sport.sportType === 'OTHER'
-                    ? sport.customSportName
-                    : formatEnumLabel(sport.sportType)}
-                  {sport.primarySport ? ' (primary)' : ''}
-                </span>
-                <span style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                  {!sport.primarySport ? (
+      <div className={manageStyles.hub}>
+        <section className={manageStyles.panel} aria-labelledby="sports-list-heading">
+          <h2 className={manageStyles.panelTitle} id="sports-list-heading">
+            Your sports
+          </h2>
+          {snapshot.sports.length === 0 ? (
+            <p className={manageStyles.empty}>No sports yet.</p>
+          ) : (
+            <ul className={manageStyles.list}>
+              {snapshot.sports.map((sport) => (
+                <li key={sport.id} className={manageStyles.row}>
+                  <span className={manageStyles.rowLabel}>
+                    {sport.sportType === 'OTHER'
+                      ? sport.customSportName
+                      : formatEnumLabel(sport.sportType)}
+                    {sport.primarySport ? (
+                      <>
+                        {' '}
+                        <Badge tone="accent">Primary</Badge>
+                      </>
+                    ) : null}
+                  </span>
+                  <span className={manageStyles.rowActions}>
+                    {!sport.primarySport ? (
+                      <Button
+                        variant="ghost"
+                        disabled={setPrimaryMutation.isPending}
+                        onClick={() => void handleSetPrimary(sport.id)}
+                      >
+                        Set primary
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
-                      disabled={setPrimaryMutation.isPending}
-                      onClick={() => void handleSetPrimary(sport.id)}
+                      disabled={deleteSportMutation.isPending}
+                      onClick={() => void handleDelete(sport.id)}
                     >
-                      Set primary
+                      Remove
                     </Button>
-                  ) : null}
-                  <Button
-                    variant="ghost"
-                    disabled={deleteSportMutation.isPending}
-                    onClick={() => void handleDelete(sport.id)}
-                  >
-                    Remove
-                  </Button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Add sport</h2>
-        <AddSportForm
-          control={form.control}
-          sportType={sportType}
-          onSubmit={() => void onSubmit()}
-          submitting={addSportMutation.isPending}
-          submitError={submitError}
-          showPrimarySport
-        />
-      </section>
+        <section className={manageStyles.panel} aria-labelledby="add-sport-heading">
+          <h2 className={manageStyles.panelTitle} id="add-sport-heading">
+            Add sport
+          </h2>
+          <AddSportForm
+            control={form.control}
+            sportType={sportType}
+            onSubmit={() => void onSubmit()}
+            submitting={addSportMutation.isPending}
+            submitError={submitError}
+            showPrimarySport
+          />
+        </section>
 
-      <Button variant="secondary" onClick={() => navigate('/app/profile')}>
-        Back to profile
-      </Button>
+        <Button variant="secondary" onClick={() => navigate('/app/profile')}>
+          Back to profile
+        </Button>
+      </div>
     </Page>
   );
 }

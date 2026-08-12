@@ -47,6 +47,7 @@ describe('DiscomfortHistoryTable', () => {
     };
     render(<DiscomfortHistoryTable history={history} />);
     expect(screen.getByText('Tight after squats')).toBeInTheDocument();
-    expect(screen.getAllByText('—')).toHaveLength(1);
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 });

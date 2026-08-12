@@ -104,13 +104,15 @@ export function ExerciseCatalogPage() {
     <Page
       title="Exercise catalog"
       description="Browse system and custom exercise definitions."
+      width="wide"
       actions={
         <Link to="/app/exercises/new">
           <Button type="button">New exercise</Button>
         </Link>
       }
     >
-      <section className="card" style={{ marginBottom: '1rem', display: 'grid', gap: '0.75rem' }}>
+      <section className="panel" style={{ marginBottom: '1rem', display: 'grid', gap: '0.75rem' }}>
+        <p className="panelLabel">Filters</p>
         <div className="field">
           <label className="label" htmlFor="exercise-search">
             Search by name

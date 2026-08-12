@@ -3,6 +3,7 @@ import { ComparisonBandBadge, SufficiencyBadge } from '@/features/recovery/compo
 import { deviationSummaryCopy } from '@/features/recovery/utils/comparisonCopy';
 import { metricTypeLabel } from '@/features/recovery/models/labels';
 import type { RecoveryMetricBaseline, RecoveryMetricDeviation } from '@/features/recovery/models/schemas';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
 
 interface BaselineDeviationTableProps {
   baselines: RecoveryMetricBaseline[];
@@ -27,40 +28,44 @@ export function BaselineDeviationTable({ baselines, deviations }: BaselineDeviat
   }
 
   return (
-    <table className={tableStyles.table}>
-      <caption className="srOnly">Recovery metric baselines and comparisons</caption>
-      <thead>
-        <tr>
-          <th scope="col">Metric</th>
-          <th scope="col">Today</th>
-          <th scope="col">Baseline mean</th>
-          <th scope="col">Comparison</th>
-          <th scope="col">Summary</th>
-          <th scope="col">Baseline data</th>
-          <th scope="col">Observations</th>
-        </tr>
-      </thead>
-      <tbody>
-        {metricTypes.map((metricType) => {
-          const baseline = baselines.find((entry) => entry.metricType === metricType);
-          const deviation = deviationByMetric.get(metricType);
-          return (
-            <tr key={metricType}>
-              <th scope="row">{metricTypeLabel(metricType)}</th>
-              <td className={tableStyles.numeric}>{formatNumber(deviation?.targetValue)}</td>
-              <td className={tableStyles.numeric}>{formatNumber(baseline?.mean)}</td>
-              <td>
-                <ComparisonBandBadge band={deviation?.comparisonBand} />
-              </td>
-              <td>{deviation ? deviationSummaryCopy(metricType, deviation.comparisonBand) : '—'}</td>
-              <td>
-                <SufficiencyBadge sufficiency={baseline?.dataSufficiency ?? deviation?.dataSufficiency} />
-              </td>
-              <td className={tableStyles.numeric}>{baseline?.observationCount ?? 0}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className={surfaces.tableWrap}>
+      <table className={tableStyles.table}>
+        <caption className="srOnly">Recovery metric baselines and comparisons</caption>
+        <thead>
+          <tr>
+            <th scope="col">Metric</th>
+            <th scope="col">Today</th>
+            <th scope="col">Baseline mean</th>
+            <th scope="col">Comparison</th>
+            <th scope="col">Summary</th>
+            <th scope="col">Baseline data</th>
+            <th scope="col">Observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          {metricTypes.map((metricType) => {
+            const baseline = baselines.find((entry) => entry.metricType === metricType);
+            const deviation = deviationByMetric.get(metricType);
+            return (
+              <tr key={metricType}>
+                <th scope="row">{metricTypeLabel(metricType)}</th>
+                <td className={tableStyles.numeric}>{formatNumber(deviation?.targetValue)}</td>
+                <td className={tableStyles.numeric}>{formatNumber(baseline?.mean)}</td>
+                <td>
+                  <ComparisonBandBadge band={deviation?.comparisonBand} />
+                </td>
+                <td>{deviation ? deviationSummaryCopy(metricType, deviation.comparisonBand) : '—'}</td>
+                <td>
+                  <SufficiencyBadge sufficiency={baseline?.dataSufficiency ?? deviation?.dataSufficiency} />
+                </td>
+                <td className={tableStyles.numeric}>
+                  {baseline?.observationCount != null ? baseline.observationCount : '—'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

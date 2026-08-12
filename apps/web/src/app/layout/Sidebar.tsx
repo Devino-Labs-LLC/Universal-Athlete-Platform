@@ -1,15 +1,16 @@
 import { NavLink } from 'react-router-dom';
 
+import { NAV_ICONS } from '@/app/layout/navIcons';
 import styles from '@/app/layout/Sidebar.module.scss';
 
 const NAV_ITEMS = [
-  { to: '/app/home', label: 'Home' },
-  { to: '/app/training', label: 'Training' },
-  { to: '/app/exercises', label: 'Exercise Catalog' },
-  { to: '/app/environments', label: 'Environments' },
-  { to: '/app/recovery', label: 'Recovery' },
-  { to: '/app/performance', label: 'Performance' },
-  { to: '/app/profile', label: 'Profile' },
+  { to: '/app/home', label: 'Home', icon: 'home' },
+  { to: '/app/training', label: 'Training', icon: 'training' },
+  { to: '/app/exercises', label: 'Exercise Catalog', icon: 'exercises' },
+  { to: '/app/environments', label: 'Environments', icon: 'environments' },
+  { to: '/app/recovery', label: 'Recovery', icon: 'recovery' },
+  { to: '/app/performance', label: 'Performance', icon: 'performance' },
+  { to: '/app/profile', label: 'Profile', icon: 'profile' },
 ] as const;
 
 interface SidebarProps {
@@ -20,9 +21,10 @@ interface SidebarProps {
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   return (
     <aside className={[styles.sidebar, className].filter(Boolean).join(' ')} aria-label="Primary">
-      <div>
+      <div className={styles.brandBlock}>
+        <p className={styles.brandMark}>UAP</p>
         <h1 className={styles.brand}>Universal Athlete</h1>
-        <p className={styles.subtitle}>Training platform</p>
+        <p className={styles.subtitle}>Adaptive performance</p>
       </div>
 
       <nav className={styles.nav}>
@@ -35,7 +37,8 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
             }
             onClick={onNavigate}
           >
-            {item.label}
+            <span className={styles.icon}>{NAV_ICONS[item.icon]}</span>
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>

@@ -21,6 +21,7 @@ import {
   weightUnitSchema,
   distanceUnitSchema,
 } from '@/features/training/models/schemas';
+import { createDefaultsFromDefinition } from '@/features/training/utils/prescriptionDefaults';
 
 const categoryOptions = exerciseCategorySchema.options.map((value) => ({
   value,
@@ -52,6 +53,8 @@ interface ExercisePrescriptionFormProps {
   initialExercise?: WorkoutExercise;
   onSubmit: (values: CreateWorkoutExerciseRequest | UpdateWorkoutExerciseRequest) => Promise<void>;
   onCancel?: () => void;
+  /** Mutation/API error surfaced inside the editor (values remain). */
+  serverError?: string | null;
 }
 
 export function ExercisePrescriptionForm({
@@ -60,6 +63,7 @@ export function ExercisePrescriptionForm({
   initialExercise,
   onSubmit,
   onCancel,
+  serverError = null,
 }: ExercisePrescriptionFormProps) {
   const isCreate = mode === 'create';
   const metricMode = isCreate
@@ -78,10 +82,10 @@ export function ExercisePrescriptionForm({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: isCreate
+    defaultValues: isCreate && definition ? createDefaultsFromDefinition(definition) : isCreate
       ? {
-          exerciseDefinitionId: definition?.id ?? '',
-          exerciseName: definition?.canonicalName ?? '',
+          exerciseDefinitionId: '',
+          exerciseName: '',
           category: 'STRENGTH',
           type: 'BARBELL',
           sets: 3,
@@ -96,16 +100,7 @@ export function ExercisePrescriptionForm({
     if (isCreate && definition) {
       const keepDirtyValues = lastDefinitionId.current === definition.id;
       lastDefinitionId.current = definition.id;
-      form.reset(
-        {
-          exerciseDefinitionId: definition.id,
-          exerciseName: definition.canonicalName,
-          category: 'STRENGTH',
-          type: 'BARBELL',
-          sets: 3,
-        },
-        { keepDirtyValues },
-      );
+      form.reset(createDefaultsFromDefinition(definition), { keepDirtyValues });
       return;
     }
     if (!initialExercise || isCreate) {
@@ -144,6 +139,12 @@ export function ExercisePrescriptionForm({
   const optionalNumber = (value: string) =>
     value === '' || Number.isNaN(Number(value)) ? undefined : Number(value);
 
+  const fieldError = (name: string): string | null => {
+    const error = formState.errors[name as keyof typeof formState.errors];
+    const message = error && 'message' in error ? error.message : undefined;
+    return typeof message === 'string' ? message : null;
+  };
+
   return (
     <form
       className="form"
@@ -165,6 +166,16 @@ export function ExercisePrescriptionForm({
           {METRIC_MODE_LABELS[metricModeFromDefinition(definition)] ?? metricMode}
         </p>
       ) : null}
+      {serverError ? (
+        <p className="formError" role="alert">
+          {serverError}
+        </p>
+      ) : null}
+      {fieldError('exerciseDefinitionId') ? (
+        <p className="formError" role="alert">
+          {fieldError('exerciseDefinitionId')}
+        </p>
+      ) : null}
       <div className="field">
         <label className="label" htmlFor="exerciseName">
           Exercise name
@@ -172,13 +183,23 @@ export function ExercisePrescriptionForm({
         <input id="exerciseName" className="input" {...register('exerciseName')} />
       </div>
       <SelectField control={control} name="category" label="Category" options={categoryOptions} />
-      <SelectField control={control} name="type" label="Type" options={typeOptions} />
+          <SelectField control={control} name="type" label="Type" options={typeOptions} />
       <div className="field">
         <label className="label" htmlFor="sets">
           Sets
         </label>
         <input id="sets" type="number" min={1} className="input" {...register('sets', { valueAsNumber: true })} />
+        {fieldError('sets') ? (
+          <p className="fieldError" role="alert">
+            {fieldError('sets')}
+          </p>
+        ) : null}
       </div>
+      {metricMode === 'DURATION' ? (
+        <p className="card" style={{ fontSize: '0.875rem', margin: 0 }}>
+          Duration-based prescription — enter hold time below. Reps and weight do not apply.
+        </p>
+      ) : null}
       {showReps ? (
         <>
           <div className="field">
@@ -222,7 +243,13 @@ export function ExercisePrescriptionForm({
               {...register('targetWeight', { setValueAs: optionalNumber })}
             />
           </div>
-          <SelectField control={control} name="weightUnit" label="Weight unit" options={weightUnitOptions} />
+          <SelectField
+            control={control}
+            name="weightUnit"
+            label="Weight unit"
+            options={weightUnitOptions}
+            allowEmpty
+          />
         </>
       ) : null}
       {showDuration ? (
@@ -254,7 +281,13 @@ export function ExercisePrescriptionForm({
               {...register('targetDistance', { setValueAs: optionalNumber })}
             />
           </div>
-          <SelectField control={control} name="distanceUnit" label="Distance unit" options={distanceUnitOptions} />
+          <SelectField
+            control={control}
+            name="distanceUnit"
+            label="Distance unit"
+            options={distanceUnitOptions}
+            allowEmpty
+          />
         </>
       ) : null}
       <div className="field">
@@ -281,10 +314,10 @@ export function ExercisePrescriptionForm({
       </p>
       <div style={{ display: 'flex', gap: '0.75rem' }}>
         <Button type="submit" disabled={formState.isSubmitting}>
-          {isCreate ? 'Add exercise' : 'Save prescription'}
+          {formState.isSubmitting ? 'Saving…' : isCreate ? 'Add exercise' : 'Save prescription'}
         </Button>
         {onCancel ? (
-          <Button type="button" variant="secondary" onClick={onCancel}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={formState.isSubmitting}>
             Cancel
           </Button>
         ) : null}

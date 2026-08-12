@@ -2,6 +2,7 @@ import tableStyles from '@/core/components/Table.module.scss';
 import { formatDateDisplay, parseDateOnly } from '@/core/date/dateOnly';
 import { ratingLabelForMetric } from '@/features/recovery/models/labels';
 import type { AthleteRecoveryHistoryDay } from '@/features/recovery/models/schemas';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
 
 interface CheckInHistoryTableProps {
   days: AthleteRecoveryHistoryDay[];
@@ -22,37 +23,39 @@ export function CheckInHistoryTable({ days }: CheckInHistoryTableProps) {
   }
 
   return (
-    <table className={tableStyles.table}>
-      <caption className="srOnly">Recovery check-in history</caption>
-      <thead>
-        <tr>
-          <th scope="col">Date</th>
-          <th scope="col">Sleep</th>
-          <th scope="col">Fatigue</th>
-          <th scope="col">Soreness</th>
-          <th scope="col">Stress</th>
-          <th scope="col">Mood</th>
-          <th scope="col">Discomfort</th>
-        </tr>
-      </thead>
-      <tbody>
-        {daysWithData.map((day) => {
-          const checkIn = day.checkIn!;
-          return (
-            <tr key={day.date}>
-              <th scope="row">{formatDateDisplay(parseDateOnly(day.date))}</th>
-              <td className={tableStyles.numeric}>
-                {checkIn.sleepDurationMinutes != null ? `${Math.round(checkIn.sleepDurationMinutes / 60)}h` : '—'}
-              </td>
-              <td>{ratingCell(checkIn.fatigue?.value, 'fatigue')}</td>
-              <td>{ratingCell(checkIn.muscleSoreness?.value, 'muscleSoreness')}</td>
-              <td>{ratingCell(checkIn.stress?.value, 'stress')}</td>
-              <td>{ratingCell(checkIn.mood?.value, 'mood')}</td>
-              <td>{checkIn.discomfortAreas.length > 0 ? `${checkIn.discomfortAreas.length} area(s)` : 'None'}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className={surfaces.tableWrap}>
+      <table className={tableStyles.table}>
+        <caption className="srOnly">Recovery check-in history</caption>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Sleep</th>
+            <th scope="col">Fatigue</th>
+            <th scope="col">Soreness</th>
+            <th scope="col">Stress</th>
+            <th scope="col">Mood</th>
+            <th scope="col">Discomfort</th>
+          </tr>
+        </thead>
+        <tbody>
+          {daysWithData.map((day) => {
+            const checkIn = day.checkIn!;
+            return (
+              <tr key={day.date}>
+                <th scope="row">{formatDateDisplay(parseDateOnly(day.date))}</th>
+                <td className={tableStyles.numeric}>
+                  {checkIn.sleepDurationMinutes != null ? `${Math.round(checkIn.sleepDurationMinutes / 60)}h` : '—'}
+                </td>
+                <td>{ratingCell(checkIn.fatigue?.value, 'fatigue')}</td>
+                <td>{ratingCell(checkIn.muscleSoreness?.value, 'muscleSoreness')}</td>
+                <td>{ratingCell(checkIn.stress?.value, 'stress')}</td>
+                <td>{ratingCell(checkIn.mood?.value, 'mood')}</td>
+                <td>{checkIn.discomfortAreas.length > 0 ? `${checkIn.discomfortAreas.length} area(s)` : 'None'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

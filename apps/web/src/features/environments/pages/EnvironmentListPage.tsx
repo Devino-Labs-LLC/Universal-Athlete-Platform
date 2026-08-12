@@ -33,6 +33,7 @@ export function EnvironmentListPage() {
     <Page
       title="Training environments"
       description="Manage the gyms, fields, and facilities where you train."
+      width="wide"
       actions={
         <Link to="/app/environments/new">
           <Button type="button">New environment</Button>

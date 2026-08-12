@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { fetchTrainingLoadHistory } from '@/features/performance/api/trainingLoadApi';
+import { fetchTrainingLoadHistory, TRAINING_LOAD_MAX_PAGE_SIZE } from '@/features/performance/api/trainingLoadApi';
 
 function makeClient() {
   return { axios: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } };
@@ -26,6 +26,10 @@ describe('fetchTrainingLoadHistory', () => {
         category: 'STRENGTH',
       },
     });
+  });
+
+  it('documents the backend page-size ceiling the UI must honor', () => {
+    expect(TRAINING_LOAD_MAX_PAGE_SIZE).toBe(100);
   });
 
   it('parses the granularity discriminant from the response', async () => {

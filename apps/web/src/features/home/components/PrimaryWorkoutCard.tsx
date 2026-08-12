@@ -23,10 +23,8 @@ export function PrimaryWorkoutCard({
 
   if (!occurrence) {
     return (
-      <HomeCard title="Today's workout">
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
-          No workout scheduled for today.
-        </p>
+      <HomeCard title="Today's workout" subtitle="Up next">
+        <p className="emptyHint">No workout scheduled for today.</p>
         <Button variant="secondary" onClick={() => navigate('/app/training')}>
           View Training
         </Button>
@@ -47,7 +45,7 @@ export function PrimaryWorkoutCard({
     (occurrence.status === 'SCHEDULED' || occurrence.status === 'IN_PROGRESS');
 
   return (
-    <HomeCard title="Today's workout" subtitle={occurrence.trainingPlanName}>
+    <HomeCard title="Today's workout" subtitle={occurrence.trainingPlanName ?? 'Up next'}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span className="card" style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}>
           {statusLabel}

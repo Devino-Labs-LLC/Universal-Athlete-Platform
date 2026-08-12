@@ -3,12 +3,17 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--uap-space-4);
-  padding: var(--uap-space-4) var(--uap-space-6);
-  background: var(--uap-surface);
+  padding: var(--uap-space-3) var(--uap-space-6);
+  background: rgb(10 12 16 / 72%);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--uap-border-subtle);
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+[data-theme='light'] .topBar {
+  background: rgb(244 246 249 / 88%);
 }
 
 .left {
@@ -25,7 +30,8 @@
 .title {
   margin: 0;
   font-size: var(--uap-font-size-lg);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -34,30 +40,37 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: var(--uap-space-3);
+  gap: var(--uap-space-2);
 }
 
 .account {
-  font-size: var(--uap-font-size-sm);
+  font-size: var(--uap-font-size-xs);
   color: var(--uap-text-secondary);
+  margin-right: var(--uap-space-2);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
   .menuButton {
     display: inline-flex;
   }
+
+  .topBar {
+    padding: var(--uap-space-3) var(--uap-space-4);
+  }
 }
 
 @media (max-width: 600px) {
   .topBar {
     flex-wrap: wrap;
-    padding: var(--uap-space-3) var(--uap-space-4);
   }
 
   .actions {
     width: 100%;
     justify-content: flex-end;
-    gap: var(--uap-space-2);
   }
 
   .account {

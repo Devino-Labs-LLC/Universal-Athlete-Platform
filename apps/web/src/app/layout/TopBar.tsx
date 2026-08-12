@@ -33,13 +33,13 @@ export function TopBar({ title, onMenuClick }: TopBarProps) {
         {account ? <span className={styles.account}>{account.email}</span> : null}
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} theme`}
           onClick={toggleTheme}
         >
-          {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+          {resolvedTheme === 'dark' ? 'Light' : 'Dark'}
         </Button>
-        <Button type="button" variant="secondary" onClick={() => void logout()}>
+        <Button type="button" variant="ghost" onClick={() => void logout()}>
           Logout
         </Button>
       </div>

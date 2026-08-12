@@ -1,19 +1,22 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--uap-space-3);
 }
 
 .weekGroup {
-  border: 1px solid var(--uap-border);
-  border-radius: var(--uap-radius-md);
-  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
 }
 
 .weekTitle {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-  color: var(--uap-text-muted);
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
 }
 
 .items {
@@ -22,47 +25,57 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--uap-space-2);
 }
 
-.items li {
+.item {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--uap-space-1);
 }
 
 .dayButton {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--uap-border);
+  border: 1px solid var(--uap-border-subtle);
   border-radius: var(--uap-radius-sm);
-  padding: 0.65rem 0.75rem;
-  background: var(--uap-surface);
+  padding: var(--uap-space-3);
+  background: var(--uap-surface-elevated);
   cursor: pointer;
+  color: inherit;
+}
+
+.dayButton:hover {
+  border-color: var(--uap-accent-cyan);
 }
 
 .dayButton.selected {
-  border-color: var(--uap-accent);
-  box-shadow: inset 0 0 0 1px var(--uap-accent);
+  border-color: var(--uap-accent-cyan);
+  background: var(--uap-accent-cyan-muted);
+  box-shadow: inset 3px 0 0 var(--uap-accent-cyan);
 }
 
 .dayTitle {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: var(--uap-font-size-sm);
 }
 
 .dayMeta {
   display: block;
-  font-size: 0.8rem;
-  color: var(--uap-text-muted);
+  margin-top: 0.2rem;
+  font-size: var(--uap-font-size-xs);
+  color: var(--uap-text-secondary);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--uap-space-1);
 }
 
 .empty {
-  color: var(--uap-text-muted);
+  margin: 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
 }

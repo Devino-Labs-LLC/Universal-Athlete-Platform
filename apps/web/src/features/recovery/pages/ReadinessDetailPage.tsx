@@ -3,11 +3,15 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
-import tableStyles from '@/core/components/Table.module.scss';
+import { ScoreRing } from '@/core/components/ScoreRing';
+import { MetricPill } from '@/features/training/components/MetricPill';
 import { ReadinessContributionsTable } from '@/features/recovery/components/ReadinessContributionsTable';
+import { SufficiencyBadge } from '@/features/recovery/components/ComparisonBandBadge';
 import { recoveryErrorMessage } from '@/features/recovery/models/errors';
-import { baselineSufficiencyLabel, readinessBandLabel, readinessDimensionLabel } from '@/features/recovery/models/labels';
+import { readinessBandLabel, readinessDimensionLabel } from '@/features/recovery/models/labels';
 import { useReadinessAssessment, useReadinessComparison } from '@/features/recovery/hooks/useReadiness';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
+import { readinessRingTone } from '@/features/recovery/utils/readinessVisual';
 
 export function ReadinessDetailPage() {
   const { assessmentId } = useParams<{ assessmentId: string }>();
@@ -28,71 +32,101 @@ export function ReadinessDetailPage() {
   }
 
   const assessment = assessmentQuery.data!;
+  const score = assessment.readinessScore != null ? Number(assessment.readinessScore) : null;
+  const hasScore = score != null && Number.isFinite(score);
 
   return (
-    <Page title="Readiness assessment" description={`Assessment for ${assessment.stateDate}.`}>
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <div className="statGrid">
-          <div className="stat">
-            <span className="statLabel">Readiness band</span>
-            <span className="statValue">{readinessBandLabel(assessment.readinessBand)}</span>
-          </div>
-          <div className="stat">
-            <span className="statLabel">Data sufficiency</span>
-            <span className="statValue">{baselineSufficiencyLabel(assessment.dataSufficiency)}</span>
-          </div>
-          <div className="stat">
-            <span className="statLabel">Score</span>
-            <span className="statValue">{assessment.readinessScore != null ? Number(assessment.readinessScore).toFixed(1) : '—'}</span>
-          </div>
-        </div>
-        {assessment.limitingDimensions.length > 0 ? (
-          <p className={tableStyles.subtle} style={{ marginTop: '0.75rem' }}>
-            Limiting dimensions: {assessment.limitingDimensions.map(readinessDimensionLabel).join(', ')}
-          </p>
-        ) : null}
-        {assessment.strongestDimensions.length > 0 ? (
-          <p className={tableStyles.subtle}>
-            Strongest dimensions: {assessment.strongestDimensions.map(readinessDimensionLabel).join(', ')}
-          </p>
-        ) : null}
-      </section>
-
-      <section className="card">
-        <h2 className="cardTitle">Contributions</h2>
-        <ReadinessContributionsTable contributions={assessment.contributions} />
-      </section>
-
-      {compareToId ? (
-        <section className="card" style={{ marginTop: '1rem' }}>
-          <h2 className="cardTitle">Comparison</h2>
-          {comparisonQuery.isLoading ? <LoadingView message="Loading comparison…" /> : null}
-          {comparisonQuery.isError ? (
-            <ErrorView
-              message={recoveryErrorMessage(comparisonQuery.error)}
-              onRetry={() => comparisonQuery.refetch()}
+    <Page
+      title="Readiness assessment"
+      description={`Assessment for ${assessment.stateDate}.`}
+      width="wide"
+    >
+      <div className={surfaces.hub}>
+        <section className={surfaces.panel} aria-labelledby="readiness-score-heading">
+          <div className={surfaces.scoreHero}>
+            <ScoreRing
+              score={hasScore ? score : null}
+              label="Readiness"
+              tone={readinessRingTone(assessment.readinessBand)}
+              size={128}
             />
-          ) : null}
-          {comparisonQuery.data ? (
-            <div className="statGrid">
-              <div className="stat">
-                <span className="statLabel">Score change</span>
-                <span className="statValue">
-                  {comparisonQuery.data.scoreDelta != null ? Number(comparisonQuery.data.scoreDelta).toFixed(1) : '—'}
-                </span>
+            <div className={surfaces.heroCopy}>
+              <p className={surfaces.eyebrow} id="readiness-score-heading">
+                Readiness
+              </p>
+              <h2 className={surfaces.heroTitle}>{readinessBandLabel(assessment.readinessBand)}</h2>
+              <div className={surfaces.metaRow}>
+                <SufficiencyBadge sufficiency={assessment.dataSufficiency} />
+                {hasScore ? (
+                  <MetricPill label="Score">{score.toFixed(1)}</MetricPill>
+                ) : (
+                  <MetricPill label="Score">—</MetricPill>
+                )}
               </div>
-              <div className="stat">
-                <span className="statLabel">Band changed</span>
-                <span className="statValue">{comparisonQuery.data.bandChanged ? 'Yes' : 'No'}</span>
-              </div>
-              <div className="stat">
-                <span className="statLabel">Limiting dimensions changed</span>
-                <span className="statValue">{comparisonQuery.data.limitingDimensionsChanged ? 'Yes' : 'No'}</span>
-              </div>
+              {assessment.limitingDimensions.length > 0 ? (
+                <p className={surfaces.metaText}>
+                  Limiting dimensions: {assessment.limitingDimensions.map(readinessDimensionLabel).join(', ')}
+                </p>
+              ) : null}
+              {assessment.strongestDimensions.length > 0 ? (
+                <p className={surfaces.metaText}>
+                  Strongest dimensions: {assessment.strongestDimensions.map(readinessDimensionLabel).join(', ')}
+                </p>
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </section>
-      ) : null}
+
+        <section className={surfaces.panel} aria-labelledby="contributions-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="contributions-heading">
+              Contributions
+            </h2>
+          </div>
+          <ReadinessContributionsTable contributions={assessment.contributions} />
+        </section>
+
+        {compareToId ? (
+          <section className={surfaces.panel} aria-labelledby="comparison-heading">
+            <div className={surfaces.panelHeader}>
+              <h2 className={surfaces.panelTitle} id="comparison-heading">
+                Comparison
+              </h2>
+            </div>
+            {comparisonQuery.isLoading ? <LoadingView message="Loading comparison…" /> : null}
+            {comparisonQuery.isError ? (
+              <ErrorView
+                message={recoveryErrorMessage(comparisonQuery.error)}
+                onRetry={() => comparisonQuery.refetch()}
+              />
+            ) : null}
+            {comparisonQuery.data ? (
+              <div className={surfaces.metricGrid}>
+                <div className={surfaces.metricTile}>
+                  <span className={surfaces.metricLabel}>Score change</span>
+                  <span className={surfaces.metricValue}>
+                    {comparisonQuery.data.scoreDelta != null
+                      ? Number(comparisonQuery.data.scoreDelta).toFixed(1)
+                      : '—'}
+                  </span>
+                </div>
+                <div className={surfaces.metricTile}>
+                  <span className={surfaces.metricLabel}>Band changed</span>
+                  <span className={surfaces.metricValue}>
+                    {comparisonQuery.data.bandChanged ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div className={surfaces.metricTile}>
+                  <span className={surfaces.metricLabel}>Limiting dims changed</span>
+                  <span className={surfaces.metricValue}>
+                    {comparisonQuery.data.limitingDimensionsChanged ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+      </div>
     </Page>
   );
 }

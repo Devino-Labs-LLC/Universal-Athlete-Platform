@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { MetricPill } from '@/features/training/components/MetricPill';
+import { TrainingStatusBadge } from '@/features/training/components/TrainingStatusBadge';
 import { OCCURRENCE_STATUS_LABELS } from '@/features/training/models/labels';
 import type { CalendarEntry } from '@/features/training/models/schemas';
 import styles from '@/features/training/components/OccurrenceCard.module.scss';
@@ -17,15 +19,19 @@ export function OccurrenceCard({ entry }: OccurrenceCardProps) {
         <h4 className={styles.title}>
           <Link to={detailPath}>{entry.workoutDayName}</Link>
         </h4>
-        <span className={styles.status}>{OCCURRENCE_STATUS_LABELS[entry.status] ?? entry.status}</span>
+        <TrainingStatusBadge kind="occurrence" status={entry.status} />
       </div>
       <p className={styles.meta}>
         {entry.trainingPlanName}
         {entry.plannedStartTime ? ` · ${entry.plannedStartTime}` : ''}
+        {entry.scheduledDate ? ` · ${entry.scheduledDate}` : ''}
       </p>
-      <p className={styles.progress}>
-        {entry.completedExerciseCount}/{entry.exerciseCount} exercises complete
-      </p>
+      <div className={styles.footer}>
+        <MetricPill label="Progress">
+          {entry.completedExerciseCount}/{entry.exerciseCount}
+        </MetricPill>
+        <span className="srOnly">{OCCURRENCE_STATUS_LABELS[entry.status] ?? entry.status}</span>
+      </div>
     </article>
   );
 }

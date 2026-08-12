@@ -11,6 +11,7 @@ export function IncompatiblePage() {
     <Page
       title="Update required"
       description="This web client is not compatible with the current training contract."
+      padded
     >
       <div className="card">
         <p>

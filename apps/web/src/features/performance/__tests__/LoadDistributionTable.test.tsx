@@ -9,13 +9,23 @@ describe('CategoryDistributionTable', () => {
     expect(screen.getByText('No category breakdown available.')).toBeInTheDocument();
   });
 
-  it('renders a row per category with a labeled category name', () => {
+  it('renders a dash for null volume instead of 0 kg', () => {
     render(
       <CategoryDistributionTable
-        summaries={[{ category: 'STRENGTH', completedExerciseCount: 5, completedSetCount: 15, volumeKilograms: 500, durationSeconds: 1800, distanceMeters: 0 }]}
+        summaries={[
+          {
+            category: 'STRENGTH',
+            completedExerciseCount: 1,
+            completedSetCount: 3,
+            volumeKilograms: null,
+            durationSeconds: 0,
+            distanceMeters: null,
+          },
+        ]}
       />,
     );
-    expect(screen.getByText('Strength')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByText('0 kg')).not.toBeInTheDocument();
   });
 });
 

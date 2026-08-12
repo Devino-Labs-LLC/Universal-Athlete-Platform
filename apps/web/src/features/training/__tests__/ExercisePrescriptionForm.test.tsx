@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -75,24 +75,71 @@ describe('ExercisePrescriptionForm', () => {
     expect(metricModeFromDefinition(null)).toBe('MIXED');
   });
 
-  it('submits create form with valid defaults', async () => {
+  it('submits create form with SYSTEM Bench Press definition id', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn(async () => undefined);
     render(
       <ExercisePrescriptionForm
         mode="create"
         definition={definitionFixture({
-          id: '44444444-4444-4444-8444-444444444444',
-          exercisePerformanceKey: '44444444-4444-4444-8444-444444444444',
-          canonicalName: 'Back squat',
-          normalizedName: 'back squat',
-          metricMode: 'REPETITIONS',
+          id: '11111111-1111-1111-1111-111111111103',
+          exercisePerformanceKey: '11111111-1111-1111-1111-111111111103',
+          canonicalName: 'Bench Press',
+          normalizedName: 'bench press',
+          metricMode: 'WEIGHT_AND_REPETITIONS',
         })}
         onSubmit={onSubmit}
       />,
     );
 
+    await user.clear(screen.getByLabelText('Sets'));
+    await user.type(screen.getByLabelText('Sets'), '4');
+    await user.type(screen.getByLabelText('Minimum reps'), '8');
+    await user.type(screen.getByLabelText('Target weight'), '45');
+    await user.selectOptions(screen.getByLabelText('Weight unit'), 'POUND');
     await user.click(screen.getByRole('button', { name: 'Add exercise' }));
-    expect(onSubmit).toHaveBeenCalled();
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        exerciseDefinitionId: '11111111-1111-1111-1111-111111111103',
+        sets: 4,
+        minimumReps: 8,
+        targetWeight: 45,
+        weightUnit: 'POUND',
+      }),
+    );
+  });
+
+  it('keeps values and shows serverError when mutation fails', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => undefined);
+    const definition = definitionFixture({
+      id: '11111111-1111-1111-1111-111111111103',
+      exercisePerformanceKey: '11111111-1111-1111-1111-111111111103',
+      canonicalName: 'Bench Press',
+      normalizedName: 'bench press',
+      metricMode: 'WEIGHT_AND_REPETITIONS',
+    });
+    const { rerender } = render(
+      <ExercisePrescriptionForm mode="create" definition={definition} onSubmit={onSubmit} />,
+    );
+
+    await user.clear(screen.getByLabelText('Sets'));
+    await user.type(screen.getByLabelText('Sets'), '5');
+    await user.click(screen.getByRole('button', { name: 'Add exercise' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+
+    rerender(
+      <ExercisePrescriptionForm
+        mode="create"
+        definition={definition}
+        onSubmit={onSubmit}
+        serverError="Unable to create workout exercise."
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Unable to create workout exercise.');
+    expect(screen.getByLabelText('Sets')).toHaveValue(5);
   });
 });

@@ -65,14 +65,18 @@ export function CalendarGrid({
           </button>
         );
       })}
-      {selectedDate && entriesByDate[selectedDate]?.length ? (
+      {selectedDate ? (
         <aside className={styles.sidePanel} aria-label="Selected day occurrences">
           <h3>{selectedDate}</h3>
-          <div className={styles.occurrenceList}>
-            {entriesByDate[selectedDate]!.map((entry) => (
-              <OccurrenceCard key={entry.occurrenceId} entry={entry} />
-            ))}
-          </div>
+          {entriesByDate[selectedDate]?.length ? (
+            <div className={styles.occurrenceList}>
+              {entriesByDate[selectedDate]!.map((entry) => (
+                <OccurrenceCard key={entry.occurrenceId} entry={entry} />
+              ))}
+            </div>
+          ) : (
+            <p className={styles.emptyDay}>No workouts on this date.</p>
+          )}
         </aside>
       ) : null}
     </div>

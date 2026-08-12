@@ -14,7 +14,7 @@ export function BootstrapPage() {
 
   if (status === 'BOOTSTRAP_ERROR') {
     return (
-      <Page title="Unable to start">
+      <Page title="Unable to start" padded>
         <ErrorView message={errorMessage ?? 'Bootstrap failed'} onRetry={() => void retry()} />
       </Page>
     );

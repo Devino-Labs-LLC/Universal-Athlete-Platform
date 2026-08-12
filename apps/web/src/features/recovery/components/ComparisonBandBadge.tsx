@@ -1,13 +1,13 @@
 import { Badge } from '@/core/components/Badge';
 import { baselineSufficiencyLabel, comparisonBandLabel } from '@/features/recovery/models/labels';
+import { comparisonBandBadgeTone } from '@/features/recovery/utils/readinessVisual';
 
 interface ComparisonBandBadgeProps {
   band: string | null | undefined;
 }
 
 export function ComparisonBandBadge({ band }: ComparisonBandBadgeProps) {
-  const tone = band === 'INSUFFICIENT_DATA' || !band ? 'muted' : 'neutral';
-  return <Badge tone={tone}>{comparisonBandLabel(band)}</Badge>;
+  return <Badge tone={comparisonBandBadgeTone(band)}>{comparisonBandLabel(band)}</Badge>;
 }
 
 interface SufficiencyBadgeProps {
@@ -15,6 +15,6 @@ interface SufficiencyBadgeProps {
 }
 
 export function SufficiencyBadge({ sufficiency }: SufficiencyBadgeProps) {
-  const tone = sufficiency === 'SUFFICIENT' ? 'accent' : 'muted';
+  const tone = sufficiency === 'SUFFICIENT' ? 'success' : sufficiency === 'LIMITED' ? 'warning' : 'muted';
   return <Badge tone={tone}>{baselineSufficiencyLabel(sufficiency)}</Badge>;
 }

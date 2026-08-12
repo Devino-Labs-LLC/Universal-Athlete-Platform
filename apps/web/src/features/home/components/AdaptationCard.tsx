@@ -17,7 +17,7 @@ export function AdaptationCard({ adaptation, linkedOccurrence }: AdaptationCardP
   if (!adaptation?.activeProposalPresent) {
     return (
       <HomeCard title="Adaptation">
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No active adaptation proposal.</p>
+        <p className="emptyHint">No active adaptation proposal.</p>
       </HomeCard>
     );
   }

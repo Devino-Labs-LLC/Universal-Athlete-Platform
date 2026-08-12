@@ -1,6 +1,6 @@
 .shell {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   min-height: 100vh;
   background: var(--uap-bg);
 }
@@ -14,12 +14,13 @@
 .content {
   flex: 1;
   min-width: 0;
+  padding: var(--uap-space-6);
 }
 
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgb(15 23 42 / 45%);
+  background: rgb(8 10 14 / 55%);
   border: 0;
   padding: 0;
   cursor: pointer;
@@ -37,6 +38,10 @@
 
   .sidebarDesktop {
     display: none;
+  }
+
+  .content {
+    padding: var(--uap-space-4);
   }
 
   .sidebarDrawer {

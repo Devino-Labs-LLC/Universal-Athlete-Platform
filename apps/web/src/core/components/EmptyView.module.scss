@@ -8,14 +8,19 @@
   padding: var(--uap-space-6);
   text-align: center;
   color: var(--uap-text-secondary);
+  background: var(--uap-surface);
+  border: 1px dashed var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
 }
 
 .title {
   margin: 0;
   color: var(--uap-text-primary);
+  font-weight: 600;
 }
 
 .message {
   margin: 0;
   max-width: 28rem;
+  font-size: var(--uap-font-size-sm);
 }

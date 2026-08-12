@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import { Button } from '@/core/components/Button';
-import { Page } from '@/core/components/Page';
+import { AuthPage } from '@/features/auth/components/AuthPage';
 import { FormTextField } from '@/features/auth/components/FormTextField';
 import { identityErrorMessage } from '@/features/auth/errorMessages';
 import { type VerifyEmailRequest, verifyEmailRequestSchema } from '@/features/auth/schemas';
@@ -47,7 +47,7 @@ export function VerifyEmailPage() {
   });
 
   return (
-    <Page title="Verify email" description="Paste the verification token from your email.">
+    <AuthPage title="Verify email" description="Paste the verification token from your email.">
       <form className="form" onSubmit={onSubmit} noValidate>
         <FormTextField
           label="Verification token"
@@ -71,6 +71,6 @@ export function VerifyEmailPage() {
           Ready to sign in? <Link to="/auth/login">Go to login</Link>
         </p>
       </form>
-    </Page>
+    </AuthPage>
   );
 }

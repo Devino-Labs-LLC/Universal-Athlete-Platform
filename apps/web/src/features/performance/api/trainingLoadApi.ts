@@ -8,6 +8,9 @@ import {
 
 const HISTORY_PATH = '/api/v1/training/training-load/history';
 
+/** Authoritative backend max (`TrainingLoadSupport.MAX_PAGE_SIZE`). */
+export const TRAINING_LOAD_MAX_PAGE_SIZE = 100;
+
 export interface TrainingLoadHistoryParams {
   startDate: DateOnly;
   endDate: DateOnly;

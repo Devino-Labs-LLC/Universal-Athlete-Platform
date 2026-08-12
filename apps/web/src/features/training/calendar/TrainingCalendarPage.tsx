@@ -16,6 +16,7 @@ import {
   monthGridRange,
   startOfMonth,
 } from '@/features/training/utils/calendarRange';
+import styles from '@/features/training/calendar/TrainingCalendarPage.module.scss';
 
 export function TrainingCalendarPage() {
   const [visibleMonth, setVisibleMonth] = useState<DateOnly>(() => startOfMonth(todayDateOnly()));
@@ -39,7 +40,8 @@ export function TrainingCalendarPage() {
   return (
     <Page
       title="Training calendar"
-      description="Month view with selected-day occurrence details."
+      description="Athlete training calendar — month view with selected-day detail."
+      width="wide"
       actions={
         <Link to="/app/training/plans">
           <Button type="button" variant="secondary">
@@ -48,35 +50,39 @@ export function TrainingCalendarPage() {
         </Link>
       }
     >
-      <div className="card" style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <Button type="button" variant="secondary" onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>
-          Previous month
-        </Button>
-        <strong style={{ alignSelf: 'center' }}>{formatMonthYear(visibleMonth)}</strong>
-        <Button type="button" variant="secondary" onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>
-          Next month
-        </Button>
-        <label>
-          Status
-          <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">All</option>
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="IN_PROGRESS">In progress</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-        </label>
-        <label>
-          Plan
-          <select className="input" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
-            <option value="">All plans</option>
-            {(plansQuery.data ?? []).map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <section className={styles.toolbar} aria-label="Calendar controls">
+        <div className={styles.monthNav}>
+          <Button type="button" variant="secondary" onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>
+            Previous month
+          </Button>
+          <h2 className={styles.monthTitle}>{formatMonthYear(visibleMonth)}</h2>
+          <Button type="button" variant="secondary" onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>
+            Next month
+          </Button>
+        </div>
+        <div className={styles.filters}>
+          <label className={styles.filter}>
+            <span className={styles.filterLabel}>Status</span>
+            <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="">All</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </label>
+          <label className={styles.filter}>
+            <span className={styles.filterLabel}>Plan</span>
+            <select className="input" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+              <option value="">All plans</option>
+              {(plansQuery.data ?? []).map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
 
       {calendarQuery.isLoading ? <LoadingView message="Loading calendar…" /> : null}
       <CalendarGrid

@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import { Button } from '@/core/components/Button';
-import { Page } from '@/core/components/Page';
+import { AuthPage } from '@/features/auth/components/AuthPage';
 import { FormTextField } from '@/features/auth/components/FormTextField';
 import { PasswordField } from '@/features/auth/components/PasswordField';
 import { identityErrorMessage } from '@/features/auth/errorMessages';
@@ -51,7 +51,7 @@ export function LoginPage() {
   });
 
   return (
-    <Page
+    <AuthPage
       title="Sign in"
       description="Access your Universal Athlete Platform account."
     >
@@ -87,6 +87,6 @@ export function LoginPage() {
           Verify email? <Link to="/auth/verify-email">Enter verification token</Link>
         </p>
       </form>
-    </Page>
+    </AuthPage>
   );
 }

@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 
 import styles from '@/core/components/Badge.module.scss';
 
-type BadgeTone = 'neutral' | 'accent' | 'muted';
+export type BadgeTone = 'neutral' | 'accent' | 'muted' | 'success' | 'warning' | 'danger' | 'info';
 
 interface BadgeProps extends PropsWithChildren {
   tone?: BadgeTone;

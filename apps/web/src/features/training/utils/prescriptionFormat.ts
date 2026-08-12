@@ -5,9 +5,13 @@ function formatDecimal(value: number, decimals = 1): string {
 }
 
 function formatDurationSeconds(seconds: number): string {
-  const totalMinutes = Math.round(seconds / 60);
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  const totalMinutes = Math.floor(seconds / 60);
+  const remainderSeconds = seconds % 60;
   if (totalMinutes < 60) {
-    return `${totalMinutes} min`;
+    return remainderSeconds > 0 ? `${totalMinutes}m ${remainderSeconds}s` : `${totalMinutes} min`;
   }
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;

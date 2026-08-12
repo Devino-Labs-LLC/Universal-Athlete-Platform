@@ -10,6 +10,8 @@ interface SelectFieldProps<TFieldValues extends FieldValues, TValue extends stri
   name: FieldPath<TFieldValues>;
   label: string;
   options: SelectOption<TValue>[];
+  /** When true, include an empty option and coerce '' → undefined for optional enums. */
+  allowEmpty?: boolean;
 }
 
 export function SelectField<TFieldValues extends FieldValues, TValue extends string>({
@@ -17,6 +19,7 @@ export function SelectField<TFieldValues extends FieldValues, TValue extends str
   name,
   label,
   options,
+  allowEmpty = false,
 }: SelectFieldProps<TFieldValues, TValue>) {
   return (
     <Controller
@@ -31,10 +34,14 @@ export function SelectField<TFieldValues extends FieldValues, TValue extends str
             id={String(name)}
             className="input"
             value={field.value ?? ''}
-            onChange={(event) => field.onChange(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              field.onChange(next === '' ? undefined : next);
+            }}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? `${String(name)}-error` : undefined}
           >
+            {allowEmpty ? <option value="">Select…</option> : null}
             {options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}

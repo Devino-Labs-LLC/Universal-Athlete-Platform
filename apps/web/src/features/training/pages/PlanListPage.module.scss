@@ -1,0 +1,20 @@
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}

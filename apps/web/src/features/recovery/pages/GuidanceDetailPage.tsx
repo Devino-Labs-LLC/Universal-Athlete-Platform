@@ -1,9 +1,9 @@
 import { useParams } from 'react-router-dom';
 
+import { Badge } from '@/core/components/Badge';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
-import tableStyles from '@/core/components/Table.module.scss';
 import { RecommendationAdjustmentsList } from '@/features/recovery/components/RecommendationAdjustmentsList';
 import { useRecommendation } from '@/features/recovery/hooks/useRecommendations';
 import { recoveryErrorMessage } from '@/features/recovery/models/errors';
@@ -13,6 +13,8 @@ import {
   recommendationActionLabel,
   recommendationStatusLabel,
 } from '@/features/recovery/models/labels';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
+import { readinessBandBadgeTone } from '@/features/recovery/utils/readinessVisual';
 
 export function GuidanceDetailPage() {
   const { recommendationId } = useParams<{ recommendationId: string }>();
@@ -34,40 +36,59 @@ export function GuidanceDetailPage() {
   const recommendation = recommendationQuery.data!;
 
   return (
-    <Page title="Training guidance" description={`Guidance for ${recommendation.stateDate}.`}>
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <p style={{ margin: 0, fontSize: 'var(--uap-font-size-lg)', fontWeight: 600 }}>
-          {recommendationActionLabel(recommendation.overallAction)}
-        </p>
-        <p className={tableStyles.subtle}>
-          Status: {recommendationStatusLabel(recommendation.recommendationStatus)}
-          {recommendation.readinessBand ? ` · Readiness: ${readinessBandLabel(recommendation.readinessBand)}` : ''}
-        </p>
-        {recommendation.limitingDimensions && recommendation.limitingDimensions.length > 0 ? (
-          <p className={tableStyles.subtle}>
-            Limiting dimensions: {recommendation.limitingDimensions.map(readinessDimensionLabel).join(', ')}
+    <Page title="Training guidance" description={`Guidance for ${recommendation.stateDate}.`} width="wide">
+      <div className={surfaces.hub}>
+        <section className={surfaces.panel} aria-labelledby="guidance-action-heading">
+          <p className={surfaces.eyebrow} id="guidance-action-heading">
+            Guidance
           </p>
-        ) : null}
-      </section>
-
-      <section className="card">
-        <h2 className="cardTitle">Suggested adjustments</h2>
-        <RecommendationAdjustmentsList adjustments={recommendation.adjustments} />
-      </section>
-
-      {recommendation.scheduledOccurrences && recommendation.scheduledOccurrences.length > 0 ? (
-        <section className="card" style={{ marginTop: '1rem' }}>
-          <h2 className="cardTitle">Scheduled sessions today</h2>
-          <ul style={{ display: 'grid', gap: '0.35rem', margin: 0, paddingLeft: '1.1rem' }}>
-            {recommendation.scheduledOccurrences.map((occurrence) => (
-              <li key={occurrence.occurrenceId}>
-                {occurrence.plannedEnvironmentNameSnapshot ?? 'Session'} — {occurrence.occurrenceStatus}
-                {occurrence.modifiable ? '' : ' (not modifiable)'}
-              </li>
-            ))}
-          </ul>
+          <h2 className={surfaces.heroTitle}>{recommendationActionLabel(recommendation.overallAction)}</h2>
+          <div className={surfaces.metaRow}>
+            <Badge tone="info">{recommendationStatusLabel(recommendation.recommendationStatus)}</Badge>
+            {recommendation.readinessBand ? (
+              <Badge tone={readinessBandBadgeTone(recommendation.readinessBand)}>
+                {readinessBandLabel(recommendation.readinessBand)}
+              </Badge>
+            ) : null}
+          </div>
+          {recommendation.limitingDimensions && recommendation.limitingDimensions.length > 0 ? (
+            <p className={surfaces.metaText}>
+              Limiting dimensions: {recommendation.limitingDimensions.map(readinessDimensionLabel).join(', ')}
+            </p>
+          ) : null}
         </section>
-      ) : null}
+
+        <section className={surfaces.panel} aria-labelledby="adjustments-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="adjustments-heading">
+              Suggested adjustments
+            </h2>
+          </div>
+          <RecommendationAdjustmentsList adjustments={recommendation.adjustments} />
+        </section>
+
+        {recommendation.scheduledOccurrences && recommendation.scheduledOccurrences.length > 0 ? (
+          <section className={surfaces.panel} aria-labelledby="sessions-heading">
+            <div className={surfaces.panelHeader}>
+              <h2 className={surfaces.panelTitle} id="sessions-heading">
+                Scheduled sessions today
+              </h2>
+            </div>
+            <ul className={surfaces.sessionList}>
+              {recommendation.scheduledOccurrences.map((occurrence) => (
+                <li key={occurrence.occurrenceId} className={surfaces.trendRow}>
+                  <span className={surfaces.trendName}>
+                    {occurrence.plannedEnvironmentNameSnapshot ?? 'Session'} — {occurrence.occurrenceStatus}
+                  </span>
+                  <Badge tone={occurrence.modifiable ? 'info' : 'muted'}>
+                    {occurrence.modifiable ? 'Modifiable' : '(not modifiable)'}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
     </Page>
   );
 }

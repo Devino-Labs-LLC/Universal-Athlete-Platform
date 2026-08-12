@@ -18,6 +18,17 @@ const bigDecimalLike = z
   .nullable()
   .optional();
 
+/**
+ * UUID-shaped string accepted by the backend (including non-RFC-variant SYSTEM seed IDs
+ * such as `11111111-1111-1111-1111-111111111103`). Zod's strict `.uuid()` rejects those.
+ */
+export const uuidStringSchema = z
+  .string()
+  .regex(
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+    'Invalid UUID',
+  );
+
 export const planTypeSchema = z.enum([
   'GENERAL',
   'STRENGTH',
@@ -222,7 +233,7 @@ export type WorkoutExercise = z.infer<typeof workoutExerciseSchema>;
 export const workoutExercisesSchema = z.array(workoutExerciseSchema);
 
 export const createWorkoutExerciseSchema = z.object({
-  exerciseDefinitionId: z.string().uuid(),
+  exerciseDefinitionId: uuidStringSchema,
   exerciseName: z.string().optional(),
   category: exerciseCategorySchema,
   type: exerciseTypeSchema,

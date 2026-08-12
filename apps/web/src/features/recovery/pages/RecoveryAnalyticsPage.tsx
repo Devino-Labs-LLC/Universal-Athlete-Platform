@@ -10,7 +10,11 @@ import { MetricTrendPanel } from '@/features/recovery/components/MetricTrendPane
 import { RecoverySubNav } from '@/features/recovery/components/RecoverySubNav';
 import { recoveryErrorMessage } from '@/features/recovery/models/errors';
 import { metricTypeLabel } from '@/features/recovery/models/labels';
-import { useBodyAreaDiscomfortHistory, useRecoveryDashboard, useRecoveryMetricTrend } from '@/features/recovery/hooks/useRecoveryAnalytics';
+import {
+  useBodyAreaDiscomfortHistory,
+  useRecoveryDashboard,
+  useRecoveryMetricTrend,
+} from '@/features/recovery/hooks/useRecoveryAnalytics';
 import {
   BASELINE_WINDOW_OPTIONS,
   isBaselineWindowDays,
@@ -19,6 +23,7 @@ import {
   type BaselineWindowDays,
   type RecoveryMetricType,
 } from '@/features/recovery/models/schemas';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
 import { dateRangeForTrend, subtractDays } from '@/features/recovery/utils/dateRanges';
 
 const DEFAULT_METRIC: RecoveryMetricType = 'FATIGUE';
@@ -57,13 +62,17 @@ export function RecoveryAnalyticsPage() {
   }
 
   return (
-    <Page title="Recovery analytics" description="Baselines, trends, and discomfort patterns over time.">
+    <Page
+      title="Recovery analytics"
+      description="Baselines, trends, and discomfort patterns over time."
+      width="wide"
+    >
       <RecoverySubNav />
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <span className="label">Baseline window</span>
+      <div className={surfaces.hub}>
+        <section className={surfaces.toolbar} aria-label="Analytics filters">
+          <label className={surfaces.filter}>
+            <span className={surfaces.filterLabel}>Baseline window</span>
             <select
               className="input"
               value={windowDays}
@@ -82,8 +91,8 @@ export function RecoveryAnalyticsPage() {
             </select>
           </label>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <span className="label">Trend metric</span>
+          <label className={surfaces.filter}>
+            <span className={surfaces.filterLabel}>Trend metric</span>
             <select
               className="input"
               value={metric}
@@ -100,40 +109,56 @@ export function RecoveryAnalyticsPage() {
               ))}
             </select>
           </label>
-        </div>
-      </section>
+        </section>
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Baselines &amp; comparisons ({windowDays}-day window)</h2>
-        {dashboardQuery.isLoading ? <LoadingView message="Loading baselines…" /> : null}
-        {dashboardQuery.isError ? (
-          <ErrorView message={recoveryErrorMessage(dashboardQuery.error)} onRetry={() => dashboardQuery.refetch()} />
-        ) : null}
-        {dashboardQuery.data ? (
-          <BaselineDeviationTable
-            baselines={dashboardQuery.data.baselines}
-            deviations={dashboardQuery.data.metricDeviations}
-          />
-        ) : null}
-      </section>
+        <section className={surfaces.panel} aria-labelledby="analytics-baselines-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="analytics-baselines-heading">
+              Baselines &amp; comparisons
+            </h2>
+            <span className={surfaces.panelHint}>{windowDays}-day window</span>
+          </div>
+          {dashboardQuery.isLoading ? <LoadingView message="Loading baselines…" /> : null}
+          {dashboardQuery.isError ? (
+            <ErrorView message={recoveryErrorMessage(dashboardQuery.error)} onRetry={() => dashboardQuery.refetch()} />
+          ) : null}
+          {dashboardQuery.data ? (
+            <BaselineDeviationTable
+              baselines={dashboardQuery.data.baselines}
+              deviations={dashboardQuery.data.metricDeviations}
+            />
+          ) : null}
+        </section>
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">{metricTypeLabel(metric)} trend</h2>
-        {trendQuery.isLoading ? <LoadingView message="Loading trend…" /> : null}
-        {trendQuery.isError ? (
-          <ErrorView message={recoveryErrorMessage(trendQuery.error)} onRetry={() => trendQuery.refetch()} />
-        ) : null}
-        {trendQuery.data ? <MetricTrendPanel trend={trendQuery.data} /> : null}
-      </section>
+        <section className={surfaces.panel} aria-labelledby="analytics-trend-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="analytics-trend-heading">
+              {metricTypeLabel(metric)} trend
+            </h2>
+          </div>
+          {trendQuery.isLoading ? <LoadingView message="Loading trend…" /> : null}
+          {trendQuery.isError ? (
+            <ErrorView message={recoveryErrorMessage(trendQuery.error)} onRetry={() => trendQuery.refetch()} />
+          ) : null}
+          {trendQuery.data ? <MetricTrendPanel trend={trendQuery.data} /> : null}
+        </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Discomfort history</h2>
-        {discomfortQuery.isLoading ? <LoadingView message="Loading discomfort history…" /> : null}
-        {discomfortQuery.isError ? (
-          <ErrorView message={recoveryErrorMessage(discomfortQuery.error)} onRetry={() => discomfortQuery.refetch()} />
-        ) : null}
-        {discomfortQuery.data ? <DiscomfortHistoryTable history={discomfortQuery.data} /> : null}
-      </section>
+        <section className={surfaces.panel} aria-labelledby="analytics-discomfort-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="analytics-discomfort-heading">
+              Discomfort history
+            </h2>
+          </div>
+          {discomfortQuery.isLoading ? <LoadingView message="Loading discomfort history…" /> : null}
+          {discomfortQuery.isError ? (
+            <ErrorView
+              message={recoveryErrorMessage(discomfortQuery.error)}
+              onRetry={() => discomfortQuery.refetch()}
+            />
+          ) : null}
+          {discomfortQuery.data ? <DiscomfortHistoryTable history={discomfortQuery.data} /> : null}
+        </section>
+      </div>
     </Page>
   );
 }

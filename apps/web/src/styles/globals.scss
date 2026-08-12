@@ -19,6 +19,7 @@ body {
   line-height: 1.5;
   background: var(--uap-bg);
   color: var(--uap-text-primary);
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -34,7 +35,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--uap-accent);
+  outline: 2px solid var(--uap-accent-cyan);
   outline-offset: 2px;
 }
 
@@ -50,7 +51,17 @@ textarea {
   border: 0;
 }
 
-.card {
+.panelLabel {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.card,
+.panel {
   background: var(--uap-surface);
   border: 1px solid var(--uap-border-subtle);
   border-radius: var(--uap-radius-lg);
@@ -58,7 +69,8 @@ textarea {
   box-shadow: var(--uap-shadow-sm);
 }
 
-.cardTitle {
+.cardTitle,
+.panelTitle {
   margin: 0 0 var(--uap-space-3);
   font-size: var(--uap-font-size-lg);
   font-weight: 600;
@@ -87,12 +99,12 @@ textarea {
   padding: 0.75rem 0.875rem;
   border: 1px solid var(--uap-border-subtle);
   border-radius: var(--uap-radius-md);
-  background: var(--uap-surface);
+  background: var(--uap-surface-elevated);
   color: var(--uap-text-primary);
 }
 
 .input:focus {
-  border-color: var(--uap-accent);
+  border-color: var(--uap-accent-cyan);
 }
 
 .fieldError {
@@ -122,11 +134,20 @@ textarea {
 }
 
 .statLabel {
-  font-size: var(--uap-font-size-sm);
+  font-size: var(--uap-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--uap-text-secondary);
 }
 
 .statValue {
   font-size: var(--uap-font-size-lg);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.emptyHint {
+  margin: 0;
+  color: var(--uap-text-secondary);
+  font-size: var(--uap-font-size-sm);
 }

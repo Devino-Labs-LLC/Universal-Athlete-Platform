@@ -1,0 +1,64 @@
+.wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.svg {
+  transform: rotate(-90deg);
+}
+
+.track {
+  stroke: var(--uap-border-subtle);
+}
+
+.progress {
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.accent .progress {
+  stroke: var(--uap-accent);
+}
+
+.cyan .progress {
+  stroke: var(--uap-accent-cyan);
+}
+
+.warning .progress {
+  stroke: var(--uap-warning);
+}
+
+.danger .progress {
+  stroke: var(--uap-danger);
+}
+
+.muted .progress {
+  stroke: var(--uap-text-secondary);
+}
+
+.value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  pointer-events: none;
+}
+
+.number {
+  font-size: var(--uap-font-size-xl);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--uap-text-primary);
+}
+
+.label {
+  font-size: var(--uap-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}

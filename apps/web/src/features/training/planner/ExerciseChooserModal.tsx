@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/core/components/Button';
+import { EXERCISE_CATEGORY_LABELS } from '@/features/exercises/models/labels';
 import { useExerciseDefinitions } from '@/features/training/hooks/useExerciseDefinitions';
-import { EXERCISE_CATEGORY_LABELS } from '@/features/training/models/labels';
 import type { ExerciseDefinition } from '@/features/training/models/schemas';
 import styles from '@/features/training/planner/ExerciseChooserModal.module.scss';
 
@@ -122,10 +122,11 @@ export function ExerciseChooserModal({ open, onClose, onSelect }: ExerciseChoose
               >
                 <span className={styles.name}>{definition.canonicalName}</span>
                 <span className={styles.meta}>
-                  {definition.scope}
+                  <span className={styles.scope}>{definition.scope}</span>
                   {definition.metadata?.category
-                    ? ` · ${EXERCISE_CATEGORY_LABELS[definition.metadata.category] ?? definition.metadata.category}`
-                    : ''}
+                    ? EXERCISE_CATEGORY_LABELS[definition.metadata.category] ??
+                      definition.metadata.category
+                    : null}
                 </span>
               </button>
             </li>

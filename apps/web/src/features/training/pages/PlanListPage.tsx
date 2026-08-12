@@ -7,6 +7,7 @@ import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
 import { PlanCard } from '@/features/training/components/PlanCard';
 import { usePlans } from '@/features/training/hooks/usePlans';
+import styles from '@/features/training/pages/PlanListPage.module.scss';
 
 export function PlanListPage() {
   const plansQuery = usePlans();
@@ -24,7 +25,8 @@ export function PlanListPage() {
   return (
     <Page
       title="Training plans"
-      description="Browse and manage your training plans."
+      description="Program library — draft, active, and archived plans."
+      width="wide"
       actions={
         <Link to="/app/training/plans/new">
           <Button type="button">New plan</Button>
@@ -34,11 +36,14 @@ export function PlanListPage() {
       {plans.length === 0 ? (
         <EmptyView title="No plans yet" message="Create your first training plan." />
       ) : (
-        <div style={{ display: 'grid', gap: '0.75rem' }}>
-          {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
-        </div>
+        <section className={styles.library} aria-label="Training plan library">
+          <p className={styles.eyebrow}>{plans.length} plans</p>
+          <div className={styles.list}>
+            {plans.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} />
+            ))}
+          </div>
+        </section>
       )}
     </Page>
   );

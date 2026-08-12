@@ -10,6 +10,7 @@ import { usePersonalRecords } from '@/features/performance/hooks/usePersonalReco
 import { PERSONAL_RECORD_TYPE_LABELS } from '@/features/performance/models/labels';
 import { performanceErrorMessage } from '@/features/performance/models/errors';
 import { isPersonalRecordType, PERSONAL_RECORD_TYPES } from '@/features/performance/models/schemas';
+import surfaces from '@/features/performance/styles/performanceSurfaces.module.scss';
 
 export function PersonalRecordsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,9 +33,10 @@ export function PersonalRecordsPage() {
     <Page
       title="Personal records"
       description="All personal records across exercises, grouped by exercise identity."
+      width="wide"
       actions={
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span className="label">Type</span>
+        <label className={surfaces.filter}>
+          <span className={surfaces.filterLabel}>Type</span>
           <select className="input" value={recordType ?? ''} onChange={(event) => handleTypeChange(event.target.value)}>
             <option value="">All types</option>
             {PERSONAL_RECORD_TYPES.map((type) => (
@@ -48,19 +50,32 @@ export function PersonalRecordsPage() {
     >
       <PerformanceSubNav />
 
-      <section className="card">
-        {recordsQuery.isLoading ? <LoadingView message="Loading personal records…" /> : null}
-        {recordsQuery.isError ? (
-          <ErrorView message={performanceErrorMessage(recordsQuery.error)} onRetry={() => recordsQuery.refetch()} />
-        ) : null}
-        {recordsQuery.data ? (
-          recordsQuery.data.length === 0 ? (
-            <EmptyView title="No personal records" message="Complete training sessions to start building your performance history." />
-          ) : (
-            <PersonalRecordsTable records={recordsQuery.data} />
-          )
-        ) : null}
-      </section>
+      <div className={surfaces.hub}>
+        <section className={surfaces.panel} aria-labelledby="records-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="records-heading">
+              Records
+            </h2>
+            <span className={surfaces.panelHint}>
+              {recordType ? PERSONAL_RECORD_TYPE_LABELS[recordType] : 'All types'}
+            </span>
+          </div>
+          {recordsQuery.isLoading ? <LoadingView message="Loading personal records…" /> : null}
+          {recordsQuery.isError ? (
+            <ErrorView message={performanceErrorMessage(recordsQuery.error)} onRetry={() => recordsQuery.refetch()} />
+          ) : null}
+          {recordsQuery.data ? (
+            recordsQuery.data.length === 0 ? (
+              <EmptyView
+                title="No personal records"
+                message="Complete training sessions to start building your performance history."
+              />
+            ) : (
+              <PersonalRecordsTable records={recordsQuery.data} />
+            )
+          ) : null}
+        </section>
+      </div>
     </Page>
   );
 }

@@ -5,14 +5,16 @@ import { Button } from '@/core/components/Button';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
+import { MetricPill } from '@/features/training/components/MetricPill';
 import { ScheduleStatusBadge } from '@/features/training/components/ScheduleStatusBadge';
+import { TrainingStatusBadge } from '@/features/training/components/TrainingStatusBadge';
 import { GenerateForm, GenerationResultSummary } from '@/features/training/forms/GenerateForm';
 import { ScheduleActivateForm } from '@/features/training/forms/ScheduleActivateForm';
 import { usePlan } from '@/features/training/hooks/usePlans';
 import { useScheduleMutations } from '@/features/training/hooks/useScheduleMutations';
-import { PLAN_STATUS_LABELS } from '@/features/training/models/labels';
 import { trainingErrorMessage } from '@/features/training/models/trainingErrors';
 import type { GenerationResult } from '@/features/training/models/schemas';
+import styles from '@/features/training/pages/ScheduleManagementPage.module.scss';
 
 export function ScheduleManagementPage() {
   const { planId = '' } = useParams();
@@ -36,7 +38,8 @@ export function ScheduleManagementPage() {
   return (
     <Page
       title={`Schedule · ${plan.name}`}
-      description="Manage schedule activation separately from plan content status."
+      description="Programming and periodization controls — separate from plan content status."
+      width="wide"
       actions={
         <Link to={`/app/training/plans/${planId}`}>
           <Button type="button" variant="secondary">
@@ -47,16 +50,17 @@ export function ScheduleManagementPage() {
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Content vs schedule</h2>
-        <p>
-          Content status: <strong>{PLAN_STATUS_LABELS[plan.status] ?? plan.status}</strong>
-        </p>
-        <p>
-          Schedule status:{' '}
-          {plan.scheduleStatus ? <ScheduleStatusBadge status={plan.scheduleStatus} /> : 'Not configured'}
-        </p>
-        <dl className="statGrid">
+      <section className={styles.panel} aria-labelledby="schedule-state-heading">
+        <div className={styles.panelHeader}>
+          <h2 className={styles.panelTitle} id="schedule-state-heading">
+            Current schedule
+          </h2>
+          <div className={styles.badgeRow}>
+            <TrainingStatusBadge kind="plan" status={plan.status} />
+            {plan.scheduleStatus ? <ScheduleStatusBadge status={plan.scheduleStatus} /> : null}
+          </div>
+        </div>
+        <dl className={styles.statGrid}>
           <div>
             <dt>Schedule start</dt>
             <dd>{plan.scheduleStartDate ?? '—'}</dd>
@@ -75,14 +79,19 @@ export function ScheduleManagementPage() {
           </div>
           <div>
             <dt>Generated through</dt>
-            <dd>{plan.scheduleGeneratedThrough ?? '—'}</dd>
+            <dd>
+              <MetricPill>{plan.scheduleGeneratedThrough ?? '—'}</MetricPill>
+            </dd>
           </div>
         </dl>
       </section>
 
       {planIsMutable && scheduleStatus === 'DRAFT' ? (
-        <section className="card" style={{ marginBottom: '1rem' }}>
-          <h2 className="cardTitle">Activate schedule</h2>
+        <section className={styles.panel} aria-labelledby="activate-heading">
+          <h2 className={styles.panelTitle} id="activate-heading">
+            Activate schedule
+          </h2>
+          <p className={styles.hint}>Set recurrence and start programming occurrences.</p>
           <ScheduleActivateForm
             defaultStartDate={plan.startDate}
             onSubmit={async (values) => {
@@ -100,54 +109,62 @@ export function ScheduleManagementPage() {
       ) : null}
 
       {planIsMutable && (scheduleStatus === 'ACTIVE' || scheduleStatus === 'PAUSED') ? (
-        <section className="card" style={{ marginBottom: '1rem' }}>
-          <h2 className="cardTitle">Schedule actions</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {scheduleStatus === 'ACTIVE' ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                scheduleMutations.pause.mutate(undefined, {
-                  onError: (error) => setErrorMessage(trainingErrorMessage(error)),
-                })
-              }
-            >
-              Pause
-            </Button>
-          ) : null}
-          {scheduleStatus === 'PAUSED' ? (
-            <Button
-              type="button"
-              onClick={() =>
-                scheduleMutations.resume.mutate(undefined, {
-                  onError: (error) => setErrorMessage(trainingErrorMessage(error)),
-                })
-              }
-            >
-              Resume
-            </Button>
-          ) : null}
-          {scheduleStatus === 'ACTIVE' || scheduleStatus === 'PAUSED' ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                scheduleMutations.complete.mutate(undefined, {
-                  onError: (error) => setErrorMessage(trainingErrorMessage(error)),
-                })
-              }
-            >
-              Complete schedule
-            </Button>
-          ) : null}
+        <section className={styles.panel} aria-labelledby="actions-heading">
+          <h2 className={styles.panelTitle} id="actions-heading">
+            Schedule actions
+          </h2>
+          <div className={styles.actionBar}>
+            {scheduleStatus === 'ACTIVE' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  scheduleMutations.pause.mutate(undefined, {
+                    onError: (error) => setErrorMessage(trainingErrorMessage(error)),
+                  })
+                }
+              >
+                Pause
+              </Button>
+            ) : null}
+            {scheduleStatus === 'PAUSED' ? (
+              <Button
+                type="button"
+                onClick={() =>
+                  scheduleMutations.resume.mutate(undefined, {
+                    onError: (error) => setErrorMessage(trainingErrorMessage(error)),
+                  })
+                }
+              >
+                Resume
+              </Button>
+            ) : null}
+            {scheduleStatus === 'ACTIVE' || scheduleStatus === 'PAUSED' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  scheduleMutations.complete.mutate(undefined, {
+                    onError: (error) => setErrorMessage(trainingErrorMessage(error)),
+                  })
+                }
+              >
+                Complete schedule
+              </Button>
+            ) : null}
           </div>
         </section>
       ) : null}
 
       {planIsMutable && scheduleStatus === 'ACTIVE' ? (
-        <section className="card">
-          <h2 className="cardTitle">Generate occurrences</h2>
+        <section className={styles.panel} aria-labelledby="generate-heading">
+          <h2 className={styles.panelTitle} id="generate-heading">
+            Generate occurrences
+          </h2>
+          <p className={styles.hint}>
+            Explicit generation only — choose a bounded range. Results report created vs existing vs
+            cancelled placements.
+          </p>
           <GenerateForm
             defaultFrom={plan.scheduleStartDate ?? plan.startDate}
             defaultTo={plan.scheduleGeneratedThrough ?? plan.scheduleEndDate ?? plan.endDate ?? undefined}
@@ -157,7 +174,11 @@ export function ScheduleManagementPage() {
               return result;
             }}
           />
-          {generationResult ? <GenerationResultSummary result={generationResult} /> : null}
+          {generationResult ? (
+            <div className={styles.generationResult}>
+              <GenerationResultSummary result={generationResult} />
+            </div>
+          ) : null}
         </section>
       ) : null}
     </Page>

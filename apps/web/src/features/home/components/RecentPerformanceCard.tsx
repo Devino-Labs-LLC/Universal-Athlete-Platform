@@ -12,7 +12,7 @@ export function RecentPerformanceCard({ records }: RecentPerformanceCardProps) {
   if (!records || records.length === 0) {
     return (
       <HomeCard title="Recent performance">
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No recent personal records.</p>
+        <p className="emptyHint">No recent personal records.</p>
         <Link to="/app/performance/records">View all records</Link>
       </HomeCard>
     );

@@ -1,0 +1,132 @@
+.hero,
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  padding: var(--uap-space-5);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.eyebrow,
+.panelTitle {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: var(--uap-font-size-xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uap-space-2);
+}
+
+.metaText {
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.statGrid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--uap-space-3);
+}
+
+.statGrid dt {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.statGrid dd {
+  margin: var(--uap-space-1) 0 0;
+  font-weight: 700;
+}
+
+.notes {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.prescriptionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.prescriptionRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--uap-space-3);
+  padding: var(--uap-space-3);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-sm);
+  background: var(--uap-surface-elevated);
+}
+
+.order {
+  font-size: var(--uap-font-size-xs);
+  font-weight: 800;
+  color: var(--uap-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.exerciseName {
+  font-size: var(--uap-font-size-sm);
+}
+
+.prescription {
+  margin: var(--uap-space-1) 0 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.actionBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+}
+
+.rescheduleForm {
+  margin-top: var(--uap-space-2);
+}
+
+.performanceLink {
+  margin: var(--uap-space-3) 0 0;
+}
+
+.performanceLink a {
+  color: var(--uap-accent-cyan);
+}

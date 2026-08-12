@@ -4,7 +4,7 @@ import { isApiError } from '@/core/api/errors';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { AdaptationCard } from '@/features/home/components/AdaptationCard';
-import { GreetingHeader } from '@/features/home/components/GreetingHeader';
+import { AthleteStateHero } from '@/features/home/components/AthleteStateHero';
 import { HomeQuickActions } from '@/features/home/components/HomeQuickActions';
 import { PrimaryWorkoutCard } from '@/features/home/components/PrimaryWorkoutCard';
 import { ReadinessCard } from '@/features/home/components/ReadinessCard';
@@ -50,14 +50,18 @@ export function HomePage() {
 
   return (
     <div className={styles.homeGrid}>
-      <GreetingHeader
+      <AthleteStateHero
         profileFirstName={snapshot.profile?.firstName}
         athleteDisplayName={data.athlete?.displayName}
         accountEmail={account?.email}
         date={data.date}
+        readiness={data.readiness}
+        recommendation={data.recommendation}
+        recovery={data.recovery}
+        hasWorkout={Boolean(data.training.primaryOccurrence)}
       />
 
-      <div className={styles.spanTwo}>
+      <div className={styles.spanWorkout}>
         <PrimaryWorkoutCard
           occurrence={data.training.primaryOccurrence}
           canStartWorkout={data.actions?.canStartWorkout}
@@ -65,17 +69,31 @@ export function HomePage() {
         />
       </div>
 
-      <ReadinessCard readiness={data.readiness} />
-      <RecommendationCard recommendation={data.recommendation} />
-      <RecoveryCard recovery={data.recovery} />
-      <TrainingLoadCard trainingLoad={data.trainingLoad} />
-      <AdaptationCard
-        adaptation={data.adaptation}
-        linkedOccurrence={data.training.primaryOccurrence}
-      />
-      <RecentPerformanceCard records={data.recentPerformance} />
+      <div className={styles.spanSide}>
+        <ReadinessCard readiness={data.readiness} />
+      </div>
 
-      <div className={styles.spanTwo}>
+      <div className={styles.spanFour}>
+        <RecommendationCard recommendation={data.recommendation} />
+      </div>
+      <div className={styles.spanFour}>
+        <RecoveryCard recovery={data.recovery} />
+      </div>
+      <div className={styles.spanFour}>
+        <TrainingLoadCard trainingLoad={data.trainingLoad} />
+      </div>
+
+      <div className={styles.spanSix}>
+        <AdaptationCard
+          adaptation={data.adaptation}
+          linkedOccurrence={data.training.primaryOccurrence}
+        />
+      </div>
+      <div className={styles.spanSix}>
+        <RecentPerformanceCard records={data.recentPerformance} />
+      </div>
+
+      <div className={styles.spanFull}>
         <HomeQuickActions
           actions={data.actions}
           pendingAction={pendingAction}

@@ -8,6 +8,7 @@ import { CheckInHistoryTable } from '@/features/recovery/components/CheckInHisto
 import { RecoverySubNav } from '@/features/recovery/components/RecoverySubNav';
 import { recoveryErrorMessage } from '@/features/recovery/models/errors';
 import { useRecoveryHistory } from '@/features/recovery/hooks/useRecoveryCheckIns';
+import surfaces from '@/features/recovery/styles/recoverySurfaces.module.scss';
 import {
   dateRangeForHistory,
   isRecoveryHistoryRangeDays,
@@ -36,19 +37,20 @@ export function RecoveryHistoryPage() {
     <Page
       title="Recovery history"
       description={`Check-ins from ${startDate} to ${endDate}.`}
+      width="wide"
       actions={
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className={surfaces.rangeGroup} role="group" aria-label="History range">
           {RECOVERY_HISTORY_RANGE_OPTIONS.map((option) => (
             <button
               key={option}
               type="button"
-              className="input"
+              className={[
+                surfaces.rangeButton,
+                rangeDays === option ? surfaces.rangeButtonActive : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               aria-pressed={rangeDays === option}
-              style={{
-                cursor: 'pointer',
-                fontWeight: rangeDays === option ? 700 : 400,
-                borderColor: rangeDays === option ? 'var(--uap-accent)' : undefined,
-              }}
               onClick={() => handleRangeChange(option)}
             >
               {option}d
@@ -65,8 +67,13 @@ export function RecoveryHistoryPage() {
       ) : null}
 
       {historyQuery.data ? (
-        <section className="card">
-          <h2 className="cardTitle">Check-ins</h2>
+        <section className={surfaces.panel} aria-labelledby="checkins-heading">
+          <div className={surfaces.panelHeader}>
+            <h2 className={surfaces.panelTitle} id="checkins-heading">
+              Check-ins
+            </h2>
+            <span className={surfaces.panelHint}>{rangeDays}-day range</span>
+          </div>
           <CheckInHistoryTable days={historyQuery.data.days} />
         </section>
       ) : null}

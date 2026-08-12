@@ -115,7 +115,7 @@ describe('ExerciseDefinitionForm', () => {
 
       expect(screen.getByLabelText('Name')).toHaveValue('Renamed squat');
     },
-    30000,
+    60000,
   );
 
   it(

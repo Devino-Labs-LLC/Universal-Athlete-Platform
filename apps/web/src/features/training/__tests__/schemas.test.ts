@@ -93,6 +93,20 @@ describe('training schemas', () => {
     ).toBe(true);
   });
 
+  it('accepts SYSTEM seed exercise definition IDs rejected by strict RFC uuid()', () => {
+    const benchPressSystemId = '11111111-1111-1111-1111-111111111103';
+    expect(createWorkoutExerciseSchema.safeParse({
+      exerciseDefinitionId: benchPressSystemId,
+      category: 'STRENGTH',
+      type: 'BARBELL',
+      sets: 4,
+      minimumReps: 8,
+      targetWeight: 45,
+      weightUnit: 'POUND',
+      targetRpe: 10,
+    }).success).toBe(true);
+  });
+
   it('validates generate range max 90 days', () => {
     expect(
       generateOccurrencesSchema.safeParse({

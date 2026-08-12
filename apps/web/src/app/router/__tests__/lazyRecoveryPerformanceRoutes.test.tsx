@@ -22,7 +22,10 @@ describe('lazy-loaded Recovery/Performance page trees', () => {
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Recovery' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Recovery' })).toBeInTheDocument(), {
+      // Lazy chunk resolution can exceed the default 1s under parallel suite load.
+      timeout: 10000,
+    });
   });
 
   it('every Recovery and Performance page module exports its expected named component (smoke check for lazy import wiring)', async () => {

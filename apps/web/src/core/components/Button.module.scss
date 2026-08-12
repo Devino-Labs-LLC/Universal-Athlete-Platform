@@ -3,13 +3,17 @@
   align-items: center;
   justify-content: center;
   gap: var(--uap-space-2);
-  padding: 0.625rem 1rem;
+  padding: 0.55rem 1rem;
   border: 1px solid transparent;
   border-radius: var(--uap-radius-md);
   font: inherit;
+  font-size: var(--uap-font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .primary {
@@ -22,13 +26,14 @@
 }
 
 .secondary {
-  background: var(--uap-surface-elevated);
+  background: transparent;
   color: var(--uap-text-primary);
   border-color: var(--uap-border-subtle);
 }
 
 .secondary:hover:not(:disabled) {
   border-color: var(--uap-border-strong);
+  background: var(--uap-surface-muted);
 }
 
 .ghost {

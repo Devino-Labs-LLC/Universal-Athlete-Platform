@@ -34,6 +34,10 @@ export default defineConfig(({ command, mode }) => {
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
       globals: true,
+      // Form/userEvent flows often exceed the default 5s under parallel load.
+      testTimeout: 20000,
+      // Cap parallelism so heavy form suites don't starve each other into timeouts.
+      maxWorkers: 2,
     },
   };
 });

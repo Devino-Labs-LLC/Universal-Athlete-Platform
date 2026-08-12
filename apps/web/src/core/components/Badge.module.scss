@@ -1,20 +1,22 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.6rem;
-  border-radius: var(--uap-radius-full, 999px);
-  font-size: var(--uap-font-size-sm);
-  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--uap-radius-sm);
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .neutral {
-  background: var(--uap-surface-muted, rgb(148 163 184 / 16%));
+  background: var(--uap-surface-muted);
   color: var(--uap-text-secondary);
 }
 
 .accent {
-  background: var(--uap-accent-muted, rgb(59 130 246 / 16%));
+  background: var(--uap-accent-muted);
   color: var(--uap-accent);
 }
 
@@ -22,4 +24,24 @@
   background: transparent;
   color: var(--uap-text-secondary);
   border: 1px solid var(--uap-border-subtle);
+}
+
+.success {
+  background: var(--uap-success-muted);
+  color: var(--uap-success);
+}
+
+.warning {
+  background: var(--uap-warning-muted);
+  color: var(--uap-warning);
+}
+
+.danger {
+  background: var(--uap-danger-muted);
+  color: var(--uap-danger);
+}
+
+.info {
+  background: var(--uap-info-muted);
+  color: var(--uap-info);
 }

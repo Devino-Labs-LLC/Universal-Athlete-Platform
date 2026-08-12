@@ -2,8 +2,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--uap-space-4);
-  padding: var(--uap-space-6);
+  /* AppShell provides content inset; avoid double-padding vs Home/Profile. */
+  padding: 0;
   max-width: 960px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Use outside AppShell (bootstrap / contract mismatch). */
+.padded {
+  padding: var(--uap-space-6);
+}
+
+.wide {
+  max-width: 1280px;
 }
 
 .headerRow {
@@ -39,10 +51,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--uap-space-4);
+  min-width: 0;
 }
 
 @media (max-width: 720px) {
-  .page {
+  .padded {
     padding: var(--uap-space-4);
   }
 

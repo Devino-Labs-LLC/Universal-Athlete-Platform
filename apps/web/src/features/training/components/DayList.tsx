@@ -47,53 +47,57 @@ export function DayList({
           <ul className={styles.items}>
             {grouped[week]!
               .sort((a, b) => a.displayOrder - b.displayOrder)
-              .map((day, index, weekDays) => (
-                <li key={day.id}>
-                  <button
-                    type="button"
-                    className={[
-                      styles.dayButton,
-                      selectedDayId === day.id ? styles.selected : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => onSelectDay(day.id)}
-                  >
-                    <span className={styles.dayTitle}>{day.title}</span>
-                    <span className={styles.dayMeta}>
-                      {day.scheduledDayOfWeek
-                        ? DAY_OF_WEEK_LABELS[day.scheduledDayOfWeek]
-                        : 'Unscheduled'}
-                    </span>
-                  </button>
-                  {!readOnly ? <div className={styles.actions}>
-                    <Button
+              .map((day, index, weekDays) => {
+                const selected = selectedDayId === day.id;
+                return (
+                  <li key={day.id} className={styles.item}>
+                    <button
                       type="button"
-                      variant="ghost"
-                      aria-label={`Move ${day.title} up`}
-                      disabled={index === 0}
-                      onClick={() => onMoveUp(day.id)}
+                      className={[styles.dayButton, selected ? styles.selected : '']
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => onSelectDay(day.id)}
+                      aria-pressed={selected}
                     >
-                      ↑
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      aria-label={`Move ${day.title} down`}
-                      disabled={index === weekDays.length - 1}
-                      onClick={() => onMoveDown(day.id)}
-                    >
-                      ↓
-                    </Button>
-                    <Button type="button" variant="secondary" onClick={() => onEditDay(day)}>
-                      Edit
-                    </Button>
-                    <Button type="button" variant="secondary" onClick={() => onDeleteDay(day)}>
-                      Delete
-                    </Button>
-                  </div> : null}
-                </li>
-              ))}
+                      <span className={styles.dayTitle}>{day.title}</span>
+                      <span className={styles.dayMeta}>
+                        {day.scheduledDayOfWeek
+                          ? DAY_OF_WEEK_LABELS[day.scheduledDayOfWeek]
+                          : 'Unscheduled'}
+                        {day.trainingEnvironmentOverrideId ? ' · Env override' : ''}
+                      </span>
+                    </button>
+                    {!readOnly ? (
+                      <div className={styles.actions}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          aria-label={`Move ${day.title} up`}
+                          disabled={index === 0}
+                          onClick={() => onMoveUp(day.id)}
+                        >
+                          ↑
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          aria-label={`Move ${day.title} down`}
+                          disabled={index === weekDays.length - 1}
+                          onClick={() => onMoveDown(day.id)}
+                        >
+                          ↓
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => onEditDay(day)}>
+                          Edit
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => onDeleteDay(day)}>
+                          Delete
+                        </Button>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
           </ul>
         </section>
       ))}

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { useAthleteOnboarding } from '@/app/providers/AthleteOnboardingProvider';
+import { Badge } from '@/core/components/Badge';
 import { Button } from '@/core/components/Button';
 import { Page } from '@/core/components/Page';
 import { AddGoalForm } from '@/features/profile/forms/AddGoalForm';
@@ -13,6 +14,7 @@ import {
   useCreateAthleteGoalMutation,
   useRemoveAthleteGoalMutation,
 } from '@/features/profile/hooks/useAthleteGoals';
+import manageStyles from '@/features/profile/pages/ManageResource.module.scss';
 import { createAthleteGoalSchema, type CreateAthleteGoalRequest } from '@/features/profile/schemas';
 
 export function ManageGoalsPage() {
@@ -59,52 +61,53 @@ export function ManageGoalsPage() {
 
   return (
     <Page title="Manage goals">
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Your goals</h2>
-        {snapshot.goals.length === 0 ? (
-          <p style={{ color: 'var(--uap-text-secondary)' }}>No goals yet.</p>
-        ) : (
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '0.75rem' }}>
-            {snapshot.goals.map((goal) => (
-              <li
-                key={goal.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '1rem',
-                }}
-              >
-                <span>
-                  {goal.title} — {formatEnumLabel(goal.status)}
-                </span>
-                <Button
-                  variant="ghost"
-                  disabled={removeGoalMutation.isPending}
-                  onClick={() => void handleRemove(goal)}
-                >
-                  Remove
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className={manageStyles.hub}>
+        <section className={manageStyles.panel} aria-labelledby="goals-list-heading">
+          <h2 className={manageStyles.panelTitle} id="goals-list-heading">
+            Your goals
+          </h2>
+          {snapshot.goals.length === 0 ? (
+            <p className={manageStyles.empty}>No goals yet.</p>
+          ) : (
+            <ul className={manageStyles.list}>
+              {snapshot.goals.map((goal) => (
+                <li key={goal.id} className={manageStyles.row}>
+                  <span className={manageStyles.rowLabel}>
+                    {goal.title}{' '}
+                    <Badge tone="neutral">{formatEnumLabel(goal.status)}</Badge>
+                  </span>
+                  <span className={manageStyles.rowActions}>
+                    <Button
+                      variant="ghost"
+                      disabled={removeGoalMutation.isPending}
+                      onClick={() => void handleRemove(goal)}
+                    >
+                      Remove
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Add goal</h2>
-        <AddGoalForm
-          control={form.control}
-          goalType={goalType}
-          onSubmit={() => void onSubmit()}
-          submitting={createGoalMutation.isPending}
-          submitError={submitError}
-        />
-      </section>
+        <section className={manageStyles.panel} aria-labelledby="add-goal-heading">
+          <h2 className={manageStyles.panelTitle} id="add-goal-heading">
+            Add goal
+          </h2>
+          <AddGoalForm
+            control={form.control}
+            goalType={goalType}
+            onSubmit={() => void onSubmit()}
+            submitting={createGoalMutation.isPending}
+            submitError={submitError}
+          />
+        </section>
 
-      <Button variant="secondary" onClick={() => navigate('/app/profile')}>
-        Back to profile
-      </Button>
+        <Button variant="secondary" onClick={() => navigate('/app/profile')}>
+          Back to profile
+        </Button>
+      </div>
     </Page>
   );
 }

@@ -9,6 +9,7 @@ import { Page } from '@/core/components/Page';
 import { ConfirmationDialog } from '@/features/profile/components/ConfirmationDialog';
 import { DayList } from '@/features/training/components/DayList';
 import { ExerciseRow } from '@/features/training/components/ExerciseRow';
+import { TrainingStatusBadge } from '@/features/training/components/TrainingStatusBadge';
 import { DayForm } from '@/features/training/forms/DayForm';
 import { CreateOccurrenceForm } from '@/features/training/forms/CreateOccurrenceForm';
 import { ExercisePrescriptionForm } from '@/features/training/forms/ExercisePrescriptionForm';
@@ -16,6 +17,7 @@ import { useDayExercises, useExerciseMutations } from '@/features/training/hooks
 import { useOccurrenceMutations } from '@/features/training/hooks/useOccurrences';
 import { usePlan } from '@/features/training/hooks/usePlans';
 import { useDayMutations, useWorkoutDays } from '@/features/training/hooks/useWorkoutDays';
+import { DAY_OF_WEEK_LABELS, planTypeLabel } from '@/features/training/models/labels';
 import { trainingErrorMessage } from '@/features/training/models/trainingErrors';
 import type {
   CreateWorkoutDayRequest,
@@ -73,6 +75,11 @@ export function PlanBuilderPage() {
     [exercisesQuery.data],
   );
 
+  const selectedDay = useMemo(
+    () => days.find((day) => day.id === selectedDayId) ?? null,
+    [days, selectedDayId],
+  );
+
   if (planQuery.isLoading || daysQuery.isLoading) {
     return <LoadingView message="Loading plan builder…" />;
   }
@@ -83,6 +90,7 @@ export function PlanBuilderPage() {
 
   const plan = planQuery.data;
   const readOnly = plan.status === 'ARCHIVED';
+  const showEditor = !readOnly && panelMode.kind !== 'none';
 
   const handleReorderDays = async (dayId: string, direction: 'up' | 'down') => {
     const reordered =
@@ -110,23 +118,44 @@ export function PlanBuilderPage() {
     <Page
       title={plan.name}
       description="Build workout days and exercise prescriptions."
+      width="wide"
       actions={
         <div className={styles.headerActions}>
-          {!readOnly ? <Link to={`/app/training/plans/${planId}/edit`}>Edit metadata</Link> : null}
-          <Link to={`/app/training/plans/${planId}/schedule`}>Schedule</Link>
+          {!readOnly ? (
+            <Link to={`/app/training/plans/${planId}/edit`}>
+              <Button type="button" variant="ghost">
+                Edit metadata
+              </Button>
+            </Link>
+          ) : null}
+          <Link to={`/app/training/plans/${planId}/schedule`}>
+            <Button type="button" variant="secondary">
+              Schedule
+            </Button>
+          </Link>
         </div>
       }
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
+      <div className={styles.statusRow}>
+        <TrainingStatusBadge kind="plan" status={plan.status} />
+        {plan.scheduleStatus ? (
+          <TrainingStatusBadge kind="schedule" status={plan.scheduleStatus} />
+        ) : null}
+        <span className={styles.panelLabel}>{planTypeLabel(plan.type, plan.customTypeName)}</span>
+      </div>
       {readOnly ? (
-        <p className="card" role="status">
+        <p className={styles.archivedNotice} role="status">
           This plan is archived and is available for reference only.
         </p>
       ) : null}
       <div className={styles.layout}>
         <section className={styles.daysPanel} aria-label="Workout days">
           <div className={styles.panelHeader}>
-            <h2>Workout days</h2>
+            <div>
+              <p className={styles.panelLabel}>Plan context</p>
+              <h2>Workout days</h2>
+            </div>
             {!readOnly ? (
               <Button type="button" onClick={() => setPanelMode({ kind: 'create-day' })}>
                 Add day
@@ -149,7 +178,10 @@ export function PlanBuilderPage() {
           {selectedDayId ? (
             <>
               <div className={styles.panelHeader}>
-                <h2>Exercises</h2>
+                <div>
+                  <p className={styles.panelLabel}>Selected day</p>
+                  <h2>{selectedDay?.title ?? 'Exercises'}</h2>
+                </div>
                 {!readOnly ? (
                   <Button type="button" onClick={() => setChooserOpen(true)}>
                     Add exercise
@@ -161,10 +193,11 @@ export function PlanBuilderPage() {
                 <EmptyView title="No exercises" message="Add an exercise to this day." />
               ) : (
                 <div className={styles.exerciseList}>
-                  {sortedExercises.map((exercise) => (
+                  {sortedExercises.map((exercise, index) => (
                     <ExerciseRow
                       key={exercise.id}
                       exercise={exercise}
+                      order={index + 1}
                       canMoveUp={canMoveUp(sortedExercises, exercise.id)}
                       canMoveDown={canMoveDown(sortedExercises, exercise.id)}
                       onMoveUp={() => void handleReorderExercise(exercise.id, 'up')}
@@ -196,8 +229,9 @@ export function PlanBuilderPage() {
           )}
         </section>
 
-        {!readOnly && panelMode.kind !== 'none' ? (
+        {showEditor ? (
           <aside className={styles.sideForm} aria-label="Editor panel">
+            <p className={styles.panelLabel}>Editor</p>
             {panelMode.kind === 'create-day' ? (
               <DayForm
                 mode="create"
@@ -235,8 +269,13 @@ export function PlanBuilderPage() {
               <ExercisePrescriptionForm
                 mode="create"
                 definition={panelMode.definition}
-                onCancel={() => setPanelMode({ kind: 'none' })}
+                serverError={errorMessage}
+                onCancel={() => {
+                  setErrorMessage(null);
+                  setPanelMode({ kind: 'none' });
+                }}
                 onSubmit={async (values) => {
+                  setErrorMessage(null);
                   try {
                     await exerciseMutations.create.mutateAsync({
                       ...(values as CreateWorkoutExerciseRequest),
@@ -253,8 +292,13 @@ export function PlanBuilderPage() {
               <ExercisePrescriptionForm
                 mode="edit"
                 initialExercise={panelMode.exercise}
-                onCancel={() => setPanelMode({ kind: 'none' })}
+                serverError={errorMessage}
+                onCancel={() => {
+                  setErrorMessage(null);
+                  setPanelMode({ kind: 'none' });
+                }}
                 onSubmit={async (values) => {
+                  setErrorMessage(null);
                   try {
                     await exerciseMutations.update.mutateAsync({
                       exerciseId: panelMode.exercise.id,
@@ -268,7 +312,45 @@ export function PlanBuilderPage() {
               />
             ) : null}
           </aside>
-        ) : null}
+        ) : (
+          <aside className={styles.contextPanel} aria-label="Day and plan context">
+            <p className={styles.panelLabel}>Context</p>
+            <dl className={styles.contextList}>
+              <div>
+                <dt>Selected day</dt>
+                <dd>{selectedDay?.title ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>Placement</dt>
+                <dd>
+                  {selectedDay
+                    ? `Week ${selectedDay.planWeekNumber ?? 1}${
+                        selectedDay.scheduledDayOfWeek
+                          ? ` · ${DAY_OF_WEEK_LABELS[selectedDay.scheduledDayOfWeek]}`
+                          : ''
+                      }`
+                    : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt>Environment override</dt>
+                <dd>{selectedDay?.trainingEnvironmentOverrideId ? 'Set' : 'None'}</dd>
+              </div>
+              <div>
+                <dt>Exercises</dt>
+                <dd>{sortedExercises.length}</dd>
+              </div>
+              <div>
+                <dt>Schedule</dt>
+                <dd>{plan.scheduleStatus ?? 'Not configured'}</dd>
+              </div>
+              <div>
+                <dt>Generated through</dt>
+                <dd>{plan.scheduleGeneratedThrough ?? '—'}</dd>
+              </div>
+            </dl>
+          </aside>
+        )}
       </div>
 
       <ExerciseChooserModal
@@ -276,6 +358,7 @@ export function PlanBuilderPage() {
         onClose={() => setChooserOpen(false)}
         onSelect={(definition) => {
           setChooserOpen(false);
+          setErrorMessage(null);
           setPanelMode({ kind: 'add-exercise', definition });
         }}
       />
