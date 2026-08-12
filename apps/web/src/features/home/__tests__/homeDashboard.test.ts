@@ -8,6 +8,7 @@ import {
 } from '@/features/home/schemas';
 import {
   emptyTodayFixture,
+  freshAthleteTodayFixture,
   populatedTodayFixture,
 } from '@/features/home/__tests__/fixtures/todayFixtures';
 
@@ -21,6 +22,15 @@ describe('today dashboard schema and derivations', () => {
   it('parses empty today payload', () => {
     const parsed = todayDashboardSchema.parse(emptyTodayFixture);
     expect(parsed.training.scheduledOccurrenceCount).toBe(0);
+  });
+
+  it('parses backend-shaped fresh-athlete Today with absent optional sections', () => {
+    const parsed = todayDashboardSchema.parse(freshAthleteTodayFixture);
+    expect(parsed.training.primaryOccurrence).toBeNull();
+    expect(parsed.readiness.readinessPresent).toBe(false);
+    expect(parsed.trainingLoad?.loadPresent).toBe(false);
+    expect(parsed.adaptation?.activeProposalPresent).toBe(false);
+    expect(parsed.recentPerformance).toEqual([]);
   });
 
   it('derives diagnostic values from populated fixture', () => {

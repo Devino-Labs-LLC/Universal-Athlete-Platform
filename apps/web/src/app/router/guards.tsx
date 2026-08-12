@@ -29,8 +29,32 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
+/**
+ * Training bootstrap is deferred until onboarding is COMPLETE. Incomplete
+ * onboarding (including PROFILE_REQUIRED when no athlete exists) must pass
+ * through without waiting on `AUTHENTICATED_READY`.
+ */
 export function RequireBootstrapReady() {
   const { status, errorMessage, retry } = useBootstrap();
+  const { state: onboardingState, errorMessage: onboardingError, refresh } =
+    useAthleteOnboarding();
+
+  if (onboardingState === 'LOADING') {
+    return <LoadingView message="Loading athlete profile…" />;
+  }
+
+  if (onboardingState === 'ERROR') {
+    return (
+      <ErrorView
+        message={onboardingError ?? 'Unable to load athlete data'}
+        onRetry={() => void refresh()}
+      />
+    );
+  }
+
+  if (isOnboardingIncomplete(onboardingState)) {
+    return <Outlet />;
+  }
 
   if (status === 'IDLE' || status === 'BOOTSTRAPPING') {
     return <LoadingView message="Preparing your training workspace…" />;
@@ -133,7 +157,8 @@ export function RequireOnboardingIncomplete() {
 export function RedirectIfAuthenticated() {
   const { status } = useAuthSession();
   const { status: bootstrapStatus } = useBootstrap();
-  const { state: onboardingState } = useAthleteOnboarding();
+  const { state: onboardingState, errorMessage: onboardingError, refresh } =
+    useAthleteOnboarding();
   const onboardingTarget = useOnboardingRedirectTarget();
 
   if (status === 'INITIALIZING' || status === 'REFRESHING') {
@@ -141,15 +166,32 @@ export function RedirectIfAuthenticated() {
   }
 
   if (status === 'AUTHENTICATED') {
-    if (isBootstrapIncompatible(bootstrapStatus)) {
-      return <Navigate to="/incompatible" replace />;
-    }
-    if (!isBootstrapReady(bootstrapStatus)) {
-      return <Navigate to="/" replace />;
-    }
     if (onboardingState === 'LOADING') {
       return <LoadingView message="Loading athlete profile…" />;
     }
+
+    if (onboardingState === 'ERROR') {
+      return (
+        <ErrorView
+          message={onboardingError ?? 'Unable to load athlete data'}
+          onRetry={() => void refresh()}
+        />
+      );
+    }
+
+    // Incomplete onboarding (incl. missing athlete → PROFILE_REQUIRED) wins over bootstrap.
+    if (isOnboardingIncomplete(onboardingState) && onboardingTarget) {
+      return <Navigate to={onboardingTarget} replace />;
+    }
+
+    if (isBootstrapIncompatible(bootstrapStatus)) {
+      return <Navigate to="/incompatible" replace />;
+    }
+
+    if (!isBootstrapReady(bootstrapStatus)) {
+      return <Navigate to="/" replace />;
+    }
+
     if (onboardingTarget) {
       return <Navigate to={onboardingTarget} replace />;
     }
@@ -161,7 +203,8 @@ export function RedirectIfAuthenticated() {
 export function BootstrapGate() {
   const { status: authStatus } = useAuthSession();
   const { status: bootstrapStatus } = useBootstrap();
-  const { state: onboardingState } = useAthleteOnboarding();
+  const { state: onboardingState, errorMessage: onboardingError, refresh } =
+    useAthleteOnboarding();
   const onboardingTarget = useOnboardingRedirectTarget();
 
   if (authStatus === 'INITIALIZING' || authStatus === 'REFRESHING') {
@@ -170,6 +213,24 @@ export function BootstrapGate() {
 
   if (authStatus === 'UNAUTHENTICATED' || authStatus === 'EXPIRED') {
     return <Navigate to="/auth/login" replace />;
+  }
+
+  if (onboardingState === 'LOADING') {
+    return <LoadingView message="Loading athlete profile…" />;
+  }
+
+  if (onboardingState === 'ERROR') {
+    return (
+      <ErrorView
+        message={onboardingError ?? 'Unable to load athlete data'}
+        onRetry={() => void refresh()}
+      />
+    );
+  }
+
+  // Mirror mobile bootstrap screen: route incomplete onboarding before training bootstrap.
+  if (isOnboardingIncomplete(onboardingState) && onboardingTarget) {
+    return <Navigate to={onboardingTarget} replace />;
   }
 
   if (bootstrapStatus === 'IDLE' || bootstrapStatus === 'BOOTSTRAPPING') {
@@ -181,9 +242,6 @@ export function BootstrapGate() {
   }
 
   if (isBootstrapReady(bootstrapStatus)) {
-    if (onboardingState === 'LOADING') {
-      return <LoadingView message="Loading athlete profile…" />;
-    }
     if (onboardingTarget) {
       return <Navigate to={onboardingTarget} replace />;
     }

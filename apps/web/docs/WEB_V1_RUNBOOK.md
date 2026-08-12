@@ -65,16 +65,26 @@ Copy `.env.example` → `.env.local` for local overrides.
 
 ## Production SPA deployment
 
-Static hosting of `apps/web/dist`:
+Static hosting of `apps/web/dist` via `pnpm run start` (`serve -s`, bind `0.0.0.0:$PORT`).  
+`vite preview` is for local checks only — not the Railway production process.
 
-1. SPA fallback: unknown paths → `index.html`
+1. SPA fallback: unknown paths → `index.html` (`serve -s`)
 2. Cache-Control:
    - hashed `/assets/*` → long-lived immutable
    - `index.html` → short / no-cache
-3. HTTPS only
+3. HTTPS only (platform/edge)
 4. Set `VITE_UAP_ENV=production` and `VITE_UAP_API_BASE_URL=https://…` at **build** time
 5. Backend CORS allowlist = exact web origin(s); no wildcard with credentials
 6. Secure cookies (`Secure`, `HttpOnly` for auth cookies)
+
+### Railway web service
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `/apps/web` |
+| Build Command | `pnpm run build` |
+| Start Command | `pnpm run start` |
+| Healthcheck | `/` |
 
 ### Edge security headers (host/CDN)
 

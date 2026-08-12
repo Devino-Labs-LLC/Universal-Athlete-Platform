@@ -1,3 +1,92 @@
+/** Backend-shaped Today payload for a newly onboarded athlete (optional sections absent). */
+export const freshAthleteTodayFixture = {
+  date: '2026-08-12',
+  athlete: {
+    athleteId: '11111111-1111-1111-1111-111111111111',
+    displayName: 'Athlete',
+  },
+  recovery: {
+    checkInPresent: false,
+    recoveryCheckInId: null,
+    completeness: null,
+    discomfortPresent: false,
+    fatigue: null,
+    muscleSoreness: null,
+    stress: null,
+    mood: null,
+    motivation: null,
+    sleepDurationMinutes: null,
+    sleepQuality: null,
+  },
+  athleteState: {
+    snapshotPresent: false,
+    dailyAthleteStateSnapshotId: null,
+    snapshotVersion: null,
+  },
+  readiness: {
+    readinessPresent: false,
+    readinessAssessmentId: null,
+    readinessScore: null,
+    readinessBand: null,
+    dataSufficiency: null,
+    limitingDimensions: [],
+  },
+  recommendation: {
+    recommendationPresent: false,
+    recommendationId: null,
+    overallAction: null,
+    recommendationStatus: null,
+    adjustmentTypes: [],
+  },
+  training: {
+    scheduledOccurrenceCount: 0,
+    modifiableOccurrenceCount: 0,
+    completedOccurrenceCount: 0,
+    inProgressOccurrenceCount: 0,
+    occurrences: [],
+    primaryOccurrence: null,
+  },
+  trainingLoad: {
+    loadPresent: false,
+    occurrenceCount: 0,
+    ratedOccurrenceCount: 0,
+    unratedOccurrenceCount: 0,
+    completedExerciseCount: 0,
+    completedSetCount: 0,
+    totalVolumeKilograms: 0,
+    totalDurationSeconds: 0,
+    totalDistanceMeters: 0,
+    totalSessionRpeLoad: null,
+    averageSessionRpe: null,
+  },
+  adaptation: {
+    activeProposalPresent: false,
+    adaptationProposalId: null,
+    status: null,
+    origin: null,
+    unresolvedCount: 0,
+    occurrenceId: null,
+  },
+  recentPerformance: [],
+  actions: {
+    canCreateRecoveryCheckIn: { allowed: true, reasonCode: null },
+    canUpdateRecoveryCheckIn: { allowed: false, reasonCode: 'DAILY_RECOVERY_CHECK_IN_NOT_FOUND' },
+    canGenerateAthleteStateSnapshot: { allowed: true, reasonCode: null },
+    canGenerateReadinessAssessment: {
+      allowed: false,
+      reasonCode: 'DAILY_ATHLETE_STATE_SNAPSHOT_REQUIRED',
+    },
+    canGenerateTrainingRecommendation: {
+      allowed: false,
+      reasonCode: 'DAILY_READINESS_ASSESSMENT_REQUIRED',
+    },
+    canGenerateAdaptationProposal: { allowed: false, reasonCode: null },
+    canStartWorkout: { allowed: false, reasonCode: null },
+    canContinueWorkout: { allowed: false, reasonCode: null },
+    canSubmitSessionEffort: { allowed: false, reasonCode: null },
+  },
+};
+
 export const populatedTodayFixture = {
   date: '2026-08-11',
   athlete: { athleteId: 'a1', displayName: 'Alex Runner' },
@@ -43,6 +132,7 @@ export const populatedTodayFixture = {
   },
 };
 
+/** Minimal empty shape used by schema/derivation unit tests. */
 export const emptyTodayFixture = {
   date: '2026-08-11',
   recovery: { checkInPresent: false },

@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { useAthleteOnboarding } from '@/app/providers/AthleteOnboardingProvider';
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import {
   EXPECTED_CLIENT_CONTRACT_VERSION,
@@ -35,8 +36,15 @@ interface BootstrapContextValue {
 
 const BootstrapContext = createContext<BootstrapContextValue | null>(null);
 
+/**
+ * Training client bootstrap requires a readable athlete on the backend
+ * (`ATHLETE_PROFILE_NOT_FOUND` when absent). Defer the call until onboarding
+ * is COMPLETE — same contract ordering as mobile — so profile-less accounts
+ * can finish PROFILE_REQUIRED → sports → goals first.
+ */
 export function BootstrapProvider({ children }: PropsWithChildren) {
   const { status: authStatus, apiClient } = useAuthSession();
+  const { state: onboardingState } = useAthleteOnboarding();
   const [status, setStatus] = useState<BootstrapStatus>('IDLE');
   const [bootstrap, setBootstrap] = useState<TrainingClientBootstrap | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,6 +60,17 @@ export function BootstrapProvider({ children }: PropsWithChildren) {
     if (authStatus === 'UNAUTHENTICATED' || authStatus === 'EXPIRED') {
       setBootstrap(null);
       setStatus('UNAUTHENTICATED');
+      return;
+    }
+
+    if (onboardingState === 'LOADING' || onboardingState === 'ERROR') {
+      setStatus('IDLE');
+      return;
+    }
+
+    if (onboardingState !== 'COMPLETE') {
+      setBootstrap(null);
+      setStatus('IDLE');
       return;
     }
 
@@ -73,7 +92,7 @@ export function BootstrapProvider({ children }: PropsWithChildren) {
       setErrorMessage(error instanceof Error ? error.message : 'Bootstrap failed');
       setStatus('BOOTSTRAP_ERROR');
     }
-  }, [apiClient, authStatus]);
+  }, [apiClient, authStatus, onboardingState]);
 
   useEffect(() => {
     void runBootstrap();

@@ -24,9 +24,10 @@ export function AppProviders({ children }: PropsWithChildren) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthSessionProvider queryClient={queryClient}>
-          <BootstrapProvider>
-            <AthleteOnboardingProvider>{children}</AthleteOnboardingProvider>
-          </BootstrapProvider>
+          {/* Onboarding must wrap bootstrap: training bootstrap requires an athlete. */}
+          <AthleteOnboardingProvider>
+            <BootstrapProvider>{children}</BootstrapProvider>
+          </AthleteOnboardingProvider>
         </AuthSessionProvider>
       </ThemeProvider>
     </QueryClientProvider>

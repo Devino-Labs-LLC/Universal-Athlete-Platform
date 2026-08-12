@@ -24,12 +24,28 @@ From repo root:
 pnpm --filter uap_web dev
 pnpm --filter uap_web build
 pnpm --filter uap_web preview
+pnpm --filter uap_web start
 pnpm --filter uap_web test
 pnpm --filter uap_web typecheck
 pnpm --filter uap_web lint
 ```
 
 Or use root shortcuts: `web:dev`, `web:build`, `web:lint`, `web:test`, `web:typecheck`.
+
+| Script | Purpose |
+|--------|---------|
+| `dev` | Vite development server (port 3000 + `/api` proxy) |
+| `build` | Typecheck + production Vite build → `dist/` |
+| `preview` | Local Vite preview of `dist/` (not for Railway) |
+| `start` | Production static server (`serve`) of `dist/` on `$PORT` |
+
+Production start binds `0.0.0.0:$PORT` with SPA fallback (`-s`) so deep links like `/app/home` hard-refresh correctly. Example local check after build:
+
+```bash
+cd apps/web
+VITE_UAP_ENV=production VITE_UAP_API_BASE_URL=https://api.example.com pnpm run build
+PORT=4173 pnpm run start
+```
 
 ## Environment
 
@@ -177,6 +193,24 @@ Workout execution/set logging and adaptation review remain mobile-owned. Web v1 
 - Set explicit `VITE_UAP_ENV` and API URL for staging/production builds.
 - Ensure backend CORS allows credentials from the deployed web origin.
 - Keep CSRF double-submit enabled for mutating API calls.
+
+### Railway (web service)
+
+Static SPA only — TLS, CSP, HSTS, caching, and edge headers remain platform/CDN concerns.
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `/apps/web` |
+| Build Command | `pnpm run build` |
+| Start Command | `pnpm run start` |
+| Healthcheck Path | `/` |
+
+Build-time env (fail-closed; do not weaken):
+
+- `VITE_UAP_ENV=production`
+- `VITE_UAP_API_BASE_URL=https://<your-api-origin>`
+
+Runtime: Railway injects `$PORT`; `start` serves `dist` with SPA rewrite. Do not use `vite preview` as the production process.
 
 ## Tests
 

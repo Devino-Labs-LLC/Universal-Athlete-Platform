@@ -22,7 +22,8 @@ export function HomePage() {
   const todayQuery = useTodayDashboard();
 
   const data = todayQuery.data;
-  const mutations = useDerivedStateMutations(data?.date ?? '');
+  // Date is absent while Today loads — hook must tolerate undefined (no render throw).
+  const mutations = useDerivedStateMutations(data?.date);
 
   const pendingAction = mutations.athleteStateMutation.isPending
     ? 'state'
