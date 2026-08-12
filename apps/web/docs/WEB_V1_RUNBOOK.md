@@ -57,11 +57,13 @@ Copy `.env.example` → `.env.local` for local overrides.
 
 ## Local proxy / CORS
 
-- Frontend origin: `http://localhost:3000`
-- Backend CORS default must allow that origin with credentials
+- Frontend origin: `http://localhost:3000` (desktop) or `http://<MAC_LAN_IP>:3000` (phone on LAN)
+- Vite `server.host` is enabled so LAN devices can reach the Mac; `/api` still proxies to Mac `localhost:8080`
+- Backend CORS default must allow that origin with credentials when calling `:8080` directly
 - Methods include `GET,POST,PUT,PATCH,DELETE,OPTIONS`
 - Allowed request headers include `Content-Type` and `X-XSRF-TOKEN`; the CSRF response header is exposed
 - Prefer Vite proxy in development so cookies stay same-origin
+- **Phone browsers:** never use `http://127.0.0.1:3000` or `:8080` — loopback is the phone, not the Mac. Leave `VITE_UAP_API_BASE_URL` unset.
 
 ## Production SPA deployment
 

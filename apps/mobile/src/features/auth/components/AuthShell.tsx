@@ -45,13 +45,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   mark: {
-    fontSize: 28,
+    fontSize: 34,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 15,
@@ -59,5 +60,6 @@ const styles = StyleSheet.create({
   },
   formSurface: {
     gap: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });

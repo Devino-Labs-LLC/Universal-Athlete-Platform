@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
+import { ScoreRing } from '@/src/core/components/ScoreRing';
 import { StatusBadge } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { readinessBandLabel } from '@/src/features/home/models/todayLabels';
@@ -23,113 +24,106 @@ function bandTone(band: string | null | undefined): 'success' | 'warning' | 'dan
   }
 }
 
-function bandFill(band: string | null | undefined, theme: ReturnType<typeof useAppTheme>['colors']) {
+function ringTone(
+  band: string | null | undefined,
+): 'lime' | 'warning' | 'danger' | 'cyan' {
   switch (band) {
     case 'HIGH':
-      return theme.success;
+      return 'lime';
     case 'MODERATE':
-      return theme.warning;
+      return 'warning';
     case 'LOW':
-      return theme.danger;
+      return 'danger';
     default:
-      return theme.accentCyan;
+      return 'cyan';
   }
 }
 
+function parseScore(raw: unknown): number | null {
+  if (raw == null) return null;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (Number.isNaN(n)) return null;
+  return n;
+}
+
+/** Dominant athlete-state hero with ScoreRing. Null score → empty ring + —, never zero. */
 export function ReadinessCard({ readiness }: ReadinessCardProps) {
   const theme = useAppTheme();
-
-  if (!readiness.readinessPresent) {
-    return (
-      <HomeCard testID="readiness-card" eyebrow="Athlete state" title="Readiness">
-        <Text style={[styles.body, { color: theme.colors.textMuted }]}>
-          Readiness has not been calculated yet.
-        </Text>
-      </HomeCard>
-    );
-  }
-
-  const bandLabel = readinessBandLabel(readiness.readinessBand);
-  const score =
-    readiness.readinessScore != null && !Number.isNaN(readiness.readinessScore)
-      ? readiness.readinessScore
-      : null;
-  const scorePercent = score != null ? Math.min(100, Math.max(0, score)) : null;
+  const present = readiness.readinessPresent;
+  const score = present ? parseScore(readiness.readinessScore) : null;
+  const bandLabel = present ? readinessBandLabel(readiness.readinessBand) : 'Not assessed';
+  const limiting = present
+    ? (readiness.limitingDimensions ?? []).slice(0, 3)
+    : [];
 
   return (
-    <HomeCard testID="readiness-card" eyebrow="Athlete state" title="Readiness">
-      <StatusBadge
-        testID="readiness-band-chip"
-        label={bandLabel}
-        tone={bandTone(readiness.readinessBand)}
-      />
-
-      {scorePercent != null ? (
-        <View style={styles.scoreSection}>
+    <HomeCard
+      testID="readiness-card"
+      eyebrow="Athlete state"
+      title="Readiness"
+      dense>
+      <View style={styles.heroRow}>
+        <ScoreRing
+          testID="readiness-score-ring"
+          score={score}
+          label="Score"
+          size="lg"
+          tone={present ? ringTone(readiness.readinessBand) : 'cyan'}
+        />
+        <View style={styles.heroCopy}>
+          <StatusBadge
+            testID="readiness-band-chip"
+            label={bandLabel}
+            tone={present ? bandTone(readiness.readinessBand) : 'default'}
+          />
           <Text
             style={[
-              styles.scoreValue,
-              {
-                color: theme.colors.text,
-                fontSize: theme.typography.metric,
-              },
+              styles.statusLine,
+              { color: theme.colors.text },
             ]}>
-            {Math.round(scorePercent)}
+            {present
+              ? score != null
+                ? `Readiness ${Math.round(Math.min(100, Math.max(0, score)))}`
+                : 'Readiness recorded without a numeric score'
+              : 'Readiness has not been calculated yet'}
           </Text>
-          <Text style={[styles.scoreCaption, { color: theme.colors.textMuted }]}>Score</Text>
-          <View style={[styles.scoreTrack, { backgroundColor: theme.colors.surfaceMuted }]}>
-            <View
-              testID="readiness-score-bar"
-              style={[
-                styles.scoreFill,
-                {
-                  backgroundColor: bandFill(readiness.readinessBand, theme.colors),
-                  width: `${scorePercent}%`,
-                },
-              ]}
-            />
-          </View>
+          {limiting.length > 0 ? (
+            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+              Limiting: {limiting.join(', ')}
+            </Text>
+          ) : present ? (
+            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+              No limiting dimensions flagged
+            </Text>
+          ) : (
+            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+              Calculate readiness after your recovery check-in
+            </Text>
+          )}
         </View>
-      ) : (
-        <Text style={[styles.body, { color: theme.colors.textMuted }]}>Score unavailable</Text>
-      )}
-
-      {readiness.limitingDimensions && readiness.limitingDimensions.length > 0 ? (
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-          Limiting: {readiness.limitingDimensions.slice(0, 3).join(', ')}
-        </Text>
-      ) : null}
+      </View>
     </HomeCard>
   );
 }
 
 const styles = StyleSheet.create({
-  body: {
-    fontSize: 15,
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  scoreSection: {
-    gap: 4,
+  heroCopy: {
+    flex: 1,
+    gap: 8,
+    minWidth: 0,
   },
-  scoreValue: {
+  statusLine: {
+    fontSize: 17,
     fontWeight: '700',
-  },
-  scoreCaption: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  scoreTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  scoreFill: {
-    height: '100%',
-    borderRadius: 4,
+    lineHeight: 22,
   },
   meta: {
     fontSize: 13,
+    lineHeight: 18,
   },
 });

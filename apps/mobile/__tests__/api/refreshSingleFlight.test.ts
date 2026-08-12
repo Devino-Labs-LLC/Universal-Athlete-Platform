@@ -6,6 +6,9 @@ import { createInMemoryCookieStoreForTests } from '@/src/core/api/cookieStore';
 describe('refresh single-flight', () => {
   it('deduplicates concurrent refresh attempts', async () => {
     const cookieStore = createInMemoryCookieStoreForTests();
+    // Session cookies must exist or the client skips refresh (fresh-install path).
+    cookieStore.setCookie('http://127.0.0.1:8080', 'uap_at', 'expired-access');
+    cookieStore.setCookie('http://127.0.0.1:8080', 'uap_rt', 'valid-refresh');
     let refreshCalls = 0;
     let meCalls = 0;
 

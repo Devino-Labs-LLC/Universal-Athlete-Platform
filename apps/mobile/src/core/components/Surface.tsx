@@ -1,11 +1,13 @@
 import { PropsWithChildren } from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 
+export { ScoreRing } from '@/src/core/components/ScoreRing';
+
 interface SurfaceProps extends PropsWithChildren {
   elevated?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
@@ -21,7 +23,7 @@ export function Surface({ elevated = false, style, testID, children }: SurfacePr
           backgroundColor: elevated ? theme.colors.surfaceElevated : theme.colors.surface,
           borderColor: theme.colors.border,
           borderRadius: theme.radius.lg,
-          padding: theme.spacing.lg,
+          padding: theme.spacing.md + 2,
           gap: theme.spacing.sm,
         },
         style,
@@ -189,39 +191,9 @@ export function MetricTile({ label, value, caption, testID }: MetricTileProps) {
   );
 }
 
-interface ScoreRingProps {
-  /** 0–100 score, or null when unavailable. */
-  score: number | null | undefined;
-  label?: string;
-  testID?: string;
-}
-
-/** Compact readiness-style score display. Null renders unavailable, never 0. */
-export function ScoreRing({ score, label = 'Score', testID }: ScoreRingProps) {
-  const theme = useAppTheme();
-  const available = score != null && !Number.isNaN(score);
-  const display = available ? String(Math.round(Math.min(100, Math.max(0, score)))) : '—';
-
-  return (
-    <View testID={testID} accessibilityLabel={`${label}: ${display}`} style={styles.scoreWrap}>
-      <Text
-        style={[
-          styles.scoreValue,
-          {
-            color: theme.colors.text,
-            fontSize: theme.typography.metric,
-          },
-        ]}>
-        {display}
-      </Text>
-      <Text style={[styles.scoreLabel, { color: theme.colors.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   surface: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   eyebrow: {
     fontWeight: '700',
@@ -271,10 +243,10 @@ const styles = StyleSheet.create({
   metricTile: {
     flex: 1,
     minWidth: 96,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     gap: 4,
   },
   metricLabel: {
@@ -287,15 +259,5 @@ const styles = StyleSheet.create({
   },
   metricCaption: {
     fontSize: 12,
-  },
-  scoreWrap: {
-    alignItems: 'flex-start',
-    gap: 2,
-  },
-  scoreValue: {
-    fontWeight: '700',
-  },
-  scoreLabel: {
-    fontSize: 13,
   },
 });

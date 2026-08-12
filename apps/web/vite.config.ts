@@ -19,9 +19,14 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: {
+      // Bind all interfaces so phones on the LAN can open the Mac's Vite origin.
+      // Mobile browsers must use the Mac LAN IP (never 127.0.0.1 — that is the phone).
+      // Keep VITE_UAP_API_BASE_URL unset in development so login stays same-origin /api → proxy.
+      host: true,
       port: 3000,
       proxy: {
         '/api': {
+          // Proxy runs on the Mac; localhost here is the host Spring process, not the phone.
           target: 'http://localhost:8080',
           changeOrigin: true,
         },

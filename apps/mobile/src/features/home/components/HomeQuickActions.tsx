@@ -64,7 +64,7 @@ export function HomeQuickActions({
   if (actions.canGenerateTrainingRecommendation.allowed) {
     items.push({
       key: 'guidance',
-      label: 'Generate Training Guidance',
+      label: 'Generate Guidance',
       allowed: true,
       onPress: onGenerateGuidance,
       loading: pendingAction === 'guidance',
@@ -99,7 +99,7 @@ export function HomeQuickActions({
   if (actions.canGenerateAdaptationProposal.allowed) {
     items.push({
       key: 'adaptation',
-      label: primaryOccurrence ? 'Find Workout Alternatives' : 'Review Adaptation',
+      label: primaryOccurrence ? 'Find Alternatives' : 'Review Adaptation',
       allowed: true,
       onPress: () => onGenerateAdaptation?.(),
       loading: pendingAction === 'adaptation',
@@ -111,18 +111,19 @@ export function HomeQuickActions({
   }
 
   return (
-    <View testID="home-quick-actions">
+    <View testID="home-quick-actions" style={styles.wrap}>
       <Text style={[styles.title, { color: theme.colors.textMuted }]}>Quick actions</Text>
       <View style={styles.grid}>
         {items.map((item) => (
-          <ActionFlagButton
-            key={item.key}
-            testID={`quick-action-${item.key}`}
-            label={item.label}
-            onPress={item.onPress}
-            disabled={!item.allowed}
-            loading={item.loading}
-          />
+          <View key={item.key} style={styles.cell}>
+            <ActionFlagButton
+              testID={`quick-action-${item.key}`}
+              label={item.label}
+              onPress={item.onPress}
+              disabled={!item.allowed}
+              loading={item.loading}
+            />
+          </View>
         ))}
       </View>
     </View>
@@ -130,13 +131,23 @@ export function HomeQuickActions({
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    gap: 8,
+  },
   title: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.8,
   },
   grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+  },
+  cell: {
+    flexGrow: 1,
+    flexBasis: '46%',
+    minWidth: 140,
   },
 });

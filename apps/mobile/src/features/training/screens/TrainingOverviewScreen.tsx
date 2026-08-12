@@ -130,7 +130,7 @@ export function TrainingOverviewScreen() {
         onPress={() => router.push('/(tabs)/training/calendar')}
       />
 
-      <HomeCard eyebrow="Schedule" title="Upcoming" testID="upcoming-section">
+      <HomeCard eyebrow="Schedule" title="Upcoming" testID="upcoming-section" dense>
         {upcoming.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             No upcoming workouts in the next few weeks.
@@ -159,7 +159,7 @@ export function TrainingOverviewScreen() {
         )}
       </HomeCard>
 
-      <HomeCard eyebrow="Plans" title="Active plans" testID="active-plans-section">
+      <HomeCard eyebrow="Plans" title="Active plans" testID="active-plans-section" dense>
         {activePlans.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>No active training plans.</Text>
         ) : (
@@ -167,7 +167,7 @@ export function TrainingOverviewScreen() {
         )}
       </HomeCard>
 
-      <HomeCard eyebrow="History" title="Recently completed" testID="completed-section">
+      <HomeCard eyebrow="History" title="Recently completed" testID="completed-section" dense>
         {completed.length === 0 ? (
           <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
             No recently completed sessions.

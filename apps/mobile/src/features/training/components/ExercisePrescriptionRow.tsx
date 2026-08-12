@@ -37,9 +37,9 @@ export function ExercisePrescriptionRow({ exercise, index }: ExercisePrescriptio
 
 const styles = StyleSheet.create({
   row: {
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-    gap: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    gap: 4,
   },
   header: {
     flexDirection: 'row',
@@ -47,21 +47,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   order: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     width: 20,
   },
   name: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   prescription: {
-    fontSize: 14,
+    fontSize: 13,
     paddingLeft: 28,
+    fontWeight: '500',
   },
   notes: {
-    fontSize: 13,
+    fontSize: 12,
     fontStyle: 'italic',
     paddingLeft: 28,
   },

@@ -30,7 +30,7 @@ export function LoadSnapshotCard({ summaries, loading }: LoadSnapshotCardProps) 
       : null;
 
   return (
-    <HomeCard testID="load-snapshot-card" eyebrow="Load" title="Training load (28 days)">
+    <HomeCard testID="load-snapshot-card" eyebrow="Load" title="Training load (28 days)" dense>
       {!latest ? (
         <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
           {loading ? 'Loading training load…' : 'No training load recorded in the last 28 days.'}

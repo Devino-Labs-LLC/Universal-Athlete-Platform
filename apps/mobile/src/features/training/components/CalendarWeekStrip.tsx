@@ -30,21 +30,24 @@ export function CalendarWeekStrip({ weekStart, selectedDate, onSelectDate }: Cal
             style={[
               styles.day,
               {
-                backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
-                borderColor: theme.colors.border,
+                backgroundColor: selected
+                  ? theme.colors.accentCyanMuted
+                  : theme.colors.surfaceElevated,
+                borderColor: selected ? theme.colors.accentCyan : theme.colors.border,
+                minHeight: 44,
               },
             ]}>
             <Text
               style={[
                 styles.weekday,
-                { color: selected ? theme.colors.primaryText : theme.colors.textMuted },
+                { color: selected ? theme.colors.accentCyan : theme.colors.textMuted },
               ]}>
               {formatWeekdayShort(date)}
             </Text>
             <Text
               style={[
                 styles.dayNumber,
-                { color: selected ? theme.colors.primaryText : theme.colors.text },
+                { color: selected ? theme.colors.text : theme.colors.text },
               ]}>
               {formatDayOfMonth(date)}
             </Text>
@@ -63,7 +66,8 @@ const styles = StyleSheet.create({
   day: {
     flex: 1,
     alignItems: 'center',
-    borderWidth: 1,
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 10,
     paddingVertical: 8,
     gap: 2,

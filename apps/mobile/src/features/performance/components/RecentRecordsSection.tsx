@@ -23,7 +23,8 @@ export function RecentRecordsSection({ records, loading }: RecentRecordsSectionP
     <HomeCard
       testID="recent-records-section"
       eyebrow="Records"
-      title="Recent personal records">
+      title="Recent personal records"
+      dense>
       {records.length === 0 ? (
         <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
           {loading ? 'Loading records…' : 'No personal records in the last 30 days.'}

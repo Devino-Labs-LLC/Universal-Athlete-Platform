@@ -43,13 +43,15 @@ export function ActionFlagButton({
 
 const styles = StyleSheet.create({
   button: {
-    borderWidth: 1,
-    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
   },

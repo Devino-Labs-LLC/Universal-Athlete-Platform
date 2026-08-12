@@ -11,19 +11,21 @@ interface RecoveryCardProps {
   recovery: TrainingTodayDashboard['recovery'];
   canCreateRecoveryCheckIn?: TrainingActionFlag;
   canUpdateRecoveryCheckIn?: TrainingActionFlag;
+  compact?: boolean;
 }
 
 function metricLine(label: string, value: number | null | undefined): string | null {
   if (value == null) {
     return null;
   }
-  return `${label}: ${value}`;
+  return `${label} ${value}`;
 }
 
 export function RecoveryCard({
   recovery,
   canCreateRecoveryCheckIn,
   canUpdateRecoveryCheckIn,
+  compact = false,
 }: RecoveryCardProps) {
   const theme = useAppTheme();
 
@@ -35,44 +37,37 @@ export function RecoveryCard({
     metricLine('Fatigue', recovery.fatigue),
     metricLine('Soreness', recovery.muscleSoreness),
     metricLine('Stress', recovery.stress),
-    metricLine('Sleep quality', recovery.sleepQuality),
-    recovery.sleepDurationMinutes != null
-      ? `Sleep: ${Math.round(recovery.sleepDurationMinutes / 60)}h ${recovery.sleepDurationMinutes % 60}m`
-      : null,
+    metricLine('Sleep', recovery.sleepQuality),
   ].filter((line): line is string => line != null);
 
   const showCheckIn =
     canCreateRecoveryCheckIn?.allowed || canUpdateRecoveryCheckIn?.allowed;
 
   return (
-    <HomeCard testID="recovery-card" title="Recovery">
+    <HomeCard testID="recovery-card" title="Recovery" dense={compact}>
       <StatusChip
         testID="recovery-status-chip"
-        label={recovery.checkInPresent ? 'Check-in complete' : 'No check-in yet'}
+        label={recovery.checkInPresent ? 'Checked in' : 'No check-in'}
         variant={recovery.checkInPresent ? 'success' : 'default'}
       />
 
       {metrics.length > 0 ? (
         <View style={styles.metrics}>
-          {metrics.map((line) => (
+          {metrics.slice(0, compact ? 3 : 4).map((line) => (
             <Text key={line} style={[styles.metric, { color: theme.colors.text }]}>
               {line}
             </Text>
           ))}
         </View>
-      ) : recovery.checkInPresent ? (
-        <Text style={[styles.body, { color: theme.colors.textMuted }]}>
-          Check-in recorded. Tap below to view or update details.
-        </Text>
       ) : (
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>
-          Log how you feel to improve today&apos;s guidance.
+          {recovery.checkInPresent ? 'Check-in on file' : 'Log how you feel'}
         </Text>
       )}
 
       {showCheckIn ? (
         <PrimaryButton
-          label={recovery.checkInPresent ? 'Update Check In' : 'Check In'}
+          label={recovery.checkInPresent ? 'Update' : 'Check In'}
           onPress={navigateToRecovery}
         />
       ) : null}
@@ -82,12 +77,14 @@ export function RecoveryCard({
 
 const styles = StyleSheet.create({
   body: {
-    fontSize: 15,
+    fontSize: 13,
+    lineHeight: 18,
   },
   metrics: {
-    gap: 4,
+    gap: 2,
   },
   metric: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

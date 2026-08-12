@@ -112,7 +112,7 @@ export function WorkoutOccurrenceCard({
       <Text style={[styles.meta, { color: theme.colors.textMuted }]} numberOfLines={2}>
         {occurrence.trainingPlanName} · {occurrence.scheduledDate}
       </Text>
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>{progressLabel}</Text>
+      <Text style={[styles.progress, { color: theme.colors.text }]}>{progressLabel}</Text>
       {showPrimaryAction && actionLabel && onPrimaryAction ? (
         dominant ? (
           <PrimaryButton label={actionLabel} onPress={onPrimaryAction} />
@@ -130,7 +130,16 @@ export function WorkoutOccurrenceCard({
         accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
-        <HomeCard eyebrow={eyebrowFor(occurrence.status, dominant)}>{content}</HomeCard>
+        <HomeCard
+          dense
+          eyebrow={eyebrowFor(occurrence.status, dominant)}
+          style={
+            dominant
+              ? { borderColor: theme.colors.primary, borderWidth: 1.5 }
+              : undefined
+          }>
+          {content}
+        </HomeCard>
       </Pressable>
     );
   }
@@ -138,7 +147,11 @@ export function WorkoutOccurrenceCard({
   return (
     <HomeCard
       testID={testID ?? 'workout-occurrence-card'}
-      eyebrow={eyebrowFor(occurrence.status, dominant)}>
+      dense
+      eyebrow={eyebrowFor(occurrence.status, dominant)}
+      style={
+        dominant ? { borderColor: theme.colors.primary, borderWidth: 1.5 } : undefined
+      }>
       {content}
     </HomeCard>
   );
@@ -156,6 +169,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   meta: {
+    fontSize: 13,
+  },
+  progress: {
     fontSize: 14,
+    fontWeight: '700',
   },
 });

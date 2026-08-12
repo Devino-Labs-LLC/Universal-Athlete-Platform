@@ -6,30 +6,8 @@ import { useBootstrap } from '@/src/app/providers/BootstrapProvider';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { LoadingView } from '@/src/core/components/LoadingView';
 
-export default function AuthLayout() {
+function AuthStack() {
   const theme = useAppTheme();
-  const { status: authStatus } = useAuthSession();
-  const { state: onboardingState } = useAthleteOnboarding();
-  const { status: bootstrapStatus } = useBootstrap();
-
-  if (
-    authStatus === 'INITIALIZING' ||
-    authStatus === 'REFRESHING' ||
-    onboardingState === 'LOADING' ||
-    bootstrapStatus === 'BOOTSTRAPPING'
-  ) {
-    return <LoadingView message="Checking session…" />;
-  }
-
-  if (bootstrapStatus === 'AUTHENTICATED_READY') {
-    return <Redirect href="/(tabs)" />;
-  }
-
-  // Authenticated but not shell-ready (onboarding / bootstrap) — leave auth screens.
-  if (authStatus === 'AUTHENTICATED') {
-    return <Redirect href="/bootstrap" />;
-  }
-
   return (
     <Stack
       screenOptions={{
@@ -45,4 +23,39 @@ export default function AuthLayout() {
       <Stack.Screen name="verify-email" options={{ title: 'Verify email' }} />
     </Stack>
   );
+}
+
+/**
+ * Public auth routes (login/register/verify).
+ * Unauthenticated must never wait on onboarding/bootstrap loading gates.
+ */
+export default function AuthLayout() {
+  const { status: authStatus } = useAuthSession();
+  const { state: onboardingState } = useAthleteOnboarding();
+  const { status: bootstrapStatus } = useBootstrap();
+
+  // Expected clean-install / logout: settle on auth screens immediately.
+  if (authStatus === 'UNAUTHENTICATED' || authStatus === 'EXPIRED') {
+    return <AuthStack />;
+  }
+
+  if (authStatus === 'INITIALIZING' || authStatus === 'REFRESHING') {
+    return <LoadingView message="Checking session…" />;
+  }
+
+  // Authenticated: wait for onboarding/bootstrap before leaving auth.
+  if (onboardingState === 'LOADING' || bootstrapStatus === 'BOOTSTRAPPING') {
+    return <LoadingView message="Checking session…" />;
+  }
+
+  if (bootstrapStatus === 'AUTHENTICATED_READY') {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  // Authenticated but not shell-ready (onboarding / bootstrap) — leave auth screens.
+  if (authStatus === 'AUTHENTICATED') {
+    return <Redirect href="/bootstrap" />;
+  }
+
+  return <AuthStack />;
 }

@@ -51,7 +51,7 @@ export function PerformanceOverviewScreen() {
     <Screen
       scroll
       title="Performance"
-      description="Personal records and training load"
+      description="Progress & insights from real sessions"
       testID="performance-overview-screen"
       refreshing={refreshing}
       onRefresh={onRefresh}>

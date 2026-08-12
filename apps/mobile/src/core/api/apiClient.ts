@@ -9,9 +9,14 @@ import { buildCsrfHeader, shouldAttachCsrf } from '@/src/core/api/csrf';
 import {
   buildCookieHeader,
   CookieStore,
+  describeSetCookiePresence,
   getXsrfToken,
+  hasRefreshableSessionCookies,
+  resolveCookieRequestUrl,
+  sessionCookiePresence,
+  sessionCookieProbeUrl,
 } from '@/src/core/api/cookieStore';
-import { mapAxiosError } from '@/src/core/api/errorMapper';
+import { describeErrorForDiagnostics, mapAxiosError } from '@/src/core/api/errorMapper';
 import { ApiError } from '@/src/core/api/errors';
 import { createLogger } from '@/src/core/logging/logger';
 
@@ -75,6 +80,18 @@ function shouldSkipRefresh(path: string, config: UapAxiosRequestConfig): boolean
   );
 }
 
+function readSetCookieHeader(
+  headers: AxiosResponse['headers'],
+): string | string[] | undefined {
+  const raw =
+    headers['set-cookie'] ??
+    headers['Set-Cookie'] ??
+    // Some RN runtimes expose this shape instead of axios's normalized key.
+    (headers as { getSetCookie?: () => string[] }).getSetCookie?.() ??
+    undefined;
+  return raw as string | string[] | undefined;
+}
+
 export function createApiClient(options: CreateApiClientOptions): ApiClient {
   const { baseURL, cookieStore, onSessionExpired } = options;
   const refreshMutex = new RefreshMutex();
@@ -92,11 +109,24 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
   client.interceptors.request.use(async (config: UapAxiosRequestConfig) => {
     const path = resolveRequestPath(config, baseURL);
     const method = (config.method ?? 'GET').toUpperCase();
+    const cookieUrl = resolveCookieRequestUrl(baseURL, config.url);
     config.headers = config.headers ?? {};
 
     // Explicit Cookie header — React Native Axios/XHR does not always share
-    // the native jar the way browsers do.
-    const cookies = await cookieStore.getCookies(baseURL);
+    // the native jar the way browsers do. Use the request URL (with /api path)
+    // so Path=/api session cookies are visible to CookieManager.get.
+    let cookies: Record<string, string> = {};
+    try {
+      cookies = await cookieStore.getCookies(cookieUrl);
+    } catch (cookieError) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        log.warn('Cookie read failed before request; continuing without Cookie header', {
+          ...describeErrorForDiagnostics(cookieError),
+          path,
+          method,
+        });
+      }
+    }
     const cookieHeader = buildCookieHeader(cookies);
     if (cookieHeader) {
       config.headers.Cookie = cookieHeader;
@@ -104,6 +134,14 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
 
     if (shouldAttachCsrf(method, path)) {
       const token = getXsrfToken(cookies);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        log.debug('CSRF-protected request header attachment', {
+          path,
+          method,
+          antiForgeryHeader: token ? 'attached' : 'missing',
+          ...sessionCookiePresence(cookies),
+        });
+      }
       if (token) {
         Object.assign(config.headers, buildCsrfHeader(token));
       }
@@ -113,11 +151,31 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
   });
 
   const persistSetCookie = async (response: AxiosResponse) => {
-    const header =
-      response.headers['set-cookie'] ??
-      response.headers['Set-Cookie'] ??
-      undefined;
-    await cookieStore.setFromResponse(baseURL, header);
+    const header = readSetCookieHeader(response.headers);
+    const cookieUrl = resolveCookieRequestUrl(baseURL, response.config?.url);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      const path = resolveRequestPath(response.config ?? { headers: {} }, baseURL);
+      log.debug('Response cookie handoff', {
+        path,
+        status: response.status,
+        ...describeSetCookiePresence(header),
+      });
+    }
+    await cookieStore.setFromResponse(cookieUrl, header);
+
+    // RN often hides Set-Cookie from JS for HttpOnly cookies while still writing
+    // NSHTTPCookieStorage. Probe the session path so diagnostics reflect the jar.
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      try {
+        const after = await cookieStore.getCookies(sessionCookieProbeUrl(baseURL));
+        log.debug('Native cookie jar after response', sessionCookiePresence(after));
+      } catch (cookieError) {
+        log.warn(
+          'Cookie jar probe after response failed',
+          describeErrorForDiagnostics(cookieError),
+        );
+      }
+    }
     return response;
   };
 
@@ -139,6 +197,17 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
         return Promise.reject(mapAxiosError(error));
       }
 
+      // Fresh install / no session cookies: treat 401 as logged-out without refresh churn.
+      let cookiesForRefresh: Record<string, string> = {};
+      try {
+        cookiesForRefresh = await cookieStore.getCookies(sessionCookieProbeUrl(baseURL));
+      } catch {
+        cookiesForRefresh = {};
+      }
+      if (!hasRefreshableSessionCookies(cookiesForRefresh)) {
+        return Promise.reject(mapAxiosError(error));
+      }
+
       const refreshed = await refreshMutex.run(async () => {
         try {
           await client.post(REFRESH_PATH, undefined, {
@@ -146,8 +215,15 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
           } as UapAxiosRequestConfig);
           return true;
         } catch (refreshError) {
-          log.warn('Session refresh failed', refreshError);
-          await cookieStore.clearAll();
+          log.warn('Session refresh failed', describeErrorForDiagnostics(refreshError));
+          try {
+            await cookieStore.clearAll();
+          } catch (clearError) {
+            log.warn(
+              'Cookie clear failed after refresh failure',
+              describeErrorForDiagnostics(clearError),
+            );
+          }
           onSessionExpired?.();
           return false;
         }

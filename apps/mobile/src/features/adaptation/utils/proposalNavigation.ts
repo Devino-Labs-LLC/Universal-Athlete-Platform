@@ -36,7 +36,7 @@ export function navigateToAdaptationProposal(
   occurrenceId: string,
   proposalId: string,
 ): void {
-  router.push(adaptationProposalPath(planId, dayId, occurrenceId, proposalId));
+  router.push(adaptationProposalPath(planId, dayId, occurrenceId, proposalId) as never);
 }
 
 export function navigateToAdaptationCandidatePicker(
@@ -46,7 +46,9 @@ export function navigateToAdaptationCandidatePicker(
   proposalId: string,
   itemId: string,
 ): void {
-  router.push(adaptationCandidatePickerPath(planId, dayId, occurrenceId, proposalId, itemId));
+  router.push(
+    adaptationCandidatePickerPath(planId, dayId, occurrenceId, proposalId, itemId) as never,
+  );
 }
 
 export function navigateToDirectSubstitution(
@@ -55,7 +57,7 @@ export function navigateToDirectSubstitution(
   occurrenceId: string,
   executionId: string,
 ): void {
-  router.push(directSubstitutionPath(planId, dayId, occurrenceId, executionId));
+  router.push(directSubstitutionPath(planId, dayId, occurrenceId, executionId) as never);
 }
 
 export function resolveOccurrenceForAdaptation(

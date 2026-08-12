@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthSession } from '@/src/app/providers/AuthSessionProvider';
 import { useAthleteOnboarding } from '@/src/app/providers/AthleteOnboardingProvider';
@@ -38,7 +38,8 @@ export function HomeScreen() {
   const generateAdaptationMutation = useGenerateManualAdaptation();
 
   const data = todayQuery.data;
-  const mutations = useDerivedStateMutations(data?.date ?? '');
+  // Date is absent while Today loads — hook must tolerate undefined (no render throw).
+  const mutations = useDerivedStateMutations(data?.date);
 
   const pendingAction = mutations.athleteStateMutation.isPending
     ? 'state'
@@ -122,14 +123,13 @@ export function HomeScreen() {
   });
 
   const primaryOccurrence = data.training.primaryOccurrence;
-  const inProgressPrimary = primaryOccurrence?.status === 'IN_PROGRESS';
 
   const workoutCard = (
     <PrimaryWorkoutCard
       occurrence={primaryOccurrence}
       canStartWorkout={data.actions?.canStartWorkout}
       canContinueWorkout={data.actions?.canContinueWorkout}
-      dominant={inProgressPrimary}
+      dominant
     />
   );
 
@@ -139,9 +139,36 @@ export function HomeScreen() {
       testID="home-screen-scroll"
       refreshing={todayQuery.isFetching}
       onRefresh={() => todayQuery.refetch()}>
+      {/* A: compact context → B: readiness hero → C: training → D: signals → E: support → F: actions */}
       <TodayHeader greeting={greeting} date={data.date} />
 
-      {inProgressPrimary ? workoutCard : null}
+      <ReadinessCard readiness={data.readiness} />
+
+      {workoutCard}
+
+      <View style={styles.signalRow}>
+        <View style={styles.signalHalf}>
+          <RecoveryCard
+            recovery={data.recovery}
+            canCreateRecoveryCheckIn={data.actions?.canCreateRecoveryCheckIn}
+            canUpdateRecoveryCheckIn={data.actions?.canUpdateRecoveryCheckIn}
+            compact
+          />
+        </View>
+        <View style={styles.signalHalf}>
+          <RecommendationCard recommendation={data.recommendation} compact />
+        </View>
+      </View>
+
+      {data.trainingLoad?.loadPresent ? (
+        <TrainingLoadCard trainingLoad={data.trainingLoad} />
+      ) : null}
+
+      {data.adaptation ? (
+        <AdaptationCard adaptation={data.adaptation} training={data.training} />
+      ) : null}
+
+      <RecentPerformanceCard records={data.recentPerformance ?? []} />
 
       <HomeQuickActions
         actions={data.actions}
@@ -158,31 +185,22 @@ export function HomeScreen() {
           {mutations.errorMessage}
         </Text>
       ) : null}
-
-      {!inProgressPrimary ? workoutCard : null}
-
-      <ReadinessCard readiness={data.readiness} />
-      <RecommendationCard recommendation={data.recommendation} />
-      <RecoveryCard
-        recovery={data.recovery}
-        canCreateRecoveryCheckIn={data.actions?.canCreateRecoveryCheckIn}
-        canUpdateRecoveryCheckIn={data.actions?.canUpdateRecoveryCheckIn}
-      />
-
-      {data.trainingLoad?.loadPresent ? (
-        <TrainingLoadCard trainingLoad={data.trainingLoad} />
-      ) : null}
-
-      {data.adaptation ? (
-        <AdaptationCard adaptation={data.adaptation} training={data.training} />
-      ) : null}
-
-      <RecentPerformanceCard records={data.recentPerformance ?? []} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  signalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    alignItems: 'stretch',
+  },
+  signalHalf: {
+    flexGrow: 1,
+    flexBasis: 150,
+    minWidth: 150,
+  },
   error: {
     fontSize: 14,
   },

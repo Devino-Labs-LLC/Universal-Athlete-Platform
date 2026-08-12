@@ -109,13 +109,19 @@ describe('HomeScreen', () => {
 
     const { getByTestId } = await renderHome();
     expect(getByTestId('home-skeleton')).toBeTruthy();
+    // Must pass undefined — never '' — while Today date is absent.
+    expect(useDerivedStateMutations).toHaveBeenCalledWith(undefined);
   });
 
-  it('renders greeting and populated cards', async () => {
-    const { getByText, getByTestId } = await renderHome();
+  it('renders greeting and populated cards with readiness hero hierarchy', async () => {
+    const { getByText, getByTestId, getByLabelText } = await renderHome();
 
     expect(getByText(/Good (morning|afternoon|evening), Jordan/)).toBeTruthy();
+    expect(getByTestId('today-header')).toBeTruthy();
     expect(getByTestId('readiness-card')).toBeTruthy();
+    expect(getByTestId('readiness-score-ring')).toBeTruthy();
+    expect(getByLabelText('Score: 79')).toBeTruthy();
+    expect(getByTestId('primary-workout-card')).toBeTruthy();
     expect(getByTestId('recommendation-card')).toBeTruthy();
     expect(getByTestId('recovery-card')).toBeTruthy();
     expect(getByTestId('training-load-card')).toBeTruthy();
@@ -123,6 +129,8 @@ describe('HomeScreen', () => {
     expect(getByTestId('recent-performance-card')).toBeTruthy();
     expect(getByText('High')).toBeTruthy();
     expect(getByText('Proceed as planned')).toBeTruthy();
+    // Hierarchy is readiness hero first; quick actions remain secondary when flags allow.
+    expect(getByTestId('home-quick-actions')).toBeTruthy();
   });
 
   it('omits load and performance cards when empty', async () => {

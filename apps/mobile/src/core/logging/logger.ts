@@ -5,6 +5,36 @@ function isDevLoggingEnabled(): boolean {
   return typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
 }
 
+function serializeError(error: Error): Record<string, unknown> {
+  const result: Record<string, unknown> = {
+    name: error.name,
+    message: error.message,
+  };
+  const withExtras = error as Error & {
+    category?: unknown;
+    status?: unknown;
+    code?: unknown;
+    path?: unknown;
+    cause?: unknown;
+  };
+  if (withExtras.category !== undefined) {
+    result.category = withExtras.category;
+  }
+  if (withExtras.status !== undefined) {
+    result.status = withExtras.status;
+  }
+  if (withExtras.code !== undefined) {
+    result.code = withExtras.code;
+  }
+  if (withExtras.path !== undefined) {
+    result.path = withExtras.path;
+  }
+  if (withExtras.cause !== undefined) {
+    result.cause = redactValue(withExtras.cause);
+  }
+  return result;
+}
+
 function redactValue(value: unknown, parentKey?: string): unknown {
   if (value == null) {
     return value;
@@ -19,6 +49,10 @@ function redactValue(value: unknown, parentKey?: string): unknown {
 
   if (Array.isArray(value)) {
     return value.map((item) => redactValue(item, parentKey));
+  }
+
+  if (value instanceof Error) {
+    return serializeError(value);
   }
 
   if (typeof value === 'object') {
@@ -50,7 +84,7 @@ export function createLogger(scope: string): Logger {
     }
     const payload = context === undefined ? undefined : redactValue(context);
     const line = `${prefix} ${message}`;
-     
+    // eslint-disable-next-line no-console
     console[level](line, payload ?? '');
   };
 

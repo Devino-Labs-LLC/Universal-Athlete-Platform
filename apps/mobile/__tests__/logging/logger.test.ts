@@ -38,6 +38,20 @@ describe('logger', () => {
     expect(debugSpy).toHaveBeenCalled();
   });
 
+  it('serializes Error/ApiError message fields for diagnostics', () => {
+    const redacted = redactForLogging(
+      Object.assign(new Error('Cannot read properties of undefined (reading \'get\')'), {
+        name: 'ApiError',
+        category: 'unknown',
+      }),
+    );
+    expect(redacted).toMatchObject({
+      name: 'ApiError',
+      message: "Cannot read properties of undefined (reading 'get')",
+      category: 'unknown',
+    });
+  });
+
   it('suppresses debug/info in release builds', () => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = false;
     const logger = createLogger('test');

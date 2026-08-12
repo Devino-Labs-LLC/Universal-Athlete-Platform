@@ -11,33 +11,35 @@ import { TrainingTodayDashboard } from '@/src/features/training/schemas';
 
 interface RecommendationCardProps {
   recommendation: TrainingTodayDashboard['recommendation'];
+  compact?: boolean;
 }
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  compact = false,
+}: RecommendationCardProps) {
   const theme = useAppTheme();
 
   if (!recommendation.recommendationPresent) {
     return (
-      <HomeCard testID="recommendation-card" title="Training guidance">
+      <HomeCard
+        testID="recommendation-card"
+        eyebrow={compact ? undefined : undefined}
+        title="Guidance"
+        dense={compact}>
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>
-          No guidance generated for today yet.
+          No guidance yet
         </Text>
       </HomeCard>
     );
   }
 
   const actionLabel = recommendationActionLabel(recommendation.overallAction);
-  const adjustments = (recommendation.adjustmentTypes ?? []).slice(0, 3);
+  const adjustments = (recommendation.adjustmentTypes ?? []).slice(0, compact ? 2 : 3);
 
   return (
-    <HomeCard testID="recommendation-card" title="Training guidance">
+    <HomeCard testID="recommendation-card" title="Guidance" dense={compact}>
       <StatusChip testID="recommendation-action-chip" label={actionLabel} variant="info" />
-
-      {recommendation.recommendationStatus ? (
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-          Status: {recommendation.recommendationStatus}
-        </Text>
-      ) : null}
 
       {adjustments.length > 0 ? (
         <View style={styles.adjustments}>
@@ -54,15 +56,14 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
 
 const styles = StyleSheet.create({
   body: {
-    fontSize: 15,
-  },
-  meta: {
     fontSize: 13,
+    lineHeight: 18,
   },
   adjustments: {
-    gap: 4,
+    gap: 2,
   },
   adjustment: {
-    fontSize: 14,
+    fontSize: 12,
+    lineHeight: 16,
   },
 });

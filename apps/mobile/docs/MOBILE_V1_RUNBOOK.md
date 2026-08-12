@@ -161,6 +161,24 @@ Use Development Build + live backend (**not** Expo Go, **not** web export):
 
 Document platform, API URL, CookieManager behavior, XSRF behavior, and persistence result for each release candidate.
 
+### M4 positive-path status (2026-08-12)
+
+Host/API contract against local Spring (`127.0.0.1:8080`) with RA1 (`ra1.user1@devinolabs.test`):
+
+| Step | Result |
+| --- | --- |
+| Login | PASS (HTTP 200) |
+| Cookie presence (`uap_at` / `uap_rt` / `XSRF-TOKEN`) | PASS (yes/yes/yes; values not logged) |
+| Authenticated `/api/v1/identity/me` | PASS (HTTP 200, ACTIVE) |
+| Athlete-domain GET (`/athletes/me`, `/training/client/today`, `/training/environments`) | PASS |
+| CSRF mutation (`POST /training/environments`, `POST …/default`, `DELETE`, `POST /identity/logout`) | PASS; `X-XSRF-TOKEN` required (missing → `CSRF_INVALID`) |
+| Refresh with access cookie removed + valid refresh | PASS (`POST /identity/refresh` 204 → `/me` 200) |
+| Logout then `/me` | PASS (401) |
+
+Native Dev Client UI / cold-start / Home routing: **NOT OBSERVED** in agent session (CoreSimulatorService unavailable). Operator must complete Login → Home, kill/relaunch restore, and logout relaunch on the running iOS Dev Client.
+
+DEV diagnostics (presence-only): login cookie matrix, CSRF header attachment yes/no, teardown cookie presence.
+
 ## M4 release hardening checklist
 
 ### Config / builds

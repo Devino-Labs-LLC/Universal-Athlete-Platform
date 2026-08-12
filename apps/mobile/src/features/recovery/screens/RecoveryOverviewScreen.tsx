@@ -81,9 +81,47 @@ export function RecoveryOverviewScreen() {
       refreshing={refreshing}
       onRefresh={onRefresh}>
       <HomeCard
+        testID="recovery-readiness-summary"
+        eyebrow="Athlete state"
+        title="Readiness"
+        dense>
+        <View style={styles.readinessHero}>
+          <ScoreRing
+            score={data.readinessPresent ? readinessScore : null}
+            label="Score"
+            size="lg"
+            tone="cyan"
+          />
+          <View style={styles.readinessCopy}>
+            {data.readinessPresent && data.readiness ? (
+              <>
+                <StatusChip
+                  label={readinessBandLabel(data.readiness.readinessBand)}
+                  variant="info"
+                />
+                <PrimaryButton
+                  label="View details"
+                  onPress={() =>
+                    router.push(
+                      `/(tabs)/recovery/readiness/${data.readiness!.readinessAssessmentId}`,
+                    )
+                  }
+                />
+              </>
+            ) : (
+              <Text style={[styles.body, { color: theme.colors.textMuted }]}>
+                No readiness assessment yet. Complete a check-in and calculate readiness.
+              </Text>
+            )}
+          </View>
+        </View>
+      </HomeCard>
+
+      <HomeCard
         testID="recovery-check-in-section"
         eyebrow="Today"
-        title="Today's check-in">
+        title="Today's check-in"
+        dense>
         {data.checkInPresent && checkIn ? (
           <>
             <StatusChip label={checkIn.completeness.replace(/_/g, ' ')} variant="success" />
@@ -141,19 +179,6 @@ export function RecoveryOverviewScreen() {
           todayQuery.data?.recommendation?.recommendationPresent ?? data.recommendationPresent
         }
       />
-
-      {data.readinessPresent && data.readiness ? (
-        <HomeCard testID="recovery-readiness-summary" eyebrow="Athlete state" title="Readiness">
-          <StatusChip label={readinessBandLabel(data.readiness.readinessBand)} variant="info" />
-          <ScoreRing score={readinessScore} label="Score" />
-          <PrimaryButton
-            label="View readiness details"
-            onPress={() =>
-              router.push(`/(tabs)/recovery/readiness/${data.readiness!.readinessAssessmentId}`)
-            }
-          />
-        </HomeCard>
-      ) : null}
 
       {data.recommendationPresent && data.recommendation ? (
         <HomeCard
@@ -228,7 +253,18 @@ export function RecoveryOverviewScreen() {
 
 const styles = StyleSheet.create({
   body: {
-    fontSize: 15,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  readinessHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  readinessCopy: {
+    flex: 1,
+    gap: 10,
+    minWidth: 0,
   },
   metricRow: {
     flexDirection: 'row',

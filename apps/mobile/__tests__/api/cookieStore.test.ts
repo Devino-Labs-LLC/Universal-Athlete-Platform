@@ -2,6 +2,9 @@ import {
   buildCookieHeader,
   createInMemoryCookieStoreForTests,
   getXsrfToken,
+  hasRefreshableSessionCookies,
+  resolveCookieManagerModule,
+  sessionCookiePresence,
 } from '@/src/core/api/cookieStore';
 
 describe('cookieStore', () => {
@@ -32,5 +35,33 @@ describe('cookieStore', () => {
     expect(cookies.uap_rt).toBeUndefined();
     expect(cookies['XSRF-TOKEN']).toBeUndefined();
     expect(cookies.other).toBe('keep');
+  });
+
+  it('reports session cookie presence without exposing values', () => {
+    const presence = sessionCookiePresence({
+      uap_at: 'secret-access',
+      uap_rt: 'secret-refresh',
+      'XSRF-TOKEN': 'secret-xsrf',
+    });
+    expect(presence).toEqual({
+      access: true,
+      refresh: true,
+      antiForgery: true,
+    });
+    expect(JSON.stringify(presence)).not.toContain('secret');
+    expect(hasRefreshableSessionCookies({})).toBe(false);
+    expect(hasRefreshableSessionCookies({ uap_rt: 'x' })).toBe(true);
+  });
+
+  it('resolves CJS cookie manager exports without requiring .default', () => {
+    const cjsShape = {
+      get: jest.fn(),
+      clearAll: jest.fn(),
+      setFromResponse: jest.fn(),
+      clearByName: jest.fn(),
+    };
+    expect(resolveCookieManagerModule(cjsShape)).toBe(cjsShape);
+    expect(resolveCookieManagerModule({ default: cjsShape })).toBe(cjsShape);
+    expect(() => resolveCookieManagerModule(undefined)).toThrow(/unavailable/);
   });
 });

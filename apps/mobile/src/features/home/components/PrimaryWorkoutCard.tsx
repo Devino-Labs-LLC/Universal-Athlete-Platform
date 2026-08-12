@@ -78,7 +78,11 @@ export function PrimaryWorkoutCard({
       eyebrow="Training"
       title={dominant ? "Today's workout" : occurrence.workoutDayName}
       subtitle={occurrence.trainingPlanName}
-      style={dominant ? styles.dominant : undefined}>
+      style={
+        dominant
+          ? { ...styles.dominant, borderColor: theme.colors.primary }
+          : undefined
+      }>
       <View style={styles.row}>
         <StatusChip
           testID="workout-status-chip"
@@ -90,7 +94,7 @@ export function PrimaryWorkoutCard({
         ) : null}
       </View>
 
-      <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+      <Text style={[styles.metaStrong, { color: theme.colors.text }]}>
         {occurrence.completedExerciseCount}/{occurrence.exerciseCount} exercises
       </Text>
 
@@ -123,7 +127,7 @@ export function PrimaryWorkoutCard({
 
 const styles = StyleSheet.create({
   dominant: {
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
   row: {
     flexDirection: 'row',
@@ -135,5 +139,9 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 14,
+  },
+  metaStrong: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
