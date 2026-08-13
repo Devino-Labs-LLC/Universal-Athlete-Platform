@@ -109,4 +109,14 @@ describe('loadAppConfig', () => {
     expect(config.environment).toBe('production');
     expect(config.apiBaseUrl).toBe('https://api.example.com');
   });
+
+  it('accepts the deployed Railway HTTPS API origin and does not fall back to localhost', () => {
+    const config = loadAppConfig({
+      VITE_UAP_ENV: 'production',
+      VITE_UAP_API_BASE_URL: 'https://uapserver-production.up.railway.app',
+    });
+
+    expect(config.apiBaseUrl).toBe('https://uapserver-production.up.railway.app');
+    expect(config.apiBaseUrl).not.toMatch(/localhost|127\.0\.0\.1/);
+  });
 });

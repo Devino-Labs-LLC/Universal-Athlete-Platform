@@ -84,6 +84,44 @@ Static hosting of `apps/web/dist` via `pnpm run start` (`serve -s`, bind `0.0.0.
 5. Backend CORS allowlist = exact web origin(s); no wildcard with credentials
 6. Secure cookies (`Secure`, `HttpOnly` for auth cookies)
 
+### Railway production origins (live)
+
+| Role | Origin |
+|------|--------|
+| Frontend (`UAP_Client_Web`) | `https://uapclientweb-production.up.railway.app` |
+| API (`UAP_Server`) | `https://uapserver-production.up.railway.app` |
+
+The production SPA bundle bakes `VITE_UAP_ENV=production` and
+`VITE_UAP_API_BASE_URL=https://uapserver-production.up.railway.app` at **build** time.
+Changing a Railway runtime variable after the image is built does **not** change the
+client bundle — rebuild/redeploy `UAP_Client_Web` if the API origin changes.
+
+Login from Safari is **cross-origin**:
+
+- `POST https://uapserver-production.up.railway.app/api/v1/identity/login`
+- `GET https://uapserver-production.up.railway.app/api/v1/identity/me`
+
+`UAP_Server` must allow the **exact** frontend origin:
+
+```
+UAP_CORS_ALLOWED_ORIGINS=https://uapclientweb-production.up.railway.app
+SPRING_PROFILES_ACTIVE=prod
+UAP_COOKIE_SECURE=true
+```
+
+Do not use `*`. Do not leave the default `http://localhost:3000` allowlist on the
+production API.
+
+`up.railway.app` is on the Public Suffix List, so the two Railway hostnames are
+**cross-site**. `SameSite=Lax` host-only cookies on the API host will not be stored
+or sent by mobile Safari on XHR/fetch even after CORS is fixed. Correct topology:
+
+1. Custom same-site domains (e.g. `app.example.com` + `api.example.com`), or
+2. Same-origin `/api` reverse proxy on the frontend host.
+
+Do not weaken production cookie flags (`Secure` / `HttpOnly`) to make the Railway
+default-hostname test pass.
+
 ### Railway web service
 
 | Setting | Value |
@@ -131,6 +169,7 @@ Recovery (history, baselines 7/14/28, trends, readiness, guidance, athlete-state
 | Endless login loop | Refresh failure; clear site data |
 | Staging/prod boot crash | Missing `VITE_UAP_ENV` or API URL; `development` used in release build |
 | CORS errors without proxy | Hitting `:8080` directly from `:3000` without CORS allowlist |
+| Production Safari stays on Sign in | `UAP_CORS_ALLOWED_ORIGINS` missing the Railway web origin; then cross-site `SameSite=Lax` cookies |
 | Cross-account flash | Fixed by cancelQueries + clear + onboarding snapshot clear on REFRESHING |
 | Contract mismatch page | Bootstrap `clientContractVersion` ≠ `V1` |
 | pnpm fails before running a script | Active Node is older than 22.13; switch to the workspace-supported Node runtime |

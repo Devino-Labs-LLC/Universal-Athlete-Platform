@@ -68,6 +68,27 @@ class IdentityHttpPropertiesTests {
 		assertThatCode(properties::validateProductionSafety).doesNotThrowAnyException();
 	}
 
+	@Test
+	void productionSafetyAcceptsExactRailwayFrontendOrigin() {
+		IdentityHttpProperties properties = localDefaults();
+		properties.getCookies().setSecure(true);
+		properties.getCors().setAllowedOrigins(
+				List.of("https://uapclientweb-production.up.railway.app"));
+
+		assertThatCode(properties::validateProductionSafety).doesNotThrowAnyException();
+	}
+
+	@Test
+	void productionSafetyRejectsWildcardCorsEvenForRailwayHosts() {
+		IdentityHttpProperties properties = localDefaults();
+		properties.getCookies().setSecure(true);
+		properties.getCors().setAllowedOrigins(List.of("*"));
+
+		assertThatThrownBy(properties::validateProductionSafety)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("wildcard");
+	}
+
 	private static IdentityHttpProperties localDefaults() {
 		IdentityHttpProperties properties = new IdentityHttpProperties();
 		properties.getCookies().setSecure(false);

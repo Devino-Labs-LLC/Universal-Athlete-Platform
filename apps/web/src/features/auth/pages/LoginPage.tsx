@@ -8,13 +8,13 @@ import { Button } from '@/core/components/Button';
 import { AuthPage } from '@/features/auth/components/AuthPage';
 import { FormTextField } from '@/features/auth/components/FormTextField';
 import { PasswordField } from '@/features/auth/components/PasswordField';
-import { identityErrorMessage } from '@/features/auth/errorMessages';
+import { formatLoginFailure } from '@/features/auth/errorMessages';
 import { type LoginRequest, loginRequestSchema } from '@/features/auth/schemas';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuthSession();
+  const { login, apiClient } = useAuthSession();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export function LoginPage() {
         (location.state as { from?: string } | null)?.from ?? '/app/home';
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setFormError(identityErrorMessage(error, 'Unable to sign in'));
+      setFormError(formatLoginFailure(error, apiClient.baseURL));
     } finally {
       setSubmitting(false);
     }

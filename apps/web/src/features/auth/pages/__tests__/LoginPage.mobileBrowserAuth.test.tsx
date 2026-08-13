@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
+import { ApiError } from '@/core/api/errors';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 
 const loginMock = vi.fn();
@@ -10,6 +11,7 @@ const loginMock = vi.fn();
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
   useAuthSession: () => ({
     login: loginMock,
+    apiClient: { baseURL: 'https://uapserver-production.up.railway.app' },
   }),
 }));
 
@@ -93,5 +95,41 @@ describe('LoginPage auth transition', () => {
     });
     expect(screen.getByLabelText('pathname')).toHaveTextContent('/auth/login');
     expect(screen.queryByText('Home')).not.toBeInTheDocument();
+  });
+
+  it('shows a visible CORS/network error with API host and stays on login', async () => {
+    loginMock.mockRejectedValueOnce(
+      new ApiError('Network Error', { category: 'NETWORK' }),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/auth/login']}>
+        <Routes>
+          <Route
+            path="/auth/login"
+            element={
+              <>
+                <LoginPage />
+                <LocationProbe />
+              </>
+            }
+          />
+          <Route path="/app/home" element={<div>Home</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('Email'), 'ra1.user1@devinolabs.test');
+    await user.type(screen.getByLabelText('Password'), 'AnyValidLength1!');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/Unable to reach the API/);
+    expect(alert).toHaveTextContent(/CORS/);
+    expect(alert).toHaveTextContent('NETWORK');
+    expect(alert).toHaveTextContent('uapserver-production.up.railway.app');
+    expect(alert.textContent).not.toMatch(/uap_at=|password|jwt/i);
+    expect(screen.getByLabelText('pathname')).toHaveTextContent('/auth/login');
   });
 });

@@ -8,6 +8,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage';
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
   useAuthSession: () => ({
     login: vi.fn(),
+    apiClient: { baseURL: 'https://uapserver-production.up.railway.app' },
   }),
 }));
 
