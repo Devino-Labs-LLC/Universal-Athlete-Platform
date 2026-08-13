@@ -4,6 +4,7 @@ import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 
+import { createDevelopmentApiProxy } from './src/app/config/devApiProxy';
 import { loadAppConfig } from './src/app/config/env';
 
 export default defineConfig(({ command, mode }) => {
@@ -25,11 +26,7 @@ export default defineConfig(({ command, mode }) => {
       host: true,
       port: 3000,
       proxy: {
-        '/api': {
-          // Proxy runs on the Mac; localhost here is the host Spring process, not the phone.
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-        },
+        '/api': createDevelopmentApiProxy(),
       },
     },
     build: {
