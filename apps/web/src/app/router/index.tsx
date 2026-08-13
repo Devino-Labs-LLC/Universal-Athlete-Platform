@@ -103,6 +103,9 @@ const EditEnvironmentPage = lazy(() =>
 const RecoveryLandingPage = lazy(() =>
   import('@/features/recovery/pages/RecoveryLandingPage').then((m) => ({ default: m.RecoveryLandingPage })),
 );
+const RecoveryCheckInPage = lazy(() =>
+  import('@/features/recovery/pages/RecoveryCheckInPage').then((m) => ({ default: m.RecoveryCheckInPage })),
+);
 const RecoveryHistoryPage = lazy(() =>
   import('@/features/recovery/pages/RecoveryHistoryPage').then((m) => ({ default: m.RecoveryHistoryPage })),
 );
@@ -189,6 +192,14 @@ export function AppRouter() {
                 element={
                   <LazyPage>
                     <RecoveryLandingPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="recovery/check-in"
+                element={
+                  <LazyPage>
+                    <RecoveryCheckInPage />
                   </LazyPage>
                 }
               />

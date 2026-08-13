@@ -25,7 +25,7 @@ describe('Home recovery routes', () => {
       </ThemeProvider>,
     );
 
-    fireEvent.press(getByText('Check In'));
+    fireEvent.press(getByText('Check in'));
     expect(router.push).toHaveBeenCalledWith('/(tabs)/recovery/check-in');
   });
 

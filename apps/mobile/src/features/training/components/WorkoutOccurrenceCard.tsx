@@ -49,7 +49,7 @@ function defaultActionLabel(status: string): string | null {
     case 'IN_PROGRESS':
       return 'Continue';
     case 'SCHEDULED':
-      return 'Prepare';
+      return 'Start';
     case 'COMPLETED':
       return 'Review';
     default:

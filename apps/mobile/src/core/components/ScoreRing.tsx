@@ -59,7 +59,7 @@ export function ScoreRing({
     <View
       testID={testID}
       accessibilityRole="text"
-      accessibilityLabel={`${label}: ${display}`}
+      accessibilityLabel={`${label}: ${clamped != null ? String(Math.round(clamped)) : 'not available'}`}
       accessibilityValue={
         clamped != null ? { min: 0, max: 100, now: Math.round(clamped) } : undefined
       }

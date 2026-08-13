@@ -27,12 +27,12 @@
 }
 
 .pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uap-space-3);
   min-width: 0;
   max-width: 100%;
-}
-
-.pageActions > * {
-  flex-wrap: wrap;
 }
 
 .pageTitle {

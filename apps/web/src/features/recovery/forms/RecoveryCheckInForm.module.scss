@@ -1,0 +1,53 @@
+.ratings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+}
+
+.sleepGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uap-space-3);
+}
+
+.discomfortCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  padding: var(--uap-space-4);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface-elevated);
+}
+
+.discomfortGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--uap-space-3);
+}
+
+.checkInForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  max-width: none;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-3);
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .discomfortGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions :global(.button),
+  .actions button {
+    width: 100%;
+  }
+}

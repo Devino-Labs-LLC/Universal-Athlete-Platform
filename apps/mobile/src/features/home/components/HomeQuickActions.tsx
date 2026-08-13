@@ -7,6 +7,7 @@ import {
   TrainingDashboardOccurrence,
   TrainingTodayDashboard,
 } from '@/src/features/training/schemas';
+import { navigateHomeWorkoutAction } from '@/src/features/training/utils/trainingNavigation';
 
 interface HomeQuickActionsProps {
   actions: TrainingTodayDashboard['actions'];
@@ -74,7 +75,7 @@ export function HomeQuickActions({
   if (actions.canCreateRecoveryCheckIn.allowed || actions.canUpdateRecoveryCheckIn.allowed) {
     items.push({
       key: 'check-in',
-      label: actions.canCreateRecoveryCheckIn.allowed ? 'Check In' : 'Update Check In',
+      label: actions.canCreateRecoveryCheckIn.allowed ? 'Check in' : 'Update check-in',
       allowed: true,
       onPress: () => router.push('/(tabs)/recovery/check-in'),
     });
@@ -85,14 +86,14 @@ export function HomeQuickActions({
       key: 'continue',
       label: 'Continue Workout',
       allowed: true,
-      onPress: () => router.push('/(tabs)/training'),
+      onPress: () => navigateHomeWorkoutAction(primaryOccurrence),
     });
   } else if (actions.canStartWorkout.allowed) {
     items.push({
       key: 'start',
       label: 'Start Workout',
       allowed: true,
-      onPress: () => router.push('/(tabs)/training'),
+      onPress: () => navigateHomeWorkoutAction(primaryOccurrence),
     });
   }
 

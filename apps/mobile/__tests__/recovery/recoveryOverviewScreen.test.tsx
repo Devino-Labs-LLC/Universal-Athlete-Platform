@@ -75,7 +75,7 @@ describe('RecoveryOverviewScreen', () => {
     expect(getByTestId('recovery-baselines-section')).toBeTruthy();
     expect(getByTestId('recovery-trends-section')).toBeTruthy();
     expect(getByTestId('training-load-context-card')).toBeTruthy();
-    expect(getByText('Update Check In')).toBeTruthy();
+    expect(getByText('Update check-in')).toBeTruthy();
   });
 
   it('shows check-in CTA when no check-in present', async () => {
@@ -89,6 +89,6 @@ describe('RecoveryOverviewScreen', () => {
 
     const { getByTestId } = await renderOverview();
     const section = getByTestId('recovery-check-in-section');
-    expect(within(section).getByText('Check In')).toBeTruthy();
+    expect(within(section).getByText('Check in')).toBeTruthy();
   });
 });

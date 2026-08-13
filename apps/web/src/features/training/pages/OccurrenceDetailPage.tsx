@@ -32,12 +32,12 @@ export function OccurrenceDetailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (planQuery.isLoading || occurrenceQuery.isLoading) {
-    return <LoadingView message="Loading occurrence…" />;
+    return <LoadingView message="Loading workout…" />;
   }
 
   if (occurrenceQuery.isError || !occurrenceQuery.data) {
     return (
-      <ErrorView message="Unable to load occurrence." onRetry={() => occurrenceQuery.refetch()} />
+      <ErrorView message="Unable to load workout." onRetry={() => occurrenceQuery.refetch()} />
     );
   }
 
@@ -50,7 +50,7 @@ export function OccurrenceDetailPage() {
 
   return (
     <Page
-      title="Workout occurrence"
+      title="Workout"
       description="Session review and preparation — read-only planner view with snapshot prescriptions."
       width="wide"
       actions={

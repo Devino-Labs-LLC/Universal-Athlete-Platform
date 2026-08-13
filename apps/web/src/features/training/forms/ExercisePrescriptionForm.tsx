@@ -161,7 +161,7 @@ export function ExercisePrescriptionForm({
     >
       {isCreate ? <input type="hidden" {...register('exerciseDefinitionId')} /> : null}
       {definition ? (
-        <p className="card" style={{ marginBottom: '1rem' }}>
+        <p className="emptyHint" style={{ marginBottom: '1rem' }}>
           {definition.canonicalName} ·{' '}
           {METRIC_MODE_LABELS[metricModeFromDefinition(definition)] ?? metricMode}
         </p>
@@ -196,7 +196,7 @@ export function ExercisePrescriptionForm({
         ) : null}
       </div>
       {metricMode === 'DURATION' ? (
-        <p className="card" style={{ fontSize: '0.875rem', margin: 0 }}>
+        <p className="emptyHint" style={{ fontSize: '0.875rem', margin: 0 }}>
           Duration-based prescription — enter hold time below. Reps and weight do not apply.
         </p>
       ) : null}
@@ -309,10 +309,10 @@ export function ExercisePrescriptionForm({
         </label>
         <textarea id="coachingNotes" className="input" rows={2} {...register('coachingNotes')} />
       </div>
-      <p className="card" style={{ fontSize: '0.875rem' }}>
+      <p className="emptyHint" style={{ fontSize: '0.875rem' }}>
         Prescription changes apply to future workout occurrences.
       </p>
-      <div style={{ display: 'flex', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
         <Button type="submit" disabled={formState.isSubmitting}>
           {formState.isSubmitting ? 'Saving…' : isCreate ? 'Add exercise' : 'Save prescription'}
         </Button>

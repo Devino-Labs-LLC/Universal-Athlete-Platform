@@ -1,0 +1,16 @@
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+}
+
+.meta {
+  margin: 0;
+  color: var(--uap-text-secondary);
+}
+
+.metaStrong {
+  margin: 0;
+  color: var(--uap-text-secondary);
+  font-weight: 700;
+}

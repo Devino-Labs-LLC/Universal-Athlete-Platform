@@ -60,7 +60,7 @@ export function GenerateForm({ defaultFrom, defaultTo, onSubmit }: GenerateFormP
 
 export function GenerationResultSummary({ result }: { result: GenerationResult }) {
   return (
-    <div className="card" aria-live="polite">
+    <div className="panel" aria-live="polite">
       <p>
         Created {result.createdCount}, existing {result.existingCount}, cancelled placements{' '}
         {result.cancelledPlacementCount}, out of schedule {result.outOfScheduleCount}.

@@ -57,7 +57,7 @@ export function ExerciseDetailPage() {
       title={definition.canonicalName}
       description={isSystem ? 'System exercise — read only.' : 'Custom exercise.'}
       actions={
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
           <Link to={`/app/performance/exercises/${definitionId}`}>
             <Button type="button" variant="secondary">
               View performance
@@ -83,7 +83,7 @@ export function ExerciseDetailPage() {
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
+      <section className="panel" style={{ marginBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
           <ExerciseScopeBadge scope={definition.scope} showId={definition.id} />
           {!definition.active || definition.archivedAt ? <span>Archived</span> : null}
@@ -143,8 +143,8 @@ export function ExerciseDetailPage() {
         <MetadataChips label="Difficulty" values={[metadata.difficulty]} labelFor={(v) => DIFFICULTY_LABELS[v] ?? v} />
       </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Environment compatibility</h2>
+      <section className="panel">
+        <h2 className="panelTitle">Environment compatibility</h2>
         <div className="field">
           <label className="label" htmlFor="compat-environment">
             Training environment

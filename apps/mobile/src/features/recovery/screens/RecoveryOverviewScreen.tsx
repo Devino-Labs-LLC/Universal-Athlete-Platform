@@ -152,7 +152,7 @@ export function RecoveryOverviewScreen() {
               />
             </View>
             <PrimaryButton
-              label="Update Check In"
+              label="Update check-in"
               onPress={() => router.push('/(tabs)/recovery/check-in')}
             />
           </>
@@ -162,7 +162,7 @@ export function RecoveryOverviewScreen() {
               Log how you feel to unlock personalized insights.
             </Text>
             <PrimaryButton
-              label="Check In"
+              label="Check in"
               onPress={() => router.push('/(tabs)/recovery/check-in')}
             />
           </>

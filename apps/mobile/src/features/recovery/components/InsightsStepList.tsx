@@ -58,7 +58,7 @@ export function InsightsStepList({
       key: 'check-in',
       title: 'Daily check-in',
       status: checkInComplete ? 'complete' : 'current',
-      ctaLabel: checkInComplete ? undefined : 'Check In',
+      ctaLabel: checkInComplete ? undefined : 'Check in',
       onPress: checkInComplete ? undefined : () => router.push('/(tabs)/recovery/check-in'),
     },
     {

@@ -24,7 +24,7 @@ export function LaunchContextSections({ context }: LaunchContextSectionsProps) {
 
   return (
     <>
-      <HomeCard title="Occurrence" testID="launch-occurrence-section">
+      <HomeCard title="Workout" testID="launch-occurrence-section">
         <StatusChip
           label={occurrenceStatusLabel(occurrence.status)}
           variant={occurrence.status === 'IN_PROGRESS' ? 'info' : 'default'}

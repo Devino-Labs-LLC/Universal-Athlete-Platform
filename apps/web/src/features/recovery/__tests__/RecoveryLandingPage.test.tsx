@@ -45,6 +45,11 @@ describe('RecoveryLandingPage', () => {
     };
     render(<RecoveryLandingPage />);
     expect(screen.getByText('No check-in yet today')).toBeInTheDocument();
+    const checkInLinks = screen.getAllByRole('link', { name: 'Check in' });
+    expect(checkInLinks.length).toBeGreaterThan(0);
+    checkInLinks.forEach((link) => {
+      expect(link).toHaveAttribute('href', '/app/recovery/check-in');
+    });
     expect(screen.getByText('No readiness assessment yet')).toBeInTheDocument();
     expect(screen.getByText('No recommendation yet')).toBeInTheDocument();
   });

@@ -9,6 +9,7 @@ import {
   fetchRecoveryCheckInRevisions,
   fetchRecoveryHistory,
 } from '@/features/recovery/api/checkInsApi';
+import { isNotFoundError } from '@/features/recovery/models/errors';
 import type { RecoveryCheckInListFilters } from '@/features/recovery/models/queryKeys';
 import { recoveryKeys } from '@/features/recovery/models/queryKeys';
 
@@ -27,6 +28,12 @@ export function useRecoveryCheckInByDate(date: DateOnly | undefined) {
     queryKey: recoveryKeys.checkInByDate(date ?? ('' as DateOnly)),
     queryFn: () => fetchRecoveryCheckInByDate(apiClient, date as DateOnly),
     enabled: status === 'AUTHENTICATED' && Boolean(date),
+    retry: (failureCount, error) => {
+      if (isNotFoundError(error)) {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 }
 

@@ -2,11 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { parseDateOnly } from '@/core/date/dateOnly';
 import {
+  createRecoveryCheckIn,
   fetchRecoveryCheckInByDate,
   fetchRecoveryCheckInById,
   fetchRecoveryCheckInList,
   fetchRecoveryCheckInRevisions,
   fetchRecoveryHistory,
+  updateRecoveryCheckIn,
+  buildCreateRequestFromForm,
+  buildUpdateRequestFromForm,
 } from '@/features/recovery/api/checkInsApi';
 
 function makeClient() {
@@ -90,5 +94,61 @@ describe('checkInsApi', () => {
       '/api/v1/training/recovery-check-ins/history',
       expect.objectContaining({ params: expect.objectContaining({ includeTrainingLoad: false }) }),
     );
+  });
+
+  it('creates a check-in with POST /recovery-check-ins', async () => {
+    const client = makeClient();
+    client.axios.post.mockResolvedValue({ data: checkIn });
+    const created = await createRecoveryCheckIn(client as never, {
+      checkInDate: '2026-02-01',
+      fatigue: 3,
+      muscleSoreness: 2,
+      stress: 3,
+      mood: 4,
+      motivation: 4,
+    });
+    expect(client.axios.post).toHaveBeenCalledWith('/api/v1/training/recovery-check-ins', {
+      checkInDate: '2026-02-01',
+      fatigue: 3,
+      muscleSoreness: 2,
+      stress: 3,
+      mood: 4,
+      motivation: 4,
+    });
+    expect(created.id).toBe('ci-1');
+  });
+
+  it('updates a check-in with PATCH and bare PatchValue fields', async () => {
+    const client = makeClient();
+    client.axios.patch.mockResolvedValue({ data: checkIn });
+    await updateRecoveryCheckIn(client as never, 'ci-1', {
+      fatigue: 4,
+      sleepDurationMinutes: null,
+      expectedVersion: 1,
+    });
+    expect(client.axios.patch).toHaveBeenCalledWith('/api/v1/training/recovery-check-ins/ci-1', {
+      fatigue: 4,
+      sleepDurationMinutes: null,
+      expectedVersion: 1,
+    });
+  });
+
+  it('omits blank optional fields on create and sends null on update (missing ≠ zero)', () => {
+    const values = {
+      checkInDate: '2026-02-01',
+      fatigue: 3,
+      muscleSoreness: 3,
+      stress: 3,
+      mood: 3,
+      motivation: 3,
+      discomfortAreas: [],
+    };
+    expect(buildCreateRequestFromForm(values).sleepDurationMinutes).toBeUndefined();
+    expect(buildCreateRequestFromForm(values).sleepQuality).toBeUndefined();
+    expect(buildCreateRequestFromForm(values).discomfortAreas).toBeUndefined();
+    expect(buildUpdateRequestFromForm(values, 2).sleepDurationMinutes).toBeNull();
+    expect(buildUpdateRequestFromForm(values, 2).sleepQuality).toBeNull();
+    expect(buildUpdateRequestFromForm(values, 2).notes).toBeNull();
+    expect(buildUpdateRequestFromForm(values, 2).expectedVersion).toBe(2);
   });
 });

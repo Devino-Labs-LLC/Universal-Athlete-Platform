@@ -218,6 +218,7 @@ export function PlanBuilderPage() {
                         await occurrenceMutations.create.mutateAsync(values);
                       } catch (error) {
                         setErrorMessage(trainingErrorMessage(error));
+                        throw error;
                       }
                     }}
                   />

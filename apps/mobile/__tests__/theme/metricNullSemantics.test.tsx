@@ -26,9 +26,9 @@ describe('M3 metric null semantics', () => {
       </ThemeProvider>,
     );
 
-    expect(getByLabelText('Readiness: —')).toBeTruthy();
+    expect(getByLabelText('Readiness: not available')).toBeTruthy();
     expect(getByTestId('ring-null')).toBeTruthy();
-    expect(getByLabelText('Readiness: —').props.accessibilityValue).toBeUndefined();
+    expect(getByLabelText('Readiness: not available').props.accessibilityValue).toBeUndefined();
   });
 
   it('ScoreRing populated value fills accessibility now', async () => {
@@ -50,7 +50,7 @@ describe('M3 metric null semantics', () => {
       </ThemeProvider>,
     );
 
-    expect(getByLabelText('Score: —')).toBeTruthy();
+    expect(getByLabelText('Score: not available')).toBeTruthy();
     expect(queryByLabelText('Score: 0')).toBeNull();
   });
 });

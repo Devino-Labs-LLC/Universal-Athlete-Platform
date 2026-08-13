@@ -409,7 +409,7 @@ export type WorkoutOccurrenceDetail = z.infer<typeof workoutOccurrenceDetailSche
 export const workoutOccurrencesSchema = z.array(workoutOccurrenceDetailSchema);
 
 export const createOccurrenceSchema = z.object({
-  scheduledDate: z.string().min(1),
+  scheduledDate: z.string().min(1, 'Scheduled date is required'),
   plannedStartTime: z.string().optional(),
   athleteNotes: z.string().optional(),
 });

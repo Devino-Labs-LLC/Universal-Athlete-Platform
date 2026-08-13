@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/training/plans/new': 'Create plan',
   '/app/training/calendar': 'Training calendar',
   '/app/recovery': 'Recovery',
+  '/app/recovery/check-in': 'Recovery check-in',
   '/app/recovery/history': 'Recovery history',
   '/app/recovery/analytics': 'Recovery analytics',
   '/app/performance': 'Performance',
@@ -36,7 +37,7 @@ function resolvePageTitle(pathname: string): string {
     return 'Plan schedule';
   }
   if (pathname.includes('/occurrences/')) {
-    return 'Workout occurrence';
+    return 'Workout';
   }
   if (pathname.includes('/plans/') && pathname.endsWith('/edit')) {
     return 'Edit plan';

@@ -32,8 +32,8 @@ function renderAtHome(card: ReactElement) {
   );
 }
 
-describe('PrimaryWorkoutCard — navigates to the occurrence deep link, not the generic training landing page', () => {
-  it('navigates straight to the occurrence detail route when starting a workout', async () => {
+describe('PrimaryWorkoutCard — truthful non-execution CTA (web execution is frozen)', () => {
+  it('uses View workout, not Start Workout, and opens the occurrence detail', async () => {
     const user = userEvent.setup();
     renderAtHome(
       <PrimaryWorkoutCard
@@ -43,24 +43,29 @@ describe('PrimaryWorkoutCard — navigates to the occurrence deep link, not the 
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Start Workout' }));
+    expect(screen.queryByRole('button', { name: 'Start Workout' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue Workout' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'View workout' }));
 
     expect(screen.getByText('Occurrence Detail Page')).toBeInTheDocument();
     expect(screen.queryByText('Training Landing Page')).not.toBeInTheDocument();
   });
 
-  it('navigates to the occurrence detail route via the secondary "View Workout" CTA too', async () => {
+  it('does not advertise Continue Workout when the occurrence is in progress', async () => {
     const user = userEvent.setup();
     renderAtHome(
       <PrimaryWorkoutCard
-        occurrence={occurrence}
+        occurrence={{ ...occurrence, status: 'IN_PROGRESS' }}
         canStartWorkout={{ allowed: false }}
-        canContinueWorkout={{ allowed: false }}
+        canContinueWorkout={{ allowed: true }}
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'View Workout' }));
+    expect(screen.queryByRole('button', { name: /start workout/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue workout/i })).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: 'View workout' }));
     expect(screen.getByText('Occurrence Detail Page')).toBeInTheDocument();
   });
 

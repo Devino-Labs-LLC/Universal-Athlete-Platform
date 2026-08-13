@@ -26,6 +26,9 @@ export function CalendarWeekStrip({ weekStart, selectedDate, onSelectDate }: Cal
           <Pressable
             key={date}
             testID={`calendar-day-${date}`}
+            accessibilityRole="button"
+            accessibilityLabel={`${formatWeekdayShort(date)} ${formatDayOfMonth(date)}${selected ? ', selected' : ''}`}
+            accessibilityState={{ selected }}
             onPress={() => onSelectDate(date)}
             style={[
               styles.day,

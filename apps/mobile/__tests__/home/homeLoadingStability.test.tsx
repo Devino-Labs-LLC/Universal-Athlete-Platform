@@ -118,7 +118,7 @@ describe('HomeScreen loading / missing-date stability', () => {
     expect(getByText('No workout scheduled for today.')).toBeTruthy();
     expect(getByTestId('readiness-card')).toBeTruthy();
     expect(getByTestId('readiness-score-ring')).toBeTruthy();
-    expect(getByLabelText('Score: —')).toBeTruthy();
+    expect(getByLabelText('Score: not available')).toBeTruthy();
     expect(getByTestId('recommendation-card')).toBeTruthy();
     expect(getByTestId('recovery-card')).toBeTruthy();
     expect(queryByTestId('training-load-card')).toBeNull();

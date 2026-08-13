@@ -64,9 +64,9 @@ export function ExerciseSubstitutionsPage() {
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Filter candidates</h2>
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem' }}>
+      <section className="panel" style={{ marginBottom: '1rem' }}>
+        <h2 className="panelTitle">Filter candidates</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.75rem' }}>
           <label>
             <input
               type="radio"
@@ -114,8 +114,8 @@ export function ExerciseSubstitutionsPage() {
         ) : null}
       </section>
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
-        <h2 className="cardTitle">Active substitutions</h2>
+      <section className="panel" style={{ marginBottom: '1rem' }}>
+        <h2 className="panelTitle">Active substitutions</h2>
         {candidatesQuery.isLoading ? <LoadingView message="Loading substitutions…" /> : null}
         {candidatesQuery.isError ? (
           <ErrorView
@@ -135,8 +135,8 @@ export function ExerciseSubstitutionsPage() {
         ) : null}
       </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Add substitution</h2>
+      <section className="panel">
+        <h2 className="panelTitle">Add substitution</h2>
         <SubstitutionRelationshipForm
           mode="create"
           sourceId={definitionId}
@@ -153,8 +153,8 @@ export function ExerciseSubstitutionsPage() {
       </section>
 
       {editing ? (
-        <section className="card" style={{ marginTop: '1rem' }}>
-          <h2 className="cardTitle">Edit substitution</h2>
+        <section className="panel" style={{ marginTop: '1rem' }}>
+          <h2 className="panelTitle">Edit substitution</h2>
           {editingRelationshipQuery.isLoading ? <LoadingView message="Loading relationship…" /> : null}
           {editingRelationshipQuery.data && isSystemRelationship(editingRelationshipQuery.data) ? (
             <p style={{ color: 'var(--uap-text-secondary)' }}>

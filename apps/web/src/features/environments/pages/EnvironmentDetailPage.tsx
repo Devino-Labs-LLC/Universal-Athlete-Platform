@@ -41,7 +41,7 @@ export function EnvironmentDetailPage() {
       title={environment.name}
       description={trainingEnvironmentTypeLabel(environment.type)}
       actions={
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
           {isActive ? (
             <>
               <Link to={`/app/environments/${environmentId}/edit`}>
@@ -57,7 +57,7 @@ export function EnvironmentDetailPage() {
     >
       {errorMessage ? <p className="formError">{errorMessage}</p> : null}
 
-      <section className="card" style={{ marginBottom: '1rem' }}>
+      <section className="panel" style={{ marginBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
           {environment.defaultEnvironment ? (
             <DefaultBadge />
@@ -83,7 +83,7 @@ export function EnvironmentDetailPage() {
           <p style={{ color: 'var(--uap-text-secondary)' }}>{environment.facilityNotes}</p>
         ) : null}
 
-        <h3 className="cardTitle" style={{ marginTop: '1rem' }}>
+        <h3 className="panelTitle" style={{ marginTop: '1rem' }}>
           Equipment
         </h3>
         {environment.availableEquipment.length === 0 ? (
@@ -107,8 +107,8 @@ export function EnvironmentDetailPage() {
         )}
       </section>
 
-      <section className="card">
-        <h2 className="cardTitle">Exercise compatibility</h2>
+      <section className="panel">
+        <h2 className="panelTitle">Exercise compatibility</h2>
         <CompatibilityPanel environmentId={environmentId} />
       </section>
 

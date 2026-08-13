@@ -9,9 +9,15 @@ import type { TodayDashboard, TrainingDashboardPersonalRecord } from '@/features
 import { renderWithProviders, screen } from '@/test/utils';
 
 describe('RecoveryCard', () => {
-  it('always links to the Recovery landing page', () => {
+  it('always links to the Recovery landing page and exposes check-in', () => {
     renderWithProviders(<RecoveryCard recovery={{ checkInPresent: true, fatigue: 3 } as TodayDashboard['recovery']} />);
     expect(screen.getByRole('button', { name: 'View recovery' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Update check-in' })).toBeInTheDocument();
+  });
+
+  it('lets a fresh athlete start a check-in from Home', () => {
+    renderWithProviders(<RecoveryCard recovery={{ checkInPresent: false } as TodayDashboard['recovery']} />);
+    expect(screen.getByRole('button', { name: 'Check in' })).toBeInTheDocument();
   });
 });
 

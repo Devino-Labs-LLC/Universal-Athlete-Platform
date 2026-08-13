@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { PrimaryButton } from '@/src/core/components/PrimaryButton';
@@ -13,6 +12,10 @@ import {
   TrainingActionFlag,
   TrainingDashboardOccurrence,
 } from '@/src/features/training/schemas';
+import {
+  navigateHomeWorkoutAction,
+  navigateToTrainingOverview,
+} from '@/src/features/training/utils/trainingNavigation';
 
 interface PrimaryWorkoutCardProps {
   occurrence: TrainingDashboardOccurrence | null | undefined;
@@ -42,10 +45,6 @@ export function PrimaryWorkoutCard({
 }: PrimaryWorkoutCardProps) {
   const theme = useAppTheme();
 
-  const navigateToTraining = () => {
-    router.push('/(tabs)/training');
-  };
-
   if (!occurrence) {
     return (
       <HomeCard
@@ -55,7 +54,7 @@ export function PrimaryWorkoutCard({
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>
           No workout scheduled for today.
         </Text>
-        <PrimaryButton label="View Training" onPress={navigateToTraining} />
+        <PrimaryButton label="View Training" onPress={navigateToTrainingOverview} />
       </HomeCard>
     );
   }
@@ -110,15 +109,21 @@ export function PrimaryWorkoutCard({
       )}
 
       {showContinue ? (
-        <PrimaryButton label="Continue Workout" onPress={navigateToTraining} />
+        <PrimaryButton
+          label="Continue Workout"
+          onPress={() => navigateHomeWorkoutAction(occurrence)}
+        />
       ) : null}
       {!showContinue && showStart ? (
-        <PrimaryButton label="Start Workout" onPress={navigateToTraining} />
+        <PrimaryButton
+          label="Start Workout"
+          onPress={() => navigateHomeWorkoutAction(occurrence)}
+        />
       ) : null}
       {showViewTraining ? (
         <PrimaryButton
-          label={occurrence.status === 'COMPLETED' ? 'View Training' : 'View Training'}
-          onPress={navigateToTraining}
+          label="View Training"
+          onPress={navigateToTrainingOverview}
         />
       ) : null}
     </HomeCard>

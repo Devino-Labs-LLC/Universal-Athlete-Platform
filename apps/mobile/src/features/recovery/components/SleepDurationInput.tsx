@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
@@ -12,16 +13,36 @@ interface SleepDurationInputProps {
   testID?: string;
 }
 
+function initialSleepText(totalMinutes?: number): { hours: string; minutes: string } {
+  if (totalMinutes == null) {
+    return { hours: '', minutes: '' };
+  }
+  const split = minutesToHoursMinutes(totalMinutes);
+  return { hours: String(split.hours), minutes: String(split.minutes) };
+}
+
 export function SleepDurationInput({ totalMinutes, onChange, testID }: SleepDurationInputProps) {
   const theme = useAppTheme();
-  const { hours, minutes } =
-    totalMinutes != null ? minutesToHoursMinutes(totalMinutes) : { hours: undefined, minutes: undefined };
+  const initial = initialSleepText(totalMinutes);
+  const [hoursText, setHoursText] = useState(initial.hours);
+  const [minutesText, setMinutesText] = useState(initial.minutes);
+  const lastEmitted = useRef(totalMinutes);
 
-  const hoursValue = hours != null ? String(hours) : '';
-  const minutesValue = minutes != null ? String(minutes) : '';
+  useEffect(() => {
+    if (totalMinutes === lastEmitted.current) {
+      return;
+    }
+    lastEmitted.current = totalMinutes;
+    const next = initialSleepText(totalMinutes);
+    setHoursText(next.hours);
+    setMinutesText(next.minutes);
+  }, [totalMinutes]);
 
-  const handleChange = (hoursText: string, minutesText: string) => {
-    const parsed = parseSleepDurationInput(hoursText, minutesText);
+  const handleChange = (nextHours: string, nextMinutes: string) => {
+    setHoursText(nextHours);
+    setMinutesText(nextMinutes);
+    const parsed = parseSleepDurationInput(nextHours, nextMinutes);
+    lastEmitted.current = parsed;
     onChange(parsed);
   };
 
@@ -34,10 +55,9 @@ export function SleepDurationInput({ totalMinutes, onChange, testID }: SleepDura
           <TextInput
             accessibilityLabel="Sleep hours"
             keyboardType="number-pad"
-            placeholder="0"
             placeholderTextColor={theme.colors.textMuted}
-            value={hoursValue}
-            onChangeText={(text) => handleChange(text, minutesValue)}
+            value={hoursText}
+            onChangeText={(text) => handleChange(text, minutesText)}
             style={[
               styles.input,
               {
@@ -54,10 +74,9 @@ export function SleepDurationInput({ totalMinutes, onChange, testID }: SleepDura
           <TextInput
             accessibilityLabel="Sleep minutes"
             keyboardType="number-pad"
-            placeholder="0"
             placeholderTextColor={theme.colors.textMuted}
-            value={minutesValue}
-            onChangeText={(text) => handleChange(hoursValue, text)}
+            value={minutesText}
+            onChangeText={(text) => handleChange(hoursText, text)}
             style={[
               styles.input,
               {

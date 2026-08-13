@@ -16,7 +16,7 @@ describe('WorkoutOccurrenceCard', () => {
     completedExerciseCount: 0,
   };
 
-  it('shows Prepare CTA for scheduled workouts', async () => {
+  it('shows Start CTA for scheduled workouts', async () => {
     const onPrimaryAction = jest.fn();
     const { getByText } = await render(
       <ThemeProvider>
@@ -24,7 +24,7 @@ describe('WorkoutOccurrenceCard', () => {
       </ThemeProvider>,
     );
 
-    fireEvent.press(getByText('Prepare'));
+    fireEvent.press(getByText('Start'));
     expect(onPrimaryAction).toHaveBeenCalledTimes(1);
   });
 

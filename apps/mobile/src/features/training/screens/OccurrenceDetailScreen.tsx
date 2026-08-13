@@ -29,7 +29,7 @@ function launchButtonLabel(status: string): string {
     case 'COMPLETED':
       return 'Review Workout';
     default:
-      return 'Prepare Workout';
+      return 'Start Workout';
   }
 }
 
@@ -65,7 +65,7 @@ export function OccurrenceDetailScreen({
 
   return (
     <Screen scroll testID="occurrence-detail-screen">
-      <HomeCard title="Workout occurrence">
+      <HomeCard title="Workout">
         <StatusChip
           label={occurrenceStatusLabel(detail.status)}
           variant={detail.status === 'IN_PROGRESS' ? 'info' : 'default'}

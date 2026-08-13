@@ -67,7 +67,7 @@ export function RecoveryCard({
 
       {showCheckIn ? (
         <PrimaryButton
-          label={recovery.checkInPresent ? 'Update' : 'Check In'}
+          label={recovery.checkInPresent ? 'Update check-in' : 'Check in'}
           onPress={navigateToRecovery}
         />
       ) : null}

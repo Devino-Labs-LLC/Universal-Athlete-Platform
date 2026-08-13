@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
-import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
 import {
   AdaptationAlternative,
@@ -95,9 +94,14 @@ export function CandidateCard({ display, selected = false, onPress }: CandidateC
 
   if (!onPress) {
     return (
-      <HomeCard testID="candidate-card-static" title="">
+      <View
+        testID="candidate-card-static"
+        style={[
+          styles.pressable,
+          { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+        ]}>
         {content}
-      </HomeCard>
+      </View>
     );
   }
 

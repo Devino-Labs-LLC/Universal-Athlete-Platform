@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 
+import { Badge } from '@/core/components/Badge';
 import { Button } from '@/core/components/Button';
 import { HomeCard } from '@/features/home/components/HomeCard';
+import styles from '@/features/home/components/PrimaryWorkoutCard.module.scss';
 import {
   FEASIBILITY_STATUS_LABELS,
   occurrenceStatusLabel,
@@ -16,8 +18,6 @@ interface PrimaryWorkoutCardProps {
 
 export function PrimaryWorkoutCard({
   occurrence,
-  canStartWorkout,
-  canContinueWorkout,
 }: PrimaryWorkoutCardProps) {
   const navigate = useNavigate();
 
@@ -39,47 +39,26 @@ export function PrimaryWorkoutCard({
 
   const occurrencePath = `/app/training/plans/${occurrence.trainingPlanId}/days/${occurrence.workoutDayId}/occurrences/${occurrence.occurrenceId}`;
 
-  const showContinue = canContinueWorkout?.allowed && occurrence.status === 'IN_PROGRESS';
-  const showStart =
-    canStartWorkout?.allowed &&
-    (occurrence.status === 'SCHEDULED' || occurrence.status === 'IN_PROGRESS');
-
   return (
     <HomeCard title="Today's workout" subtitle={occurrence.trainingPlanName ?? 'Up next'}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span className="card" style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}>
+      <div className={styles.chipRow}>
+        <Badge tone={occurrence.status === 'COMPLETED' ? 'success' : occurrence.status === 'IN_PROGRESS' ? 'info' : 'neutral'}>
           {statusLabel}
-        </span>
-        {feasibilityLabel ? (
-          <span className="card" style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}>
-            {feasibilityLabel}
-          </span>
-        ) : null}
+        </Badge>
+        {feasibilityLabel ? <Badge tone="warning">{feasibilityLabel}</Badge> : null}
       </div>
-      <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
-        <strong>{occurrence.workoutDayName}</strong>
-      </p>
-      <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
+      <p className={styles.metaStrong}>{occurrence.workoutDayName}</p>
+      <p className={styles.meta}>
         {occurrence.completedExerciseCount}/{occurrence.exerciseCount} exercises
       </p>
       {occurrence.actualEnvironmentName || occurrence.plannedEnvironmentName ? (
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>
+        <p className={styles.meta}>
           Environment: {occurrence.actualEnvironmentName ?? occurrence.plannedEnvironmentName}
         </p>
       ) : (
-        <p style={{ margin: 0, color: 'var(--uap-text-secondary)' }}>No environment selected</p>
+        <p className={styles.meta}>No environment selected</p>
       )}
-      {showContinue ? (
-        <Button onClick={() => navigate(occurrencePath)}>Continue Workout</Button>
-      ) : null}
-      {!showContinue && showStart ? (
-        <Button onClick={() => navigate(occurrencePath)}>Start Workout</Button>
-      ) : null}
-      {!showContinue && !showStart ? (
-        <Button variant="secondary" onClick={() => navigate(occurrencePath)}>
-          View Workout
-        </Button>
-      ) : null}
+      <Button onClick={() => navigate(occurrencePath)}>View workout</Button>
     </HomeCard>
   );
 }

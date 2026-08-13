@@ -80,6 +80,7 @@ describe('HomePage fresh-athlete / loading stability', () => {
     expect(screen.getByText('No active adaptation proposal.')).toBeInTheDocument();
     expect(screen.getByText('No recent personal records.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Generate Daily State' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Check in' }).length).toBeGreaterThan(0);
   });
 
   it('still renders populated Home content', () => {

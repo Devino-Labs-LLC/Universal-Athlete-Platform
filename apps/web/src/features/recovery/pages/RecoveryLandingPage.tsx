@@ -136,12 +136,10 @@ export function RecoveryLandingPage() {
                   <h2 className={surfaces.heroTitle}>No readiness assessment yet</h2>
                   <p className={surfaces.metaText}>
                     A readiness score will appear once an assessment is generated for today. Start with a
-                    recovery check-in from Home if you have not submitted one.
+                    recovery check-in if you have not submitted one, then generate daily state from Home.
                   </p>
-                  <Link to="/app/home">
-                    <Button type="button" variant="secondary">
-                      Open Home
-                    </Button>
+                  <Link to="/app/recovery/check-in">
+                    <Button type="button">Check in</Button>
                   </Link>
                 </>
               )}
@@ -153,7 +151,9 @@ export function RecoveryLandingPage() {
               <h2 className={surfaces.panelTitle} id="signals-heading">
                 Today&apos;s signals
               </h2>
-              <span className={surfaces.panelHint}>Self-reported check-in</span>
+              <Link className={surfaces.panelLink} to="/app/recovery/check-in">
+                {overview.checkInPresent ? 'Update check-in' : 'Check in'}
+              </Link>
             </div>
             {overview.checkInPresent && overview.checkIn ? (
               <div className={surfaces.metricGrid}>
@@ -191,7 +191,7 @@ export function RecoveryLandingPage() {
             ) : (
               <EmptyView
                 title="No check-in yet today"
-                message="Submit a recovery check-in from Home to see today's summary here."
+                message="Submit a recovery check-in to see today's summary here. Daily state, readiness, and guidance are generated separately from Home."
               />
             )}
           </section>

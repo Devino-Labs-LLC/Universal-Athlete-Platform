@@ -31,6 +31,7 @@ describe('lazy-loaded Recovery/Performance page trees', () => {
   it('every Recovery and Performance page module exports its expected named component (smoke check for lazy import wiring)', async () => {
     const modules = await Promise.all([
       import('@/features/recovery/pages/RecoveryLandingPage'),
+      import('@/features/recovery/pages/RecoveryCheckInPage'),
       import('@/features/recovery/pages/RecoveryHistoryPage'),
       import('@/features/recovery/pages/RecoveryAnalyticsPage'),
       import('@/features/recovery/pages/ReadinessDetailPage'),
@@ -46,6 +47,7 @@ describe('lazy-loaded Recovery/Performance page trees', () => {
 
     const exportNames = [
       'RecoveryLandingPage',
+      'RecoveryCheckInPage',
       'RecoveryHistoryPage',
       'RecoveryAnalyticsPage',
       'ReadinessDetailPage',
