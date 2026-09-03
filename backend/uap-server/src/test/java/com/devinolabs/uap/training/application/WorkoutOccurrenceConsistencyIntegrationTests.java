@@ -2,6 +2,7 @@ package com.devinolabs.uap.training.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -365,8 +366,9 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 
 		WorkoutOccurrenceDetailResult again = completeWorkoutOccurrenceUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId());
-		assertThat(again.occurrence().completedAt().truncatedTo(ChronoUnit.MICROS))
-				.isEqualTo(completedAt.truncatedTo(ChronoUnit.MICROS));
+		// DATETIME(6) stores microseconds and may round leftover nanos.
+		assertThat(again.occurrence().completedAt())
+				.isCloseTo(completedAt, within(1, ChronoUnit.MICROS));
 
 		assertThatThrownBy(() -> startWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first))

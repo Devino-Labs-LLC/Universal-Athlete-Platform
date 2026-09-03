@@ -2,6 +2,7 @@ package com.devinolabs.uap.identity.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import java.time.temporal.ChronoUnit;
 
@@ -48,10 +49,9 @@ class AccountRepositoryIntegrationTests {
 		assertThat(reloaded.failedLoginAttempts()).isZero();
 		assertThat(reloaded.lockedUntil()).isNull();
 		assertThat(reloaded.emailVerifiedAt()).isNull();
-		assertThat(reloaded.createdAt().truncatedTo(ChronoUnit.MICROS))
-				.isEqualTo(account.createdAt().truncatedTo(ChronoUnit.MICROS));
-		assertThat(reloaded.updatedAt().truncatedTo(ChronoUnit.MICROS))
-				.isEqualTo(account.updatedAt().truncatedTo(ChronoUnit.MICROS));
+		// DATETIME(6) stores microseconds and may round leftover nanos.
+		assertThat(reloaded.createdAt()).isCloseTo(account.createdAt(), within(1, ChronoUnit.MICROS));
+		assertThat(reloaded.updatedAt()).isCloseTo(account.updatedAt(), within(1, ChronoUnit.MICROS));
 		assertThat(accountRepository.findByEmail(EmailAddress.of("round.trip@example.com"))).isPresent();
 		assertThat(accountRepository.existsByEmail(EmailAddress.of("round.trip@example.com"))).isTrue();
 	}
