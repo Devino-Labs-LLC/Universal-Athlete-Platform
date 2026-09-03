@@ -3,14 +3,20 @@ package com.devinolabs.uap.training.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
@@ -35,7 +41,7 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseExecutionId;
 import com.devinolabs.uap.training.domain.WorkoutOccurrenceId;
 
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({ TestcontainersConfiguration.class, DailyRecoveryCheckInAcceptanceIntegrationTests.MutableClockConfig.class })
 class DailyRecoveryCheckInAcceptanceIntegrationTests {
 
 	private static final LocalDate TRAINING_DATE = LocalDate.of(2026, 7, 31);
@@ -371,6 +377,17 @@ class DailyRecoveryCheckInAcceptanceIntegrationTests {
 	}
 
 	private record Prescription(AccountId accountId, TrainingPlanId planId, WorkoutDayId dayId) {
+	}
+
+	@TestConfiguration
+	static class MutableClockConfig {
+
+		@Bean
+		@Primary
+		Clock mutableClock() {
+			return Clock.fixed(Instant.parse("2026-08-01T12:00:00Z"), ZoneOffset.UTC);
+		}
+
 	}
 
 }

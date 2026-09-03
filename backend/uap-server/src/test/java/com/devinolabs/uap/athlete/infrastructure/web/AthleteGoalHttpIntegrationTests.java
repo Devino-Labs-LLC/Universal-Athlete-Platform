@@ -11,13 +11,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,7 +38,7 @@ import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@Import({ TestcontainersConfiguration.class, AthleteGoalHttpIntegrationTests.FixedClockConfig.class })
 class AthleteGoalHttpIntegrationTests {
 
 	@Autowired
@@ -379,6 +385,17 @@ class AthleteGoalHttpIntegrationTests {
 				null,
 				principal.authorities());
 		return authentication(authentication);
+	}
+
+	@TestConfiguration
+	static class FixedClockConfig {
+
+		@Bean
+		@Primary
+		Clock fixedClock() {
+			return Clock.fixed(Instant.parse("2026-07-24T15:00:00Z"), ZoneOffset.UTC);
+		}
+
 	}
 
 }
