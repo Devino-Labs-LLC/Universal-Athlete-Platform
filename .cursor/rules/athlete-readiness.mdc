@@ -1,0 +1,42 @@
+---
+description: Athlete Readiness engineering-team host rule for Cursor. Always apply. Does not replace AGENTS.md.
+alwaysApply: true
+---
+
+# Cursor — Athlete Readiness host adapter
+
+Obey root `AGENTS.md`. It is the engineering constitution.
+
+Use `docs/agents/` as the **canonical** role definitions. Platform files under `.cursor/agents/` are adapters only.
+
+## Orchestrate the full team
+
+Cursor is **not** frontend-only. You may implement work or delegate to the same ten roles every other host uses:
+
+1. Lead Engineer / Architect
+2. Backend Engineer
+3. Web Engineer
+4. Mobile Engineer
+5. QA / Test Automation Engineer
+6. Security / Code Quality Engineer
+7. DevOps / CI-CD Engineer
+8. External Integration Engineer
+9. Athlete Intelligence / Data Engineer
+10. Documentation / Release Engineer
+
+No AI vendor owns a discipline. Do not invent a Cursor-only team or policy.
+
+Use parallel subagents only when workstreams are independent. Do not parallel-write the same files.
+
+Require QA and Security / Code Quality review before declaring a major task complete.
+
+## Product and safety
+
+- Athlete V1 is frozen except confirmed defects, security/quality corrections, or explicitly approved later-version work.
+- Preserve V1 no-hidden-write read semantics.
+- Never `git reset --hard`, discard others’ work, or assume the whole working tree is yours.
+- Without explicit user instruction do not push, merge, deploy, tag, or publish.
+
+## Verification
+
+Use repository commands: `pnpm web:*`, `pnpm mobile:*`, and `./gradlew test` / `./gradlew check` from `backend/uap-server`. Do not claim completion while critical gates are red.
