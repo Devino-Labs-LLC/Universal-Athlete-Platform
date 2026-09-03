@@ -97,8 +97,9 @@ jobs:
       - run: pnpm mobile:lint
       - run: pnpm mobile:test
 
-  # Canonical analysis. Fails if SonarQube Cloud Automatic Analysis is still enabled
-  # (disable it at Project Administration → Analysis Method).
+  # Canonical analysis. Automatic Analysis must stay disabled
+  # (Project Administration → Analysis Method). Skip Sonar JRE download and use
+  # the Temurin 21 already installed on the runner.
   sonar:
     name: Sonar quality gate
     runs-on: ubuntu-latest
@@ -126,7 +127,7 @@ jobs:
             echo "SONAR_ORGANIZATION, SONAR_PROJECT_KEY, and SONAR_TOKEN must be configured."
             exit 1
           fi
-      - uses: SonarSource/sonarqube-scan-action@v5
+      - uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -134,4 +135,5 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.java.binaries=backend/uap-server/build/classes/java/main
+            -Dsonar.scanner.skipJreProvisioning=true
             -Dsonar.qualitygate.wait=true
