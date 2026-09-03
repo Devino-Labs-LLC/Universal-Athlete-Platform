@@ -49,7 +49,9 @@ import com.devinolabs.uap.training.domain.MovementPattern;
 import com.devinolabs.uap.training.domain.MuscleGroup;
 import com.devinolabs.uap.training.domain.ReadinessAlgorithmVersion;
 import com.devinolabs.uap.training.domain.ReadinessBand;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 import com.devinolabs.uap.training.domain.SystemExerciseDefinitions;
+import com.devinolabs.uap.training.domain.TrainingAdjustmentType;
 import com.devinolabs.uap.training.domain.TrainingClientContractVersion;
 import com.devinolabs.uap.training.domain.TrainingEnvironmentType;
 import com.devinolabs.uap.training.domain.TrainingPlanType;
@@ -158,7 +160,9 @@ class TrainingClientFacadeAcceptanceIntegrationTests {
 
 		TrainingTodayDashboardResult dashboard = getTrainingTodayDashboardUseCase.execute(
 				day.accountId(), JULY_31);
-		assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isLessThanOrEqualTo(15);
+		// Two extra owned-child reads vs the prior 15-query cap: stored
+		// limiting dimensions and recommendation adjustment types.
+		assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isLessThanOrEqualTo(17);
 
 		assertThat(dashboard.date()).isEqualTo(JULY_31);
 		assertThat(dashboard.recovery().checkInPresent()).isTrue();
@@ -171,9 +175,13 @@ class TrainingClientFacadeAcceptanceIntegrationTests {
 		assertThat(dashboard.readiness().readinessScore()).isEqualByComparingTo(day.readinessScore());
 		assertThat(dashboard.readiness().readinessBand()).isEqualTo(ReadinessBand.LOW);
 		assertThat(dashboard.readiness().readinessScore()).isLessThan(new BigDecimal("50"));
+		assertThat(dashboard.readiness().limitingDimensions()).contains(ReadinessDimensionType.MUSCLE_SORENESS);
 		assertThat(dashboard.recommendation().recommendationPresent()).isTrue();
 		assertThat(dashboard.recommendation().recommendationId()).isEqualTo(day.recommendationId());
 		assertThat(dashboard.recommendation().overallAction()).isEqualTo(TrainingRecommendationAction.MODIFY_SESSION);
+		assertThat(dashboard.recommendation().adjustmentTypes()).contains(
+				TrainingAdjustmentType.REDUCE_INTENSITY,
+				TrainingAdjustmentType.REDUCE_TOTAL_VOLUME);
 		assertThat(dashboard.training().primaryOccurrence()).isNotNull();
 		assertThat(dashboard.training().primaryOccurrence().occurrenceId()).isEqualTo(day.occurrenceId());
 		assertThat(dashboard.training().primaryOccurrence().plannedEnvironmentName()).contains("Home Gym");
@@ -236,7 +244,9 @@ class TrainingClientFacadeAcceptanceIntegrationTests {
 		assertThat(dashboard.recovery().checkInPresent()).isTrue();
 		assertThat(dashboard.athleteState().snapshotPresent()).isFalse();
 		assertThat(dashboard.readiness().readinessPresent()).isFalse();
+		assertThat(dashboard.readiness().limitingDimensions()).isEmpty();
 		assertThat(dashboard.recommendation().recommendationPresent()).isFalse();
+		assertThat(dashboard.recommendation().adjustmentTypes()).isEmpty();
 		assertThat(dashboard.actions().canGenerateAthleteStateSnapshot().allowed()).isTrue();
 		assertThat(dashboard.actions().canGenerateReadinessAssessment().allowed()).isFalse();
 		assertThat(dashboard.actions().canGenerateReadinessAssessment().reasonCode())
@@ -255,7 +265,9 @@ class TrainingClientFacadeAcceptanceIntegrationTests {
 		assertThat(empty.recovery().checkInPresent()).isFalse();
 		assertThat(empty.athleteState().snapshotPresent()).isFalse();
 		assertThat(empty.readiness().readinessPresent()).isFalse();
+		assertThat(empty.readiness().limitingDimensions()).isEmpty();
 		assertThat(empty.recommendation().recommendationPresent()).isFalse();
+		assertThat(empty.recommendation().adjustmentTypes()).isEmpty();
 		assertThat(empty.training().primaryOccurrence()).isNull();
 		assertThat(empty.adaptation().activeProposalPresent()).isFalse();
 

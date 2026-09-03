@@ -1,14 +1,22 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { ScoreRing } from '@/src/core/components/ScoreRing';
 import { StatusBadge } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
+import {
+  MISSING_INTELLIGENCE_COPY,
+  missingReadinessStep,
+  readinessExplanationLines,
+} from '@/src/features/home/models/readinessInsight';
 import { readinessBandLabel } from '@/src/features/home/models/todayLabels';
 import { TrainingTodayDashboard } from '@/src/features/training/schemas';
 
 interface ReadinessCardProps {
   readiness: TrainingTodayDashboard['readiness'];
+  checkInPresent: boolean;
+  snapshotPresent: boolean;
 }
 
 function bandTone(band: string | null | undefined): 'success' | 'warning' | 'danger' | 'default' {
@@ -47,21 +55,39 @@ function parseScore(raw: unknown): number | null {
 }
 
 /** Dominant athlete-state hero with ScoreRing. Null score → empty ring + —, never zero. */
-export function ReadinessCard({ readiness }: ReadinessCardProps) {
+export function ReadinessCard({
+  readiness,
+  checkInPresent,
+  snapshotPresent,
+}: ReadinessCardProps) {
   const theme = useAppTheme();
   const present = readiness.readinessPresent;
   const score = present ? parseScore(readiness.readinessScore) : null;
   const bandLabel = present ? readinessBandLabel(readiness.readinessBand) : 'Not assessed';
-  const limiting = present
-    ? (readiness.limitingDimensions ?? []).slice(0, 3)
+  const absence = present
+    ? null
+    : missingReadinessStep({ checkInPresent, snapshotPresent });
+  const explanations = present
+    ? readinessExplanationLines({
+        readinessBand: readiness.readinessBand,
+        dataSufficiency: readiness.dataSufficiency,
+        limitingDimensions: readiness.limitingDimensions,
+      })
     : [];
+  const assessmentId = readiness.readinessAssessmentId;
+  const openDetail =
+    present && assessmentId
+      ? () => router.push(`/(tabs)/recovery/readiness/${assessmentId}`)
+      : undefined;
 
   return (
     <HomeCard
       testID="readiness-card"
       eyebrow="Athlete state"
       title="Readiness"
-      dense>
+      dense
+      onPress={openDetail}
+      accessibilityHint={openDetail ? 'Opens readiness details' : undefined}>
       <View style={styles.heroRow}>
         <ScoreRing
           testID="readiness-score-ring"
@@ -81,25 +107,23 @@ export function ReadinessCard({ readiness }: ReadinessCardProps) {
               styles.statusLine,
               { color: theme.colors.text },
             ]}>
-            {present
-              ? score != null
-                ? `Readiness ${Math.round(Math.min(100, Math.max(0, score)))}`
-                : 'Readiness recorded without a numeric score'
-              : 'Readiness has not been calculated yet'}
+          {present
+            ? score != null
+              ? `Readiness ${Math.round(Math.min(100, Math.max(0, score)))}`
+              : 'Readiness recorded without a numeric score'
+            : 'Readiness has not been generated yet'}
           </Text>
-          {limiting.length > 0 ? (
-            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-              Limiting: {limiting.join(', ')}
-            </Text>
-          ) : present ? (
-            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-              No limiting dimensions flagged
-            </Text>
-          ) : (
-            <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-              Calculate readiness after your recovery check-in
-            </Text>
-          )}
+          {present
+            ? explanations.map((line) => (
+                <Text key={line} style={[styles.meta, { color: theme.colors.textMuted }]}>
+                  {line}
+                </Text>
+              ))
+            : (
+              <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
+                {absence ? MISSING_INTELLIGENCE_COPY[absence] : 'Readiness has not been generated yet'}
+              </Text>
+            )}
         </View>
       </View>
     </HomeCard>

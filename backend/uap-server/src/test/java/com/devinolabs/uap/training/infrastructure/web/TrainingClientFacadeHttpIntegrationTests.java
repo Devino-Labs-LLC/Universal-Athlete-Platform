@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.infrastructure.web;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -152,7 +153,9 @@ class TrainingClientFacadeHttpIntegrationTests {
 				.andExpect(jsonPath("$.recovery.checkInPresent").value(false))
 				.andExpect(jsonPath("$.athleteState.snapshotPresent").value(false))
 				.andExpect(jsonPath("$.readiness.readinessPresent").value(false))
+				.andExpect(jsonPath("$.readiness.limitingDimensions", hasSize(0)))
 				.andExpect(jsonPath("$.recommendation.recommendationPresent").value(false))
+				.andExpect(jsonPath("$.recommendation.adjustmentTypes", hasSize(0)))
 				.andExpect(jsonPath("$.adaptation.activeProposalPresent").value(false))
 				.andExpect(jsonPath("$.actions.canGenerateAthleteStateSnapshot.allowed").value(true));
 
@@ -196,8 +199,10 @@ class TrainingClientFacadeHttpIntegrationTests {
 				.andExpect(jsonPath("$.readiness.readinessPresent").value(true))
 				.andExpect(jsonPath("$.readiness.readinessScore").exists())
 				.andExpect(jsonPath("$.readiness.readinessBand").value("LOW"))
+				.andExpect(jsonPath("$.readiness.limitingDimensions", hasItem("MUSCLE_SORENESS")))
 				.andExpect(jsonPath("$.recommendation.recommendationPresent").value(true))
 				.andExpect(jsonPath("$.recommendation.overallAction").value("MODIFY_SESSION"))
+				.andExpect(jsonPath("$.recommendation.adjustmentTypes", hasItem("REDUCE_INTENSITY")))
 				.andExpect(jsonPath("$.training.primaryOccurrence.occurrenceId")
 						.value(day.occurrenceId().toString()))
 				.andExpect(jsonPath("$.training.primaryOccurrence.feasibilityStatus")

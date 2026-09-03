@@ -1,5 +1,5 @@
 import { PropsWithChildren } from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { EyebrowText, Surface } from '@/src/core/components/Surface';
@@ -12,6 +12,8 @@ interface HomeCardProps extends PropsWithChildren {
   dense?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  onPress?: () => void;
+  accessibilityHint?: string;
 }
 
 export function HomeCard({
@@ -21,13 +23,15 @@ export function HomeCard({
   dense = false,
   style,
   testID,
+  onPress,
+  accessibilityHint,
   children,
 }: HomeCardProps) {
   const theme = useAppTheme();
 
-  return (
+  const card = (
     <Surface
-      testID={testID}
+      testID={onPress ? undefined : testID}
       elevated
       style={[
         dense ? { padding: theme.spacing.md, gap: theme.spacing.xs } : null,
@@ -51,6 +55,21 @@ export function HomeCard({
       ) : null}
       <View style={[styles.body, dense && styles.bodyDense]}>{children}</View>
     </Surface>
+  );
+
+  if (!onPress) {
+    return card;
+  }
+
+  return (
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}>
+      {card}
+    </Pressable>
   );
 }
 

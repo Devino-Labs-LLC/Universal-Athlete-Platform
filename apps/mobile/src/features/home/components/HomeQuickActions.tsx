@@ -17,6 +17,8 @@ interface HomeQuickActionsProps {
   onGenerateGuidance: () => void;
   onGenerateAdaptation?: () => void;
   pendingAction?: 'state' | 'readiness' | 'guidance' | 'adaptation' | null;
+  /** When the Insights pipeline is visible, keep generate CTAs on that surface. */
+  hideIntelligenceActions?: boolean;
 }
 
 export function HomeQuickActions({
@@ -27,6 +29,7 @@ export function HomeQuickActions({
   onGenerateGuidance,
   onGenerateAdaptation,
   pendingAction = null,
+  hideIntelligenceActions = false,
 }: HomeQuickActionsProps) {
   const theme = useAppTheme();
 
@@ -42,7 +45,7 @@ export function HomeQuickActions({
     loading?: boolean;
   }[] = [];
 
-  if (actions.canGenerateAthleteStateSnapshot.allowed) {
+  if (!hideIntelligenceActions && actions.canGenerateAthleteStateSnapshot.allowed) {
     items.push({
       key: 'state',
       label: 'Generate Daily State',
@@ -52,7 +55,7 @@ export function HomeQuickActions({
     });
   }
 
-  if (actions.canGenerateReadinessAssessment.allowed) {
+  if (!hideIntelligenceActions && actions.canGenerateReadinessAssessment.allowed) {
     items.push({
       key: 'readiness',
       label: 'Calculate Readiness',
@@ -62,7 +65,7 @@ export function HomeQuickActions({
     });
   }
 
-  if (actions.canGenerateTrainingRecommendation.allowed) {
+  if (!hideIntelligenceActions && actions.canGenerateTrainingRecommendation.allowed) {
     items.push({
       key: 'guidance',
       label: 'Generate Guidance',

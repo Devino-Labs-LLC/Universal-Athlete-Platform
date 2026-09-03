@@ -47,12 +47,51 @@ describe('GuidanceDetailPage', () => {
         stateDate: '2026-02-02',
         overallAction: 'PROCEED_AS_PLANNED',
         recommendationStatus: 'ACTIVE',
-        adjustments: [{ adjustmentId: 'a1', type: 'REDUCE_VOLUME', priority: 1, orderIndex: 0 }],
+        adjustments: [
+          {
+            adjustmentId: 'a1',
+            type: 'REDUCE_TOTAL_VOLUME',
+            priority: 1,
+            orderIndex: 0,
+            explanationKey: 'training.recommendation.adjustment.reduce_total_volume',
+          },
+        ],
       },
       refetch: vi.fn(),
     });
     renderPage('/app/recovery/guidance/rec-2');
-    expect(screen.getByText('Reduce Volume')).toBeInTheDocument();
+    expect(screen.getByText('Reduce Total Volume')).toBeInTheDocument();
+    expect(screen.getByText('Do fewer sets or less total work than planned.')).toBeInTheDocument();
+  });
+
+  it('uses an explicit fallback for an unknown explanation key', () => {
+    useRecommendation.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: {
+        recommendationId: 'rec-4',
+        stateDate: '2026-02-03',
+        overallAction: 'PROCEED_AS_PLANNED',
+        recommendationStatus: 'ACTIVE',
+        adjustments: [
+          {
+            adjustmentId: 'a2',
+            type: 'REDUCE_INTENSITY',
+            priority: 1,
+            orderIndex: 0,
+            explanationKey: 'made.up.key',
+          },
+        ],
+      },
+      refetch: vi.fn(),
+    });
+    renderPage('/app/recovery/guidance/rec-4');
+    expect(
+      screen.getByText(
+        'A stored explanation is present, but this app does not have athlete wording for it yet.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('made.up.key')).not.toBeInTheDocument();
   });
 
   it('shows a mapped error message when the recommendation fails to load', () => {

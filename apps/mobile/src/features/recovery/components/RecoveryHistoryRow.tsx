@@ -19,6 +19,7 @@ export function RecoveryHistoryRow({ day, onPress }: RecoveryHistoryRowProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={`Recovery check-in ${day.date}`}
       onPress={onPress}
       testID={`history-row-${day.date}`}>
       <Surface elevated style={styles.row}>

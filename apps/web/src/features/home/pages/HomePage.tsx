@@ -70,11 +70,20 @@ export function HomePage() {
       </div>
 
       <div className={styles.spanSide}>
-        <ReadinessCard readiness={data.readiness} />
+        <ReadinessCard
+          readiness={data.readiness}
+          checkInPresent={data.recovery.checkInPresent}
+          snapshotPresent={data.athleteState?.snapshotPresent ?? false}
+        />
       </div>
 
       <div className={styles.spanFour}>
-        <RecommendationCard recommendation={data.recommendation} />
+        <RecommendationCard
+          recommendation={data.recommendation}
+          checkInPresent={data.recovery.checkInPresent}
+          snapshotPresent={data.athleteState?.snapshotPresent ?? false}
+          readinessPresent={data.readiness.readinessPresent}
+        />
       </div>
       <div className={styles.spanFour}>
         <RecoveryCard recovery={data.recovery} />

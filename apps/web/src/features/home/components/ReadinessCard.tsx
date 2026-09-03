@@ -2,18 +2,30 @@ import { Link } from 'react-router-dom';
 
 import { Badge } from '@/core/components/Badge';
 import { HomeCard } from '@/features/home/components/HomeCard';
+import {
+  MISSING_INTELLIGENCE_COPY,
+  missingReadinessStep,
+  readinessExplanationLines,
+} from '@/features/home/labels/readinessInsight';
 import { readinessBandLabel } from '@/features/home/labels/todayLabels';
 import type { TodayDashboard } from '@/features/home/schemas';
 
 interface ReadinessCardProps {
   readiness: TodayDashboard['readiness'];
+  checkInPresent: boolean;
+  snapshotPresent: boolean;
 }
 
-export function ReadinessCard({ readiness }: ReadinessCardProps) {
+export function ReadinessCard({
+  readiness,
+  checkInPresent,
+  snapshotPresent,
+}: ReadinessCardProps) {
   if (!readiness.readinessPresent) {
+    const absence = missingReadinessStep({ checkInPresent, snapshotPresent });
     return (
       <HomeCard title="Readiness">
-        <p className="emptyHint">No readiness assessment yet.</p>
+        <p className="emptyHint">{MISSING_INTELLIGENCE_COPY[absence]}</p>
         <Link to="/app/recovery">View recovery</Link>
       </HomeCard>
     );
@@ -21,6 +33,11 @@ export function ReadinessCard({ readiness }: ReadinessCardProps) {
 
   const band = readiness.readinessBand;
   const tone = band === 'HIGH' ? 'success' : band === 'MODERATE' ? 'warning' : band === 'LOW' ? 'danger' : 'neutral';
+  const explanations = readinessExplanationLines({
+    readinessBand: readiness.readinessBand,
+    dataSufficiency: readiness.dataSufficiency,
+    limitingDimensions: readiness.limitingDimensions,
+  });
 
   return (
     <HomeCard title="Readiness">
@@ -30,9 +47,11 @@ export function ReadinessCard({ readiness }: ReadinessCardProps) {
           {Math.round(Number(readiness.readinessScore))}
         </p>
       ) : null}
-      {readiness.limitingDimensions && readiness.limitingDimensions.length > 0 ? (
-        <p className="emptyHint">Limiting: {readiness.limitingDimensions.join(', ')}</p>
-      ) : null}
+      {explanations.map((line) => (
+        <p key={line} className="emptyHint">
+          {line}
+        </p>
+      ))}
       <Link
         to={
           readiness.readinessAssessmentId

@@ -34,6 +34,8 @@ describe('ReadinessCard', () => {
             limitingDimensions: [],
           } as TodayDashboard['readiness']
         }
+        checkInPresent
+        snapshotPresent
       />,
     );
     expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute(
@@ -43,7 +45,13 @@ describe('ReadinessCard', () => {
   });
 
   it('falls back to the Recovery landing page when no assessment is present yet', () => {
-    renderWithProviders(<ReadinessCard readiness={{ readinessPresent: false } as TodayDashboard['readiness']} />);
+    renderWithProviders(
+      <ReadinessCard
+        readiness={{ readinessPresent: false } as TodayDashboard['readiness']}
+        checkInPresent={false}
+        snapshotPresent={false}
+      />,
+    );
     expect(screen.getByRole('link', { name: 'View recovery' })).toHaveAttribute('href', '/app/recovery');
   });
 });
@@ -60,6 +68,9 @@ describe('RecommendationCard', () => {
             adjustmentTypes: [],
           } as TodayDashboard['recommendation']
         }
+        checkInPresent
+        snapshotPresent
+        readinessPresent
       />,
     );
     expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute('href', '/app/recovery/guidance/rec-1');
@@ -67,7 +78,12 @@ describe('RecommendationCard', () => {
 
   it('falls back to the Recovery landing page when no recommendation is present yet', () => {
     renderWithProviders(
-      <RecommendationCard recommendation={{ recommendationPresent: false } as TodayDashboard['recommendation']} />,
+      <RecommendationCard
+        recommendation={{ recommendationPresent: false } as TodayDashboard['recommendation']}
+        checkInPresent={false}
+        snapshotPresent={false}
+        readinessPresent={false}
+      />,
     );
     expect(screen.getByRole('link', { name: 'View recovery' })).toHaveAttribute('href', '/app/recovery');
   });

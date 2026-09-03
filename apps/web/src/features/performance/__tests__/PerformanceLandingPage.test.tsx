@@ -4,12 +4,35 @@ import { PerformanceLandingPage } from '@/features/performance/pages/Performance
 import { renderWithProviders, screen } from '@/test/utils';
 
 const useRecentPersonalRecords = vi.fn();
+const useTrainingOverview = vi.fn();
+const useRecoveryHistory = vi.fn();
+const useTrainingLoadHistory = vi.fn();
 
 vi.mock('@/features/performance/hooks/usePersonalRecords', () => ({
   useRecentPersonalRecords: (...args: unknown[]) => useRecentPersonalRecords(...args),
 }));
 
+vi.mock('@/features/training/hooks/usePlans', () => ({
+  useTrainingOverview: (...args: unknown[]) => useTrainingOverview(...args),
+}));
+
+vi.mock('@/features/recovery/hooks/useRecoveryCheckIns', () => ({
+  useRecoveryHistory: (...args: unknown[]) => useRecoveryHistory(...args),
+}));
+
+vi.mock('@/features/performance/hooks/useTrainingLoadHistory', () => ({
+  useTrainingLoadHistory: (...args: unknown[]) => useTrainingLoadHistory(...args),
+}));
+
+const idleQuery = { isLoading: false, isError: false, data: undefined, refetch: vi.fn() };
+
 describe('PerformanceLandingPage', () => {
+  beforeEach(() => {
+    useTrainingOverview.mockReturnValue(idleQuery);
+    useRecoveryHistory.mockReturnValue(idleQuery);
+    useTrainingLoadHistory.mockReturnValue(idleQuery);
+  });
+
   it('requests the last 30 days of recent records', () => {
     useRecentPersonalRecords.mockReturnValue({ isLoading: false, isError: false, data: [], refetch: vi.fn() });
     renderWithProviders(<PerformanceLandingPage />);
@@ -20,6 +43,7 @@ describe('PerformanceLandingPage', () => {
     useRecentPersonalRecords.mockReturnValue({ isLoading: false, isError: false, data: [], refetch: vi.fn() });
     renderWithProviders(<PerformanceLandingPage />);
     expect(screen.getByText('No recent personal records')).toBeInTheDocument();
+    expect(screen.getByText('More training history is needed.')).toBeInTheDocument();
   });
 
   it('links to the full records page and the training load page', () => {
@@ -77,5 +101,37 @@ describe('PerformanceLandingPage', () => {
     renderWithProviders(<PerformanceLandingPage />);
     expect(screen.queryByText('0 kg')).not.toBeInTheDocument();
     expect(screen.getByText(/log completed work in Training/i)).toBeInTheDocument();
+  });
+
+  it('shows an insufficient progress headline when some history exists but not enough for a trend', () => {
+    useRecentPersonalRecords.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: [],
+      refetch: vi.fn(),
+    });
+    useTrainingOverview.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { recentCompletedSessions: [{ occurrenceId: 'o1' }] },
+      refetch: vi.fn(),
+    });
+    useRecoveryHistory.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { days: [{ date: '2026-02-01' }] },
+      refetch: vi.fn(),
+    });
+    useTrainingLoadHistory.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { weeklySummaries: [{ ratedOccurrenceCount: 1 }] },
+      refetch: vi.fn(),
+    });
+    renderWithProviders(<PerformanceLandingPage />);
+    expect(screen.getByText('Some history is on file, but not enough to show a trend.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Load charts stay hidden until at least three weekly summaries exist.'),
+    ).toBeInTheDocument();
   });
 });

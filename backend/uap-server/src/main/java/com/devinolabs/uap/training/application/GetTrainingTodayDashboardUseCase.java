@@ -25,7 +25,10 @@ import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
 import com.devinolabs.uap.training.domain.DailyRecoveryCheckIn;
 import com.devinolabs.uap.training.domain.DailyTrainingLoadSummary;
+import com.devinolabs.uap.training.domain.DailyTrainingRecommendationId;
 import com.devinolabs.uap.training.domain.ReadinessCalculator;
+import com.devinolabs.uap.training.domain.ReadinessDimensionType;
+import com.devinolabs.uap.training.domain.TrainingAdjustmentType;
 import com.devinolabs.uap.training.domain.TrainingPrimaryOccurrenceResolver;
 import com.devinolabs.uap.training.domain.TrainingRecommendationAction;
 import com.devinolabs.uap.training.domain.TrainingRecommendationCalculator;
@@ -114,6 +117,14 @@ public class GetTrainingTodayDashboardUseCase {
 						DailyReadinessAssessmentId.of(r.assessmentId()),
 						TrainingRecommendationCalculator.ALGORITHM_VERSION,
 						athleteId));
+		List<ReadinessDimensionType> limitingDimensions = readiness
+				.map(r -> readinessRepository.findLimitingDimensionsByAssessmentId(
+						DailyReadinessAssessmentId.of(r.assessmentId()), athleteId))
+				.orElse(List.of());
+		List<TrainingAdjustmentType> adjustmentTypes = recommendation
+				.map(r -> recommendationRepository.findAdjustmentTypesByRecommendationId(
+						DailyTrainingRecommendationId.of(r.recommendationId()), athleteId))
+				.orElse(List.of());
 
 		List<WorkoutOccurrence> occurrences = occurrenceRepository.findCalendarRange(
 				athleteId, date, date, null, null);
@@ -204,8 +215,8 @@ public class GetTrainingTodayDashboardUseCase {
 				new TrainingTodayDashboardResult.AthleteSection(athlete.athleteId(), "Athlete"),
 				toRecovery(checkIn.orElse(null)),
 				toAthleteState(snapshot.orElse(null)),
-				toReadiness(readiness.orElse(null)),
-				toRecommendation(recommendation.orElse(null)),
+				toReadiness(readiness.orElse(null), limitingDimensions),
+				toRecommendation(recommendation.orElse(null), adjustmentTypes),
 				toTraining(occurrenceSummaries, primarySummary),
 				toTrainingLoad(dailyLoad),
 				toAdaptation(activeProposal.orElse(null)),
@@ -241,7 +252,9 @@ public class GetTrainingTodayDashboardUseCase {
 				true, snapshot.snapshotId(), snapshot.snapshotVersion());
 	}
 
-	private static TrainingTodayDashboardResult.ReadinessSection toReadiness(DailyReadinessAssessmentSummary readiness) {
+	private static TrainingTodayDashboardResult.ReadinessSection toReadiness(
+			DailyReadinessAssessmentSummary readiness,
+			List<ReadinessDimensionType> limitingDimensions) {
 		if (readiness == null) {
 			return new TrainingTodayDashboardResult.ReadinessSection(false, null, null, null, null, List.of());
 		}
@@ -251,11 +264,12 @@ public class GetTrainingTodayDashboardUseCase {
 				readiness.readinessScore(),
 				readiness.readinessBand(),
 				readiness.dataSufficiency(),
-				List.of());
+				List.copyOf(limitingDimensions));
 	}
 
 	private static TrainingTodayDashboardResult.RecommendationSection toRecommendation(
-			DailyTrainingRecommendationSummary recommendation) {
+			DailyTrainingRecommendationSummary recommendation,
+			List<TrainingAdjustmentType> adjustmentTypes) {
 		if (recommendation == null) {
 			return new TrainingTodayDashboardResult.RecommendationSection(false, null, null, null, List.of());
 		}
@@ -264,7 +278,7 @@ public class GetTrainingTodayDashboardUseCase {
 				recommendation.recommendationId(),
 				recommendation.overallAction(),
 				recommendation.recommendationStatus(),
-				List.of());
+				List.copyOf(adjustmentTypes));
 	}
 
 	private static TrainingTodayDashboardResult.TrainingSection toTraining(

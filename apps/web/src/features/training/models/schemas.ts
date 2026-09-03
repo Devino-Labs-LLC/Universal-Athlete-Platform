@@ -462,11 +462,26 @@ const overviewOccurrenceSchema = z
   })
   .passthrough();
 
+const overviewWeeklyLoadSchema = z
+  .object({
+    weekStartDate: z.string(),
+    weekEndDate: z.string(),
+    occurrenceCount: z.number(),
+    trainingDays: z.number(),
+    totalVolumeKilograms: bigDecimalLike,
+    totalDurationSeconds: z.number(),
+    totalDistanceMeters: bigDecimalLike,
+    totalSessionRpeLoad: bigDecimalLike,
+    averageSessionRpe: bigDecimalLike,
+  })
+  .passthrough();
+
 export const trainingOverviewSchema = z
   .object({
     date: z.string(),
     activePlans: z.array(overviewPlanSchema).optional(),
     upcomingOccurrences: z.array(overviewOccurrenceSchema).optional(),
+    weeklyLoadSummary: overviewWeeklyLoadSchema.nullable().optional(),
     recentCompletedSessions: z.array(overviewOccurrenceSchema).optional(),
   })
   .passthrough();

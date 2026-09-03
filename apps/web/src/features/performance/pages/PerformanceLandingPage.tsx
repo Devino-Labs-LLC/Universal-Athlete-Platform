@@ -5,15 +5,20 @@ import { EmptyView } from '@/core/components/EmptyView';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
-import { formatDateDisplay, parseDateOnly } from '@/core/date/dateOnly';
+import { todayDateOnly, formatDateDisplay, parseDateOnly } from '@/core/date/dateOnly';
 import { PerformanceSubNav } from '@/features/performance/components/PerformanceSubNav';
 import { PersonalRecordsTable } from '@/features/performance/components/PersonalRecordsTable';
 import { useRecentPersonalRecords } from '@/features/performance/hooks/usePersonalRecords';
+import { useTrainingLoadHistory } from '@/features/performance/hooks/useTrainingLoadHistory';
+import { composeAthleteProgress } from '@/features/performance/models/progressComposition';
 import { personalRecordTypeLabel } from '@/features/performance/models/labels';
 import { performanceErrorMessage } from '@/features/performance/models/errors';
 import type { PersonalRecord } from '@/features/performance/models/schemas';
 import surfaces from '@/features/performance/styles/performanceSurfaces.module.scss';
 import { formatPersonalRecord } from '@/features/performance/utils/formatPersonalRecord';
+import { useRecoveryHistory } from '@/features/recovery/hooks/useRecoveryCheckIns';
+import { useTrainingOverview } from '@/features/training/hooks/usePlans';
+import { addDays } from '@/features/training/utils/calendarRange';
 
 function pickHeadlineRecord(records: PersonalRecord[]): PersonalRecord {
   return [...records].sort((left, right) => {
@@ -24,9 +29,26 @@ function pickHeadlineRecord(records: PersonalRecord[]): PersonalRecord {
 }
 
 export function PerformanceLandingPage() {
+  const endDate = todayDateOnly();
+  const startDate = addDays(endDate, -27);
   const recentRecordsQuery = useRecentPersonalRecords(30, 10);
+  const overviewQuery = useTrainingOverview();
+  const recoveryQuery = useRecoveryHistory(startDate, endDate, true);
+  const loadQuery = useTrainingLoadHistory('WEEKLY', startDate, endDate, { page: 0, size: 4 });
   const records = recentRecordsQuery.data ?? [];
   const headline = records.length > 0 ? pickHeadlineRecord(records) : null;
+  const weeklySummaries = loadQuery.data?.weeklySummaries ?? [];
+  const progress = composeAthleteProgress({
+    completedSessionCount: overviewQuery.data?.recentCompletedSessions?.length ?? 0,
+    weeklyTrainingDays: overviewQuery.data?.weeklyLoadSummary?.trainingDays ?? null,
+    recentPersonalRecordCount: records.length,
+    recoveryCheckInCount: recoveryQuery.data?.days?.length ?? 0,
+    ratedSessionCount: weeklySummaries.reduce(
+      (sum, week) => sum + (week.ratedOccurrenceCount ?? 0),
+      0,
+    ),
+    weeklyLoadPointCount: weeklySummaries.length,
+  });
 
   return (
     <Page
@@ -45,6 +67,24 @@ export function PerformanceLandingPage() {
       }
     >
       <PerformanceSubNav />
+
+      <section className={surfaces.panel} aria-labelledby="athlete-progress-heading">
+        <div className={surfaces.panelHeader}>
+          <h2 className={surfaces.panelTitle} id="athlete-progress-heading">
+            Athlete progress
+          </h2>
+        </div>
+        <p className={surfaces.metaText}>{progress.headline}</p>
+        <p className={surfaces.metaText}>
+          Sessions {progress.consistency.count} · Rated effort {progress.effort.count} · Records{' '}
+          {progress.performance.count} · Check-ins {progress.recovery.count}
+        </p>
+        {!progress.canShowLoadSeries ? (
+          <p className={surfaces.metaText}>
+            Load charts stay hidden until at least three weekly summaries exist.
+          </p>
+        ) : null}
+      </section>
 
       {recentRecordsQuery.isLoading ? <LoadingView message="Loading personal records…" /> : null}
       {recentRecordsQuery.isError ? (

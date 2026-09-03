@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { RecommendationAdjustment } from '@/src/features/adaptation/models/adaptationSchemas';
+import { guidanceExplanationOrFallback } from '@/src/features/home/models/guidanceExplanation';
 import { adjustmentTypeLabel } from '@/src/features/home/models/todayLabels';
 
 interface ContextOnlyAdjustmentsCardProps {
@@ -26,18 +27,21 @@ export function ContextOnlyAdjustmentsCard({ adjustments }: ContextOnlyAdjustmen
         {adjustments
           .slice()
           .sort((a, b) => a.orderIndex - b.orderIndex)
-          .map((adjustment) => (
+          .map((adjustment) => {
+            const explanation = guidanceExplanationOrFallback(adjustment.explanationKey);
+            return (
             <View key={`${adjustment.type}-${adjustment.orderIndex}`} style={styles.item}>
               <Text style={[styles.itemTitle, { color: theme.colors.text }]}>
                 {adjustmentTypeLabel(adjustment.type)}
               </Text>
-              {adjustment.explanationKey ? (
+              {explanation ? (
                 <Text style={[styles.explanation, { color: theme.colors.textMuted }]}>
-                  {adjustment.explanationKey.replace(/_/g, ' ').toLowerCase()}
+                  {explanation}
                 </Text>
               ) : null}
             </View>
-          ))}
+            );
+          })}
       </View>
     </HomeCard>
   );
