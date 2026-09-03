@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Href, router } from 'expo-router';
 
 export function navigateToOccurrenceDetail(
   planId: string,
@@ -42,6 +42,10 @@ export function navigateToOccurrenceExecute(
 
 export function navigateToTrainingOverview() {
   router.push('/(tabs)/training');
+}
+
+export function navigateToCreatePersonalPlan() {
+  router.push('/(tabs)/training/create-plan' as Href);
 }
 
 type OccurrenceRouteIds = {

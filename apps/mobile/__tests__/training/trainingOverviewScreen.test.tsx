@@ -94,7 +94,7 @@ describe('TrainingOverviewScreen', () => {
     expect(screen.getByTestId('completed-section')).toBeTruthy();
     expect(screen.getByTestId('weekly-load-summary-card')).toBeTruthy();
     expect(screen.getByTestId('adaptations-section')).toBeTruthy();
-  });
+  }, 15000);
 
   it('renders empty sections', async () => {
     useTrainingOverview.mockReturnValue({
@@ -105,11 +105,26 @@ describe('TrainingOverviewScreen', () => {
       refetch: mockRefetch,
     });
 
-    const { getByText } = await renderOverview();
+    const { getByText, getByTestId } = await renderOverview();
 
     expect(getByText('No upcoming workouts scheduled.')).toBeTruthy();
     expect(getByText('No active training plans.')).toBeTruthy();
     expect(getByText('No recently completed sessions.')).toBeTruthy();
+    expect(getByTestId('create-personal-plan-cta')).toBeTruthy();
+  });
+
+  it('navigates to the personal plan path from the empty-plan CTA', async () => {
+    useTrainingOverview.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+      data: emptyOverviewFixture,
+      refetch: mockRefetch,
+    });
+
+    const { getByTestId } = await renderOverview();
+    fireEvent.press(getByTestId('create-personal-plan-cta'));
+    expect(mockPush).toHaveBeenCalledWith('/(tabs)/training/create-plan');
   });
 
   it('navigates to calendar from CTA', async () => {

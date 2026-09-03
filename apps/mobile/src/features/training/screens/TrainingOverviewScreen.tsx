@@ -24,6 +24,7 @@ import {
   navigateToAdaptationProposal,
 } from '@/src/features/adaptation/utils/proposalNavigation';
 import {
+  navigateToCreatePersonalPlan,
   navigateToOccurrenceLaunch,
   navigateToOccurrenceDetail,
 } from '@/src/features/training/utils/trainingNavigation';
@@ -121,7 +122,15 @@ export function TrainingOverviewScreen() {
           }
         />
       ) : (
-        <EmptyView message="No upcoming workouts scheduled." />
+        <EmptyView
+          message="No upcoming workouts scheduled."
+          actionLabel={activePlans.length === 0 ? 'Create personal plan' : undefined}
+          onAction={
+            activePlans.length === 0
+              ? () => navigateToCreatePersonalPlan()
+              : undefined
+          }
+        />
       )}
 
       <Button
@@ -161,7 +170,16 @@ export function TrainingOverviewScreen() {
 
       <HomeCard eyebrow="Plans" title="Active plans" testID="active-plans-section" dense>
         {activePlans.length === 0 ? (
-          <Text style={[styles.empty, { color: theme.colors.textMuted }]}>No active training plans.</Text>
+          <>
+            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>
+              No active training plans.
+            </Text>
+            <PrimaryButton
+              testID="create-personal-plan-cta"
+              label="Create personal plan"
+              onPress={() => navigateToCreatePersonalPlan()}
+            />
+          </>
         ) : (
           activePlans.map((plan) => <TrainingPlanCard key={plan.trainingPlanId} plan={plan} />)
         )}
