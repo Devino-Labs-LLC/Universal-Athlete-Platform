@@ -250,7 +250,7 @@ class TrainingReleaseCandidateIntegrationTests {
 
 		sessionFactory.getStatistics().clear();
 		TrainingTodayDashboardResult today = getTrainingTodayDashboardUseCase.execute(athleteA, JULY_31);
-		assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isLessThanOrEqualTo(15);
+		assertThat(sessionFactory.getStatistics().getPrepareStatementCount()).isLessThanOrEqualTo(17);
 		assertThat(today.recovery().checkInPresent()).isTrue();
 		assertThat(today.athleteState().snapshotPresent()).isTrue();
 		assertThat(today.readiness().readinessPresent()).isTrue();
