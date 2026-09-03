@@ -1,4 +1,5 @@
 import tableStyles from '@/core/components/Table.module.scss';
+import { guidanceExplanationOrFallback } from '@/features/home/labels/guidanceExplanation';
 import { adjustmentTypeLabel } from '@/features/recovery/models/labels';
 import type { TrainingRecommendationAdjustment } from '@/features/recovery/models/schemas';
 
@@ -15,14 +16,18 @@ export function RecommendationAdjustmentsList({ adjustments }: RecommendationAdj
 
   return (
     <ol style={{ display: 'grid', gap: '0.5rem', paddingLeft: '1.25rem' }}>
-      {sorted.map((adjustment) => (
+      {sorted.map((adjustment) => {
+        const explanation = guidanceExplanationOrFallback(adjustment.explanationKey);
+        return (
         <li key={adjustment.adjustmentId}>
           <strong>{adjustmentTypeLabel(adjustment.type)}</strong>
+          {explanation ? <div className={tableStyles.subtle}>{explanation}</div> : null}
           {adjustment.sourceDimensions && adjustment.sourceDimensions.length > 0 ? (
             <span className={tableStyles.subtle}> — related to {adjustment.sourceDimensions.join(', ')}</span>
           ) : null}
         </li>
-      ))}
+        );
+      })}
     </ol>
   );
 }

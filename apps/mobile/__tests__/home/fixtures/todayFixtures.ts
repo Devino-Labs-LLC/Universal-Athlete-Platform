@@ -51,12 +51,14 @@ export const populatedTodayFixture: TrainingTodayDashboard = {
   },
   readiness: {
     readinessPresent: true,
+    readinessAssessmentId: 'assess-1',
     readinessScore: '78.5',
     readinessBand: 'HIGH',
     limitingDimensions: ['SLEEP'],
   },
   recommendation: {
     recommendationPresent: true,
+    recommendationId: 'rec-1',
     overallAction: 'PROCEED_AS_PLANNED',
     recommendationStatus: 'ACTIVE',
     adjustmentTypes: ['REDUCE_VOLUME', 'EXTEND_WARMUP'],
@@ -157,5 +159,14 @@ export const generationActionsFixture: TrainingTodayDashboard = {
     canGenerateAthleteStateSnapshot: { allowed: true },
     canGenerateReadinessAssessment: { allowed: true },
     canGenerateTrainingRecommendation: { allowed: true },
+  },
+};
+
+export const checkInReadyToGenerateStateFixture: TrainingTodayDashboard = {
+  ...emptyTodayFixture,
+  recovery: { checkInPresent: true },
+  actions: {
+    ...defaultActions,
+    canGenerateAthleteStateSnapshot: { allowed: true },
   },
 };

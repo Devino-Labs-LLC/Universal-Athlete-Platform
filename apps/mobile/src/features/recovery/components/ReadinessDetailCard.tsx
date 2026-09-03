@@ -4,6 +4,7 @@ import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { CompactInfoRow, ScoreRing, SectionHeader } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
+import { readinessExplanationLines } from '@/src/features/home/models/readinessInsight';
 import { readinessBandLabel } from '@/src/features/home/models/todayLabels';
 import { readinessDimensionLabel } from '@/src/features/recovery/models/recoveryLabels';
 import { DailyReadinessAssessment } from '@/src/features/recovery/models/recoverySchemas';
@@ -44,6 +45,11 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
     assessment.readinessScore != null && !Number.isNaN(Number(assessment.readinessScore))
       ? Number(assessment.readinessScore)
       : null;
+  const explanations = readinessExplanationLines({
+    readinessBand: assessment.readinessBand,
+    dataSufficiency: assessment.dataSufficiency,
+    limitingDimensions: assessment.limitingDimensions,
+  });
 
   return (
     <HomeCard testID="readiness-detail-card" eyebrow="Athlete state" title="Readiness">
@@ -59,6 +65,12 @@ export function ReadinessDetailCard({ assessment }: ReadinessDetailCardProps) {
       />
 
       <ScoreRing score={score} label="Score" />
+
+      {explanations.map((line) => (
+        <Text key={line} style={[styles.item, { color: theme.colors.textMuted }]}>
+          {line}
+        </Text>
+      ))}
 
       {assessment.limitingDimensions.length > 0 ? (
         <View style={styles.section}>

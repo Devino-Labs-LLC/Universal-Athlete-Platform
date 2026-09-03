@@ -8,6 +8,8 @@ import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { TrainingTodayDashboard } from '@/src/features/training/schemas';
 import { router } from 'expo-router';
 
+type DerivedStateMutations = ReturnType<typeof useDerivedStateMutations>;
+
 interface InsightsStepListProps {
   date: string;
   overviewCheckInPresent: boolean;
@@ -15,6 +17,7 @@ interface InsightsStepListProps {
   athleteState?: TrainingTodayDashboard['athleteState'];
   readinessPresent?: boolean;
   recommendationPresent?: boolean;
+  derivedState?: DerivedStateMutations;
 }
 
 type StepStatus = 'complete' | 'current' | 'pending';
@@ -35,9 +38,65 @@ export function InsightsStepList({
   athleteState,
   readinessPresent = false,
   recommendationPresent = false,
+  derivedState,
 }: InsightsStepListProps) {
-  const theme = useAppTheme();
+  if (derivedState) {
+    return (
+      <InsightsPipelineCard
+        overviewCheckInPresent={overviewCheckInPresent}
+        actions={actions}
+        athleteState={athleteState}
+        readinessPresent={readinessPresent}
+        recommendationPresent={recommendationPresent}
+        mutations={derivedState}
+      />
+    );
+  }
+
+  return (
+    <HookedInsightsStepList
+      date={date}
+      overviewCheckInPresent={overviewCheckInPresent}
+      actions={actions}
+      athleteState={athleteState}
+      readinessPresent={readinessPresent}
+      recommendationPresent={recommendationPresent}
+    />
+  );
+}
+
+function HookedInsightsStepList({
+  date,
+  overviewCheckInPresent,
+  actions,
+  athleteState,
+  readinessPresent = false,
+  recommendationPresent = false,
+}: Omit<InsightsStepListProps, 'derivedState'>) {
   const mutations = useDerivedStateMutations(date);
+  return (
+    <InsightsPipelineCard
+      overviewCheckInPresent={overviewCheckInPresent}
+      actions={actions}
+      athleteState={athleteState}
+      readinessPresent={readinessPresent}
+      recommendationPresent={recommendationPresent}
+      mutations={mutations}
+    />
+  );
+}
+
+function InsightsPipelineCard({
+  overviewCheckInPresent,
+  actions,
+  athleteState,
+  readinessPresent,
+  recommendationPresent,
+  mutations,
+}: Omit<InsightsStepListProps, 'date' | 'derivedState'> & {
+  mutations: DerivedStateMutations;
+}) {
+  const theme = useAppTheme();
 
   const checkInComplete = overviewCheckInPresent;
   const stateComplete = athleteState?.snapshotPresent === true;

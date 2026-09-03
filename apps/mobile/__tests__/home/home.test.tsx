@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ThemeProvider } from '@/src/app/theme/ThemeProvider';
@@ -44,6 +44,7 @@ const { useAuthSession } = jest.requireMock('@/src/app/providers/AuthSessionProv
 const { useAthleteOnboarding } = jest.requireMock(
   '@/src/app/providers/AthleteOnboardingProvider',
 );
+const { router } = jest.requireMock('expo-router');
 
 async function renderHome() {
   const queryClient = new QueryClient({
@@ -129,6 +130,7 @@ describe('HomeScreen', () => {
     expect(getByTestId('recent-performance-card')).toBeTruthy();
     expect(getByText('High')).toBeTruthy();
     expect(getByText('Proceed as planned')).toBeTruthy();
+    expect(getByText(/Sleep is a limiting factor from today's evidence/)).toBeTruthy();
     // Hierarchy is readiness hero first; quick actions remain secondary when flags allow.
     expect(getByTestId('home-quick-actions')).toBeTruthy();
   });
@@ -136,35 +138,41 @@ describe('HomeScreen', () => {
   it('omits load and performance cards when empty', async () => {
     setupTodayQuery({ data: emptyTodayFixture });
 
-    const { queryByTestId } = await renderHome();
+    const { queryByTestId, getByTestId } = await renderHome();
 
     expect(queryByTestId('training-load-card')).toBeNull();
     expect(queryByTestId('recent-performance-card')).toBeNull();
     expect(queryByTestId('adaptation-card')).toBeNull();
+    expect(queryByTestId('insights-step-list')).toBeTruthy();
+    expect(within(getByTestId('readiness-card')).getByText(/No recovery check-in today/)).toBeTruthy();
   });
 
-  it('shows enabled quick actions from action flags', async () => {
-    setupTodayQuery({ data: generationActionsFixture });
-
-    const { getByTestId } = await renderHome();
-
-    expect(getByTestId('quick-action-state')).toBeTruthy();
-    expect(getByTestId('quick-action-readiness')).toBeTruthy();
-    expect(getByTestId('quick-action-guidance')).toBeTruthy();
+  it('hides the insights pipeline when today’s intelligence is already generated', async () => {
+    const { queryByTestId } = await renderHome();
+    expect(queryByTestId('insights-step-list')).toBeNull();
   });
 
-  it('invokes generation mutations only on explicit tap', async () => {
-    setupTodayQuery({ data: generationActionsFixture });
-
+  it('opens readiness and guidance details from Home cards', async () => {
     const { getByTestId } = await renderHome();
 
-    fireEvent.press(getByTestId('quick-action-state'));
-    fireEvent.press(getByTestId('quick-action-readiness'));
-    fireEvent.press(getByTestId('quick-action-guidance'));
+    fireEvent.press(getByTestId('readiness-card'));
+    expect(router.push).toHaveBeenCalledWith('/(tabs)/recovery/readiness/assess-1');
 
-    expect(mockMutateAthleteState).toHaveBeenCalledTimes(1);
-    expect(mockMutateReadiness).toHaveBeenCalledTimes(1);
-    expect(mockMutateRecommendation).toHaveBeenCalledTimes(1);
+    fireEvent.press(getByTestId('recommendation-card'));
+    expect(router.push).toHaveBeenCalledWith('/(tabs)/recovery/guidance/rec-1');
+  });
+
+  it('shows the insights pipeline as the next daily action', async () => {
+    setupTodayQuery({ data: generationActionsFixture });
+
+    const { getByTestId, getByText, queryByTestId } = await renderHome();
+
+    await waitFor(() => {
+      expect(getByTestId('home-insights')).toBeTruthy();
+    });
+    expect(getByTestId('insights-step-list')).toBeTruthy();
+    expect(getByText('Check in')).toBeTruthy();
+    expect(queryByTestId('quick-action-state')).toBeNull();
   });
 
   it('does not invoke mutations on mount', async () => {

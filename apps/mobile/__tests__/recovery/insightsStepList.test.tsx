@@ -60,4 +60,32 @@ describe('InsightsStepList', () => {
     expect(mockMutateReadiness).not.toHaveBeenCalled();
     expect(mockMutateGuidance).not.toHaveBeenCalled();
   });
+
+  it('offers generate daily state only after check-in is present', async () => {
+    const { getByText, queryByText } = await render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ThemeProvider>
+          <InsightsStepList
+            date="2026-08-10"
+            overviewCheckInPresent
+            athleteState={{ snapshotPresent: false }}
+            actions={{
+              canGenerateAthleteStateSnapshot: { allowed: true },
+              canGenerateReadinessAssessment: { allowed: false },
+              canGenerateTrainingRecommendation: { allowed: false },
+              canCreateRecoveryCheckIn: { allowed: false },
+              canUpdateRecoveryCheckIn: { allowed: true },
+              canStartWorkout: { allowed: false },
+              canContinueWorkout: { allowed: false },
+              canGenerateAdaptationProposal: { allowed: false },
+            }}
+          />
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(queryByText('Check in')).toBeNull();
+    fireEvent.press(getByText('Generate Daily State'));
+    expect(mockMutateState).toHaveBeenCalledTimes(1);
+  });
 });

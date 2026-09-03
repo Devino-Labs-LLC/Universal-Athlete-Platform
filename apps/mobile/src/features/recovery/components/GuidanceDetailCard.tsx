@@ -5,6 +5,7 @@ import { PrimaryButton } from '@/src/core/components/PrimaryButton';
 import { CompactInfoRow, SectionHeader } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
+import { guidanceExplanationOrFallback } from '@/src/features/home/models/guidanceExplanation';
 import {
   adjustmentTypeLabel,
   readinessBandLabel,
@@ -73,18 +74,21 @@ export function GuidanceDetailCard({
           {recommendation.adjustments
             .slice()
             .sort((a, b) => a.orderIndex - b.orderIndex)
-            .map((adjustment) => (
+            .map((adjustment) => {
+              const explanation = guidanceExplanationOrFallback(adjustment.explanationKey);
+              return (
               <View key={adjustment.adjustmentId} style={styles.adjustment}>
                 <Text style={[styles.item, { color: theme.colors.text }]}>
                   • {adjustmentTypeLabel(adjustment.type)}
                 </Text>
-                {adjustment.explanationKey ? (
+                {explanation ? (
                   <Text style={[styles.explanation, { color: theme.colors.textMuted }]}>
-                    {adjustment.explanationKey.replace(/_/g, ' ').toLowerCase()}
+                    {explanation}
                   </Text>
                 ) : null}
               </View>
-            ))}
+              );
+            })}
         </View>
       ) : (
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>

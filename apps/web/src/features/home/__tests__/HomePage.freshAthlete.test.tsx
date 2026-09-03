@@ -73,8 +73,11 @@ describe('HomePage fresh-athlete / loading stability', () => {
     expect(screen.getByText(/Good (morning|afternoon|evening), Jordan/)).toBeInTheDocument();
     expect(screen.getByText("Today's workout")).toBeInTheDocument();
     expect(screen.getByText('No workout scheduled for today.')).toBeInTheDocument();
-    expect(screen.getByText('No readiness assessment yet.')).toBeInTheDocument();
-    expect(screen.getByText('No training recommendation yet.')).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        'No recovery check-in today. Check in first — readiness is not generated automatically.',
+      ),
+    ).toHaveLength(2);
     expect(screen.getByText('No recovery check-in yet.')).toBeInTheDocument();
     expect(screen.getByText('No training load data yet.')).toBeInTheDocument();
     expect(screen.getByText('No active adaptation proposal.')).toBeInTheDocument();

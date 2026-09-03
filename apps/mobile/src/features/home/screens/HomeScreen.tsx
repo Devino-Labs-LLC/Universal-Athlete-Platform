@@ -17,6 +17,7 @@ import { RecommendationCard } from '@/src/features/home/components/Recommendatio
 import { RecoveryCard } from '@/src/features/home/components/RecoveryCard';
 import { TodayHeader } from '@/src/features/home/components/TodayHeader';
 import { TrainingLoadCard } from '@/src/features/home/components/TrainingLoadCard';
+import { InsightsStepList } from '@/src/features/recovery/components/InsightsStepList';
 import { useDerivedStateMutations } from '@/src/features/home/hooks/useDerivedStateMutations';
 import { useTodayDashboard } from '@/src/features/home/hooks/useTodayDashboard';
 import { buildGreeting } from '@/src/features/home/utils/greeting';
@@ -123,6 +124,11 @@ export function HomeScreen() {
   });
 
   const primaryOccurrence = data.training.primaryOccurrence;
+  const pipelineIncomplete =
+    !data.recovery.checkInPresent ||
+    data.athleteState?.snapshotPresent !== true ||
+    !data.readiness.readinessPresent ||
+    !data.recommendation.recommendationPresent;
 
   const workoutCard = (
     <PrimaryWorkoutCard
@@ -142,9 +148,27 @@ export function HomeScreen() {
       {/* A: compact context → B: readiness hero → C: training → D: signals → E: support → F: actions */}
       <TodayHeader greeting={greeting} date={data.date} />
 
-      <ReadinessCard readiness={data.readiness} />
+      <ReadinessCard
+        readiness={data.readiness}
+        checkInPresent={data.recovery.checkInPresent}
+        snapshotPresent={data.athleteState?.snapshotPresent === true}
+      />
 
       {workoutCard}
+
+      {pipelineIncomplete ? (
+        <View testID="home-insights">
+          <InsightsStepList
+            date={data.date}
+            overviewCheckInPresent={data.recovery.checkInPresent}
+            actions={data.actions}
+            athleteState={data.athleteState}
+            readinessPresent={data.readiness.readinessPresent}
+            recommendationPresent={data.recommendation.recommendationPresent}
+            derivedState={mutations}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.signalRow}>
         <View style={styles.signalHalf}>
@@ -156,7 +180,13 @@ export function HomeScreen() {
           />
         </View>
         <View style={styles.signalHalf}>
-          <RecommendationCard recommendation={data.recommendation} compact />
+          <RecommendationCard
+            recommendation={data.recommendation}
+            checkInPresent={data.recovery.checkInPresent}
+            snapshotPresent={data.athleteState?.snapshotPresent === true}
+            readinessPresent={data.readiness.readinessPresent}
+            compact
+          />
         </View>
       </View>
 
@@ -178,6 +208,7 @@ export function HomeScreen() {
         onGenerateGuidance={() => mutations.recommendationMutation.mutate()}
         onGenerateAdaptation={handleGenerateAdaptation}
         pendingAction={pendingAction}
+        hideIntelligenceActions={pipelineIncomplete}
       />
 
       {mutations.errorMessage ? (

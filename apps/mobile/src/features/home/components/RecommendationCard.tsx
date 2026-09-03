@@ -1,8 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
 import { StatusChip } from '@/src/features/home/components/StatusChip';
+import {
+  MISSING_INTELLIGENCE_COPY,
+  missingRecommendationStep,
+} from '@/src/features/home/models/readinessInsight';
 import {
   adjustmentTypeLabel,
   recommendationActionLabel,
@@ -11,24 +16,34 @@ import { TrainingTodayDashboard } from '@/src/features/training/schemas';
 
 interface RecommendationCardProps {
   recommendation: TrainingTodayDashboard['recommendation'];
+  checkInPresent: boolean;
+  snapshotPresent: boolean;
+  readinessPresent: boolean;
   compact?: boolean;
 }
 
 export function RecommendationCard({
   recommendation,
+  checkInPresent,
+  snapshotPresent,
+  readinessPresent,
   compact = false,
 }: RecommendationCardProps) {
   const theme = useAppTheme();
 
   if (!recommendation.recommendationPresent) {
+    const absence = missingRecommendationStep({
+      checkInPresent,
+      snapshotPresent,
+      readinessPresent,
+    });
     return (
       <HomeCard
         testID="recommendation-card"
-        eyebrow={compact ? undefined : undefined}
         title="Guidance"
         dense={compact}>
         <Text style={[styles.body, { color: theme.colors.textMuted }]}>
-          No guidance yet
+          {MISSING_INTELLIGENCE_COPY[absence]}
         </Text>
       </HomeCard>
     );
@@ -36,9 +51,18 @@ export function RecommendationCard({
 
   const actionLabel = recommendationActionLabel(recommendation.overallAction);
   const adjustments = (recommendation.adjustmentTypes ?? []).slice(0, compact ? 2 : 3);
+  const recommendationId = recommendation.recommendationId;
+  const openDetail = recommendationId
+    ? () => router.push(`/(tabs)/recovery/guidance/${recommendationId}`)
+    : undefined;
 
   return (
-    <HomeCard testID="recommendation-card" title="Guidance" dense={compact}>
+    <HomeCard
+      testID="recommendation-card"
+      title="Guidance"
+      dense={compact}
+      onPress={openDetail}
+      accessibilityHint={openDetail ? 'Opens guidance details' : undefined}>
       <StatusChip testID="recommendation-action-chip" label={actionLabel} variant="info" />
 
       {adjustments.length > 0 ? (

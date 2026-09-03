@@ -2,6 +2,10 @@ import { Link } from 'react-router-dom';
 
 import { HomeCard } from '@/features/home/components/HomeCard';
 import {
+  MISSING_INTELLIGENCE_COPY,
+  missingRecommendationStep,
+} from '@/features/home/labels/readinessInsight';
+import {
   adjustmentTypeLabel,
   recommendationActionLabel,
 } from '@/features/home/labels/todayLabels';
@@ -9,13 +13,26 @@ import type { TodayDashboard } from '@/features/home/schemas';
 
 interface RecommendationCardProps {
   recommendation: TodayDashboard['recommendation'];
+  checkInPresent: boolean;
+  snapshotPresent: boolean;
+  readinessPresent: boolean;
 }
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  checkInPresent,
+  snapshotPresent,
+  readinessPresent,
+}: RecommendationCardProps) {
   if (!recommendation.recommendationPresent) {
+    const absence = missingRecommendationStep({
+      checkInPresent,
+      snapshotPresent,
+      readinessPresent,
+    });
     return (
       <HomeCard title="Recommendation">
-        <p className="emptyHint">No training recommendation yet.</p>
+        <p className="emptyHint">{MISSING_INTELLIGENCE_COPY[absence]}</p>
         <Link to="/app/recovery">View recovery</Link>
       </HomeCard>
     );
