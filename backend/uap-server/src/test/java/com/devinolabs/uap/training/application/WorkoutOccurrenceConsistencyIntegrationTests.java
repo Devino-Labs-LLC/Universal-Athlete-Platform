@@ -9,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -364,7 +365,8 @@ class WorkoutOccurrenceConsistencyIntegrationTests {
 
 		WorkoutOccurrenceDetailResult again = completeWorkoutOccurrenceUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId());
-		assertThat(again.occurrence().completedAt()).isEqualTo(completedAt);
+		assertThat(again.occurrence().completedAt().truncatedTo(ChronoUnit.MICROS))
+				.isEqualTo(completedAt.truncatedTo(ChronoUnit.MICROS));
 
 		assertThatThrownBy(() -> startWorkoutExerciseExecutionUseCase.execute(
 				fixture.accountId(), fixture.planId(), fixture.dayId(), fixture.occurrenceId(), first))

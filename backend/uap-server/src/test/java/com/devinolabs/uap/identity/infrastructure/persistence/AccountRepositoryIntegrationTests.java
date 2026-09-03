@@ -3,6 +3,8 @@ package com.devinolabs.uap.identity.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.temporal.ChronoUnit;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,8 +48,10 @@ class AccountRepositoryIntegrationTests {
 		assertThat(reloaded.failedLoginAttempts()).isZero();
 		assertThat(reloaded.lockedUntil()).isNull();
 		assertThat(reloaded.emailVerifiedAt()).isNull();
-		assertThat(reloaded.createdAt()).isEqualTo(account.createdAt());
-		assertThat(reloaded.updatedAt()).isEqualTo(account.updatedAt());
+		assertThat(reloaded.createdAt().truncatedTo(ChronoUnit.MICROS))
+				.isEqualTo(account.createdAt().truncatedTo(ChronoUnit.MICROS));
+		assertThat(reloaded.updatedAt().truncatedTo(ChronoUnit.MICROS))
+				.isEqualTo(account.updatedAt().truncatedTo(ChronoUnit.MICROS));
 		assertThat(accountRepository.findByEmail(EmailAddress.of("round.trip@example.com"))).isPresent();
 		assertThat(accountRepository.existsByEmail(EmailAddress.of("round.trip@example.com"))).isTrue();
 	}
