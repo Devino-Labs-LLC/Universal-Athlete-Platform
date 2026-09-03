@@ -258,7 +258,7 @@ V2 is **not** complete when this plan is written. It is complete when the exit c
 3. Progress composition on Performance (web + mobile) from existing APIs — done.
 4. Minimal mobile personal-plan create/activate — done.
 5. Launch-context empty `adjustmentTypes` documented as intentional — done.
-6. Sonar/CI workflow added (`.github/workflows/verify.yml` + `sonar-project.properties`). Authenticated quality-gate result still requires GitHub `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, and secret `SONAR_TOKEN`.
+6. Sonar/CI workflow added (`.github/workflows/verify.yml` + `sonar-project.properties`). GitHub `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, and secret `SONAR_TOKEN` are configured. Backend Verify is sharded (`core`, `training-app`, `training-http`) so the suite can finish under the observed ~15-minute job cancel. The CI scanner is still blocked while SonarQube Cloud Automatic Analysis remains enabled; disable it at Project Administration → Analysis Method so the Verify quality gate can evaluate.
 7. Screen-level coverage added for readiness, guidance, history, progress, and personal-plan.
 8. V2.8 hardening and live web UX verification remain before declaring V2 complete.
 9. Security residual: personal-plan create is four explicit POSTs. A mid-flight failure can leave a draft plan; do not add a compose endpoint in V2. Empty catalog now fails closed before any write. Sonar CI compiles Java binaries without re-running tests.

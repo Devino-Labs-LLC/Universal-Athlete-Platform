@@ -97,6 +97,8 @@ jobs:
       - run: pnpm mobile:lint
       - run: pnpm mobile:test
 
+  # Canonical analysis. Fails if SonarQube Cloud Automatic Analysis is still enabled
+  # (disable it at Project Administration → Analysis Method).
   sonar:
     name: Sonar quality gate
     runs-on: ubuntu-latest

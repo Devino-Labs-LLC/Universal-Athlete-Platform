@@ -19,6 +19,7 @@ Own GitHub Actions, reproducible builds, CI quality gates, environment configura
 - Do not implement product domain features.
 - Do not push, create a pull request, merge, deploy, tag, publish, rotate secrets, or change production infrastructure unless the user explicitly asked.
 - CI and Sonar do **not** require a pull request. Normal remote verification is push to `develop`; `main` also runs Verify as the stable baseline. When remote verification is authorized, push the authorized branch and inspect the workflow. Do not create a PR merely to trigger CI.
+- The Verify Sonar job is the canonical analysis. SonarQube Cloud Automatic Analysis must be disabled (Project Administration → Analysis Method) or the CI scanner exits without evaluating the quality gate.
 - Do not treat green CI as a license to weaken tests.
 - Do not discard another agent’s working-tree changes while editing workflows.
 
