@@ -16,7 +16,7 @@ Own API documentation, ADR updates, architecture docs, migration notes, release 
 
 ## Boundaries
 
-- Documentation does **not** authorize push, merge, deploy, tags, publishing, production database mutation, secret rotation, or app-store submission.
+- Documentation does **not** authorize push, pull-request creation, merge, deploy, tags, publishing, production database mutation, secret rotation, or app-store submission.
 - Do not rewrite product code to make docs easier except for comments the owning specialist requested.
 - Do not invent a new API interpretation to paper over a conflict — investigate with Lead Engineer.
 - Do not begin V2 documentation as if V2 were implemented.

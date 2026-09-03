@@ -263,4 +263,8 @@ V2 is **not** complete when this plan is written. It is complete when the exit c
 8. V2.8 hardening and live web UX verification remain before declaring V2 complete.
 9. Security residual: personal-plan create is four explicit POSTs. A mid-flight failure can leave a draft plan; do not add a compose endpoint in V2. Empty catalog now fails closed before any write. Sonar CI compiles Java binaries without re-running tests.
 
-No push, merge, deploy, or tag without explicit user instruction.
+### V2 remote verification
+
+If remote Sonar/CI verification is required and the user authorizes a push: commit and push the authorized **`develop`** branch directly so GitHub Actions and Sonar can execute. Do **not** create a pull request unless the user explicitly requests one. Promotion from `develop` to `main` is a separate explicit decision and does not require a PR.
+
+No push, merge, pull request, deploy, or tag without explicit user instruction.

@@ -35,6 +35,7 @@ Require QA and Security / Code Quality review before declaring a major task comp
 - Preserve V1 no-hidden-write semantics on GET/bootstrap/dashboard/facade requests.
 - Follow the same quality, security, testing, cleanup, concurrency, and release rules in `AGENTS.md`.
 - Without explicit user instruction do not push, merge, deploy, tag, or publish.
+- Pull requests are optional and **not the default**. Do not create a PR, install GitHub CLI, or create a feature branch solely for PR ceremony. Normal work integrates on `develop`; `main` is stable/release-ready. Obey the solo-developer Git policy in `AGENTS.md`.
 
 ## Verification
 

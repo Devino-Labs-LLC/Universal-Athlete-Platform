@@ -214,11 +214,111 @@ Minimize shared-file churn.
 
 ---
 
+## Solo-developer Git and pull-request policy
+
+This repository is currently maintained primarily by a single developer.
+
+Pull requests are **not prohibited**. They are also **not the default** development workflow.
+
+### Default workflow
+
+Pull requests are **not required by default**.
+
+For normal solo development, prefer the simplest appropriate workflow:
+
+1. Inspect the current branch and working tree.
+2. Implement the scoped work.
+3. Run required tests and quality gates.
+4. Review the diff.
+5. Commit when authorized.
+6. Push the authorized branch directly when authorized.
+7. Allow GitHub Actions / Sonar to verify the pushed commit where the workflow actually runs on that push.
+
+Do not create a pull request simply because a remote branch was pushed.
+Do not create a feature branch solely so a pull request can exist.
+Do not introduce PR-based review ceremony when a direct commit or push is sufficient.
+
+### Pull requests are optional, not forbidden
+
+A pull request may still be appropriate later, for example when:
+
+- another developer begins contributing;
+- the user wants isolated code review;
+- a risky or unusually large change benefits from a separate review boundary;
+- branch-protection rules require a PR;
+- an external contributor is involved;
+- the user explicitly wants a PR for a release or change;
+- a GitHub feature being used intentionally requires a PR workflow.
+
+In those situations, **do not automatically create the PR**. Explain briefly:
+
+1. why a PR would be beneficial or required;
+2. which branch would be involved;
+3. whether any additional tooling is actually necessary.
+
+Then **ask the user** before creating it.
+
+### Tool installation
+
+Do **not** install GitHub CLI (`gh`), GitHub extensions, Git workflow utilities, package-manager tools, or IDE plugins solely to create or manage a pull request unless the user explicitly approves that installation.
+
+If a requested operation cannot be performed with existing repository or already-installed tooling, report the limitation and ask before installing software. Do not work around this by silently downloading an alternative executable.
+
+### Branch policy
+
+This repository uses a lightweight solo-maintainer branch model.
+
+- **`main`** is the stable / release-ready application baseline. Do not use it for normal ongoing implementation. Promotion into `main` is an explicit release or integration decision and requires explicit user authorization. A pull request is **not** required for that promotion.
+- **`develop`** is the normal integration and development branch. Active version work, release-candidate hardening, GitHub Actions verification, and Sonar analysis run here. Direct push to `develop` is acceptable when the user explicitly authorizes that push.
+- **`feat/*` (and similar) are optional.** Use a feature branch only when isolation provides real value: risky work, parallel agent work, large separated changes, experimentation, or hotfix/release isolation. Do not create a feature branch merely because conventional team workflows use one. Do not require a pull request to merge a feature branch into `develop`.
+
+Use the current authorized branch unless:
+
+- branch isolation materially reduces risk;
+- parallel agent work requires isolation;
+- the user requests a branch;
+- a release or hotfix strategy requires one;
+- repository protection rules require one.
+
+If creating a branch changes the expected workflow materially, explain the reason.
+
+### CI / Sonar does not imply a pull request
+
+GitHub Actions and Sonar verification do **not** inherently require a pull request.
+
+The Verify workflow is intended to run on **push to `develop`** (normal pre-main verification) and **push to `main`** (stable/release baseline). Pull-request events may still run the same workflow when a PR is intentionally used; PRs are not required to start CI.
+
+When remote CI/Sonar verification is needed and direct push is authorized:
+
+- push the authorized branch (`develop` for normal development);
+- let the configured workflow run;
+- inspect the workflow result;
+- remediate legitimate failures;
+- push corrections if authorized.
+
+Do not create a PR merely to trigger CI.
+
+If CI is accidentally configured so Sonar or Verify only runs on pull-request events, evaluate whether a `develop` / `main` push trigger is more appropriate. Do not modify workflow triggers blindly; preserve intentional release and security behavior. Report the finding and ask before changing triggers or creating a PR.
+
+Do not configure every arbitrary feature branch to run expensive Sonar analysis unless there is a justified reason.
+
+### Commit, push, PR, merge, and deploy are separate permissions
+
+Never treat these as interchangeable.
+
+- Authorization to **commit** does not authorize **push**.
+- Authorization to **push** does not authorize creating a PR, merge, deploy, tag, publish, or production changes.
+- Authorization to **create a PR** does not authorize **merging** it.
+- Authorization to **merge** does not authorize **deployment** unless an explicitly approved pipeline makes that consequence clear.
+
+When in doubt about a consequential action, preserve the current state and report the next action rather than assuming permission.
+
 ## Git / release safety
 
 Without **explicit** user instruction do **not**:
 
 - push;
+- create, reopen, update, or otherwise manage a pull request;
 - merge;
 - deploy;
 - create or move tags;
@@ -228,7 +328,7 @@ Without **explicit** user instruction do **not**:
 - change production infrastructure;
 - submit app-store releases.
 
-Implementation completion does not authorize release.
+Implementation completion does not authorize release, push, or a pull request.
 
 ---
 

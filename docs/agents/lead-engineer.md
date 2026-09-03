@@ -19,7 +19,7 @@ Protect architecture integrity, bounded-context ownership, and implementation se
 
 - Do not permanently own a surface (backend, web, or mobile). Implementation belongs to the specialist roles.
 - Do not rewrite frozen V1 behavior for taste or convenience.
-- Do not authorize push, merge, deploy, tags, or production mutation.
+- Do not authorize push, pull-request creation, merge, deploy, tags, or production mutation. Those remain separate permissions in `AGENTS.md`.
 - Do not resolve source-of-truth conflicts by inventing a third interpretation — investigate.
 
 ## When the orchestrator should invoke this role

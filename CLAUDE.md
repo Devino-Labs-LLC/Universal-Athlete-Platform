@@ -29,6 +29,7 @@ Require **QA / Test Automation** and **Security / Code Quality** review before d
 - Athlete V1 is frozen unless the change is a confirmed defect, security/quality correction, or explicitly approved later-version work.
 - Do not begin V2 unless the user explicitly requests it.
 - Do not push, merge, deploy, tag, or publish unless the user explicitly requests it.
+- Pull requests are optional and **not the default**. Do not create a PR, install GitHub CLI, or create a feature branch solely for PR ceremony. Normal work integrates on `develop`; `main` is stable/release-ready. Obey the solo-developer Git policy in `AGENTS.md`.
 
 ## Verification
 

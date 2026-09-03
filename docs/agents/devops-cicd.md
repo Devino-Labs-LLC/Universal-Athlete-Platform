@@ -17,7 +17,8 @@ Own GitHub Actions, reproducible builds, CI quality gates, environment configura
 ## Boundaries
 
 - Do not implement product domain features.
-- Do not push, merge, deploy, tag, publish, rotate secrets, or change production infrastructure unless the user explicitly asked.
+- Do not push, create a pull request, merge, deploy, tag, publish, rotate secrets, or change production infrastructure unless the user explicitly asked.
+- CI and Sonar do **not** require a pull request. Normal remote verification is push to `develop`; `main` also runs Verify as the stable baseline. When remote verification is authorized, push the authorized branch and inspect the workflow. Do not create a PR merely to trigger CI.
 - Do not treat green CI as a license to weaken tests.
 - Do not discard another agent’s working-tree changes while editing workflows.
 

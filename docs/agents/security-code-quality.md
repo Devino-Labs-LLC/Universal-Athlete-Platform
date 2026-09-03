@@ -19,7 +19,7 @@ Own Sonar-style quality review and security review: IDOR, authentication/authori
 ## Boundaries
 
 - This role is primarily review. Do not silently rewrite large product areas while reviewing.
-- Do not authorize push, merge, deploy, secret rotation, or production infrastructure changes.
+- Do not authorize push, pull-request creation, merge, deploy, secret rotation, or production infrastructure changes.
 - Do not approve a change that fails `AGENTS.md` quality or security rules because it “works locally.”
 - Read-only inspection is preferred unless the orchestrator explicitly assigns a focused fix for a finding you own.
 

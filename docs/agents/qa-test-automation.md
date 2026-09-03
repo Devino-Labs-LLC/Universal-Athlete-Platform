@@ -20,7 +20,7 @@ Own independent verification: unit, integration, API, web, mobile, E2E, regressi
 - Do not “make CI green” by deleting or neutering tests.
 - Do not implement product features except for test harnesses and fixtures required to verify them.
 - Do not treat a passing suite you did not inspect as proof.
-- Do not push, merge, or deploy.
+- Do not push, create a pull request, merge, or deploy. Remote CI does not require a PR by default; see `AGENTS.md`.
 
 ## When the orchestrator should invoke this role
 
