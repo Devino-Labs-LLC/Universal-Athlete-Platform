@@ -144,3 +144,29 @@ jobs:
             -Dsonar.scanner.skipJreProvisioning=true
             -Dsonar.scanner.javaExePath=${{ steps.sonar-java.outputs.java_home }}/bin/java
             -Dsonar.qualitygate.wait=true
+      - name: Report Sonar compute-engine error
+        if: failure()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_PROJECT_KEY" ]; then
+            echo "SONAR_TOKEN and SONAR_PROJECT_KEY are required to inspect the compute-engine task."
+            exit 1
+          fi
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/ce/activity?component=${SONAR_PROJECT_KEY}&ps=3" \
+            | python3 -c '
+          import json, sys
+          payload = json.load(sys.stdin)
+          for task in payload.get("tasks", []):
+              print(
+                  "status=" + str(task.get("status")),
+                  "branch=" + str(task.get("branch")),
+                  "type=" + str(task.get("branchType")),
+                  "errorType=" + str(task.get("errorType")),
+                  "error=" + str(task.get("errorMessage")),
+                  sep="\n",
+              )
+              print("---")
+          '
