@@ -37,6 +37,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
+__pycache__/
+*.py[cod]
 
 # Do not allow npm or Yarn lockfiles
 # because pnpm is authoritative.

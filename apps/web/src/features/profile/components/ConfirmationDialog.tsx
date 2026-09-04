@@ -82,19 +82,8 @@ export function ConfirmationDialog({
   }
 
   return (
-    <div
-      className={styles.overlay}
-      role="presentation"
-      tabIndex={0}
-      aria-label="Dismiss"
-      onClick={onCancel}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onCancel();
-        }
-      }}
-    >
+    <div className={styles.overlay}>
+      <button type="button" className={styles.dismiss} aria-label="Dismiss" onClick={onCancel} />
       <div
         ref={dialogRef}
         className={styles.dialog}
@@ -102,7 +91,6 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={messageId}
-        onClick={(event) => event.stopPropagation()}
       >
         <h2 id={titleId} className={styles.title}>
           {title}

@@ -9,7 +9,19 @@
   background: rgb(0 0 0 / 45%);
 }
 
+.dismiss {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .dialog {
+  position: relative;
+  z-index: 1;
   width: min(100%, 28rem);
   padding: var(--uap-space-5);
   background: var(--uap-surface);
