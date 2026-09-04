@@ -84,27 +84,29 @@ Static hosting of `apps/web/dist` via `pnpm run start` (`serve -s`, bind `0.0.0.
 5. Backend CORS allowlist = exact web origin(s); no wildcard with credentials
 6. Secure cookies (`Secure`, `HttpOnly` for auth cookies)
 
-### Railway production origins (live)
+### Production origins
+
+Set the live frontend and API origins in the host environment. Do not commit them.
 
 | Role | Origin |
 |------|--------|
-| Frontend (`UAP_Client_Web`) | `https://uapclientweb-production.up.railway.app` |
-| API (`UAP_Server`) | `https://uapserver-production.up.railway.app` |
+| Frontend (`UAP_Client_Web`) | `https://app.example.com` |
+| API (`UAP_Server`) | `https://api.example.com` |
 
 The production SPA bundle bakes `VITE_UAP_ENV=production` and
-`VITE_UAP_API_BASE_URL=https://uapserver-production.up.railway.app` at **build** time.
+`VITE_UAP_API_BASE_URL` (the HTTPS API origin) at **build** time.
 Changing a Railway runtime variable after the image is built does **not** change the
 client bundle — rebuild/redeploy `UAP_Client_Web` if the API origin changes.
 
-Login from Safari is **cross-origin**:
+Login from Safari is **cross-origin** when the SPA and API are on different hosts:
 
-- `POST https://uapserver-production.up.railway.app/api/v1/identity/login`
-- `GET https://uapserver-production.up.railway.app/api/v1/identity/me`
+- `POST https://api.example.com/api/v1/identity/login`
+- `GET https://api.example.com/api/v1/identity/me`
 
 `UAP_Server` must allow the **exact** frontend origin:
 
 ```
-UAP_CORS_ALLOWED_ORIGINS=https://uapclientweb-production.up.railway.app
+UAP_CORS_ALLOWED_ORIGINS=https://app.example.com
 SPRING_PROFILES_ACTIVE=prod
 UAP_COOKIE_SECURE=true
 ```
@@ -112,7 +114,7 @@ UAP_COOKIE_SECURE=true
 Do not use `*`. Do not leave the default `http://localhost:3000` allowlist on the
 production API.
 
-`up.railway.app` is on the Public Suffix List, so the two Railway hostnames are
+`up.railway.app` is on the Public Suffix List, so two default Railway hostnames are
 **cross-site**. `SameSite=Lax` host-only cookies on the API host will not be stored
 or sent by mobile Safari on XHR/fetch even after CORS is fixed. Correct topology:
 

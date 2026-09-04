@@ -9,9 +9,9 @@
 #   UAP_COOKIE_SECURE=true
 #   UAP_CORS_ALLOWED_ORIGINS=<comma-separated exact browser origins, no wildcard>
 #
-# Railway cookie-auth example (exact origin, no trailing slash):
-#   UAP_CORS_ALLOWED_ORIGINS=https://uapclientweb-production.up.railway.app
-# `up.railway.app` is a public suffix: frontend and API hosts are cross-site.
+# Cookie-auth example (exact origin, no trailing slash):
+#   UAP_CORS_ALLOWED_ORIGINS=https://app.example.com
+# `up.railway.app` is a public suffix: frontend and API hosts on that suffix are cross-site.
 # SameSite=Lax cookies will not be stored/sent on Safari XHR to a different
 # Railway hostname. Prefer a custom same-site domain (or same-origin /api proxy).
 # Do not set SameSite=None unless cookies.secure=true; Safari ITP may still block

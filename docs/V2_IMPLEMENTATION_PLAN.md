@@ -25,7 +25,7 @@ Internal names remain Universal Athlete Platform / UAP. Commercial name is Athle
 
 In scope: athlete-facing readiness/recovery/training/progress intelligence; independent-athlete viability; mobile daily experience; web historical/profile depth; explicit generation UX; empty/partial-data honesty; tests and docs.
 
-Out of scope unless later explicitly approved: V3 coach/team/org; V4 billing/launch; V5 provider integrations; V6 generative/predictive AI; V7 marketplace/social. Purple / AI tokens stay unused.
+Out of scope unless later explicitly approved: later product phases V3–V7. Purple / AI tokens stay unused.
 
 **Non-negotiable V1 semantics**
 
@@ -93,9 +93,7 @@ These were true at planning time. Current repository state:
 | Pain as a separate metric | Use existing discomfort areas. Do not add a second pain model. |
 | Client-side readiness/recommendation engines | Forbidden. |
 | Hidden generate-on-GET | Forbidden. |
-| Coach/team/org expansion | V3. |
-| Wearables / music / nutrition | V5. |
-| Generative AI coach | V6. |
+| Later product phases V3–V7 | Out of scope for V2. |
 
 ### Explicitly deferred
 
