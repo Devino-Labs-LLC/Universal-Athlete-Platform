@@ -40,6 +40,13 @@ export default defineConfig(({ command, mode }) => {
       testTimeout: 20000,
       // Cap parallelism so heavy form suites don't starve each other into timeouts.
       maxWorkers: 2,
+      coverage: {
+        provider: 'v8',
+        reporter: ['lcov', 'text-summary'],
+        reportsDirectory: './coverage',
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts'],
+      },
     },
   };
 });

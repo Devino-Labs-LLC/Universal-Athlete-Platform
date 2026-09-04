@@ -9,6 +9,9 @@ on:
 
 permissions:
   contents: read
+  # Test jobs upload coverage artifacts; the Sonar job downloads them.
+  # This does not authorize repository contents writes.
+  actions: write
 
 jobs:
   backend-tests:
@@ -51,6 +54,13 @@ jobs:
               exit 1
               ;;
           esac
+      - name: Upload JaCoCo execution data
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-exec-${{ matrix.shard }}
+          path: backend/uap-server/build/jacoco/test.exec
+          if-no-files-found: error
+          retention-days: 1
 
   backend:
     name: Backend
@@ -78,7 +88,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm web:typecheck
       - run: pnpm web:lint
-      - run: pnpm web:test
+      - run: pnpm web:test:coverage
+      - name: Upload web LCOV
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-lcov
+          path: apps/web/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 1
       - name: Web production-shaped build
         env:
           VITE_UAP_ENV: production
@@ -98,7 +115,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm mobile:typecheck
       - run: pnpm mobile:lint
-      - run: pnpm mobile:test
+      - run: pnpm mobile:test:coverage
+      - name: Upload mobile LCOV
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-lcov
+          path: apps/mobile/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 1
 
   # Canonical analysis. Automatic Analysis must stay disabled
   # (Project Administration → Analysis Method). Skip Sonar JRE download and use
@@ -114,7 +138,7 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     needs: [backend, web, mobile]
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -124,14 +148,49 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
       - name: Record runner Java 21 for Sonar
         id: sonar-java
         run: |
           echo "java_home=${JAVA_HOME}" >> "$GITHUB_OUTPUT"
           "${JAVA_HOME}/bin/java" -version
-      - name: Compile Java for Sonar binaries
+      - name: Install JavaScript dependencies for TypeScript analysis
+        run: pnpm install --frozen-lockfile
+      - name: Download backend JaCoCo execution data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jacoco-exec-*
+          path: backend/uap-server/build/jacoco-shards
+      - name: Download web LCOV
+        uses: actions/download-artifact@v4
+        with:
+          name: web-lcov
+          path: apps/web/coverage
+      - name: Download mobile LCOV
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-lcov
+          path: apps/mobile/coverage
+      - name: Map LCOV paths to the repository root
+        run: |
+          test -f apps/web/coverage/lcov.info
+          test -f apps/mobile/coverage/lcov.info
+          python3 .github/scripts/prefix_lcov_paths.py
+      - name: Compile Java, merge coverage, and copy real classpaths
         working-directory: backend/uap-server
-        run: ./gradlew compileJava --no-daemon
+        run: |
+          find build/jacoco-shards -name '*.exec' | tee /tmp/jacoco-execs.txt
+          exec_count="$(grep -c '.exec$' /tmp/jacoco-execs.txt || true)"
+          if [ "$exec_count" -lt 3 ]; then
+            echo "Expected JaCoCo .exec artifacts from all three backend shards, found ${exec_count}."
+            exit 1
+          fi
+          ./gradlew compileJava compileTestJava copySonarLibraries copySonarTestLibraries jacocoMergedReport --no-daemon
+          test -f build/reports/jacoco/merged/jacoco.xml
       - name: Require Sonar configuration
         env:
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}

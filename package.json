@@ -7,9 +7,11 @@
       "web:build": "pnpm --filter uap_web build",
       "web:lint": "pnpm --filter uap_web lint",
       "web:test": "pnpm --filter uap_web test",
+      "web:test:coverage": "pnpm --filter uap_web test:coverage",
       "web:typecheck": "pnpm --filter uap_web typecheck",
       "mobile:start": "pnpm --filter uap_mobile start",
       "mobile:test": "pnpm --filter uap_mobile test",
+      "mobile:test:coverage": "pnpm --filter uap_mobile test:coverage",
       "mobile:typecheck": "pnpm --filter uap_mobile typecheck",
       "mobile:lint": "pnpm --filter uap_mobile lint",
       "mobile:export": "pnpm --filter uap_mobile export"

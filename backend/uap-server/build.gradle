@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'jacoco'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -53,4 +54,45 @@ tasks.named('test') {
 	useJUnitPlatform()
 	// Integration suites spin many Spring + Testcontainers contexts; default heap OOMs near full suite.
 	maxHeapSize = '2g'
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true
+		html.required = false
+		csv.required = false
+	}
+}
+
+// Merge per-shard JaCoCo .exec files collected in CI. Does not re-run tests.
+tasks.register('jacocoMergedReport', JacocoReport) {
+	dependsOn tasks.named('compileJava')
+	sourceDirectories.from(sourceSets.main.allSource.srcDirs)
+	classDirectories.from(sourceSets.main.output)
+	executionData.from({
+		fileTree(layout.buildDirectory.get().dir('jacoco-shards').asFile).include('**/*.exec')
+	})
+	onlyIf {
+		def shardDir = layout.buildDirectory.get().dir('jacoco-shards').asFile
+		shardDir.exists() && !fileTree(shardDir).include('**/*.exec').isEmpty()
+	}
+	reports {
+		xml.required = true
+		xml.outputLocation = layout.buildDirectory.file('reports/jacoco/merged/jacoco.xml')
+		html.required = false
+		csv.required = false
+	}
+}
+
+tasks.register('copySonarLibraries', Copy) {
+	from configurations.named('runtimeClasspath')
+	into layout.buildDirectory.dir('sonar/libs')
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('copySonarTestLibraries', Copy) {
+	from configurations.named('testRuntimeClasspath')
+	into layout.buildDirectory.dir('sonar/test-libs')
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

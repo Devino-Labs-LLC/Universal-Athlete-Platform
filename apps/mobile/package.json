@@ -53,6 +53,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchman=false",
+    "test:coverage": "jest --watchman=false --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "export": "expo export"

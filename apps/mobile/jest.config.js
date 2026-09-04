@@ -8,4 +8,7 @@ module.exports = {
     '^@/src/app/theme/(.*)$': '<rootDir>/src/theme/$1',
     '^@/(.*)$': '<rootDir>/$1',
   },
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['lcov', 'text-summary'],
 };
