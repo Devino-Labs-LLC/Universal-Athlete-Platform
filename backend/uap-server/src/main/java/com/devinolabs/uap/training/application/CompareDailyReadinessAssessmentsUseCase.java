@@ -121,7 +121,7 @@ public class CompareDailyReadinessAssessmentsUseCase {
 			if (o == null || n == null) {
 				continue;
 			}
-			if (!Objects.equals(o.normalizedScore(), n.normalizedScore())
+			if (!sameNumericScore(o.normalizedScore(), n.normalizedScore())
 					|| o.reasonCode() != n.reasonCode()
 					|| o.comparisonBand() != n.comparisonBand()) {
 				diffs.add(new ReadinessDimensionDifferenceResult(
@@ -135,6 +135,13 @@ public class CompareDailyReadinessAssessmentsUseCase {
 			}
 		}
 		return List.copyOf(diffs);
+	}
+
+	private static boolean sameNumericScore(BigDecimal left, BigDecimal right) {
+		if (left == null || right == null) {
+			return left == right;
+		}
+		return left.compareTo(right) == 0;
 	}
 
 	private static Map<ReadinessDimensionType, ReadinessDimensionContribution> index(

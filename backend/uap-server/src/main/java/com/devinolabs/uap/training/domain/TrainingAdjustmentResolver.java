@@ -38,14 +38,14 @@ public final class TrainingAdjustmentResolver {
 		if (overallAction == TrainingRecommendationAction.CONSIDER_RECOVERY_SESSION) {
 			add(drafts, TrainingAdjustmentType.OPTIONAL_RECOVERY_FOCUS,
 					TrainingRecommendationReasonCode.READINESS_LOW, null);
-			return finalize(drafts);
+			return toOrderedAdjustments(drafts);
 		}
 
 		if (overallAction == TrainingRecommendationAction.PROCEED_AS_PLANNED
 				|| readinessBand == ReadinessBand.HIGH) {
 			add(drafts, TrainingAdjustmentType.PRESERVE_PLANNED_SESSION,
 					TrainingRecommendationReasonCode.NO_ADJUSTMENT_REQUIRED, null);
-			return finalize(drafts);
+			return toOrderedAdjustments(drafts);
 		}
 
 		if (readinessBand == ReadinessBand.MODERATE) {
@@ -63,7 +63,7 @@ public final class TrainingAdjustmentResolver {
 			applyLimitingDimension(drafts, dimension);
 		}
 
-		return finalize(drafts);
+		return toOrderedAdjustments(drafts);
 	}
 
 	private static void applyLimitingDimension(
@@ -123,7 +123,8 @@ public final class TrainingAdjustmentResolver {
 		}
 	}
 
-	private static List<TrainingRecommendationAdjustment> finalize(Map<TrainingAdjustmentType, Draft> drafts) {
+	private static List<TrainingRecommendationAdjustment> toOrderedAdjustments(
+			Map<TrainingAdjustmentType, Draft> drafts) {
 		List<Draft> ordered = drafts.values().stream()
 				.sorted(Comparator.comparingInt((Draft d) -> d.type.priority())
 						.thenComparing(d -> d.type.name()))

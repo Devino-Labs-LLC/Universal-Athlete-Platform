@@ -50,7 +50,7 @@ export function CalendarWeekStrip({ weekStart, selectedDate, onSelectDate }: Cal
             <Text
               style={[
                 styles.dayNumber,
-                { color: selected ? theme.colors.text : theme.colors.text },
+                { color: selected ? theme.colors.text : theme.colors.textMuted },
               ]}>
               {formatDayOfMonth(date)}
             </Text>

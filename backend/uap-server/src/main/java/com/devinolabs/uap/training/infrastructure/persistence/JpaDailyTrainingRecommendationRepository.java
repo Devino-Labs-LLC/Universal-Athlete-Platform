@@ -136,11 +136,11 @@ class JpaDailyTrainingRecommendationRepository implements DailyTrainingRecommend
 	}
 
 	private DailyTrainingRecommendation toDomainWithChildren(DailyTrainingRecommendationJpaEntity entity) {
-		entity.getAdjustments().size();
-		entity.getOccurrences().size();
+		JpaAssociationInitializer.initialize(entity.getAdjustments());
+		JpaAssociationInitializer.initialize(entity.getOccurrences());
 		for (DailyTrainingRecommendationAdjustmentJpaEntity adjustment : entity.getAdjustments()) {
-			adjustment.getReasons().size();
-			adjustment.getDimensions().size();
+			JpaAssociationInitializer.initialize(adjustment.getReasons());
+			JpaAssociationInitializer.initialize(adjustment.getDimensions());
 		}
 		return DailyTrainingRecommendationPersistenceMapper.toDomain(entity);
 	}

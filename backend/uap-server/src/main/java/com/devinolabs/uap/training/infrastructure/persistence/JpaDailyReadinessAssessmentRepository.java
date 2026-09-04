@@ -127,9 +127,9 @@ class JpaDailyReadinessAssessmentRepository implements DailyReadinessAssessmentR
 	}
 
 	private DailyReadinessAssessment toDomainWithChildren(DailyReadinessAssessmentJpaEntity entity) {
-		entity.getContributions().size();
-		entity.getLimitingDimensions().size();
-		entity.getStrongestDimensions().size();
+		JpaAssociationInitializer.initialize(entity.getContributions());
+		JpaAssociationInitializer.initialize(entity.getLimitingDimensions());
+		JpaAssociationInitializer.initialize(entity.getStrongestDimensions());
 		return DailyReadinessAssessmentPersistenceMapper.toDomain(entity);
 	}
 

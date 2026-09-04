@@ -44,9 +44,6 @@ function candidateRelationshipId(display: CandidateDisplay): string | null | und
 }
 
 function candidateExerciseDefinitionId(display: CandidateDisplay): string {
-  if (display.source === 'alternative') {
-    return display.candidate.targetExerciseDefinitionId;
-  }
   return display.candidate.targetExerciseDefinitionId;
 }
 

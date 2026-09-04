@@ -70,7 +70,7 @@ public final class RecoveryMetricStatisticsCalculator {
 		if (value.compareTo(BigDecimal.ZERO) == 0) {
 			return BigDecimal.ZERO;
 		}
-		BigDecimal x = new BigDecimal(Math.sqrt(value.doubleValue()), MATH);
+		BigDecimal x = new BigDecimal(Double.toString(Math.sqrt(value.doubleValue())), MATH);
 		// Newton refinement for DECIMAL128 stability on small integers/ratings.
 		for (int i = 0; i < 8; i++) {
 			x = x.add(value.divide(x, MATH), MATH).divide(BigDecimal.valueOf(2), MATH);

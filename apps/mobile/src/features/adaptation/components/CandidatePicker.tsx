@@ -4,6 +4,7 @@ import { useAppTheme } from '@/src/app/theme/ThemeProvider';
 import {
   CandidateCard,
   CandidateDisplay,
+  getCandidateSelection,
 } from '@/src/features/adaptation/components/CandidateCard';
 
 interface CandidatePickerProps {
@@ -30,10 +31,7 @@ export function CandidatePicker({
   return (
     <View testID="candidate-picker" style={styles.list}>
       {candidates.map((candidate) => {
-        const id =
-          candidate.source === 'alternative'
-            ? candidate.candidate.targetExerciseDefinitionId
-            : candidate.candidate.targetExerciseDefinitionId;
+        const id = getCandidateSelection(candidate).targetExerciseDefinitionId;
         return (
           <CandidateCard
             key={id}

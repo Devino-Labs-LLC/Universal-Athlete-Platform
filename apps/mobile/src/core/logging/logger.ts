@@ -42,7 +42,7 @@ function redactValue(value: unknown, parentKey?: string): unknown {
 
   if (typeof value === 'string') {
     if (parentKey && SENSITIVE_KEY_PATTERN.test(parentKey)) {
-      return value.length > 0 ? '[REDACTED]' : value;
+      return '[REDACTED]';
     }
     return value;
   }

@@ -84,8 +84,8 @@ final class DailyTrainingRecommendationPersistenceMapper {
 		entity.getAdjustments().stream()
 				.sorted(Comparator.comparingInt(DailyTrainingRecommendationAdjustmentJpaEntity::getOrderIndex))
 				.forEach(row -> {
-					row.getReasons().size();
-					row.getDimensions().size();
+					JpaAssociationInitializer.initialize(row.getReasons());
+					JpaAssociationInitializer.initialize(row.getDimensions());
 					List<TrainingRecommendationReasonCode> reasons = row.getReasons().stream()
 							.sorted(Comparator.comparingInt(
 									DailyTrainingRecommendationAdjustmentReasonJpaEntity::getOrderIndex))

@@ -82,11 +82,11 @@ class JpaDailyAthleteStateSnapshotRepository implements DailyAthleteStateSnapsho
 	}
 
 	private DailyAthleteStateSnapshot toDomainWithChildren(DailyAthleteStateSnapshotJpaEntity entity) {
-		entity.getRecoveryMetrics().size();
-		entity.getDiscomfort().size();
-		entity.getCategories().size();
-		entity.getMovements().size();
-		entity.getScheduledOccurrences().size();
+		JpaAssociationInitializer.initialize(entity.getRecoveryMetrics());
+		JpaAssociationInitializer.initialize(entity.getDiscomfort());
+		JpaAssociationInitializer.initialize(entity.getCategories());
+		JpaAssociationInitializer.initialize(entity.getMovements());
+		JpaAssociationInitializer.initialize(entity.getScheduledOccurrences());
 		return DailyAthleteStateSnapshotPersistenceMapper.toDomain(entity);
 	}
 

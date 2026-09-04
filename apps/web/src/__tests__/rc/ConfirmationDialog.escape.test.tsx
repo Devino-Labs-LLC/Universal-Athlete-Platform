@@ -55,4 +55,27 @@ describe('ConfirmationDialog — Escape closes without confirming', () => {
     rerender(<Harness open={false} />);
     expect(trigger).toHaveFocus();
   });
+
+  it('dismisses on overlay click and keyboard activation without confirming', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+
+    render(
+      <ConfirmationDialog
+        open
+        title="Delete goal"
+        message="Are you sure?"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+
+    await user.click(screen.getByLabelText('Dismiss'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    await user.keyboard('{Enter}');
+    expect(onCancel).toHaveBeenCalledTimes(2);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

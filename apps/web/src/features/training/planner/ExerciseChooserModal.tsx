@@ -83,7 +83,19 @@ export function ExerciseChooserModal({ open, onClose, onSelect }: ExerciseChoose
   const totalPages = data?.totalPages ?? 0;
 
   return (
-    <div className={styles.overlay} role="presentation" onClick={onClose}>
+    <div
+      className={styles.overlay}
+      role="presentation"
+      tabIndex={0}
+      aria-label="Dismiss"
+      onClick={onClose}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
         ref={dialogRef}
         className={styles.modal}

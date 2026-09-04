@@ -38,4 +38,15 @@ describe('ExerciseChooserModal', () => {
     await user.click(screen.getByRole('button', { name: /Back squat/i }));
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ canonicalName: 'Back squat' }));
   });
+
+  it('closes from the overlay without selecting', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const onSelect = vi.fn();
+    render(<ExerciseChooserModal open onClose={onClose} onSelect={onSelect} />);
+
+    await user.click(screen.getByLabelText('Dismiss'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });

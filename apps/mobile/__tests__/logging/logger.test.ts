@@ -28,6 +28,10 @@ describe('logger', () => {
     });
   });
 
+  it('redacts empty sensitive string values', () => {
+    expect(redactForLogging({ password: '' })).toEqual({ password: '[REDACTED]' });
+  });
+
   it('creates scoped loggers in development', () => {
     (globalThis as { __DEV__?: boolean }).__DEV__ = true;
     const logger = createLogger('test');

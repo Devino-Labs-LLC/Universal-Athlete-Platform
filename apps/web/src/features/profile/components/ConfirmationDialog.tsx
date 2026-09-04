@@ -82,7 +82,19 @@ export function ConfirmationDialog({
   }
 
   return (
-    <div className={styles.overlay} role="presentation" onClick={onCancel}>
+    <div
+      className={styles.overlay}
+      role="presentation"
+      tabIndex={0}
+      aria-label="Dismiss"
+      onClick={onCancel}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onCancel();
+        }
+      }}
+    >
       <div
         ref={dialogRef}
         className={styles.dialog}

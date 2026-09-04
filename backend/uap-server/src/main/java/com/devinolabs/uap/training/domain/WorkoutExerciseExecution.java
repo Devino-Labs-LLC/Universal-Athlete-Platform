@@ -412,7 +412,9 @@ public class WorkoutExerciseExecution {
 	}
 
 	public boolean isSubstituted() {
-		return !performedExerciseDefinitionId.equals(prescribedExerciseDefinitionId);
+		ExerciseDefinitionId performed = Objects.requireNonNull(
+				performedExerciseDefinitionId, "performedExerciseDefinitionId must not be null");
+		return !performed.equals(prescribedExerciseDefinitionId);
 	}
 
 	/**

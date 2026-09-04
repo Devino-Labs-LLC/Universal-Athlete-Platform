@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +23,10 @@ import com.devinolabs.uap.identity.domain.TokenDigester;
 @Service
 public class AuthenticateAccountUseCase {
 
-	/**
-	 * Precomputed bcrypt hash used only to keep unknown-email timing closer to
-	 * known-email password verification. Not a real account credential.
-	 */
-	static final String DUMMY_PASSWORD_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
-
 	private final AccountRepository accountRepository;
 	private final RefreshSessionRepository refreshSessionRepository;
 	private final PasswordHasher passwordHasher;
+	private final PasswordCredential unknownAccountVerificationTarget;
 	private final AccessTokenIssuer accessTokenIssuer;
 	private final TokenDigester tokenDigester;
 	private final Duration refreshTokenTtl;
@@ -49,6 +45,8 @@ public class AuthenticateAccountUseCase {
 		this.accountRepository = Objects.requireNonNull(accountRepository);
 		this.refreshSessionRepository = Objects.requireNonNull(refreshSessionRepository);
 		this.passwordHasher = Objects.requireNonNull(passwordHasher);
+		this.unknownAccountVerificationTarget = PasswordCredential.fromHash(
+				this.passwordHasher.hash(UUID.randomUUID().toString()));
 		this.accessTokenIssuer = Objects.requireNonNull(accessTokenIssuer);
 		this.tokenDigester = Objects.requireNonNull(tokenDigester);
 		this.refreshTokenTtl = Objects.requireNonNull(refreshTokenTtl);
@@ -63,7 +61,9 @@ public class AuthenticateAccountUseCase {
 		Optional<Account> accountOptional = accountRepository.findByEmail(emailAddress);
 
 		if (accountOptional.isEmpty()) {
-			passwordHasher.matches(rawPassword == null ? "" : rawPassword, PasswordCredential.fromHash(DUMMY_PASSWORD_HASH));
+			passwordHasher.matches(
+					rawPassword == null ? "" : rawPassword,
+					unknownAccountVerificationTarget);
 			throw new InvalidCredentialsException();
 		}
 

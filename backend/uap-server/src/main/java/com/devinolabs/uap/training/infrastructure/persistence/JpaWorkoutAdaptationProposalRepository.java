@@ -141,10 +141,10 @@ class JpaWorkoutAdaptationProposalRepository implements WorkoutAdaptationProposa
 	}
 
 	private WorkoutAdaptationProposal toDomainWithChildren(WorkoutAdaptationProposalJpaEntity entity) {
-		entity.getRecommendationAdjustments().size();
+		JpaAssociationInitializer.initialize(entity.getRecommendationAdjustments());
 		for (WorkoutAdaptationRecommendationAdjustmentJpaEntity adjustment : entity.getRecommendationAdjustments()) {
-			adjustment.getReasons().size();
-			adjustment.getDimensions().size();
+			JpaAssociationInitializer.initialize(adjustment.getReasons());
+			JpaAssociationInitializer.initialize(adjustment.getDimensions());
 		}
 		return WorkoutAdaptationProposalPersistenceMapper.toDomain(entity);
 	}
