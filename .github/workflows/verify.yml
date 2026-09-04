@@ -201,6 +201,22 @@ jobs:
             echo "SONAR_ORGANIZATION, SONAR_PROJECT_KEY, and SONAR_TOKEN must be configured."
             exit 1
           fi
+      # Athlete Readiness V2 baseline: mint sonar.projectVersion=2.0.0 only on the
+      # long-lived main analysis. Short-lived develop/PR analyses compare to main
+      # for New Code and must not record the release version (Previous version is
+      # driven by projectVersion string changes on the analyzed long-lived branch).
+      - name: Resolve Sonar project version
+        id: sonar-version
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "project_version=2.0.0" >> "$GITHUB_OUTPUT"
+            echo "version_arg=-Dsonar.projectVersion=2.0.0" >> "$GITHUB_OUTPUT"
+            echo "Sonar projectVersion for this analysis: 2.0.0 (main V2 baseline)"
+          else
+            echo "project_version=" >> "$GITHUB_OUTPUT"
+            echo "version_arg=" >> "$GITHUB_OUTPUT"
+            echo "Sonar projectVersion for this analysis: unset (short-lived/integration; do not mint 2.0.0)"
+          fi
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -212,6 +228,7 @@ jobs:
             -Dsonar.java.binaries=backend/uap-server/build/classes/java/main
             -Dsonar.scanner.skipJreProvisioning=true
             -Dsonar.scanner.javaExePath=${{ steps.sonar-java.outputs.java_home }}/bin/java
+            ${{ steps.sonar-version.outputs.version_arg }}
             -Dsonar.qualitygate.wait=true
       - name: Report Sonar compute-engine error
         if: failure()
