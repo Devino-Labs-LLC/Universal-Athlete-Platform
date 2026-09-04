@@ -116,6 +116,16 @@ class TrainingRecommendationCalculatorDomainTests {
 	}
 
 	@Test
+	void recoverySessionProducesOptionalRecoveryFocus() {
+		List<TrainingRecommendationAdjustment> adjustments = TrainingAdjustmentResolver.resolve(
+				TrainingRecommendationAction.CONSIDER_RECOVERY_SESSION,
+				ReadinessBand.LOW,
+				List.of());
+		assertThat(adjustments).extracting(TrainingRecommendationAdjustment::type)
+				.containsExactly(TrainingAdjustmentType.OPTIONAL_RECOVERY_FOCUS);
+	}
+
+	@Test
 	void moodLimitingAddsNoPhysicalAdjustment() {
 		List<TrainingRecommendationAdjustment> adjustments = TrainingAdjustmentResolver.resolve(
 				TrainingRecommendationAction.MODIFY_SESSION,

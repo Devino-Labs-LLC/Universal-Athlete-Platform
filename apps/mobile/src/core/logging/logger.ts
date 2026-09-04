@@ -58,9 +58,10 @@ function redactValue(value: unknown, parentKey?: string): unknown {
   if (typeof value === 'object') {
     const result: Record<string, unknown> = {};
     for (const [key, nested] of Object.entries(value)) {
-      result[key] = SENSITIVE_KEY_PATTERN.test(key)
-        ? '[REDACTED]'
-        : redactValue(nested, key);
+      result[key] =
+        SENSITIVE_KEY_PATTERN.test(key) && typeof nested !== 'string'
+          ? '[REDACTED]'
+          : redactValue(nested, key);
     }
     return result;
   }
