@@ -114,6 +114,11 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      - name: Record runner Java 21 for Sonar
+        id: sonar-java
+        run: |
+          echo "java_home=${JAVA_HOME}" >> "$GITHUB_OUTPUT"
+          "${JAVA_HOME}/bin/java" -version
       - name: Compile Java for Sonar binaries
         working-directory: backend/uap-server
         run: ./gradlew compileJava --no-daemon
@@ -130,10 +135,12 @@ jobs:
       - uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          JAVA_HOME: ${{ steps.sonar-java.outputs.java_home }}
         with:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.java.binaries=backend/uap-server/build/classes/java/main
             -Dsonar.scanner.skipJreProvisioning=true
+            -Dsonar.scanner.javaExePath=${{ steps.sonar-java.outputs.java_home }}/bin/java
             -Dsonar.qualitygate.wait=true
