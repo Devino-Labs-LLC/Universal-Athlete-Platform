@@ -26,9 +26,9 @@
 
 Internal names remain Universal Athlete Platform / UAP. Commercial name is Athlete Readiness (Devino Labs LLC). No repository-wide rename.
 
-**Decision lock:** Product Owner decisions in §20 are **approved**. ADRs 029–035 are **Accepted**.
+**Slice A status:** Runtime implementation authorized and in progress / delivered on `develop` (Organization & Team foundation). Later slices still require explicit authorization.
 
-**Still not authorized:** Slice A **runtime** implementation (Flyway, APIs, UI, workflow edits). This document remains planning/governance until Slice A is explicitly authorized.
+**Bootstrap ownership (implementation reality):** Creating an Organization atomically persists an `organization_memberships` row with role `ORG_OWNER` for the creator account. This is the **minimum** ownership primitive pulled forward from Slice B — not invitations, team memberships, or role-management APIs.
 
 ---
 
@@ -464,13 +464,13 @@ Non-destructive. Archive over delete. Continue Flyway sequence after current max
 
 | Table | Keys / uniqueness | Notes |
 | --- | --- | --- |
-| `organizations` | PK `id`; status; timestamps; `version` | |
-| `teams` | PK `id`; FK `organization_id`; unique `(organization_id, slug)` or name-per-org | status |
-| `organization_memberships` | unique `(organization_id, account_id)` where active | role, status, timestamps |
-| `team_memberships` | unique `(team_id, account_id)` where active; optional `athlete_id` | role, status |
-| `invitations` | PK `id`; `token_hash` unique; team/org target; role; email/account bind; expires_at; status | raw token never stored |
-| `consent_grants` | PK `id`; athlete_id; grantee membership/team; scope set; status; version/revoked_at | |
-| `security_audit_events` | PK `id`; append-only; actor_account_id; action; subject refs; correlation_id; created_at | no wellness payloads |
+| `organizations` | PK `id`; status; timestamps; `version` | Slice A |
+| `teams` | PK `id`; FK `organization_id`; unique `(organization_id, name)` | Slice A |
+| `organization_memberships` | unique `(organization_id, account_id)`; role/status CHECKs; optional `athlete_id` | **Slice A:** ORG_OWNER bootstrap only. Slice B owns invitations + broader membership lifecycle |
+| `team_memberships` | unique `(team_id, account_id)` where active; optional `athlete_id` | Slice B+ |
+| `invitations` | PK `id`; `token_hash` unique; team/org target; role; email/account bind; expires_at; status | **Slice B** |
+| `consent_grants` | PK `id`; athlete_id; grantee membership/team; scope set; status; version/revoked_at | **Slice C** |
+| `security_audit_events` | PK `id`; append-only; actor_account_id; action; subject refs; correlation_id; created_at | Later; Slice A logging adapter only |
 | Optional `team_session_templates` | Slice F | Only if product needs team templates distinct from athlete plans |
 
 Indexes: foreign keys; `(token_hash)`; `(team_id, status)` for roster; `(athlete_id, status)` for consents; audit `(organization_id, created_at)`.
@@ -645,7 +645,7 @@ Server is the boundary; **404** (not 403) for foreign/inaccessible tenant resour
 | ModularityTests | Remain on `core`; new `@ApplicationModule` packages must satisfy allowedDependencies |
 | Later split | If `core` approaches the 20-minute budget after B/C volume, introduce dedicated shard `org-consent` and update Sonar JaCoCo merge artifact count |
 
-**Do not** edit `verify.yml` in this decision-lock task — apply the wiring when Slice A runtime is authorized.
+**Do not** edit `verify.yml` in decision-lock-only tasks. **Slice A runtime** wires `organization.*` + `consent.*` into Verify `core` when real tests land (done for Slice A).
 
 ### 16.4 Quality Gate Steward
 
@@ -659,7 +659,7 @@ Prefer small **vertical** slices. Refined order puts **consent before wellness r
 
 | Slice | Product outcome | Backend | Web | Mobile | DB | Tests / security / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
-| **A — Foundation** | Org & Team exist | Modulith `organization` (+ `consent` skeleton); CRUD org/team; ports sketched | Hidden/feature-flagged routes OK | Athlete app regression only | `organizations`, `teams` | Cross-tenant IDOR; **wire Verify `core` patterns with first tests**; QG New Code; **DoD:** no wellness APIs; ADRs already Accepted |
+| **A — Foundation** | Org & Team exist; creator is ORG_OWNER | Modulith `organization` (+ `consent` skeleton); CRUD org/team; **minimum `organization_memberships` for ORG_OWNER bootstrap**; ports | Hidden/feature-flagged routes OK | Athlete app regression only | `organizations`, `teams`, `organization_memberships` (owner bootstrap only) | Cross-tenant IDOR; **Verify `core` patterns wired**; QG New Code; **DoD:** no wellness/invite/roster APIs; ADRs Accepted |
 | **B — Membership & invitations** | People can join with roles | Membership + invitation lifecycle (PO invitation rules); `membership` port | Athlete invite accept/decline; admin invite create | Invite accept/decline | memberships, invitations | Lifecycle + concurrency + token non-oracle; **DoD:** exactly one membership; idempotent re-accept |
 | **C — Consent & sharing** | Athlete controls sharing | grants/scopes/revoke; `grants` port | Consent manager | Consent toggles | `consent_grants` | No sensitive auto-grant; revoke-then-read; **DoD:** no readiness without scope |
 | **D — Coach roster & athlete views** | Coach sees authorized roster/detail | Roster + consent-aware projections; peer roster-safe identity | Coach shell: roster + athlete detail | Team context only | indexes as needed | IDOR + field matrix; **DoD:** no non-consented wellness; no peer email/wellness |
@@ -780,17 +780,11 @@ V3 does not require provider work. If org roster later syncs from SIS/HR systems
 
 ---
 
-## 23. First authorized implementation step (Slice A)
+## 23. Slice A implementation notes
 
-**Not authorized by this decision-lock commit.** When explicitly authorized:
+Slice A delivers Organization/Team foundation on `develop` with atomic ORG_OWNER bootstrap membership. Consent module is a seam only (`ConsentGrantsPort` empty). Audit persistence table deferred; `OrganizationAuditPort` + logging adapter only.
 
-1. Create Modulith `organization` (+ `consent` skeleton) per ADR-031.
-2. Flyway for `organizations` / `teams` (`ACTIVE`/`ARCHIVED`).
-3. Wire Verify `core` `--tests` for new packages **with** first real tests.
-4. Cross-tenant IDOR tests green; no wellness/consent product APIs yet.
-5. Steward New Code review for the slice.
-
-Stop until that authorization is explicit.
+When authorizing later slices, start at **Slice B** (invitations + membership lifecycle beyond owner bootstrap).
 
 ---
 

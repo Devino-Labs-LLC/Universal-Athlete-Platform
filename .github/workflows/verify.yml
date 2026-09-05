@@ -39,6 +39,8 @@ jobs:
                 --tests 'com.devinolabs.uap.ModularityTests' \
                 --tests 'com.devinolabs.uap.identity.*' \
                 --tests 'com.devinolabs.uap.athlete.*' \
+                --tests 'com.devinolabs.uap.organization.*' \
+                --tests 'com.devinolabs.uap.consent.*' \
                 --tests 'com.devinolabs.uap.training.domain.*'
               ;;
             training-app)

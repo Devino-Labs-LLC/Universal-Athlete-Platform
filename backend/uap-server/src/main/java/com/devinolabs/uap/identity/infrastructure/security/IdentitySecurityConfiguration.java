@@ -51,6 +51,8 @@ class IdentitySecurityConfiguration {
 	static final String IDENTITY_ME_PATH = "/api/v1/identity/me";
 	static final String ATHLETES_API = "/api/v1/athletes/**";
 	static final String TRAINING_API = "/api/v1/training/**";
+	static final String ORGANIZATIONS_API = "/api/v1/organizations/**";
+	static final String TEAMS_API = "/api/v1/teams/**";
 
 	@Bean
 	AuthTokenTransport authTokenTransport(
@@ -140,6 +142,8 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(HttpMethod.POST, LOGOUT_PATH, LOGOUT_ALL_PATH).authenticated()
 						.requestMatchers(ATHLETES_API).authenticated()
 						.requestMatchers(TRAINING_API).authenticated()
+						.requestMatchers(ORGANIZATIONS_API).authenticated()
+						.requestMatchers(TEAMS_API).authenticated()
 						.anyRequest().denyAll())
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);
