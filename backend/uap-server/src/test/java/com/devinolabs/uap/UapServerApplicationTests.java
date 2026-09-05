@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("29");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("30");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("link training recommendations to adaptation proposals");
+				.isEqualTo("create organizations teams and org memberships");
 	}
 
 	@Test
@@ -713,6 +713,37 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("link training recommendations to adaptation proposals");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesOrganizationsTeamsAndOrgMembershipsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet organizations = connection.getMetaData().getTables(null, null, "organizations",
+						new String[] { "TABLE" });
+				ResultSet teams = connection.getMetaData().getTables(null, null, "teams", new String[] { "TABLE" });
+				ResultSet memberships = connection.getMetaData().getTables(null, null, "organization_memberships",
+						new String[] { "TABLE" });
+				ResultSet orgStatus = connection.getMetaData().getColumns(null, null, "organizations", "status");
+				ResultSet teamOrgId = connection.getMetaData().getColumns(null, null, "teams", "organization_id");
+				ResultSet membershipRole = connection.getMetaData().getColumns(null, null, "organization_memberships",
+						"role");
+				ResultSet athleteId = connection.getMetaData().getColumns(null, null, "organization_memberships",
+						"athlete_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '30'")) {
+			assertThat(organizations.next()).isTrue();
+			assertThat(teams.next()).isTrue();
+			assertThat(memberships.next()).isTrue();
+			assertThat(orgStatus.next()).isTrue();
+			assertThat(teamOrgId.next()).isTrue();
+			assertThat(membershipRole.next()).isTrue();
+			assertThat(athleteId.next()).isTrue();
+			assertThat(athleteId.getInt("NULLABLE")).isEqualTo(1);
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("create organizations teams and org memberships");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
