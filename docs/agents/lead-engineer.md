@@ -38,4 +38,4 @@ Protect architecture integrity, bounded-context ownership, and implementation se
 
 ## Coordination
 
-Hand specialists a precise objective, files/modules in scope, contracts to preserve, and out-of-scope items. Require QA and Security / Code Quality review before major-task completion. Ask Documentation / Release to sync ADRs, API docs, and handoffs when contracts change.
+Hand specialists a precise objective, files/modules in scope, contracts to preserve, and out-of-scope items. Require QA and Security / Code Quality (Independent Quality Gate Steward) review before major-task completion and before recommending `develop` → `main`. Decide whether historical Overall debt becomes release-blocking; the steward reports debt and trends against [`docs/quality/SONAR_V2_BASELINE.md`](../quality/SONAR_V2_BASELINE.md) but does not seize unrelated product ownership. Ask Documentation / Release to sync ADRs, API docs, handoffs, and quality baselines when contracts or certification metrics change.

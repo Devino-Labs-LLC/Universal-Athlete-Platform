@@ -19,7 +19,7 @@ Copilot is not merely autocomplete and is not frontend-only. Orchestrate or impl
 3. Web Engineer — `docs/agents/web-engineer.md`
 4. Mobile Engineer — `docs/agents/mobile-engineer.md`
 5. QA / Test Automation Engineer — `docs/agents/qa-test-automation.md`
-6. Security / Code Quality Engineer — `docs/agents/security-code-quality.md`
+6. Security / Code Quality Engineer (Independent Quality Gate Steward) — `docs/agents/security-code-quality.md`
 7. DevOps / CI-CD Engineer — `docs/agents/devops-cicd.md`
 8. External Integration Engineer — `docs/agents/external-integrations.md`
 9. Athlete Intelligence / Data Engineer — `docs/agents/athlete-intelligence.md`
@@ -27,7 +27,7 @@ Copilot is not merely autocomplete and is not frontend-only. Orchestrate or impl
 
 Use parallel work only when streams are independent. Do not write the same files in parallel.
 
-Require QA and Security / Code Quality review before declaring a major task complete.
+Require QA and Security / Code Quality (Quality Gate Steward) review before declaring a major task complete. V2 Sonar baseline: `docs/quality/SONAR_V2_BASELINE.md`.
 
 ## Product constraints
 

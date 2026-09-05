@@ -38,4 +38,4 @@ Own independent verification: unit, integration, API, web, mobile, E2E, regressi
 
 ## Coordination
 
-Work from contracts and implementation, not from the implementer’s narrative. Feed failures back to the owning specialist. Coordinate with Security / Code Quality on authorization and data-exposure tests. Tell Documentation / Release what was actually verified.
+Work from contracts and implementation, not from the implementer’s narrative. Feed failures back to the owning specialist. Coordinate with Security / Code Quality (Quality Gate Steward) on authorization, data-exposure, and coverage honesty — QA owns test implementation; the steward owns independent Quality Gate and security/reliability evaluation. Tell Documentation / Release what was actually verified.

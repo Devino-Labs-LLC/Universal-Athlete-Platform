@@ -40,7 +40,7 @@ The orchestrator (whichever AI product is hosting the session) must select and c
 3. Web Engineer — [`docs/agents/web-engineer.md`](docs/agents/web-engineer.md)
 4. Mobile Engineer — [`docs/agents/mobile-engineer.md`](docs/agents/mobile-engineer.md)
 5. QA / Test Automation Engineer — [`docs/agents/qa-test-automation.md`](docs/agents/qa-test-automation.md)
-6. Security / Code Quality Engineer — [`docs/agents/security-code-quality.md`](docs/agents/security-code-quality.md)
+6. Security / Code Quality Engineer (Independent Quality Gate Steward) — [`docs/agents/security-code-quality.md`](docs/agents/security-code-quality.md)
 7. DevOps / CI-CD Engineer — [`docs/agents/devops-cicd.md`](docs/agents/devops-cicd.md)
 8. External Integration Engineer — [`docs/agents/external-integrations.md`](docs/agents/external-integrations.md)
 9. Athlete Intelligence / Data Engineer — [`docs/agents/athlete-intelligence.md`](docs/agents/athlete-intelligence.md)
@@ -48,7 +48,7 @@ The orchestrator (whichever AI product is hosting the session) must select and c
 
 Multiple roles may collaborate on one task. Use parallel subagents only when workstreams are genuinely independent. Do not write the same files in parallel.
 
-Require QA and Security / Code Quality review before declaring a major task complete.
+Require QA and Security / Code Quality (Quality Gate Steward) review before declaring a major task complete. For V3+ New Code, the steward enforces Clean-as-You-Code against the V2 Sonar baseline in [`docs/quality/SONAR_V2_BASELINE.md`](docs/quality/SONAR_V2_BASELINE.md).
 
 ---
 
@@ -342,7 +342,7 @@ A task is complete only when:
 - adjacent discovered defects were cleaned when safe;
 - tests exist and relevant tests pass;
 - applicable typecheck, lint, and builds pass;
-- security, concurrency, and Sonar-style cleanup were reviewed;
+- Confirm security, concurrency, and Sonar-style cleanup were reviewed (Quality Gate Steward for V3+ New Code / promotion gates);
 - documentation matches behavior;
 - no unrelated changes were destroyed.
 

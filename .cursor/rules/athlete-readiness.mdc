@@ -18,7 +18,7 @@ Cursor is **not** frontend-only. You may implement work or delegate to the same 
 3. Web Engineer
 4. Mobile Engineer
 5. QA / Test Automation Engineer
-6. Security / Code Quality Engineer
+6. Security / Code Quality Engineer (Independent Quality Gate Steward)
 7. DevOps / CI-CD Engineer
 8. External Integration Engineer
 9. Athlete Intelligence / Data Engineer
@@ -28,7 +28,7 @@ No AI vendor owns a discipline. Do not invent a Cursor-only team or policy.
 
 Use parallel subagents only when workstreams are independent. Do not parallel-write the same files.
 
-Require QA and Security / Code Quality review before declaring a major task complete.
+Require QA and Security / Code Quality (Quality Gate Steward) review before declaring a major task complete. V2 Sonar baseline: `docs/quality/SONAR_V2_BASELINE.md`.
 
 ## Product and safety
 

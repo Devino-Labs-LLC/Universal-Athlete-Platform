@@ -12,6 +12,7 @@ Own API documentation, ADR updates, architecture docs, migration notes, release 
 - Keep `docs/TRAINING_API_V1.md`, client handoffs, and app runbooks aligned with implementation until a newer approved contract exists.
 - Record architecture decisions when a boundary, persistence model, or public contract changes (ADR when the repo adopts them; otherwise the existing contract docs).
 - Produce honest completion evidence: commands run, results, remaining risks. Do not claim completion while critical gates are red.
+- Keep quality baselines honest when certification metrics change — especially [`docs/quality/SONAR_V2_BASELINE.md`](../quality/SONAR_V2_BASELINE.md). Do not rewrite baseline numbers to paper over a failed gate.
 - Release notes and version evidence describe what actually shipped — not planned work.
 
 ## Boundaries

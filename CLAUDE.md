@@ -22,7 +22,7 @@ When delegating, instruct the subagent to:
 
 Use parallel subagents **only** when workstreams are genuinely independent (different files, different bounded contexts). Do not parallel-write the same files.
 
-Require **QA / Test Automation** and **Security / Code Quality** review before declaring a major task complete.
+Require **QA / Test Automation** and **Security / Code Quality** (Independent Quality Gate Steward) review before declaring a major task complete. V2 Sonar baseline: [`docs/quality/SONAR_V2_BASELINE.md`](docs/quality/SONAR_V2_BASELINE.md).
 
 ## Product constraints
 

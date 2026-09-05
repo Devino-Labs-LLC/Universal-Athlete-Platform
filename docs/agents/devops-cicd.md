@@ -35,6 +35,7 @@ Own GitHub Actions, reproducible builds, CI quality gates, environment configura
 - Confirm required configuration fails closed.
 - Confirm no secrets are committed or logged.
 - Run the affected workflow or equivalent local command when practical and report exact results.
+- Do not weaken Sonar Quality Gate thresholds, broaden exclusions, or suppress findings to make CI green. Quality Gate stewardship lives with Security / Code Quality ([`docs/agents/security-code-quality.md`](security-code-quality.md)); V2 baseline: [`docs/quality/SONAR_V2_BASELINE.md`](../quality/SONAR_V2_BASELINE.md).
 
 ## Coordination
 
