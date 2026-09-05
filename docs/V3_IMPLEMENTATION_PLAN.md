@@ -16,7 +16,7 @@
 
 | Precedence | Finding |
 | --- | --- |
-| ADRs | **None present** in the repository (`docs/adr/` absent). External reference to **ADR-029** is not on disk; V3 must formalize it (see §15). |
+| ADRs | [`docs/adr/`](adr/README.md) — ADR-029–035 **Accepted** (V3 decision lock). ADR-001–028 not present in-repo; numbers reserved/assumed external — do not reuse. |
 | Contracts | `docs/TRAINING_API_V1.md`, `docs/TRAINING_CLIENT_HANDOFF_V1.md`, `docs/V2_IMPLEMENTATION_PLAN.md` |
 | Implementation | Modulith modules `identity`, `athlete`, `training` under `backend/uap-server` |
 | Migrations | Flyway through athlete/training tables (`V1`–`V29` lineage); next V3 migrations continue the sequence |
@@ -26,7 +26,9 @@
 
 Internal names remain Universal Athlete Platform / UAP. Commercial name is Athlete Readiness (Devino Labs LLC). No repository-wide rename.
 
-**Planning mode only.** This document does **not** authorize Slice A implementation, runtime code, Flyway, API shipping, PR, merge to `main`, deploy, tag, publish, visibility changes, or Sonar admin changes.
+**Decision lock:** Product Owner decisions in §20 are **approved**. ADRs 029–035 are **Accepted**.
+
+**Still not authorized:** Slice A **runtime** implementation (Flyway, APIs, UI, workflow edits). This document remains planning/governance until Slice A is explicitly authorized.
 
 ---
 
@@ -36,10 +38,10 @@ Lead / Architect coordinated planning and explicitly consulted:
 
 | Role | Contribution |
 | --- | --- |
-| Lead / Architect | Bounded contexts, aggregates, ADR set, slice order, PO questions |
+| Lead / Architect | Bounded contexts, aggregates, ADR set, slice order; PO decision lock |
 | Backend | Module/API/schema constraints from current Modulith + ownership patterns |
 | Web | Sibling coach IA; preserve athlete `/app` shell |
-| Mobile | Athlete-first V3; coach mobile deferred unless PO expands |
+| Mobile | Athlete-first V3; full coach console web-only (PO locked) |
 | Athlete Intelligence / Data | State Engine ownership; team readiness from stored consented readiness; no second calculator |
 | QA / Test Automation | AuthZ matrix, IDOR, invite/consent/concurrency, Slice Done red gates |
 | Security / Code Quality (Quality Gate Steward) | Threat model, consent/authZ requirements, campground, promotion blockers |
@@ -122,7 +124,7 @@ From [`docs/quality/SONAR_V2_BASELINE.md`](quality/SONAR_V2_BASELINE.md):
 
 ---
 
-## 3. Architectural decisions (planned)
+## 3. Architectural decisions (locked)
 
 ### 3.1 Athlete agency
 
@@ -154,16 +156,17 @@ Publish named interfaces early: `organization :: membership`, `consent :: grants
 
 ### 3.3 Multi-persona Account
 
-**Decision (pending PO confirmation — recommended default):** one `Account`, multiple personas via membership.
+**Decision (PO approved — ADR-030):** one `Account`, multiple personas via membership.
 
-| Rule | Recommendation |
+| Rule | Locked decision |
 | --- | --- |
 | Login | Remains `Account` + cookie JWT |
-| Athlete | At most one Athlete per Account (existing uniqueness) |
-| Coach | Membership role on Org/Team — **not** a parallel 1:1 Coach aggregate by default |
-| Athlete + coach same person | Allowed |
+| Athlete | At most one Athlete per Account (existing uniqueness); optional |
+| Coach | Membership role on Org/Team — **not** a parallel 1:1 Coach aggregate |
+| Athlete + coach same person | **Allowed** |
+| Coach-only accounts | **Allowed** — membership does not require an Athlete row; `athleteId` only where applicable |
+| Multi-org / multi-team | One Account may hold memberships across multiple Organizations and multiple Teams |
 | Spring `ROLE_COACH` | Do **not** treat as sufficient authorization; every sensitive call re-checks membership + consent |
-| Separate coach accounts | Reject for V3 unless PO requires hard separation |
 
 ### 3.4 State Engine vs Planning (formalize missing ADR-029)
 
@@ -195,7 +198,7 @@ Preserve distinctions: **state ≠ recommendation ≠ plan ≠ assignment ≠ ex
 
 ### 3.6 TrainingPlan ownership under coaching
 
-**Recommended default (needs PO confirmation):** plans remain **athlete-owned**; coach is an authorized **collaborator** (writes audited). Alternative (coach-owned assignment trees) is higher complexity and deferred unless PO requires it.
+**Decision (PO approved — ADR-034):** `TrainingPlan` remains **athlete-owned**. Coaches are authorized **collaborators / assigners**. Do **not** introduce a competing coach-owned training-plan tree in V3. Assignments never mutate State Engine/readiness; assignment and recommendation may disagree as distinct facts; athlete may decline/unable; conflicts are auditable.
 
 ---
 
@@ -213,33 +216,37 @@ Preserve distinctions: **state ≠ recommendation ≠ plan ≠ assignment ≠ ex
 | **Invitation** | Pending offer to join org/team with proposed role | `Invitation` |
 | **Consent / sharing grant** | Athlete-granted, purpose-scoped visibility to a grantee (team/org membership) | `ConsentGrant` |
 | **Roster assignment** | Effective team athlete membership in `ACTIVE` status | Derived from Membership |
-| **Team season / lifecycle** | Optional soft lifecycle (`ACTIVE` / `ARCHIVED`) on Team; full “season” entity **deferred** unless PO requires | Team status fields first |
-| **Coach-to-athlete relationship** | Emergent from team membership + role + consent — **not** a separate unrestricted edge by default | — |
-| **Organization ownership/admin** | `OWNER` / `ORG_ADMIN` membership roles | Membership |
+| **Team lifecycle** | `ACTIVE` → `ARCHIVED` only in Slice A+; **no Season aggregate** in V3 unless a later training/team workflow proves need | Team status |
+| **Coach-to-athlete relationship** | Emergent from team membership + role + consent — **not** a separate unrestricted edge | — |
+| **Organization ownership/admin** | `ORG_OWNER` / `ORG_ADMIN` membership roles | Membership |
 
-### 4.2 Lifecycle (useful state machines)
+**Topology (PO locked):** flat Organization → Teams only; no nested organizations.
 
-**Invitation:** `PENDING` → `ACCEPTED` \| `DECLINED` \| `REVOKED` \| `EXPIRED` (optional `SUPERSEDED` if re-invite replaces).
+### 4.2 Lifecycle (locked state machines)
 
-**Membership:** `ACTIVE` → `REMOVED` \| `LEFT` (rejoin requires new invitation; old membership id does not resurrect access).
+See §20.2 for the normative Pre-Slice-A contract. Summary:
 
-**ConsentGrant:** `ACTIVE` → `REVOKED` (re-grant creates a **new** grant version/id).
-
-**Organization / Team:** `ACTIVE` → `ARCHIVED` (no hard delete in V3).
+| Aggregate | States |
+| --- | --- |
+| **Invitation** | `PENDING` → `ACCEPTED` \| `DECLINED` \| `REVOKED` \| `EXPIRED` |
+| **Membership** | `ACTIVE` → `REMOVED` \| `LEFT` (rejoin requires new invitation; old membership id does not resurrect access) |
+| **ConsentGrant** | `ACTIVE` → `REVOKED` (re-grant = **new** grant id) |
+| **Organization / Team** | `ACTIVE` → `ARCHIVED` (no hard delete in V3) |
 
 ### 4.3 IDs and ownership rules
 
 - All primary keys: UUID.
 - Cross-module references: UUID value objects only (same pattern as `athlete` ↔ `identity`).
 - Team always belongs to exactly one Organization.
-- Athlete membership on a team requires an Athlete profile (unless PO allows athlete-less roster placeholders — **not recommended** for V3).
-- Coach-only accounts (no Athlete row): **PO question**; technically allowed if membership does not require athleteId.
+- Athlete roster membership requires an Athlete profile and carries `athleteId`.
+- Coach/admin memberships **do not** require an Athlete row (`athleteId` absent).
+- Athletes may belong to **multiple ACTIVE teams** (including across organizations).
 
 ### 4.4 Transactional boundaries
 
-- Accept invitation → create membership (+ optional default consent prompt) in **one TX**; do **not** also assign training plans in the same TX.
+- Accept invitation → create membership in **one TX** (no sensitive consent auto-grant; no training assignment in the same TX).
 - Revoke membership / consent → status flip + audit in same TX; subsequent reads re-check DB (not JWT alone).
-- Coach plan edits use existing optimistic `version` on training aggregates.
+- Coach plan/assignment edits use existing optimistic `version` on training aggregates.
 - No distributed “invite accept generates readiness” transactions.
 
 ---
@@ -248,48 +255,55 @@ Preserve distinctions: **state ≠ recommendation ≠ plan ≠ assignment ≠ ex
 
 UI visibility is **not** authorization. Deny by default. Inaccessible → **404**.
 
-### 5.1 Roles (V3)
+### 5.1 Roles (V3 — locked enum)
 
-| Role | Scope | Notes |
+| Role enum | Scope | Notes |
 | --- | --- | --- |
-| **Athlete** | Self + team memberships as athlete | Owns wellness data |
-| **Coach** | Team | Day-to-day coaching |
-| **Head Coach** | Team | Elevated team coaching + limited staff invites |
-| **Team Admin** | Team | Roster/settings for one team |
-| **Organization Admin** | Organization | Multi-team admin |
-| **Organization Owner** | Organization | Highest org authority; transfer ownership is sensitive |
-| **Staff / read-only** | Team or Org | Optional; include if PO wants observers without invite powers |
+| `ATHLETE` | Team (athlete roster membership) | Owns wellness data; requires `athleteId` |
+| `COACH` | Team | Day-to-day coaching |
+| `HEAD_COACH` | Team | Elevated team coaching + limited coach/staff invites |
+| `TEAM_ADMIN` | Team | Roster/settings for one team |
+| `ORG_ADMIN` | Organization | Multi-team admin |
+| `ORG_OWNER` | Organization | Highest org authority; transfer ownership is sensitive |
 
-Exact role enum names to be locked in ADR + Flyway check constraints.
+**Deferred:** Staff / read-only role. Do not invent additional roles in Slice A–G without a new ADR.
 
 ### 5.2 Capability matrix
 
 Legend: **Y** = allowed when membership active; **C** = allowed only with required consent scope(s); **—** = not allowed; **Own** = athlete-self only.
 
-| Capability | Athlete | Coach | Head Coach | Team Admin | Org Admin | Org Owner | Staff RO |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| View roster (identity) | Own team Y* | Y | Y | Y | Y | Y | Y |
-| Invite athlete | — | Y† | Y | Y | Y | Y | — |
-| Remove athlete | Leave self | Y† | Y | Y | Y | Y | — |
-| Invite coach/staff | — | — | Y† | Y | Y | Y | — |
-| Manage roles | — | — | Limited† | Y | Y | Y | — |
-| View team readiness aggregates | — | C | C | C | C | C | C |
-| View athlete-level readiness | Own | C | C | C | C | C | C |
-| View recovery/check-in detail | Own | C | C | C‡ | C‡ | C‡ | C‡ |
-| View training history | Own | C | C | C | C | C | C |
-| Assign / recommend training | — | C+W | C+W | —§ | —§ | —§ | — |
-| Modify athlete-owned plans | Own | C+W | C+W | — | — | — | — |
-| Create team sessions | — | C+W | C+W | —§ | — | — | — |
-| Export data | Own | C+E | C+E | C+E | C+E | C+E | — |
-| View audit history | Own limited¶ | — | — | Team¶ | Org¶ | Org¶ | — |
-| Manage org/team configuration | — | — | Team limited | Team | Org | Org | — |
+| Capability | Athlete | Coach | Head Coach | Team Admin | Org Admin | Org Owner |
+| --- | --- | --- | --- | --- | --- | --- |
+| View roster (roster-safe identity) | Teammates Y* | Y | Y | Y | Y | Y |
+| Invite athlete | — | Y† | Y | Y | Y | Y |
+| Remove athlete | Leave self | Y† | Y | Y | Y | Y |
+| Invite coach | — | — | Y† | Y | Y | Y |
+| Manage roles | — | — | Limited† | Y | Y | Y |
+| View team readiness aggregates | — | C | C | C | C | C |
+| View athlete-level readiness | Own | C | C | C | C | C |
+| View recovery/check-in detail | Own | C | C | C‡ | C‡ | C‡ |
+| View training history | Own | C | C | C | C | C |
+| Assign / create team-session assignments | — | C+W | C+W | —§ | —§ | —§ |
+| Modify athlete-owned plans (collaborator) | Own | C+W | C+W | — | — | — |
+| Export data | Own | C+E | C+E | C+E | C+E | C+E |
+| View athlete transparency / limited audit | Own transparency¶ | — | — | Team admin audit¶ | Org audit¶ | Org audit¶ |
+| Manage org/team configuration | — | — | Team limited | Team | Org | Org |
 
-\* Athlete sees teammates’ **roster identity** only if product allows peer visibility — **default: no peer wellness; teammate identity PO decision**.  
-† Subject to org policy flags if introduced.  
-‡ Prefer least privilege: admins do **not** automatically get recovery detail without consent.  
-§ Admins configure; coaching writes stay with coaching roles unless PO merges roles.  
-¶ Audit visibility for sensitive events; athletes see grants/revokes affecting them.  
-**C+W** = consent scopes covering training collaboration write. **C+E** = export purpose scope.
+\* Active teammates receive **roster-safe identity only** — not email/contact, wellness, readiness, recovery, or training detail.  
+† Subject to org policy flags if introduced later.  
+‡ Admins do **not** automatically get recovery detail without consent.  
+§ Admins configure; coaching writes stay with coaching roles.  
+¶ Athletes see transparency subset (ADR-035); org/team admins see operational audit appropriate to scope — **not** interchangeable with athlete transparency.  
+**C+W** = `TRAINING_COLLABORATION` (or equivalent). **C+E** = export purpose scope.
+
+### 5.3 Authorization-denial semantics (locked — ADR-032)
+
+| Situation | Response |
+| --- | --- |
+| Unauthenticated | **401** |
+| Authenticated, inaccessible foreign/tenant/consent-denied resource | **404** (no existence oracle; do not use 403 for foreign resources) |
+| Owned-resource conflict / illegal transition / optimistic lock | **409** or validation **4xx** as appropriate |
+| Invitation token revoked/expired/wrong-account | Fail closed, non-oracle (prefer 404 or uniform safe code) + rate limits |
 
 ### 5.3 Anti-patterns to prevent
 
@@ -311,29 +325,31 @@ IDOR; cross-team / cross-org access; role escalation via client body; invitation
 
 | Scope | Example contents | Default on join |
 | --- | --- | --- |
-| `ROSTER_IDENTITY` | Display name, sport labels needed for roster | Configurable; often yes for active roster |
-| `AVAILABILITY` | Practice availability flags | Explicit |
-| `READINESS_CATEGORY` | Band only (`HIGH`/`MODERATE`/`LOW`/`INSUFFICIENT_DATA`) | Explicit |
-| `READINESS_SCORE` | Numeric score + limiting dimensions summary | Explicit (stricter than category) |
-| `LIMITING_DIMENSIONS` | Dimension detail | Explicit |
-| `RECOVERY_CHECK_IN_DETAIL` | Raw check-in fields/notes | Explicit; highest sensitivity |
-| `TRAINING_ADHERENCE` | Completion / skip rates | Explicit |
-| `PERFORMANCE_HISTORY` | PRs / load history | Explicit |
-| `TRAINING_COLLABORATION` | Coach may edit/assign plans & sessions | Explicit |
-| `EXPORT` | Bulk export inclusion | Explicit; never implied |
+| Roster-safe identity (membership effect, not a ConsentGrant) | Display name / roster labels needed for roster | **Yes** for ACTIVE membership (peers + authorized staff) |
+| `AVAILABILITY` | Practice availability flags | **No** — explicit grant |
+| `READINESS_CATEGORY` | Band only | **No** — explicit |
+| `READINESS_SCORE` | Numeric score + summary | **No** — explicit |
+| `LIMITING_DIMENSIONS` | Dimension detail | **No** — explicit |
+| `RECOVERY_CHECK_IN_DETAIL` | Raw check-in fields/notes | **No** — explicit |
+| `TRAINING_ADHERENCE` | Completion / skip rates | **No** — explicit |
+| `PERFORMANCE_HISTORY` | PRs / load history | **No** — explicit |
+| `TRAINING_COLLABORATION` | Coach may edit/assign plans & sessions | **No** — explicit |
+| `EXPORT` | Bulk export inclusion | **No** — explicit |
+
+Roster-safe identity is **not** email/contact and is **not** wellness/readiness/recovery/training detail.
 
 ### 6.3 Historical data after revoke / removal
 
-**Recommended default (PO confirmation required):**
+**Decision (PO approved — ADR-033):**
 
-- After revoke: coach loses **new reads** of consented categories immediately.
-- Organization may retain **non-sensitive membership audit** (joined/left timestamps, role history).
-- Retaining historical wellness snapshots for org analytics after revoke: **default no** for V3; if needed, separate legal/product review + ADR.
+- Revocation / removal / leave ends organization/coach access to **sensitive** athlete data **immediately**.
+- Security/audit records may remain **internally** retained.
+- Historical sensitive wellness/readiness data must **not** remain available through coach/org **product views** after authorization ends.
 - Athlete retains full self-history regardless of org membership.
 
 ### 6.4 Minors / schools
 
-Possible FERPA/COPPA (and similar) relevance for school deployments is a **legal/product review requirement**, not a V3 engineering compliance assertion. Parent/guardian consent flows are **out of V3** unless PO explicitly pulls them in.
+School organizations may exist. Parent/guardian and minor-specific product support is **deferred**. V3 must **not** claim support/compliance for minor-specific legal regimes. Legal/product review is a **future dependency**.
 
 ---
 
@@ -342,26 +358,29 @@ Possible FERPA/COPPA (and similar) relevance for school deployments is a **legal
 ### 7.1 Principles
 
 - Avoid inventing misleading science.
-- Do **not** invent a single team “score” unless the domain can justify it. **V3 default: no composite team score.**
-- Aggregation uses **stored** athlete readiness assessments already generated by athletes (or their explicit generation chain) — GET team readiness does **not** generate missing athlete readiness.
+- **No default single composite Team Readiness Score** (PO locked).
+- Prefer readiness-band / distribution / count semantics.
+- Aggregation uses **stored** athlete readiness only — GET team readiness does **not** generate missing athlete readiness.
 - Respect consent scopes and **minimum cohort** privacy rules.
 
-### 7.2 V3 recommended exposures
+### 7.2 V3 exposures (locked)
 
 | Metric | V3? | Notes |
 | --- | --- | --- |
 | Counts by readiness band | **Yes** | Among consented + eligible members |
 | Number ready / limited / unavailable / insufficient | **Yes** | Map bands + missing consent/data honestly |
-| Limiting-dimension distribution | **Yes** (optional) | Only with `LIMITING_DIMENSIONS` or aggregate-safe derivative |
-| Participation / availability summary | **Yes** if availability scope exists | |
-| Mean/median numeric score | **Optional** | Prefer secondary; suppress when N &lt; threshold |
-| Training-load team summaries | **Later / limited** | Prefer Slice F+ after training collaboration settles |
-| Trends over time | **Optional** | Requires stable history + consent continuity rules |
-| Single team score | **No (default)** | Unless PO + Athlete Intelligence ADR justifies |
+| Limiting-dimension distribution | **Yes** (optional) | Only with appropriate consent / aggregate-safe derivative |
+| Participation / availability summary | **Yes** if availability scope granted | |
+| Mean/median numeric score | **Optional secondary** | Suppress when N &lt; `minCohortSize` |
+| Training-load team summaries | **Later / limited** | After Slice E collaboration settles |
+| Trends over time | **Optional** | Requires consent continuity rules |
+| Single composite team score | **No** | Do not add without a new ADR + PO approval |
 
 ### 7.3 Insufficient-data / privacy behavior
 
-- If consented sample &lt; `minCohortSize` (proposed default **3**, PO-configurable): return `INSUFFICIENT_DATA` / suppressed cells — **not** a fake 0.
+- **`minCohortSize = 5`** for published team readiness aggregates (PO locked).
+- If consented eligible sample &lt; 5: return `INSUFFICIENT_DATA` / suppressed cells — **not** a fake 0.
+- Suppress smaller cohorts/cells where output could materially re-identify an athlete.
 - Exclude: non-members, removed members, missing consent, missing assessment for the date, wrong team.
 - Drill-down that collapses to one athlete requires that athlete’s consent — never via aggregate loophole.
 
@@ -387,13 +406,13 @@ Coaches interact with existing planning lane under `training`:
 
 | Action | Allowed if | Constraint |
 | --- | --- | --- |
-| Assign a workout / create occurrence | Membership + `TRAINING_COLLABORATION` | Explicit POST; athlete-owned plan preferred |
-| Recommend a session | Same | Must not bypass recommendation calculator as source of readiness truth |
-| Create a template / team session definition | Coaching roles | Team-scoped template entity or shared plan pattern — detail in Slice F |
-| Modify athlete-generated work | Same + optimistic lock | Audited collaborator write |
+| Assign a workout / create team-session assignment | Membership + `TRAINING_COLLABORATION` | Explicit POST; athlete-owned plan; audited |
+| Athlete decline / unable | Athlete owns response | Conflict/warning + outcome auditable |
+| Assignment vs recommendation | Always | May disagree; both remain visible as distinct facts |
+| Modify athlete-generated work (collaborator) | Same + optimistic lock | Audited; never mutates State Engine |
 | Schedule team sessions | Same | Feasibility/environment rules still apply |
 
-Coaches must **not** bypass: State Engine, readiness, recommendation, planning authority, or safety constraints.
+Coaches must **not** bypass: State Engine, readiness calculation, recommendation calculator ownership, or safety constraints. Assignments never overwrite State Engine/readiness.
 
 ---
 
@@ -425,10 +444,11 @@ For each shipped endpoint document: method; route; actor; authorization requirem
 
 | Action | Behavior |
 | --- | --- |
-| Accept invitation (retry) | Idempotent success **or** `409` — pick one in ADR; test both double-submit and delayed retry |
-| Create invitation | Dedupe pending invite per (team, email/account, role) |
+| Accept invitation (same authorized account, already accepted) | **Idempotent success**; still guarantees **exactly one** membership |
+| Accept with revoked/expired/wrong-account token | Fail closed, non-oracle |
+| Create invitation | Email/account-bound; opaque CSPRNG token; store **hash only**; single-use; default expiry **7 days**; proposed role **immutable** after issue (change = revoke + new invite); dedupe pending per (team, email/account, role) |
 | Revoke consent | Idempotent if already revoked |
-| Coach plan PATCH | Optimistic `expectedVersion` / `version` as today |
+| Coach plan / assignment PATCH | Optimistic `expectedVersion` / `version` as today |
 
 ### 9.4 Athlete self APIs
 
@@ -496,25 +516,20 @@ Proposed areas:
 
 Athlete mobile remains first-class.
 
-### 12.1 V3 mobile in scope (recommended)
+### 12.1 V3 mobile in scope (PO locked)
 
 - View/accept/decline team invitations
 - Consent / sharing controls
-- See which coaches/teams have which scopes
-- Team context badges where helpful
-- Team-assigned sessions **appearing in athlete training** when assigned (consume training APIs)
+- Membership / team context
+- Team-assigned sessions appearing in athlete training when assigned
 
-### 12.2 Web-only initially (recommended)
+### 12.2 Web-only in V3 (PO locked)
 
-- Full coach roster management
-- Org/team admin settings
-- Team readiness dashboards
-- Dense staff/role management
-- Bulk export
+- Full coach console (roster, admin, team readiness, dense staff/role management, bulk export)
 
 ### 12.3 Coach mobile
 
-**Deferred by default** for V3 (PO may expand). If added, use a separate Expo route group — do not overload athlete `(tabs)`.
+**Out of V3.** Full coach console remains web-only. Do not overload athlete `(tabs)` with coach chrome.
 
 ---
 
@@ -548,6 +563,8 @@ Align with SCREAMING_SNAKE / past-tense domain style already used for generation
 
 Training revision tables remain **clinical/history of content**, not security audit.
 
+**Athlete-facing transparency (PO locked — ADR-035):** expose a subset for consent grant/revoke; membership join/leave/remove; coach collaboration/assignment where appropriate. Do **not** expose the raw internal security audit stream.
+
 ---
 
 ## 14. Security / threat model (Quality Gate Steward)
@@ -580,21 +597,21 @@ Quality Gate fail; New Code Blocker/Critical sec/reliability; client-only authZ;
 
 ---
 
-## 15. ADRs required (non-trivial)
+## 15. ADRs (Accepted)
 
-Create `docs/adr/` when writing these (Slice A documentation gate). Do **not** create ADRs for trivial naming.
+Canonical tree: [`docs/adr/`](adr/README.md). Numbering: ADR-029 externally reserved; ADR-001–028 not reused; V3 lock continues at ADR-030+.
 
-| ADR | Decision to lock |
-| --- | --- |
-| **ADR-029 — State Engine vs Planning ownership** | Formalize missing external ADR: State Engine = `DailyAthleteState*` + readiness/recommendation chain in `training`; Planning = plan/schedule/occurrence/adaptation in `training`; “Planning Orchestrator” = logical label, not a new module in V3; coach writes planning only |
-| **Multi-persona Account** | One Account; Athlete 0..1; coach via membership |
-| **Organization + Consent module split** | New `organization` + `consent`; dependency/ports |
-| **Authorization & IDOR posture** | Matrix; membership + consent; preserve 404-for-inaccessible |
-| **Consent / sharing model** | Scopes; revoke semantics; defaults on join |
-| **TrainingPlan ownership under coaching** | Athlete-owned + collaborator (recommended) vs coach-owned trees |
-| **Audit** | Mandatory events; append-only; athlete transparency level |
+| ADR | Title | Status |
+| --- | --- | --- |
+| [029](adr/029-state-engine-vs-planning-ownership.md) | State Engine vs Planning ownership | Accepted |
+| [030](adr/030-multi-persona-account.md) | Multi-persona Account | Accepted |
+| [031](adr/031-organization-and-consent-bounded-contexts.md) | Organization + Consent bounded-context split | Accepted |
+| [032](adr/032-authorization-and-idor-posture.md) | Authorization / IDOR posture | Accepted |
+| [033](adr/033-consent-and-sharing-authority.md) | Consent / sharing authority | Accepted |
+| [034](adr/034-training-plan-ownership-and-coach-collaboration.md) | TrainingPlan ownership and coach collaboration | Accepted |
+| [035](adr/035-audit-model.md) | Audit model | Accepted |
 
-Defer ADRs: billing (V4), wearables (V5), AI coach (V6), marketplace (V7), parent/guardian (unless pulled into V3).
+Defer further ADRs: billing (V4), wearables (V5), AI coach (V6), marketplace (V7), parent/guardian, Season aggregate (unless later required).
 
 ---
 
@@ -602,22 +619,33 @@ Defer ADRs: billing (V4), wearables (V5), AI coach (V6), marketplace (V7), paren
 
 ### 16.1 Principles
 
-Server is the boundary; 404 not 403 for foreign resources; consent additive; no hidden writes; Slice Done ≠ happy-path demo.
+Server is the boundary; **404** (not 403) for foreign/inaccessible tenant resources; consent additive (no sensitive auto-grant); invitation accept idempotent for same account with exactly-one membership; no hidden writes; Slice Done ≠ happy-path demo.
 
 ### 16.2 Required suites (grow per slice)
 
-- Authorization matrix (table-driven)
-- Org/team IDOR isolation
-- Invitation lifecycle + duplicate accept concurrency
-- Consent grant/revoke/re-grant + immediate fail-closed
-- Membership removal / stale access
-- Team readiness honesty (insufficient-data, min-n, no hidden generate)
-- Web Vitest RC-style coach/athlete flows; mobile Jest for invite/consent
-- HTTP multi-actor “E2E” chains (browser E2E only if harness later approved)
+- Authorization matrix using locked roles only (`ATHLETE`…`ORG_OWNER`) — no Staff RO cells
+- Org/team IDOR isolation + multi-org/multi-team fixtures
+- Invitation lifecycle (7-day expiry, hash-only token, immutable role, idempotent re-accept, wrong-account non-oracle)
+- Consent grant/revoke/re-grant + immediate fail-closed for coach/org product views
+- Membership removal / leave / stale access
+- Team readiness honesty (`minCohortSize = 5`, no composite score, no hidden generate)
+- Assignment vs recommendation both visible; athlete decline/unable audited (Slice E+)
+- Athlete transparency subset vs raw audit denial
+- Web Vitest coach/athlete flows; mobile Jest invite/consent/membership only
+- HTTP multi-actor chains
 
-### 16.3 CI / Verify
+### 16.3 CI / Verify (Slice A recommendation)
 
-New `organization` / `consent` packages **must** be included in Verify Gradle shards (today `core` runs `identity` + `athlete` + `training.domain`). Orphaned tests are a Slice A Done failure.
+**Decision:** For Slice A, extend the existing Verify **`core`** shard with `--tests 'com.devinolabs.uap.organization.*'` and `--tests 'com.devinolabs.uap.consent.*'` in the **same change that lands real tests** for those packages.
+
+| Rule | Detail |
+| --- | --- |
+| Fail-closed | Do not pre-declare empty `--tests` patterns; Gradle “no tests found” must fail the job; never `\|\| true` |
+| Orphan ban | Any new `organization` / `consent` test package outside shard filters = Slice A Done failure |
+| ModularityTests | Remain on `core`; new `@ApplicationModule` packages must satisfy allowedDependencies |
+| Later split | If `core` approaches the 20-minute budget after B/C volume, introduce dedicated shard `org-consent` and update Sonar JaCoCo merge artifact count |
+
+**Do not** edit `verify.yml` in this decision-lock task — apply the wiring when Slice A runtime is authorized.
 
 ### 16.4 Quality Gate Steward
 
@@ -631,14 +659,14 @@ Prefer small **vertical** slices. Refined order puts **consent before wellness r
 
 | Slice | Product outcome | Backend | Web | Mobile | DB | Tests / security / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
-| **A — Foundation** | Org & Team exist; ADRs landed | Modulith `organization` (+ `consent` skeleton); CRUD org/team; ports sketched | Hidden/feature-flagged routes OK | Athlete app regression only | `organizations`, `teams` | Cross-tenant IDOR; Verify shard wired; QG New Code; **DoD:** no wellness APIs yet; ADRs merged |
-| **B — Membership & invitations** | People can join with roles | Membership + invitation lifecycle; `membership` port | Athlete invite accept/decline; admin invite create | Invite accept/decline | memberships, invitations | Lifecycle + concurrency + token abuse; **DoD:** no duplicate memberships; revoke works |
-| **C — Consent & sharing** | Athlete controls sharing | `consent` grants/scopes/revoke; `grants` port | Consent manager | Consent toggles | `consent_grants` | Scope matrix; revoke-then-read; **DoD:** no readiness without scope |
-| **D — Coach roster & athlete views** | Coach can see authorized roster/detail | Roster + consent-aware projections | Coach shell: roster + athlete detail | Optional read-only team list | indexes as needed | IDOR + field matrix; **DoD:** no non-consented wellness |
-| **E — Coach training workflows** | Coach assigns/collaborates on plans/sessions | Training use cases + authZ ports; audit `WORKOUT_ASSIGNED` | Coach planning UX (scoped) | Athlete sees assignments in training | optional templates | AuthZ + optimistic lock; **DoD:** State Engine untouched as write target |
-| **F — Team readiness** | Honest team readiness dashboard | Aggregate from stored consented readiness | Team readiness UI | — (web-first) | none or tiny cache table if justified | Min-n / insufficient; no hidden writes; **DoD:** no team mega-score unless ADR |
-| **G — UX completion** | Cohesive coach + athlete org UX | API polish only | Full IA, a11y, empty/error | Invite/consent polish | — | RC cache isolation; **DoD:** athlete Home not admin-ized |
-| **H — Hardening / release gate** | V3 releasable | Audit completeness; stale authZ battery | Hardening | Hardening | — | Full matrix freeze; Sonar vs baseline; campground closed on touched debt; **DoD:** steward + QA sign-off |
+| **A — Foundation** | Org & Team exist | Modulith `organization` (+ `consent` skeleton); CRUD org/team; ports sketched | Hidden/feature-flagged routes OK | Athlete app regression only | `organizations`, `teams` | Cross-tenant IDOR; **wire Verify `core` patterns with first tests**; QG New Code; **DoD:** no wellness APIs; ADRs already Accepted |
+| **B — Membership & invitations** | People can join with roles | Membership + invitation lifecycle (PO invitation rules); `membership` port | Athlete invite accept/decline; admin invite create | Invite accept/decline | memberships, invitations | Lifecycle + concurrency + token non-oracle; **DoD:** exactly one membership; idempotent re-accept |
+| **C — Consent & sharing** | Athlete controls sharing | grants/scopes/revoke; `grants` port | Consent manager | Consent toggles | `consent_grants` | No sensitive auto-grant; revoke-then-read; **DoD:** no readiness without scope |
+| **D — Coach roster & athlete views** | Coach sees authorized roster/detail | Roster + consent-aware projections; peer roster-safe identity | Coach shell: roster + athlete detail | Team context only | indexes as needed | IDOR + field matrix; **DoD:** no non-consented wellness; no peer email/wellness |
+| **E — Coach training workflows** | Coach assigns/collaborates | Training use cases + ports; assignment vs recommendation; decline/unable | Coach planning UX (web) | Athlete sees assignments | optional templates | AuthZ + audit; **DoD:** State Engine not a write target |
+| **F — Team readiness** | Honest team readiness | Aggregate stored consented readiness; `minCohortSize=5` | Team readiness UI (web) | — | none or justified tiny cache | Insufficient/suppress; **DoD:** no composite team score |
+| **G — UX completion** | Cohesive coach + athlete org UX | API polish; athlete transparency subset | Full coach IA | Invite/consent polish | — | Cache isolation; **DoD:** athlete Home not admin-ized; no coach mobile console |
+| **H — Hardening / release gate** | V3 releasable | Audit completeness; stale authZ battery | Hardening | Hardening | — | Full matrix freeze; Sonar vs baseline; **DoD:** steward + QA sign-off |
 
 **Do not** start F before C. **Do not** write coach data into State Engine POSTs.
 
@@ -651,7 +679,7 @@ V3 is complete only when:
 1. Athletes can join/leave teams under invitation + membership policy.
 2. Coaches/admins can manage roster and roles within authorization matrix.
 3. Consent scopes gate athlete-level wellness/readiness/training collaboration.
-4. Team readiness is honest, consent-aware, and non-misleading (no unjustified mega-score).
+4. Team readiness is honest, consent-aware, non-misleading, uses `minCohortSize = 5`, and has **no** composite team score.
 5. Coach planning writes go through training planning lane with audit; State Engine remains sole derived-state owner.
 6. Web coach/admin sibling IA ships; athlete experience remains distinct; mobile athlete invite/consent ships.
 7. Security threat mitigations for T1–T11 addressed for shipped surfaces.
@@ -673,24 +701,60 @@ V3 is complete only when:
 
 ---
 
-## 20. Unresolved questions (product-owner approval)
+## 20. Product Owner decisions (approved) and Pre-Slice-A contract
 
-1. Confirm **one Account / multi-persona** vs mandatory separate coach accounts.
-2. Allow **coach-only** accounts (no Athlete row)?
-3. Org model: Org→Teams only, or nested orgs / multi-org coaches in V3?
-4. Athlete on **multiple teams** simultaneously?
-5. Teammate **peer visibility** of roster identity (not wellness)?
-6. **TrainingPlan ownership**: athlete-owned collaborator vs coach-owned assignment trees?
-7. Consent **defaults on join** — which scopes auto-granted, if any?
-8. After leave/revoke: retain any historical wellness for org, or purge from org views?
-9. Invitation: email-bound vs open link; expiry defaults; role immutable at invite?
-10. Minors / parent-guardian in **V3** or later (legal review)?
-11. May coaches **force** plan override that ignores recommendation, or advisory-only?
-12. Team readiness: confirm **no single team score**; choose `minCohortSize` default.
-13. **Mobile coach** in V3 or web-only?
-14. Must audit events be **athlete-visible** (transparency) in V3?
-15. Staff/read-only role in V3 or defer?
-16. Team **season** entity now vs archive-only lifecycle?
+### 20.1 Approved Product Owner decisions
+
+| Topic | Decision | Slice implications |
+| --- | --- | --- |
+| Account / persona | One Account; multi-persona; Athlete + Coach/Admin simultaneous OK | ADR-030; authZ by membership |
+| Coach-only accounts | Allowed; no Athlete row required; `athleteId` only when applicable | Membership schema; invite athlete vs coach paths |
+| Organization topology | Flat Organization → Teams; no nesting; multi-org memberships OK | Slice A schema; no nested APIs |
+| Multiple team memberships | Athletes may have multiple ACTIVE teams (incl. cross-org) | Unique keys per team; multi-team fixtures in QA |
+| Peer roster visibility | Roster-safe identity only; no email/contact/wellness/readiness/recovery/training from peer membership alone | Roster DTO field allow-list |
+| TrainingPlan ownership | Athlete-owned; coach collaborator/assigner; no coach-owned plan tree | ADR-034; Slice E |
+| Consent defaults | No sensitive scopes auto-grant; membership ⇒ roster-safe identity only | Slice C before D/F |
+| Leave/revoke history | Immediate end of coach/org sensitive product access; internal audit retained; no sensitive history in org views | AuthZ + projection tests |
+| Invitations | Email/account-bound; CSPRNG token; hash-at-rest; single-use; 7-day expiry; immutable role; idempotent same-account re-accept; fail-closed non-oracle | Slice B |
+| Minors | Deferred; schools OK without compliance claims; legal review future dependency | No guardian flows in V3 |
+| Coach training authority | Explicit assignments OK; never mutate State Engine/readiness; assignment ≠ recommendation; athlete decline/unable; auditable | ADR-029/034; Slice E |
+| Team readiness | No composite team score; bands/counts; `minCohortSize = 5`; GET read-only stored only | Slice F |
+| Coach mobile | Web-only coach console; mobile athlete-first | Slice G scope |
+| Athlete-visible audit | Transparency subset only; not raw security audit | ADR-035; Slice G/H |
+| Staff/read-only | Deferred | Matrix without Staff RO |
+| Season | No Season in Slice A; Team `ACTIVE`→`ARCHIVED` only | Slice A schema |
+
+### 20.2 Pre-Slice-A contract (normative)
+
+| Contract item | Locked value |
+| --- | --- |
+| Role enum | `ATHLETE`, `COACH`, `HEAD_COACH`, `TEAM_ADMIN`, `ORG_ADMIN`, `ORG_OWNER` |
+| Organization lifecycle | `ACTIVE` → `ARCHIVED` |
+| Team lifecycle | `ACTIVE` → `ARCHIVED` |
+| Membership lifecycle | `ACTIVE` → `REMOVED` \| `LEFT` |
+| Invitation lifecycle | `PENDING` → `ACCEPTED` \| `DECLINED` \| `REVOKED` \| `EXPIRED` |
+| ConsentGrant lifecycle | `ACTIVE` → `REVOKED` (re-grant = new id) |
+| Invitation idempotency | Same authorized account replaying successful accept → idempotent success; exactly one membership |
+| Sensitive consent defaults | None auto-granted on join |
+| Denial semantics | Unauthenticated **401**; inaccessible authenticated **404**; owned conflicts **409**/validation; invite abuse non-oracle |
+| Multi-org / multi-team | Allowed |
+| Coach-only membership | Allowed without Athlete row |
+
+### 20.3 Slice A readiness review
+
+Independent confirmation (docs-only; Lead coordinated with Backend, QA, Security/Quality Gate Steward, DevOps):
+
+| Role | Verdict |
+| --- | --- |
+| Lead / Architect | **Ready** — ADRs Accepted; topology/roles/lifecycles locked; Slice A scope remains org/team foundation without wellness |
+| Backend | **Ready** — Modulith split + Flyway org/team tables implementable; ports sketched; coach-only membership schema clear |
+| QA | **Ready** — Matrix/IDOR/invite contracts concrete; Staff RO removed; 404 Deny cells; invitation idempotency testable |
+| Security / Quality Gate Steward | **Ready** — Threat mitigations map to locked decisions; campground deferred until identity/security paths are touched; New Code gates unchanged |
+| DevOps / CI-CD | **Ready** — Prefer extend Verify **`core`** with `organization.*` + `consent.*` when tests land; dedicated `org-consent` shard later if timeout risk; fail-closed; **no workflow edit in this lock task** |
+
+**Remaining true blockers before Slice A runtime:** none architectural. Slice A still requires **explicit user authorization** to implement code/migrations/Verify wiring.
+
+**Not blockers:** V4–V7 deferrals; minors legal review; Season; Staff RO; coach mobile.
 
 ---
 
@@ -703,8 +767,8 @@ V3 is complete only when:
 | Second readiness engine | Aggregates read stored assessments only |
 | JWT role stale privileges | Membership/consent re-check every sensitive call |
 | Athlete Home polluted | Sibling coach IA |
-| Verify skips new tests | Shard wiring in Slice A DoD |
-| Legal overclaim | Review flags only; no compliance assertions |
+| Verify skips new tests | Wire `core` patterns with first tests; orphan = Done fail |
+| Legal overclaim | Schools without compliance claims; minors deferred |
 | Scope creep into V4–V7 | Explicit boundaries §19 |
 | Touching CSRF/cookie debt poorly | Campground + steward review |
 
@@ -716,26 +780,26 @@ V3 does not require provider work. If org roster later syncs from SIS/HR systems
 
 ---
 
-## 23. First authorized implementation step (after this plan)
+## 23. First authorized implementation step (Slice A)
 
-**Not authorized by this document.** When PO/Lead explicitly authorize **Slice A**:
+**Not authorized by this decision-lock commit.** When explicitly authorized:
 
-1. Land ADR-029 + multi-persona + module-split ADRs.
-2. Create Modulith `organization` (+ `consent` skeleton).
-3. Flyway for `organizations` / `teams`.
-4. Wire Verify shards.
-5. IDOR tests green; no wellness endpoints yet.
+1. Create Modulith `organization` (+ `consent` skeleton) per ADR-031.
+2. Flyway for `organizations` / `teams` (`ACTIVE`/`ARCHIVED`).
+3. Wire Verify `core` `--tests` for new packages **with** first real tests.
+4. Cross-tenant IDOR tests green; no wellness/consent product APIs yet.
+5. Steward New Code review for the slice.
 
-Stop here until that authorization is explicit.
+Stop until that authorization is explicit.
 
 ---
 
-## 24. Git / safety for this planning task
+## 24. Git / safety for decision-lock work
 
 - Branch: `develop`
-- Planning/docs only
-- No runtime code, migrations, API implementation, PR, merge to `main`, deploy, tag, publish, visibility, or Sonar admin changes
+- Docs/ADR only
+- No runtime code, migrations, API/UI implementation, PR, merge to `main`, deploy, tag, publish, visibility, or Sonar admin changes
 
-Suggested commit message for this plan:
+Suggested commit:
 
-`docs: define Athlete Readiness V3 architecture and delivery plan`
+`docs: lock V3 product decisions and architecture`
