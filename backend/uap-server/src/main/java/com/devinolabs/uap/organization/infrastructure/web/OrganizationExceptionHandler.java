@@ -31,73 +31,69 @@ class OrganizationExceptionHandler {
 				.map(this::toDetail)
 				.toList();
 		return ResponseEntity.badRequest()
-				.body(error("VALIDATION_ERROR", "Request validation failed", request, details));
+				.body(apiError("VALIDATION_ERROR", "Request validation failed", request, details));
 	}
 
 	@ExceptionHandler(OrganizationNotFoundException.class)
 	ResponseEntity<ApiErrorResponse> handleOrganizationNotFound(
 			OrganizationNotFoundException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("ORGANIZATION_NOT_FOUND", "Organization was not found", request, List.of()));
+		return notFound(request, "ORGANIZATION_NOT_FOUND", "Organization was not found");
 	}
 
 	@ExceptionHandler(TeamNotFoundException.class)
 	ResponseEntity<ApiErrorResponse> handleTeamNotFound(TeamNotFoundException ex, HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(error("TEAM_NOT_FOUND", "Team was not found", request, List.of()));
+		return notFound(request, "TEAM_NOT_FOUND", "Team was not found");
 	}
 
 	@ExceptionHandler(OrganizationArchivedException.class)
 	ResponseEntity<ApiErrorResponse> handleOrganizationArchived(
 			OrganizationArchivedException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("ORGANIZATION_ARCHIVED", "Archived organization cannot be modified", request, List.of()));
+		return conflict(request, "ORGANIZATION_ARCHIVED", "Archived organization cannot be modified");
 	}
 
 	@ExceptionHandler(TeamArchivedException.class)
 	ResponseEntity<ApiErrorResponse> handleTeamArchived(TeamArchivedException ex, HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("TEAM_ARCHIVED", "Archived team cannot be modified", request, List.of()));
+		return conflict(request, "TEAM_ARCHIVED", "Archived team cannot be modified");
 	}
 
 	@ExceptionHandler(InvalidOrganizationStatusException.class)
 	ResponseEntity<ApiErrorResponse> handleInvalidOrganizationStatus(
 			InvalidOrganizationStatusException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("ORGANIZATION_ARCHIVED",
-						ex.getMessage() == null ? "Invalid organization status" : ex.getMessage(),
-						request,
-						List.of()));
+		String message = ex.getMessage() == null ? "Invalid organization status" : ex.getMessage();
+		return conflict(request, "ORGANIZATION_ARCHIVED", message);
 	}
 
 	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
 	ResponseEntity<ApiErrorResponse> handleOptimisticLock(
 			ObjectOptimisticLockingFailureException ex,
 			HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(error("OPTIMISTIC_LOCK_CONFLICT",
-						"The resource was modified concurrently; retry the request",
-						request,
-						List.of()));
+		return conflict(request,
+				"OPTIMISTIC_LOCK_CONFLICT",
+				"The resource was modified concurrently; retry the request");
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
 	ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
-		return ResponseEntity.badRequest()
-				.body(error("VALIDATION_ERROR",
-						ex.getMessage() == null ? "Request could not be processed" : ex.getMessage(),
-						request,
-						List.of()));
+		String message = ex.getMessage() == null ? "Request could not be processed" : ex.getMessage();
+		return ResponseEntity.badRequest().body(apiError("VALIDATION_ERROR", message, request, List.of()));
 	}
 
 	private ApiErrorResponse.FieldErrorDetail toDetail(FieldError fieldError) {
 		return new ApiErrorResponse.FieldErrorDetail(fieldError.getField(), fieldError.getDefaultMessage());
 	}
 
-	private static ApiErrorResponse error(
+	private static ResponseEntity<ApiErrorResponse> notFound(HttpServletRequest request, String code, String message) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError(code, message, request, List.of()));
+	}
+
+	private static ResponseEntity<ApiErrorResponse> conflict(HttpServletRequest request, String code, String message) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(apiError(code, message, request, List.of()));
+	}
+
+	private static ApiErrorResponse apiError(
 			String code,
 			String message,
 			HttpServletRequest request,

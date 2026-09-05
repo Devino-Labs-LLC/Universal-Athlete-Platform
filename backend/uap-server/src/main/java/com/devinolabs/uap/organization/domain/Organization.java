@@ -21,7 +21,7 @@ public class Organization {
 			Instant updatedAt,
 			long version) {
 		this.id = Objects.requireNonNull(id, "Organization id must not be null");
-		this.name = requireName(name);
+		this.name = OrganizationNames.requireDisplayName(name);
 		this.status = Objects.requireNonNull(status, "Organization status must not be null");
 		this.createdAt = Objects.requireNonNull(createdAt, "Organization createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "Organization updatedAt must not be null");
@@ -53,8 +53,8 @@ public class Organization {
 
 	public void rename(String name, Clock clock) {
 		requireMutable(clock);
-		this.name = requireName(name);
-		touch(clock);
+		this.name = OrganizationNames.requireDisplayName(name);
+		this.updatedAt = Instant.now(clock);
 	}
 
 	public void archive(Clock clock) {
@@ -63,7 +63,7 @@ public class Organization {
 			throw new IllegalStateException("Organization is already archived");
 		}
 		this.status = OrganizationStatus.ARCHIVED;
-		touch(clock);
+		this.updatedAt = Instant.now(clock);
 	}
 
 	private void requireMutable(Clock clock) {
@@ -71,21 +71,6 @@ public class Organization {
 		if (status == OrganizationStatus.ARCHIVED) {
 			throw new IllegalStateException("Archived organization cannot be modified");
 		}
-	}
-
-	private void touch(Clock clock) {
-		this.updatedAt = Instant.now(clock);
-	}
-
-	private static String requireName(String value) {
-		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException("name must not be blank");
-		}
-		String normalized = value.trim();
-		if (normalized.length() > 200) {
-			throw new IllegalArgumentException("name must not exceed 200 characters");
-		}
-		return normalized;
 	}
 
 	public OrganizationId id() {
