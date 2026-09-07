@@ -15,10 +15,12 @@ import com.devinolabs.uap.organization.domain.AccountId;
 import com.devinolabs.uap.organization.domain.Organization;
 import com.devinolabs.uap.organization.domain.OrganizationId;
 import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
+import com.devinolabs.uap.organization.domain.OrganizationStatus;
 import com.devinolabs.uap.organization.domain.Team;
 import com.devinolabs.uap.organization.domain.TeamId;
 import com.devinolabs.uap.organization.domain.TeamMembership;
 import com.devinolabs.uap.organization.domain.TeamMembershipId;
+import com.devinolabs.uap.organization.domain.TeamStatus;
 
 @Component
 class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
@@ -66,6 +68,38 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 				.filter(membership -> membership.athleteId() != null)
 				.filter(TeamMembership::isActive)
 				.flatMap(this::toRef);
+	}
+
+	@Override
+	public Optional<TeamMembershipRef> findActiveAthleteMembershipByAthleteIdAndTeamId(UUID athleteId, UUID teamId) {
+		if (athleteId == null || teamId == null) {
+			return Optional.empty();
+		}
+		return teamMembershipRepository.findActiveByTeamIdAndAthleteId(TeamId.of(teamId), athleteId)
+				.filter(membership -> membership.role() == OrganizationMembershipRole.ATHLETE)
+				.filter(membership -> athleteId.equals(membership.athleteId()))
+				.filter(TeamMembership::isActive)
+				.flatMap(this::toRef);
+	}
+
+	@Override
+	public boolean canViewTeam(UUID accountId, UUID teamId) {
+		if (accountId == null || teamId == null) {
+			return false;
+		}
+		Optional<Team> team = teamRepository.findById(TeamId.of(teamId));
+		if (team.isEmpty() || team.get().status() != TeamStatus.ACTIVE) {
+			return false;
+		}
+		Optional<Organization> organization = organizationRepository.findById(team.get().organizationId());
+		if (organization.isEmpty() || organization.get().status() != OrganizationStatus.ACTIVE) {
+			return false;
+		}
+		AccountId account = AccountId.of(accountId);
+		if (teamMembershipRepository.existsActiveMembership(account, team.get().id())) {
+			return true;
+		}
+		return membershipRepository.existsActiveMembership(account, team.get().organizationId());
 	}
 
 	@Override

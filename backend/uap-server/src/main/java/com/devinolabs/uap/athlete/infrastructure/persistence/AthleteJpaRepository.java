@@ -1,5 +1,7 @@
 package com.devinolabs.uap.athlete.infrastructure.persistence;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,5 +21,7 @@ interface AthleteJpaRepository extends JpaRepository<AthleteJpaEntity, UUID> {
 	Optional<AthleteJpaEntity> findByAccountIdForUpdate(@Param("accountId") UUID accountId);
 
 	boolean existsByAccountId(UUID accountId);
+
+	List<AthleteJpaEntity> findAllByIdIn(Collection<UUID> ids);
 
 }

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.devinolabs.uap.organization.application.ArchiveTeamUseCase;
 import com.devinolabs.uap.organization.application.CreateTeamInvitationUseCase;
+import com.devinolabs.uap.organization.application.GetTeamRosterUseCase;
 import com.devinolabs.uap.organization.application.GetTeamUseCase;
 import com.devinolabs.uap.organization.application.LeaveTeamUseCase;
 import com.devinolabs.uap.organization.application.ListTeamInvitationsUseCase;
@@ -42,6 +43,7 @@ class TeamController {
 	private final ListTeamInvitationsUseCase listTeamInvitationsUseCase;
 	private final RevokeInvitationUseCase revokeInvitationUseCase;
 	private final ListTeamMembershipsUseCase listTeamMembershipsUseCase;
+	private final GetTeamRosterUseCase getTeamRosterUseCase;
 	private final RemoveTeamMemberUseCase removeTeamMemberUseCase;
 	private final LeaveTeamUseCase leaveTeamUseCase;
 
@@ -53,6 +55,7 @@ class TeamController {
 			ListTeamInvitationsUseCase listTeamInvitationsUseCase,
 			RevokeInvitationUseCase revokeInvitationUseCase,
 			ListTeamMembershipsUseCase listTeamMembershipsUseCase,
+			GetTeamRosterUseCase getTeamRosterUseCase,
 			RemoveTeamMemberUseCase removeTeamMemberUseCase,
 			LeaveTeamUseCase leaveTeamUseCase) {
 		this.getTeamUseCase = Objects.requireNonNull(getTeamUseCase);
@@ -62,6 +65,7 @@ class TeamController {
 		this.listTeamInvitationsUseCase = Objects.requireNonNull(listTeamInvitationsUseCase);
 		this.revokeInvitationUseCase = Objects.requireNonNull(revokeInvitationUseCase);
 		this.listTeamMembershipsUseCase = Objects.requireNonNull(listTeamMembershipsUseCase);
+		this.getTeamRosterUseCase = Objects.requireNonNull(getTeamRosterUseCase);
 		this.removeTeamMemberUseCase = Objects.requireNonNull(removeTeamMemberUseCase);
 		this.leaveTeamUseCase = Objects.requireNonNull(leaveTeamUseCase);
 	}
@@ -130,6 +134,15 @@ class TeamController {
 				.execute(OrganizationWebSupport.accountId(authentication), TeamId.of(teamId))
 				.stream()
 				.map(TeamMembershipResponse::from)
+				.toList();
+	}
+
+	@GetMapping("/{teamId}/roster")
+	List<TeamRosterEntryResponse> listRoster(@PathVariable UUID teamId, Authentication authentication) {
+		return getTeamRosterUseCase
+				.execute(OrganizationWebSupport.accountId(authentication), TeamId.of(teamId))
+				.stream()
+				.map(TeamRosterEntryResponse::from)
 				.toList();
 	}
 

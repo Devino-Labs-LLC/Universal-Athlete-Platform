@@ -2,6 +2,7 @@ package com.devinolabs.uap.organization.application;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.devinolabs.uap.organization.domain.AccountId;
 import com.devinolabs.uap.organization.domain.TeamId;
@@ -15,6 +16,8 @@ public interface TeamMembershipRepository {
 	Optional<TeamMembership> findById(TeamMembershipId id);
 
 	Optional<TeamMembership> findActiveByTeamIdAndAccountId(TeamId teamId, AccountId accountId);
+
+	Optional<TeamMembership> findActiveByTeamIdAndAthleteId(TeamId teamId, UUID athleteId);
 
 	List<TeamMembership> findAllByTeamId(TeamId teamId);
 

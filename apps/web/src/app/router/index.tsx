@@ -55,6 +55,20 @@ const CreateInvitationPage = lazy(() =>
     default: m.CreateInvitationPage,
   })),
 );
+const CoachShell = lazy(() =>
+  import('@/features/coach/layout/CoachShell').then((m) => ({ default: m.CoachShell })),
+);
+const CoachHomePage = lazy(() =>
+  import('@/features/coach/pages/CoachHomePage').then((m) => ({ default: m.CoachHomePage })),
+);
+const TeamRosterPage = lazy(() =>
+  import('@/features/coach/pages/TeamRosterPage').then((m) => ({ default: m.TeamRosterPage })),
+);
+const CoachAthleteDetailPage = lazy(() =>
+  import('@/features/coach/pages/CoachAthleteDetailPage').then((m) => ({
+    default: m.CoachAthleteDetailPage,
+  })),
+);
 const EditProfilePage = lazy(() =>
   import('@/features/profile/pages/EditProfilePage').then((m) => ({ default: m.EditProfilePage })),
 );
@@ -354,6 +368,41 @@ export function AppRouter() {
               element={
                 <LazyPage>
                   <CreateInvitationPage />
+                </LazyPage>
+              }
+            />
+          </Route>
+
+          {/* Coach shell: auth + bootstrap only — coach-only accounts need no athlete onboarding. */}
+          <Route
+            path="/coach"
+            element={
+              <LazyPage>
+                <CoachShell />
+              </LazyPage>
+            }
+          >
+            <Route
+              index
+              element={
+                <LazyPage>
+                  <CoachHomePage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="teams/:teamId/roster"
+              element={
+                <LazyPage>
+                  <TeamRosterPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="teams/:teamId/athletes/:athleteId"
+              element={
+                <LazyPage>
+                  <CoachAthleteDetailPage />
                 </LazyPage>
               }
             />

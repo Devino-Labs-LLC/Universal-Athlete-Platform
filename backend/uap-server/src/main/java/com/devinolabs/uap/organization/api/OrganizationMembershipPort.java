@@ -47,6 +47,17 @@ public interface OrganizationMembershipPort {
 	 */
 	Optional<TeamMembershipRef> findActiveAthleteTeamMembership(UUID accountId, UUID teamId);
 
+	/**
+	 * ACTIVE athlete membership for the athlete profile on the team ({@code role=ATHLETE}, matching athleteId).
+	 */
+	Optional<TeamMembershipRef> findActiveAthleteMembershipByAthleteIdAndTeamId(UUID athleteId, UUID teamId);
+
+	/**
+	 * Fail-closed team visibility: ACTIVE team membership OR ACTIVE org membership on the team's org,
+	 * with Team ACTIVE and Organization ACTIVE.
+	 */
+	boolean canViewTeam(UUID accountId, UUID teamId);
+
 	Optional<TeamLifecycleRef> findTeamLifecycle(UUID teamId);
 
 }

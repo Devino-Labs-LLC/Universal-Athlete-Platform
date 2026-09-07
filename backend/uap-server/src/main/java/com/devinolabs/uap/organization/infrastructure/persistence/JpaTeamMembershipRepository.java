@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.organization.application.TeamMembershipRepository;
 import com.devinolabs.uap.organization.domain.AccountId;
+import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 import com.devinolabs.uap.organization.domain.OrganizationMembershipStatus;
 import com.devinolabs.uap.organization.domain.TeamId;
 import com.devinolabs.uap.organization.domain.TeamMembership;
@@ -49,6 +50,16 @@ class JpaTeamMembershipRepository implements TeamMembershipRepository {
 						teamId.value(),
 						accountId.value(),
 						OrganizationMembershipStatus.ACTIVE)
+				.map(TeamMembershipPersistenceMapper::toDomain);
+	}
+
+	@Override
+	public Optional<TeamMembership> findActiveByTeamIdAndAthleteId(TeamId teamId, java.util.UUID athleteId) {
+		return jpaRepository.findByTeamIdAndAthleteIdAndStatusAndRole(
+						teamId.value(),
+						athleteId,
+						OrganizationMembershipStatus.ACTIVE,
+						OrganizationMembershipRole.ATHLETE)
 				.map(TeamMembershipPersistenceMapper::toDomain);
 	}
 

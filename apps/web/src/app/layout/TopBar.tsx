@@ -2,6 +2,7 @@ import { Button } from '@/core/components/Button';
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import styles from '@/app/layout/TopBar.module.scss';
+import { useCoachPersonaSwitch } from '@/features/coach/hooks/useCoachPersonaSwitch';
 
 interface TopBarProps {
   title: string;
@@ -11,6 +12,7 @@ interface TopBarProps {
 export function TopBar({ title, onMenuClick }: TopBarProps) {
   const { account, logout } = useAuthSession();
   const { toggleTheme, resolvedTheme } = useTheme();
+  const { goToCoachView } = useCoachPersonaSwitch();
 
   return (
     <header className={styles.topBar}>
@@ -31,6 +33,9 @@ export function TopBar({ title, onMenuClick }: TopBarProps) {
 
       <div className={styles.actions}>
         {account ? <span className={styles.account}>{account.email}</span> : null}
+        <Button type="button" variant="ghost" onClick={goToCoachView}>
+          Coach view
+        </Button>
         <Button
           type="button"
           variant="ghost"

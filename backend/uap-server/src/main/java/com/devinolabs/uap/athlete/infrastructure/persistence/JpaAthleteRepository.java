@@ -1,5 +1,7 @@
 package com.devinolabs.uap.athlete.infrastructure.persistence;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -29,6 +31,17 @@ class JpaAthleteRepository implements AthleteRepository {
 	@Override
 	public Optional<Athlete> findById(AthleteId id) {
 		return jpaRepository.findById(id.value()).map(AthletePersistenceMapper::toDomain);
+	}
+
+	@Override
+	public List<Athlete> findAllByIds(Collection<AthleteId> ids) {
+		if (ids == null || ids.isEmpty()) {
+			return List.of();
+		}
+		List<java.util.UUID> rawIds = ids.stream().map(AthleteId::value).distinct().toList();
+		return jpaRepository.findAllByIdIn(rawIds).stream()
+				.map(AthletePersistenceMapper::toDomain)
+				.toList();
 	}
 
 	@Override

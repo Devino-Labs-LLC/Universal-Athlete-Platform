@@ -43,6 +43,7 @@ import com.devinolabs.uap.training.application.InvalidWorkoutExerciseExecutionSt
 import com.devinolabs.uap.training.application.InvalidWorkoutOccurrenceStatusException;
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
+import com.devinolabs.uap.training.application.CoachAthleteOverviewNotFoundException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
@@ -899,6 +900,14 @@ class TrainingExceptionHandler {
 	ResponseEntity<ApiErrorResponse> handleAthleteNotFound(AthleteNotFoundException ex, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("ATHLETE_PROFILE_NOT_FOUND", "Athlete profile was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(CoachAthleteOverviewNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleCoachAthleteOverviewNotFound(
+			CoachAthleteOverviewNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("COACH_ATHLETE_OVERVIEW_NOT_FOUND", "Athlete overview was not found", request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteArchivedException.class)

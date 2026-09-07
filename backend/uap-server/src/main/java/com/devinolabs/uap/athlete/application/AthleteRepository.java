@@ -1,5 +1,7 @@
 package com.devinolabs.uap.athlete.application;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import com.devinolabs.uap.athlete.domain.AccountId;
@@ -11,6 +13,11 @@ public interface AthleteRepository {
 	Athlete save(Athlete athlete);
 
 	Optional<Athlete> findById(AthleteId id);
+
+	/**
+	 * Batch load by ids. Does not filter by status — callers decide archived handling.
+	 */
+	List<Athlete> findAllByIds(Collection<AthleteId> ids);
 
 	Optional<Athlete> findByAccountId(AccountId accountId);
 

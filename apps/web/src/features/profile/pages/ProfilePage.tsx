@@ -7,6 +7,7 @@ import { useAthleteOnboarding } from '@/app/providers/AthleteOnboardingProvider'
 import { Badge } from '@/core/components/Badge';
 import { Button } from '@/core/components/Button';
 import { InitialsAvatar } from '@/core/components/InitialsAvatar';
+import { useCoachPersonaSwitch } from '@/features/coach/hooks/useCoachPersonaSwitch';
 import { ConfirmationDialog } from '@/features/profile/components/ConfirmationDialog';
 import { formatEnumLabel } from '@/features/profile/enumLabels';
 import styles from '@/features/profile/pages/ProfilePage.module.scss';
@@ -26,6 +27,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { account, logout, logoutAll } = useAuthSession();
   const { snapshot } = useAthleteOnboarding();
+  const { goToCoachView } = useCoachPersonaSwitch();
   const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
   const appConfig = loadAppConfig();
 
@@ -164,6 +166,9 @@ export function ProfilePage() {
               <Link to="/app/sharing" className={styles.homeLink}>
                 Sharing
               </Link>
+              <button type="button" className={styles.homeLink} onClick={goToCoachView}>
+                Coach view
+              </button>
             </div>
 
             <div className={styles.infoBlock}>

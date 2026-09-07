@@ -188,6 +188,10 @@ class OrganizationIdorSecurityIntegrationTests {
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
 
+		mockMvc.perform(get("/api/v1/teams/" + ownedTeamId + "/roster").with(accountAuth(attacker)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
 		mockMvc.perform(post("/api/v1/teams/" + ownedTeamId + "/invitations")
 						.with(accountAuth(attacker))
 						.with(csrf())

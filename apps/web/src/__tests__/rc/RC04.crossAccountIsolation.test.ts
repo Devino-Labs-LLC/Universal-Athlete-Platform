@@ -2,6 +2,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 
 import { clearLocalAuthState } from '@/core/auth/clearLocalAuthState';
+import { parseDateOnly } from '@/core/date/dateOnly';
+import { coachKeys } from '@/features/coach/models/queryKeys';
 import { trainingClientKeys } from '@/features/home/queryKeys';
 import { athleteQueryKeys } from '@/features/profile/queryKeys';
 
@@ -52,5 +54,64 @@ describe('RC04 — cross-account cache isolation on the same device/tab', () => 
       .map(([, data]) => data)
       .filter((data): data is CachedProfile => Boolean(data));
     expect(allCachedProfiles.every((profile) => profile.id !== 'athlete-a')).toBe(true);
+  });
+
+  it('never lets Account A coach roster/overview survive into Account B', async () => {
+    const queryClient = new QueryClient();
+    const date = parseDateOnly('2026-09-07');
+
+    queryClient.setQueryData(coachKeys.roster('acc-a', 'team-1'), [
+      { athleteId: 'ath-a', displayName: 'Alice Athlete' },
+    ]);
+    queryClient.setQueryData(coachKeys.overview('acc-a', 'team-1', 'ath-a', date), {
+      displayName: 'Alice Athlete',
+      readinessScore: { status: 'AVAILABLE', data: { readinessScore: 90 } },
+    });
+
+    await clearLocalAuthState({
+      queryClient,
+      setAccount: () => undefined,
+      setStatus: () => undefined,
+    });
+
+    expect(queryClient.getQueryData(coachKeys.roster('acc-a', 'team-1'))).toBeUndefined();
+    expect(
+      queryClient.getQueryData(coachKeys.overview('acc-a', 'team-1', 'ath-a', date)),
+    ).toBeUndefined();
+
+    queryClient.setQueryData(coachKeys.roster('acc-b', 'team-2'), [
+      { athleteId: 'ath-b', displayName: 'Bob Athlete' },
+    ]);
+
+    const leakedA = queryClient
+      .getQueriesData({ queryKey: coachKeys.root })
+      .flatMap(([, data]) => (Array.isArray(data) ? data : [data]))
+      .filter(Boolean);
+    expect(
+      leakedA.every((entry) => {
+        if (entry && typeof entry === 'object' && 'displayName' in entry) {
+          return (entry as { displayName?: string }).displayName !== 'Alice Athlete';
+        }
+        if (entry && typeof entry === 'object' && 'athleteId' in entry) {
+          return (entry as { athleteId?: string }).athleteId !== 'ath-a';
+        }
+        return true;
+      }),
+    ).toBe(true);
+  });
+
+  it('keeps Team A and Team B coach keys isolated for the same account', () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(coachKeys.roster('acc-1', 'team-a'), [
+      { displayName: 'Team A athlete' },
+    ]);
+    queryClient.setQueryData(coachKeys.roster('acc-1', 'team-b'), [
+      { displayName: 'Team B athlete' },
+    ]);
+
+    expect(queryClient.getQueryData(coachKeys.roster('acc-1', 'team-a'))).not.toEqual(
+      queryClient.getQueryData(coachKeys.roster('acc-1', 'team-b')),
+    );
+    expect(coachKeys.roster('acc-1', 'team-a')).not.toEqual(coachKeys.roster('acc-1', 'team-b'));
   });
 });

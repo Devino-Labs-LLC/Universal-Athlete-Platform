@@ -819,6 +819,54 @@ Do **not** start Slice D (coach wellness / consent-aware roster reads) from this
 
 ---
 
+## 23d. Slice D implementation notes (locked behavior)
+
+Slice D delivers **coach roster** + **consent-aware athlete overview** (no Flyway; V32 remains latest):
+
+### Ownership
+
+| Module | Owns |
+| --- | --- |
+| `organization` | Roster composition, membership/role graph, `GET /api/v1/teams/{teamId}/roster` |
+| `consent` | `ConsentGrantsPort` only (consume; no Slice D schema) |
+| `training` | Consent-aware athlete overview composition + readiness/recovery/adherence/history projections |
+| `athlete` | Publishes `athlete :: roster-identity` (`AthleteRosterIdentityPort`) — batch display names by athleteId |
+
+No shared JPA across modules. Org must not query training JPA. Training depends on `organization :: membership`, `consent :: grants`, and `athlete :: roster-identity`.
+
+### Routes
+
+- `GET /api/v1/teams/{teamId}/roster` — ACTIVE team + ACTIVE org + `canViewTeam`; ACTIVE ATHLETE memberships only; allow-list: `athleteId`, `membershipId`, `displayName`, `role=ATHLETE`, `status=ACTIVE`. Sorted by displayName then athleteId. Foreign → **404**.
+- `GET /api/v1/teams/{teamId}/athletes/{athleteId}/overview?date=` — optional date (default server `LocalDate.now(clock)`). Base always: `teamId`, `organizationId`, `athleteId`, `membershipId`, `displayName`, `role`, `viewDate`, `effectiveScopes[]`.
+
+### Section statuses (independent; no hierarchy)
+
+Each projection section: `{ "status": "NOT_SHARED" | "NO_DATA" | "AVAILABLE", "data": ... | null }`.
+
+| Section | Scope gate | Notes |
+| --- | --- | --- |
+| `availability` | `AVAILABILITY` | Granted → `NO_DATA` (no availability domain yet; not a fabricated flag) |
+| `readinessCategory` | `READINESS_CATEGORY` | Stored assessment band + dataSufficiency only |
+| `readinessScore` | `READINESS_SCORE` | score + dataSufficiency + summaryReasonCode (**no** band — scope independence) |
+| `limitingDimensions` | `LIMITING_DIMENSIONS` | limiting dimension type names only |
+| `recoveryCheckIn` | `RECOVERY_CHECK_IN_DETAIL` | Tight allow-list from stored check-in (notes + discomfort included) |
+| `trainingAdherence` | `TRAINING_ADHERENCE` | Stored occurrence status counts for date only |
+| `performanceHistory` | `PERFORMANCE_HISTORY` | Recent PR summary if present |
+
+Coach GETs never call generate/assess. `TRAINING_COLLABORATION` / `EXPORT` may appear in `effectiveScopes` but have no feature sections in D.
+
+### Web (sibling coach IA)
+
+- `/coach` — org/team context picker (auth + bootstrap only; **not** gated on athlete onboarding)
+- `/coach/teams/:teamId/roster`
+- `/coach/teams/:teamId/athletes/:athleteId`
+- Persona links: athlete Profile/TopBar ↔ coach shell without logout
+- Query keys scoped by accountId + teamId + athleteId; cleared on persona/account switch / 401 / 404
+
+Do **not** start Slice E (coach training writes) from this slice.
+
+---
+
 ## 24. Git / safety for decision-lock work
 
 - Branch: `develop`

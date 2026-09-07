@@ -177,6 +177,13 @@
   font-size: var(--uap-font-size-sm);
   font-weight: 600;
   color: var(--uap-accent-cyan);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
 }
 
 .homeLink:hover {
