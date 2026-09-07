@@ -158,6 +158,37 @@ class CoachRosterAuthorizationIntegrationTests {
 		assertThat(second).isEqualTo(first);
 	}
 
+	@Test
+	void archivedTeamAndOrganizationRosterReturnNotFound() throws Exception {
+		VerifiedAccount owner = accounts.registerVerified("roster-arch-owner");
+		VerifiedAccount athlete = accounts.registerVerifiedAthlete("roster-arch-athlete");
+		String orgId = ConsentHttpFixtures.createOrg(mockMvc, owner.accountId(), "Roster Arch Org");
+		String teamArchived = ConsentHttpFixtures.createTeam(mockMvc, owner.accountId(), orgId, "Roster Arch Team");
+		String orgArchivedId = ConsentHttpFixtures.createOrg(mockMvc, owner.accountId(), "Roster Org Arch");
+		String teamUnderArchivedOrg =
+				ConsentHttpFixtures.createTeam(mockMvc, owner.accountId(), orgArchivedId, "Roster Org Arch Team");
+		acceptAthlete(owner, teamArchived, athlete);
+		acceptAthlete(owner, teamUnderArchivedOrg, athlete);
+
+		mockMvc.perform(post("/api/v1/teams/" + teamArchived + "/archive")
+						.with(ConsentHttpFixtures.accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/v1/teams/" + teamArchived + "/roster")
+						.with(ConsentHttpFixtures.accountAuth(owner.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgArchivedId + "/archive")
+						.with(ConsentHttpFixtures.accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(get("/api/v1/teams/" + teamUnderArchivedOrg + "/roster")
+						.with(ConsentHttpFixtures.accountAuth(owner.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+	}
+
 	private void acceptCoach(VerifiedAccount owner, String teamId, VerifiedAccount coach) throws Exception {
 		MvcResult invite = mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
 						.with(ConsentHttpFixtures.accountAuth(owner.accountId()))

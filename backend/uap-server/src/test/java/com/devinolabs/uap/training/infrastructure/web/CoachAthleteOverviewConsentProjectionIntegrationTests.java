@@ -206,6 +206,123 @@ class CoachAthleteOverviewConsentProjectionIntegrationTests {
 	}
 
 	@Test
+	void foreignCoachAndCrossTeamAthleteOverviewReturn404() throws Exception {
+		Fixture fx = seedTeamWithCoachAndAthlete("ov-idor");
+		VerifiedAccount foreignCoach = accounts.registerVerified("ov-idor-foreign");
+		Fixture other = seedTeamWithCoachAndAthlete("ov-idor-other");
+
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(foreignCoach.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COACH_ATHLETE_OVERVIEW_NOT_FOUND"));
+
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(other.coach.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COACH_ATHLETE_OVERVIEW_NOT_FOUND"));
+
+		mockMvc.perform(get(overviewPath(fx.teamId(), other.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COACH_ATHLETE_OVERVIEW_NOT_FOUND"));
+
+		mockMvc.perform(get(overviewPath(other.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(other.coach.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("COACH_ATHLETE_OVERVIEW_NOT_FOUND"));
+	}
+
+	@Test
+	void availabilityAdherenceAndPerformanceGrantsReturnNoDataWithoutStoredSignals() throws Exception {
+		Fixture fx = seedTeamWithCoachAndAthlete("ov-grant-nodata");
+
+		grantScopes(fx.athlete, fx.teamId(), "AVAILABILITY");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.effectiveScopes", containsInAnyOrder("AVAILABILITY")))
+				.andExpect(jsonPath("$.availability.status").value("NO_DATA"))
+				.andExpect(jsonPath("$.availability.data").value((Object) null))
+				.andExpect(jsonPath("$.trainingAdherence.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.performanceHistory.status").value("NOT_SHARED"));
+
+		revokeAll(fx.athlete);
+		grantScopes(fx.athlete, fx.teamId(), "TRAINING_ADHERENCE");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.trainingAdherence.status").value("NO_DATA"))
+				.andExpect(jsonPath("$.trainingAdherence.data").value((Object) null))
+				.andExpect(jsonPath("$.availability.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.performanceHistory.status").value("NOT_SHARED"));
+
+		revokeAll(fx.athlete);
+		grantScopes(fx.athlete, fx.teamId(), "PERFORMANCE_HISTORY");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()))
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.performanceHistory.status").value("NO_DATA"))
+				.andExpect(jsonPath("$.performanceHistory.data").value((Object) null))
+				.andExpect(jsonPath("$.availability.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.trainingAdherence.status").value("NOT_SHARED"));
+	}
+
+	@Test
+	void seededReadinessProjectsAvailableCategoryScoreAndLimitingIndependently() throws Exception {
+		Fixture fx = seedTeamWithCoachAndAthlete("ov-avail-ready");
+		LocalDate viewDate = LocalDate.now();
+		seedStoredReadiness(fx.athlete, viewDate);
+
+		grantScopes(fx.athlete, fx.teamId(), "READINESS_CATEGORY");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()) + "?date=" + viewDate)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.readinessCategory.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.readinessCategory.data.readinessBand").isString())
+				.andExpect(jsonPath("$.readinessCategory.data.dataSufficiency").isString())
+				.andExpect(jsonPath("$.readinessScore.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.limitingDimensions.status").value("NOT_SHARED"));
+
+		revokeAll(fx.athlete);
+		grantScopes(fx.athlete, fx.teamId(), "READINESS_SCORE");
+		MvcResult scoreOnly = mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()) + "?date=" + viewDate)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.readinessScore.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.readinessScore.data.readinessScore").isNumber())
+				.andExpect(jsonPath("$.readinessScore.data.dataSufficiency").isString())
+				.andExpect(jsonPath("$.readinessScore.data.summaryReasonCode").isString())
+				.andExpect(jsonPath("$.readinessScore.data.readinessBand").doesNotExist())
+				.andExpect(jsonPath("$.readinessCategory.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.limitingDimensions.status").value("NOT_SHARED"))
+				.andReturn();
+		assertThat(scoreOnly.getResponse().getContentAsString()).doesNotContain("\"readinessBand\"");
+		assertThat(scoreOnly.getResponse().getContentAsString()).doesNotContain("\"limitingDimensions\":[");
+
+		revokeAll(fx.athlete);
+		grantScopes(fx.athlete, fx.teamId(), "LIMITING_DIMENSIONS");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()) + "?date=" + viewDate)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.limitingDimensions.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.limitingDimensions.data.limitingDimensions").isArray())
+				.andExpect(jsonPath("$.readinessCategory.status").value("NOT_SHARED"))
+				.andExpect(jsonPath("$.readinessScore.status").value("NOT_SHARED"));
+
+		revokeAll(fx.athlete);
+		grantScopes(fx.athlete, fx.teamId(), "READINESS_CATEGORY", "READINESS_SCORE", "LIMITING_DIMENSIONS");
+		mockMvc.perform(get(overviewPath(fx.teamId(), fx.athleteId()) + "?date=" + viewDate)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.readinessCategory.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.readinessScore.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.limitingDimensions.status").value("AVAILABLE"))
+				.andExpect(jsonPath("$.readinessCategory.data.readinessBand").isString())
+				.andExpect(jsonPath("$.readinessScore.data.readinessScore").isNumber())
+				.andExpect(jsonPath("$.readinessScore.data.readinessBand").doesNotExist());
+	}
+
+	@Test
 	void rejoinDoesNotResurrectPriorMembershipConsentAndNoHiddenWrites() throws Exception {
 		Fixture fx = seedTeamWithCoachAndAthlete("ov-rejoin");
 		grantScopes(fx.athlete, fx.teamId(), "READINESS_CATEGORY");
@@ -301,7 +418,39 @@ class CoachAthleteOverviewConsentProjectionIntegrationTests {
 		}
 	}
 
+	private void seedStoredReadiness(VerifiedAccount athlete, LocalDate date) throws Exception {
+		for (int daysBefore = 7; daysBefore >= 1; daysBefore--) {
+			createRecoveryCheckIn(athlete, date.minusDays(daysBefore), null);
+		}
+		createRecoveryCheckIn(athlete, date, "Coach overview note");
+		MvcResult snapshotResult = mockMvc.perform(post("/api/v1/training/athlete-state/daily/" + date)
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "baselineWindowDays": 7 }
+								"""))
+				.andExpect(status().isOk())
+				.andReturn();
+		String snapshotId = JsonPath.read(snapshotResult.getResponse().getContentAsString(), "$.snapshotId");
+		mockMvc.perform(post("/api/v1/training/readiness/assessments")
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "dailyAthleteStateSnapshotId": "%s" }
+								""".formatted(snapshotId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.readinessScore").isNumber())
+				.andExpect(jsonPath("$.readinessBand").isString());
+	}
+
 	private void createRecoveryCheckIn(VerifiedAccount athlete, LocalDate date) throws Exception {
+		createRecoveryCheckIn(athlete, date, "Coach overview note");
+	}
+
+	private void createRecoveryCheckIn(VerifiedAccount athlete, LocalDate date, String notes) throws Exception {
+		String notesField = notes == null ? "" : ",\n  \"notes\": \"" + notes + "\"";
 		mockMvc.perform(post("/api/v1/training/recovery-check-ins")
 						.with(ConsentHttpFixtures.accountAuth(athlete.accountId()))
 						.with(csrf())
@@ -315,10 +464,9 @@ class CoachAthleteOverviewConsentProjectionIntegrationTests {
 								  "muscleSoreness": 2,
 								  "stress": 2,
 								  "mood": 4,
-								  "motivation": 3,
-								  "notes": "Coach overview note"
+								  "motivation": 3%s
 								}
-								""".formatted(date)))
+								""".formatted(date, notesField)))
 				.andExpect(status().isCreated());
 	}
 
