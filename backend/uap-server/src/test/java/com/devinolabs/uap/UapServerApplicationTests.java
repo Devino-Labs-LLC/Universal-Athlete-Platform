@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("32");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("33");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create consent grants");
+				.isEqualTo("create training assignments");
 	}
 
 	@Test
@@ -794,6 +794,24 @@ class UapServerApplicationTests {
 			assertThat(teamMembershipId.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create consent grants");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesTrainingAssignmentsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet assignments = connection.getMetaData().getTables(null, null, "training_assignments",
+						new String[] { "TABLE" });
+				ResultSet idempotency = connection.getMetaData().getColumns(null, null, "training_assignments",
+						"idempotency_key");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '33'")) {
+			assertThat(assignments.next()).isTrue();
+			assertThat(idempotency.next()).isTrue();
+			assertThat(idempotency.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create training assignments");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
