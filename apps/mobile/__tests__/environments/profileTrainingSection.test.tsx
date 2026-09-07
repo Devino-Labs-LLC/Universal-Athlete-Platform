@@ -65,6 +65,7 @@ describe('ProfileScreen training section', () => {
     );
 
     expect(getByTestId('profile-training-environments-link')).toBeTruthy();
+    expect(getByTestId('profile-invitations-link')).toBeTruthy();
     expect(getByText(/Default environment/)).toBeTruthy();
     expect(getByText(/Home Gym/)).toBeTruthy();
     expect(getByText(/App version/)).toBeTruthy();

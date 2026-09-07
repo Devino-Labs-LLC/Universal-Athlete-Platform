@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { router } from 'expo-router';
+import { Href, router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -167,6 +167,15 @@ export default function ProfileScreen() {
         ) : (
           <Text style={{ color: theme.colors.textMuted }}>No default environment set.</Text>
         )}
+      </HomeCard>
+
+      <HomeCard eyebrow="Organization" title="Invitations">
+        <Button
+          variant="secondary"
+          label="Pending invitations"
+          testID="profile-invitations-link"
+          onPress={() => router.push('/invitations' as Href)}
+        />
       </HomeCard>
 
       <HomeCard eyebrow="Client" title="App info">
