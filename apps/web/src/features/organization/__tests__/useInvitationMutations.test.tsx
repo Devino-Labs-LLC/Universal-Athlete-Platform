@@ -77,6 +77,7 @@ describe('useInvitationMutations create hooks', () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: organizationKeys.invitations() });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: organizationKeys.organizations() });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: organizationKeys.teams() });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: organizationKeys.athleteTeams() });
     });
   });
 

@@ -1,0 +1,191 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-6);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sectionHint {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+  max-width: 42rem;
+}
+
+.consequence {
+  margin: 0;
+  padding: var(--uap-space-3) var(--uap-space-4);
+  border-radius: var(--uap-radius-md);
+  border: 1px solid var(--uap-border-subtle);
+  background: var(--uap-surface);
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+  max-width: 42rem;
+}
+
+.grantForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  max-width: 40rem;
+  padding: var(--uap-space-4) var(--uap-space-5);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.fieldLabel {
+  font-weight: 600;
+  color: var(--uap-text-primary);
+}
+
+.scopeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scopeOption {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--uap-space-2) var(--uap-space-3);
+  align-items: start;
+  padding: var(--uap-space-3);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface-elevated, var(--uap-surface));
+}
+
+.scopeOption input {
+  margin-top: 0.2rem;
+}
+
+.scopeCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-1);
+  min-width: 0;
+}
+
+.scopeLabel {
+  margin: 0;
+  font-weight: 600;
+  font-size: var(--uap-font-size-sm);
+}
+
+.scopeDescription {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  align-items: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+}
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--uap-space-4);
+  padding: var(--uap-space-4) var(--uap-space-5);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+}
+
+.cardBody {
+  min-width: 0;
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.teamName {
+  margin: 0;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  align-items: center;
+}
+
+.scopeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  align-items: center;
+}
+
+.successBanner {
+  margin: 0;
+  padding: var(--uap-space-3) var(--uap-space-4);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  color: var(--uap-text-primary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.inlineLink {
+  color: var(--uap-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.inlineLink:hover,
+.inlineLink:focus-visible {
+  text-decoration: underline;
+}

@@ -22,6 +22,7 @@ describe('organization invalidation', () => {
     invalidateOrganizationQueries(client);
     expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.organizations() });
     expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.teams() });
+    expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.athleteTeams() });
   });
 
   it('invalidates invitations plus org/team lists after invitation mutations', () => {
@@ -31,5 +32,6 @@ describe('organization invalidation', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.invitations() });
     expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.organizations() });
     expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.teams() });
+    expect(spy).toHaveBeenCalledWith({ queryKey: organizationKeys.athleteTeams() });
   });
 });

@@ -28,6 +28,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/profile/sports': 'Manage sports',
   '/app/profile/goals': 'Manage goals',
   '/app/invitations': 'Invitations',
+  '/app/sharing': 'Sharing',
 };
 
 function resolvePageTitle(pathname: string): string {

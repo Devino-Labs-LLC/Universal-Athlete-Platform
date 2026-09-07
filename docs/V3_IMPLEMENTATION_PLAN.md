@@ -661,7 +661,7 @@ Prefer small **vertical** slices. Refined order puts **consent before wellness r
 | --- | --- | --- | --- | --- | --- | --- |
 | **A — Foundation** | Org & Team exist; creator is ORG_OWNER | Modulith `organization` (+ `consent` skeleton); CRUD org/team; **minimum `organization_memberships` for ORG_OWNER bootstrap**; ports | Hidden/feature-flagged routes OK | Athlete app regression only | `organizations`, `teams`, `organization_memberships` (owner bootstrap only) | Cross-tenant IDOR; **Verify `core` patterns wired**; QG New Code; **DoD:** no wellness/invite/roster APIs; ADRs Accepted |
 | **B — Membership & invitations** | People can join with roles | Membership + invitation lifecycle (PO invitation rules); `membership` port | Athlete invite accept/decline; admin invite create | Invite accept/decline | memberships, invitations | Lifecycle + concurrency + token non-oracle; **DoD:** exactly one membership; idempotent re-accept |
-| **C — Consent & sharing** | Athlete controls sharing | grants/scopes/revoke; `grants` port | Consent manager | Consent toggles | `consent_grants` | No sensitive auto-grant; revoke-then-read; **DoD:** no readiness without scope |
+| **C — Consent & sharing** | Athlete controls sharing | **Done (backend):** team-scoped grants/scopes/revoke; membership-generation binding; `grants` port | Consent manager (web gap) | Consent toggles (mobile gap) | `consent_grants` V32 | No sensitive auto-grant; revoke-then-read; membership rejoin regression; **DoD backend:** effective consent fail-closed; coach wellness reads deferred to D |
 | **D — Coach roster & athlete views** | Coach sees authorized roster/detail | Roster + consent-aware projections; peer roster-safe identity | Coach shell: roster + athlete detail | Team context only | indexes as needed | IDOR + field matrix; **DoD:** no non-consented wellness; no peer email/wellness |
 | **E — Coach training workflows** | Coach assigns/collaborates | Training use cases + ports; assignment vs recommendation; decline/unable | Coach planning UX (web) | Athlete sees assignments | optional templates | AuthZ + audit; **DoD:** State Engine not a write target |
 | **F — Team readiness** | Honest team readiness | Aggregate stored consented readiness; `minCohortSize=5` | Team readiness UI (web) | — | none or justified tiny cache | Insufficient/suppress; **DoD:** no composite team score |
@@ -799,6 +799,23 @@ Slice B adds team memberships + invitations on Flyway **V31**:
 - Org list includes orgs reachable via ACTIVE team memberships.
 
 Do **not** start Slice C (ConsentGrant runtime) from this slice.
+
+---
+
+## 23c. Slice C implementation notes (locked behavior)
+
+Slice C delivers **team-scoped** ConsentGrant runtime on Flyway **V32** (`consent_grants` + `consent_grant_scopes`):
+
+- **Audience:** Team only. `ConsentGrant` targets a `Team` (stores `team_id` + `organization_id`). No Organization-wide grants in Slice C.
+- **Lifecycle:** `ACTIVE` → `REVOKED`. Re-grant = **new** ConsentGrant id. Never resurrect. Owner revoke is idempotent.
+- **Scopes (exact enum):** `AVAILABILITY`, `READINESS_CATEGORY`, `READINESS_SCORE`, `LIMITING_DIMENSIONS`, `RECOVERY_CHECK_IN_DETAIL`, `TRAINING_ADHERENCE`, `PERFORMANCE_HISTORY`, `TRAINING_COLLABORATION`, `EXPORT`. Roster-safe identity is **not** a ConsentGrant scope.
+- **Membership-generation binding (HARD):** Grant stores `team_membership_id` at grant time. MySQL generated `active_membership_key` enforces one ACTIVE grant per membership generation. Effective consent requires ACTIVE grant + referenced TeamMembership ACTIVE with matching athlete/team + Team ACTIVE + Organization ACTIVE + requested scope present. Leave/remove/archive make consent ineffective immediately without rewriting the grant row; rejoin creates a new membership id so the old grant stays ineffective.
+- **Ports:** `organization :: membership` publishes `TeamMembershipRef` / `TeamLifecycleRef` reads; `consent :: grants` publishes `hasEffectiveScope` / `effectiveScopes`.
+- **Athlete-self HTTP:** `GET/POST /api/v1/athletes/me/consents`, `POST .../{consentId}/revoke`. Team picker: `GET /api/v1/athletes/me/teams` (ACTIVE athlete memberships with display names). AccountPrincipal → `AthleteContextPort.requireAthlete`; never trust body athleteId. Foreign consent → 404. Empty/invalid scopes → 400. Coach cannot grant/revoke. GETs are read-only (no hidden writes).
+- **Clients:** Athlete Web `/app/sharing`; Athlete Mobile `/sharing`. No coach sensitive-read surface in Slice C.
+- **Audit:** `CONSENT_GRANTED` / `CONSENT_REVOKED` — IDs + scope names only (no wellness payloads).
+
+Do **not** start Slice D (coach wellness / consent-aware roster reads) from this slice.
 
 ---
 

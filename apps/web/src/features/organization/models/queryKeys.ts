@@ -9,4 +9,7 @@ export const organizationKeys = {
 
   invitations: () => [...organizationKeys.all, 'invitations'] as const,
   myInvitations: () => [...organizationKeys.invitations(), 'mine'] as const,
+
+  athleteTeams: () => [...organizationKeys.all, 'athleteTeams'] as const,
+  myAthleteTeams: () => [...organizationKeys.athleteTeams(), 'mine'] as const,
 };

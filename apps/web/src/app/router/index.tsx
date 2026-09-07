@@ -42,6 +42,9 @@ const ProfilePage = lazy(() =>
 const InvitationsPage = lazy(() =>
   import('@/features/organization/pages/InvitationsPage').then((m) => ({ default: m.InvitationsPage })),
 );
+const SharingPage = lazy(() =>
+  import('@/features/consent/pages/SharingPage').then((m) => ({ default: m.SharingPage })),
+);
 const InvitationTokenPage = lazy(() =>
   import('@/features/organization/pages/InvitationTokenPage').then((m) => ({
     default: m.InvitationTokenPage,
@@ -333,6 +336,14 @@ export function AppRouter() {
                 element={
                   <LazyPage>
                     <InvitationTokenPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="sharing"
+                element={
+                  <LazyPage>
+                    <SharingPage />
                   </LazyPage>
                 }
               />

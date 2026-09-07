@@ -161,6 +161,9 @@ export function ProfilePage() {
               <Link to="/app/invitations" className={styles.homeLink}>
                 Invitations
               </Link>
+              <Link to="/app/sharing" className={styles.homeLink}>
+                Sharing
+              </Link>
             </div>
 
             <div className={styles.infoBlock}>

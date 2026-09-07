@@ -55,6 +55,7 @@ describe('ProfilePage hierarchy', () => {
       'href',
       '/app/invitations',
     );
+    expect(screen.getByRole('link', { name: 'Sharing' })).toHaveAttribute('href', '/app/sharing');
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log out all devices' })).toBeInTheDocument();
     expect(screen.getByText('Back to home')).toBeInTheDocument();

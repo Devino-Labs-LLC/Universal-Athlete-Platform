@@ -65,6 +65,20 @@ export type Team = z.infer<typeof teamSchema>;
 
 export const teamListSchema = z.array(teamSchema);
 
+/** ACTIVE athlete team membership for consent / sharing team picker. */
+export const myAthleteTeamSchema = z.object({
+  membershipId: z.string().min(1),
+  teamId: z.string().min(1),
+  teamName: z.string().min(1),
+  organizationId: z.string().min(1),
+  organizationName: z.string().min(1),
+  athleteId: z.string().min(1),
+});
+
+export type MyAthleteTeam = z.infer<typeof myAthleteTeamSchema>;
+
+export const myAthleteTeamListSchema = z.array(myAthleteTeamSchema);
+
 export const organizationMembershipSchema = z.object({
   id: z.string().min(1),
   organizationId: z.string().min(1),

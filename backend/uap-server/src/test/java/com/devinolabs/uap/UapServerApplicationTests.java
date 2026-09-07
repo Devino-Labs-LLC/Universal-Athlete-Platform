@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("31");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("32");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("team memberships invitations and active uniqueness");
+				.isEqualTo("create consent grants");
 	}
 
 	@Test
@@ -770,6 +770,30 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("team memberships invitations and active uniqueness");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesConsentGrantsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet consentGrants = connection.getMetaData().getTables(null, null, "consent_grants",
+						new String[] { "TABLE" });
+				ResultSet consentScopes = connection.getMetaData().getTables(null, null, "consent_grant_scopes",
+						new String[] { "TABLE" });
+				ResultSet activeMembershipKey = connection.getMetaData().getColumns(null, null, "consent_grants",
+						"active_membership_key");
+				ResultSet teamMembershipId = connection.getMetaData().getColumns(null, null, "consent_grants",
+						"team_membership_id");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '32'")) {
+			assertThat(consentGrants.next()).isTrue();
+			assertThat(consentScopes.next()).isTrue();
+			assertThat(activeMembershipKey.next()).isTrue();
+			assertThat(teamMembershipId.next()).isTrue();
+			assertThat(teamMembershipId.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create consent grants");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

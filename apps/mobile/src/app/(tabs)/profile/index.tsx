@@ -169,12 +169,18 @@ export default function ProfileScreen() {
         )}
       </HomeCard>
 
-      <HomeCard eyebrow="Organization" title="Invitations">
+      <HomeCard eyebrow="Organization" title="Teams & sharing">
         <Button
           variant="secondary"
           label="Pending invitations"
           testID="profile-invitations-link"
           onPress={() => router.push('/invitations' as Href)}
+        />
+        <Button
+          variant="secondary"
+          label="Sharing controls"
+          testID="profile-sharing-link"
+          onPress={() => router.push('/sharing' as Href)}
         />
       </HomeCard>
 

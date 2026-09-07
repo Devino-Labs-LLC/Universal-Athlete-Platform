@@ -1,5 +1,7 @@
 import type { ApiClient } from '@/core/api/apiClient';
 import {
+  myAthleteTeamListSchema,
+  type MyAthleteTeam,
   organizationListSchema,
   type Organization,
   teamListSchema,
@@ -17,4 +19,10 @@ export async function fetchOrganizationTeams(
 ): Promise<Team[]> {
   const response = await client.axios.get(`/api/v1/organizations/${organizationId}/teams`);
   return teamListSchema.parse(response.data);
+}
+
+/** ACTIVE athlete team memberships for consent / sharing team picker. */
+export async function fetchMyAthleteTeams(client: ApiClient): Promise<MyAthleteTeam[]> {
+  const response = await client.axios.get('/api/v1/athletes/me/teams');
+  return myAthleteTeamListSchema.parse(response.data);
 }

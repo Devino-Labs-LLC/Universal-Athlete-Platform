@@ -9,6 +9,7 @@ export function invalidateInvitationQueries(queryClient: QueryClient): void {
 export function invalidateOrganizationQueries(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: organizationKeys.organizations() });
   void queryClient.invalidateQueries({ queryKey: organizationKeys.teams() });
+  void queryClient.invalidateQueries({ queryKey: organizationKeys.athleteTeams() });
 }
 
 /** After accept/decline/create — refresh pending invites; org/team lists may also change after accept. */
