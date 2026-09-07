@@ -78,6 +78,9 @@ public class ConsentEffectiveAccessService {
 		if (!ACTIVE.equals(ref.status())) {
 			return false;
 		}
+		if (!"ATHLETE".equals(ref.role())) {
+			return false;
+		}
 		if (ref.athleteId() == null || !ref.athleteId().equals(grant.athleteId())) {
 			return false;
 		}

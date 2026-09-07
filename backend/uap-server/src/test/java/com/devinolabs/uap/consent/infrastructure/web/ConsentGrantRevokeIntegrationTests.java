@@ -127,6 +127,43 @@ class ConsentGrantRevokeIntegrationTests {
 		mockMvc.perform(get("/api/v1/athletes/me/consents")
 						.with(ConsentHttpFixtures.accountAuth(coach.accountId())))
 				.andExpect(status().isNotFound());
+
+		mockMvc.perform(post("/api/v1/athletes/me/consents/" + consentId + "/revoke")
+						.with(ConsentHttpFixtures.accountAuth(coach.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(post("/api/v1/athletes/me/consents")
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "teamId": "%s", "scopes": ["EXPORT"] }
+								""".formatted(teamId)))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.status").value("ACTIVE"))
+				.andExpect(jsonPath("$.id").value(org.hamcrest.Matchers.not(consentId)))
+				.andExpect(jsonPath("$.scopes[0]").value("EXPORT"));
+
+		mockMvc.perform(get("/api/v1/athletes/me/consents")
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)))
+				.andExpect(jsonPath("$[?(@.id == '%s')].status".formatted(consentId)).value("REVOKED"));
+
+		mockMvc.perform(post("/api/v1/athletes/me/consents")
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId()))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "teamId": "%s", "scopes": ["AVAILABILITY"] }
+								""".formatted(teamId)))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
+
+		mockMvc.perform(post("/api/v1/athletes/me/consents/" + consentId + "/revoke")
+						.with(ConsentHttpFixtures.accountAuth(athlete.accountId())))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("CSRF_INVALID"));
 	}
 
 	private String inviteCoach(VerifiedAccount owner, String teamId, String email) throws Exception {
