@@ -1,13 +1,15 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import type { DateOnly } from '@/core/date/dateOnly';
 import {
+  createCoachAssignment,
   fetchCoachAthleteOverview,
   fetchCoachOrganizationTeams,
   fetchCoachOrganizations,
   fetchTeamRoster,
+  fetchCoachAssignments,
 } from '@/features/coach/api/coachApi';
 import {
   isCoachNotFoundError,
@@ -127,8 +129,68 @@ export function useCoachAthleteOverview(
     }
     if (isCoachNotFoundError(query.error)) {
       clearCoachOverviewQueries(queryClient, accountId, teamId, athleteId);
+      void queryClient.removeQueries({
+        queryKey: coachKeys.assignments(accountId, teamId, athleteId),
+      });
     }
   }, [query.error, queryClient, accountId, teamId, athleteId]);
 
   return query;
+}
+
+export function useCoachAssignments(
+  teamId: string | null,
+  athleteId: string | null,
+  enabled: boolean,
+) {
+  const { apiClient, status } = useAuthSession();
+  const accountId = useCoachAccountId();
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: coachKeys.assignments(accountId ?? '', teamId ?? '', athleteId ?? ''),
+    queryFn: () => fetchCoachAssignments(apiClient, teamId!, athleteId!),
+    enabled: status === 'AUTHENTICATED' && Boolean(accountId) && Boolean(teamId) && Boolean(athleteId) && enabled,
+    placeholderData: undefined,
+  });
+
+  useEffect(() => {
+    if (!query.error || !accountId || !teamId || !athleteId) {
+      return;
+    }
+    if (isCoachUnauthorizedError(query.error)) {
+      clearAllCoachQueries(queryClient);
+      return;
+    }
+    if (isCoachNotFoundError(query.error)) {
+      void queryClient.removeQueries({
+        queryKey: coachKeys.assignments(accountId, teamId, athleteId),
+      });
+    }
+  }, [query.error, queryClient, accountId, teamId, athleteId]);
+
+  return query;
+}
+
+export function useCreateCoachAssignment(teamId: string, athleteId: string) {
+  const { apiClient } = useAuthSession();
+  const accountId = useCoachAccountId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: {
+      title: string;
+      description: string;
+      scheduledDate: string;
+      idempotencyKey: string;
+    }) => createCoachAssignment(apiClient, teamId, athleteId, input),
+    onSuccess: async () => {
+      if (!accountId) {
+        return;
+      }
+      await queryClient.invalidateQueries({
+        queryKey: coachKeys.assignments(accountId, teamId, athleteId),
+      });
+    },
+  });
 }

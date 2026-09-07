@@ -3,8 +3,11 @@ import type { DateOnly } from '@/core/date/dateOnly';
 import {
   coachAthleteOverviewSchema,
   teamRosterSchema,
+  trainingAssignmentListSchema,
+  trainingAssignmentSchema,
   type CoachAthleteOverview,
   type TeamRosterEntry,
+  type TrainingAssignment,
 } from '@/features/coach/models/schemas';
 import {
   fetchMyOrganizations,
@@ -44,4 +47,28 @@ export async function fetchCoachAthleteOverview(
     },
   );
   return coachAthleteOverviewSchema.parse(response.data);
+}
+
+export async function fetchCoachAssignments(
+  client: ApiClient,
+  teamId: string,
+  athleteId: string,
+) {
+  const response = await client.axios.get(
+    `/api/v1/teams/${teamId}/athletes/${athleteId}/training/assignments`,
+  );
+  return trainingAssignmentListSchema.parse(response.data);
+}
+
+export async function createCoachAssignment(
+  client: ApiClient,
+  teamId: string,
+  athleteId: string,
+  input: { title: string; description: string; scheduledDate: string; idempotencyKey: string },
+): Promise<TrainingAssignment> {
+  const response = await client.axios.post(
+    `/api/v1/teams/${teamId}/athletes/${athleteId}/training/assignments`,
+    input,
+  );
+  return trainingAssignmentSchema.parse(response.data);
 }

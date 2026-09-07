@@ -44,6 +44,10 @@ import com.devinolabs.uap.training.application.InvalidWorkoutOccurrenceStatusExc
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.CoachAthleteOverviewNotFoundException;
+import com.devinolabs.uap.training.application.InvalidTrainingAssignmentException;
+import com.devinolabs.uap.training.application.TrainingAssignmentConflictException;
+import com.devinolabs.uap.training.application.TrainingAssignmentNotFoundException;
+import com.devinolabs.uap.training.application.TrainingAssignmentVersionConflictException;
 import com.devinolabs.uap.training.application.TrainingPlanNotFoundException;
 import com.devinolabs.uap.training.application.WorkoutDayDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.WorkoutDayNotFoundException;
@@ -908,6 +912,38 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("COACH_ATHLETE_OVERVIEW_NOT_FOUND", "Athlete overview was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingAssignmentNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingAssignmentNotFound(
+			TrainingAssignmentNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("TRAINING_ASSIGNMENT_NOT_FOUND", "Training assignment was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingAssignmentVersionConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingAssignmentVersionConflict(
+			TrainingAssignmentVersionConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_ASSIGNMENT_VERSION_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(TrainingAssignmentConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleTrainingAssignmentConflict(
+			TrainingAssignmentConflictException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(error("TRAINING_ASSIGNMENT_CONFLICT", ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidTrainingAssignmentException.class)
+	ResponseEntity<ApiErrorResponse> handleInvalidTrainingAssignment(
+			InvalidTrainingAssignmentException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(error("INVALID_TRAINING_ASSIGNMENT", ex.getMessage(), request, List.of()));
 	}
 
 	@ExceptionHandler(AthleteArchivedException.class)

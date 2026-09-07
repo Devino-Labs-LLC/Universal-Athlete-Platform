@@ -863,7 +863,40 @@ Coach GETs never call generate/assess. `TRAINING_COLLABORATION` / `EXPORT` may a
 - Persona links: athlete Profile/TopBar ↔ coach shell without logout
 - Query keys scoped by accountId + teamId + athleteId; cleared on persona/account switch / 401 / 404
 
-Do **not** start Slice E (coach training writes) from this slice.
+Do **not** start Slice E from Slice D. Slice E notes are in §23e.
+
+---
+
+## 23e. Slice E implementation notes (locked behavior)
+
+Slice E adds **coach training collaboration** on Flyway **V33** (`training_assignments`). `TrainingPlan` remains athlete-owned. There is no coach-owned plan tree and no State Engine write.
+
+### Assignment
+
+- Provenance record in `training`: athlete, team, organization, athlete membership generation, assigning account role (`COACH` / `HEAD_COACH`), title, optional description, scheduled date, status `ASSIGNED` | `DECLINED` | `UNABLE`.
+- Distinct from recommendation and from workout execution. Decline/unable do not create or complete occurrences.
+- Idempotency key is required on create, unique per actor + team + athlete. Same key + same intent replays the original row. Same key + different intent → **409** `TRAINING_ASSIGNMENT_CONFLICT`.
+- Coach edits require `expectedVersion`. Stale version → **409** `TRAINING_ASSIGNMENT_VERSION_CONFLICT`. Terminal responses are not editable.
+
+### Authorization
+
+Coach writes/reads of the collaboration surface require current ACTIVE `COACH` or `HEAD_COACH` membership on the Team, ACTIVE athlete membership on that Team, Team and Organization ACTIVE, and effective `TRAINING_COLLABORATION` for the athlete's **current** membership generation. `TEAM_ADMIN` / `ORG_ADMIN` / `ORG_OWNER` cannot assign. Missing authority → **404** `TRAINING_ASSIGNMENT_NOT_FOUND`. Revoke, leave/remove, archive, and rejoin (M2 without a new grant) fail the next coach request immediately. Historical athlete-owned assignment rows remain for athlete-self reads.
+
+### Routes
+
+- `POST/GET /api/v1/teams/{teamId}/athletes/{athleteId}/training/assignments`
+- `GET/PATCH /api/v1/teams/{teamId}/athletes/{athleteId}/training/assignments/{assignmentId}`
+- `GET /api/v1/athletes/me/training/assignments`
+- `POST /api/v1/athletes/me/training/assignments/{assignmentId}/decline`
+- `POST /api/v1/athletes/me/training/assignments/{assignmentId}/unable`
+
+DTO allow-list: assignment facts + `provenance=COACH_ASSIGNMENT`. No email, readiness, or recovery payload.
+
+### Audit
+
+`WORKOUT_ASSIGNED`, `WORKOUT_ASSIGNMENT_MODIFIED`, `WORKOUT_ASSIGNMENT_DECLINED`, `WORKOUT_ASSIGNMENT_UNABLE` — identifiers only.
+
+Do **not** start Slice F (Team Readiness) from this slice.
 
 ---
 

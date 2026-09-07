@@ -109,3 +109,22 @@ export const coachAthleteOverviewSchema = z.object({
 });
 
 export type CoachAthleteOverview = z.infer<typeof coachAthleteOverviewSchema>;
+
+export const trainingAssignmentSchema = z.object({
+  id: z.string().min(1),
+  teamId: z.string().min(1),
+  athleteId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().nullable(),
+  scheduledDate: z.string().min(1),
+  status: z.enum(['ASSIGNED', 'DECLINED', 'UNABLE']),
+  athleteResponseNote: z.string().nullable(),
+  respondedAt: z.string().nullable(),
+  provenance: z.literal('COACH_ASSIGNMENT'),
+  assignedByRole: z.enum(['COACH', 'HEAD_COACH']),
+  version: z.number().int(),
+});
+
+export type TrainingAssignment = z.infer<typeof trainingAssignmentSchema>;
+
+export const trainingAssignmentListSchema = z.array(trainingAssignmentSchema);

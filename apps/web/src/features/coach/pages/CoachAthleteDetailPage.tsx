@@ -7,6 +7,7 @@ import { EmptyView } from '@/core/components/EmptyView';
 import { ErrorView } from '@/core/components/ErrorView';
 import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
+import { CoachAssignmentPanel } from '@/features/coach/components/CoachAssignmentPanel';
 import {
   OverviewSection,
   RatingRow,
@@ -118,6 +119,12 @@ export function CoachAthleteDetailPage() {
           <ScopeChips scopes={overview.effectiveScopes} />
         </div>
       </section>
+
+      <CoachAssignmentPanel
+        teamId={teamId}
+        athleteId={athleteId}
+        collaborationAvailable={overview.effectiveScopes.includes('TRAINING_COLLABORATION')}
+      />
 
       <div className={styles.sectionStack}>
         <OverviewSection title="Availability" status={overview.availability.status}>

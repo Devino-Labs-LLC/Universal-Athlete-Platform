@@ -83,6 +83,16 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 	}
 
 	@Override
+	public Optional<TeamMembershipRef> findActiveTeamMembership(UUID accountId, UUID teamId) {
+		if (accountId == null || teamId == null) {
+			return Optional.empty();
+		}
+		return teamMembershipRepository.findActiveByTeamIdAndAccountId(TeamId.of(teamId), AccountId.of(accountId))
+				.filter(TeamMembership::isActive)
+				.flatMap(this::toRef);
+	}
+
+	@Override
 	public boolean canViewTeam(UUID accountId, UUID teamId) {
 		if (accountId == null || teamId == null) {
 			return false;

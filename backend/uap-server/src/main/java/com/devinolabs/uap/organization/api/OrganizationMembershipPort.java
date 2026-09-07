@@ -53,6 +53,12 @@ public interface OrganizationMembershipPort {
 	Optional<TeamMembershipRef> findActiveAthleteMembershipByAthleteIdAndTeamId(UUID athleteId, UUID teamId);
 
 	/**
+	 * ACTIVE team membership for the account on the team, any role.
+	 * Callers apply capability rules; this lookup is not authorization by itself.
+	 */
+	Optional<TeamMembershipRef> findActiveTeamMembership(UUID accountId, UUID teamId);
+
+	/**
 	 * Fail-closed team visibility: ACTIVE team membership OR ACTIVE org membership on the team's org,
 	 * with Team ACTIVE and Organization ACTIVE.
 	 */

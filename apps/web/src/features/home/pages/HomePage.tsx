@@ -9,6 +9,7 @@ import { HomeQuickActions } from '@/features/home/components/HomeQuickActions';
 import { PrimaryWorkoutCard } from '@/features/home/components/PrimaryWorkoutCard';
 import { ReadinessCard } from '@/features/home/components/ReadinessCard';
 import { RecentPerformanceCard } from '@/features/home/components/RecentPerformanceCard';
+import { AssignedWorkCard } from '@/features/home/components/AssignedWorkCard';
 import { RecommendationCard } from '@/features/home/components/RecommendationCard';
 import { RecoveryCard } from '@/features/home/components/RecoveryCard';
 import { TrainingLoadCard } from '@/features/home/components/TrainingLoadCard';
@@ -77,6 +78,9 @@ export function HomePage() {
         />
       </div>
 
+      <div className={styles.spanFour}>
+        <AssignedWorkCard />
+      </div>
       <div className={styles.spanFour}>
         <RecommendationCard
           recommendation={data.recommendation}

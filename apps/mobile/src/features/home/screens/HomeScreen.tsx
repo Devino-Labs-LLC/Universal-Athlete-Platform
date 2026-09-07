@@ -13,6 +13,7 @@ import { HomeSkeleton } from '@/src/features/home/components/HomeSkeleton';
 import { PrimaryWorkoutCard } from '@/src/features/home/components/PrimaryWorkoutCard';
 import { ReadinessCard } from '@/src/features/home/components/ReadinessCard';
 import { RecentPerformanceCard } from '@/src/features/home/components/RecentPerformanceCard';
+import { AssignedWorkCard } from '@/src/features/home/components/AssignedWorkCard';
 import { RecommendationCard } from '@/src/features/home/components/RecommendationCard';
 import { RecoveryCard } from '@/src/features/home/components/RecoveryCard';
 import { TodayHeader } from '@/src/features/home/components/TodayHeader';
@@ -169,6 +170,8 @@ export function HomeScreen() {
           />
         </View>
       ) : null}
+
+      <AssignedWorkCard />
 
       <View style={styles.signalRow}>
         <View style={styles.signalHalf}>

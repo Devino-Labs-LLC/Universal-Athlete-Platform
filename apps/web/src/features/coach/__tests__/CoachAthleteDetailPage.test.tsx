@@ -17,6 +17,17 @@ let mockOverviewState: {
 
 vi.mock('@/features/coach/hooks/useCoachQueries', () => ({
   useCoachAthleteOverview: () => mockOverviewState,
+  useCoachAssignments: () => ({
+    isLoading: false,
+    isError: false,
+    data: [],
+    error: null,
+    refetch,
+  }),
+  useCreateCoachAssignment: () => ({
+    isPending: false,
+    mutateAsync: vi.fn(),
+  }),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -88,6 +99,8 @@ describe('CoachAthleteDetailPage', () => {
     expect(screen.getAllByText('No data for this date').length).toBeGreaterThan(0);
     expect(screen.getByText('Ready')).toBeInTheDocument();
     expect(screen.getByText('80')).toBeInTheDocument();
+    expect(screen.getByText(/has not shared training collaboration/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Assign session' })).not.toBeInTheDocument();
     expect(screen.queryByText(/please share|ask the athlete|encourage/i)).not.toBeInTheDocument();
   });
 

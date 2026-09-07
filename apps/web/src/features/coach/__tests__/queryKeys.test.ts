@@ -25,6 +25,16 @@ describe('coachKeys', () => {
     expect(coachKeys.overview('acc-1', 'team-a', 'ath-1', date)).not.toEqual(
       coachKeys.overview('acc-1', 'team-a', 'ath-2', date),
     );
+    expect(coachKeys.assignments('acc-1', 'team-a', 'ath-1')).toEqual([
+      'coach',
+      'acc-1',
+      'assignments',
+      'team-a',
+      'ath-1',
+    ]);
+    expect(coachKeys.assignments('acc-1', 'team-a', 'ath-1')).not.toEqual(
+      coachKeys.assignments('acc-1', 'team-b', 'ath-1'),
+    );
   });
 
   it('scopes organization and team lists under the account root', () => {
