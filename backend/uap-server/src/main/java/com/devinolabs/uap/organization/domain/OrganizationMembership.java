@@ -55,18 +55,61 @@ public class OrganizationMembership {
 			OrganizationId organizationId,
 			AccountId accountId,
 			Clock clock) {
+		return register(
+				id,
+				organizationId,
+				accountId,
+				null,
+				OrganizationMembershipRole.ORG_OWNER,
+				clock);
+	}
+
+	public static OrganizationMembership register(
+			OrganizationMembershipId id,
+			OrganizationId organizationId,
+			AccountId accountId,
+			UUID athleteId,
+			OrganizationMembershipRole role,
+			Clock clock) {
 		Objects.requireNonNull(clock, "Clock must not be null");
+		if (role != OrganizationMembershipRole.ORG_OWNER && role != OrganizationMembershipRole.ORG_ADMIN) {
+			throw new IllegalArgumentException("Organization membership role must be ORG_OWNER or ORG_ADMIN");
+		}
+		if (athleteId != null) {
+			throw new IllegalArgumentException("Organization memberships do not carry athleteId in Slice B");
+		}
 		Instant now = Instant.now(clock);
 		return new OrganizationMembership(
 				id,
 				organizationId,
 				accountId,
 				null,
-				OrganizationMembershipRole.ORG_OWNER,
+				role,
 				OrganizationMembershipStatus.ACTIVE,
 				now,
 				now,
 				0L);
+	}
+
+	public void remove(Clock clock) {
+		transitionTo(OrganizationMembershipStatus.REMOVED, clock);
+	}
+
+	public void leave(Clock clock) {
+		transitionTo(OrganizationMembershipStatus.LEFT, clock);
+	}
+
+	private void transitionTo(OrganizationMembershipStatus target, Clock clock) {
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (status != OrganizationMembershipStatus.ACTIVE) {
+			throw new IllegalStateException("Only ACTIVE memberships can transition to " + target);
+		}
+		this.status = target;
+		this.updatedAt = Instant.now(clock);
+	}
+
+	public boolean isActive() {
+		return status == OrganizationMembershipStatus.ACTIVE;
 	}
 
 	public static OrganizationMembership rehydrate(

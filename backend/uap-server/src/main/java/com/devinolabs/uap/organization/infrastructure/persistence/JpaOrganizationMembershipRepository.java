@@ -25,9 +25,17 @@ class JpaOrganizationMembershipRepository implements OrganizationMembershipRepos
 
 	@Override
 	public OrganizationMembership save(OrganizationMembership membership) {
-		boolean isNew = !jpaRepository.existsById(membership.id().value());
-		OrganizationMembershipJpaEntity saved = jpaRepository.save(
-				OrganizationMembershipPersistenceMapper.toEntity(membership, isNew));
+		Optional<OrganizationMembershipJpaEntity> existing = jpaRepository.findById(membership.id().value());
+		OrganizationMembershipJpaEntity saved;
+		if (existing.isEmpty()) {
+			saved = jpaRepository.save(OrganizationMembershipPersistenceMapper.toEntity(membership, true));
+		}
+		else {
+			OrganizationMembershipJpaEntity entity = existing.get();
+			entity.applyDomainState(membership.status(), membership.updatedAt());
+			saved = jpaRepository.save(entity);
+		}
+		jpaRepository.flush();
 		return OrganizationMembershipPersistenceMapper.toDomain(saved);
 	}
 
@@ -63,6 +71,21 @@ class JpaOrganizationMembershipRepository implements OrganizationMembershipRepos
 				.stream()
 				.map(OrganizationMembershipPersistenceMapper::toDomain)
 				.toList();
+	}
+
+	@Override
+	public List<OrganizationMembership> findAllByOrganizationId(OrganizationId organizationId) {
+		return jpaRepository.findAllByOrganizationId(organizationId.value()).stream()
+				.map(OrganizationMembershipPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public long countActiveOwners(OrganizationId organizationId) {
+		return jpaRepository.countByOrganizationIdAndStatusAndRole(
+				organizationId.value(),
+				OrganizationMembershipStatus.ACTIVE,
+				OrganizationMembershipRole.ORG_OWNER);
 	}
 
 	@Override

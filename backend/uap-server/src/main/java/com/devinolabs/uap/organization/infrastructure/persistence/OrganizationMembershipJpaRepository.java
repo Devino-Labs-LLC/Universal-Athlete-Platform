@@ -26,6 +26,13 @@ interface OrganizationMembershipJpaRepository extends JpaRepository<Organization
 			UUID accountId,
 			OrganizationMembershipStatus status);
 
+	List<OrganizationMembershipJpaEntity> findAllByOrganizationId(UUID organizationId);
+
+	long countByOrganizationIdAndStatusAndRole(
+			UUID organizationId,
+			OrganizationMembershipStatus status,
+			OrganizationMembershipRole role);
+
 	boolean existsByOrganizationIdAndAccountIdAndStatus(
 			UUID organizationId,
 			UUID accountId,

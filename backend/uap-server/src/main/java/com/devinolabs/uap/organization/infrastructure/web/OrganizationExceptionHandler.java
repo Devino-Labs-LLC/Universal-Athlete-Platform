@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.devinolabs.uap.organization.application.InvalidOrganizationStatusException;
+import com.devinolabs.uap.organization.application.InvitationConflictException;
+import com.devinolabs.uap.organization.application.InvitationNotFoundException;
+import com.devinolabs.uap.organization.application.MembershipConflictException;
 import com.devinolabs.uap.organization.application.OrganizationArchivedException;
 import com.devinolabs.uap.organization.application.OrganizationNotFoundException;
 import com.devinolabs.uap.organization.application.TeamArchivedException;
@@ -21,7 +24,9 @@ import com.devinolabs.uap.organization.application.TeamNotFoundException;
 
 @RestControllerAdvice(basePackageClasses = {
 		OrganizationController.class,
-		TeamController.class
+		TeamController.class,
+		InvitationTokenController.class,
+		MyInvitationsController.class
 })
 class OrganizationExceptionHandler {
 
@@ -46,6 +51,13 @@ class OrganizationExceptionHandler {
 		return notFound(request, "TEAM_NOT_FOUND", "Team was not found");
 	}
 
+	@ExceptionHandler(InvitationNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleInvitationNotFound(
+			InvitationNotFoundException ex,
+			HttpServletRequest request) {
+		return notFound(request, "INVITATION_NOT_FOUND", "Invitation was not found");
+	}
+
 	@ExceptionHandler(OrganizationArchivedException.class)
 	ResponseEntity<ApiErrorResponse> handleOrganizationArchived(
 			OrganizationArchivedException ex,
@@ -64,6 +76,20 @@ class OrganizationExceptionHandler {
 			HttpServletRequest request) {
 		String message = ex.getMessage() == null ? "Invalid organization status" : ex.getMessage();
 		return conflict(request, "ORGANIZATION_ARCHIVED", message);
+	}
+
+	@ExceptionHandler(InvitationConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleInvitationConflict(
+			InvitationConflictException ex,
+			HttpServletRequest request) {
+		return conflict(request, ex.code(), ex.getMessage());
+	}
+
+	@ExceptionHandler(MembershipConflictException.class)
+	ResponseEntity<ApiErrorResponse> handleMembershipConflict(
+			MembershipConflictException ex,
+			HttpServletRequest request) {
+		return conflict(request, ex.code(), ex.getMessage());
 	}
 
 	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)

@@ -22,6 +22,10 @@ public interface OrganizationMembershipRepository {
 
 	List<OrganizationMembership> findAllActiveByAccountId(AccountId accountId);
 
+	List<OrganizationMembership> findAllByOrganizationId(OrganizationId organizationId);
+
+	long countActiveOwners(OrganizationId organizationId);
+
 	boolean existsActiveMembership(AccountId accountId, OrganizationId organizationId);
 
 	boolean existsActiveOwner(AccountId accountId, OrganizationId organizationId);

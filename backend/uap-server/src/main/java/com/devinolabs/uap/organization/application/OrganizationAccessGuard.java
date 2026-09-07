@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.devinolabs.uap.organization.domain.AccountId;
 import com.devinolabs.uap.organization.domain.OrganizationId;
 import com.devinolabs.uap.organization.domain.OrganizationMembership;
+import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 
 /**
  * Server-side organization access checks. Denied access throws NotFound-style exceptions (404).
@@ -42,6 +43,18 @@ public class OrganizationAccessGuard {
 		Objects.requireNonNull(organizationId, "organizationId must not be null");
 		return membershipRepository.findActiveByOrganizationIdAndAccountId(organizationId, accountId)
 				.orElseThrow(OrganizationNotFoundException::new);
+	}
+
+	/**
+	 * ACTIVE ORG_ADMIN or ORG_OWNER may manage org-scoped invitations and memberships.
+	 */
+	public OrganizationMembership requireOrgAdminOrOwner(AccountId accountId, OrganizationId organizationId) {
+		OrganizationMembership membership = requireActiveMember(accountId, organizationId);
+		if (membership.role() != OrganizationMembershipRole.ORG_ADMIN
+				&& membership.role() != OrganizationMembershipRole.ORG_OWNER) {
+			throw new OrganizationNotFoundException();
+		}
+		return membership;
 	}
 
 }

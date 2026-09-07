@@ -81,4 +81,9 @@ class OrganizationMembershipJpaEntity extends AbstractPersistableUuidJpaEntity {
 		return status;
 	}
 
+	void applyDomainState(OrganizationMembershipStatus status, Instant updatedAt) {
+		this.status = status;
+		this.updatedAt = updatedAt;
+	}
+
 }

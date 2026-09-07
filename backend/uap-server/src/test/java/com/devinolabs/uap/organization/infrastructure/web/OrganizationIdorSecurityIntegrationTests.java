@@ -148,6 +148,32 @@ class OrganizationIdorSecurityIntegrationTests {
 		mockMvc.perform(get("/api/v1/teams/" + UUID.randomUUID()).with(accountAuth(attacker)))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
+		mockMvc.perform(get("/api/v1/teams/" + ownedTeamId + "/invitations").with(accountAuth(attacker)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
+		mockMvc.perform(get("/api/v1/teams/" + ownedTeamId + "/memberships").with(accountAuth(attacker)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
+		mockMvc.perform(post("/api/v1/teams/" + ownedTeamId + "/invitations")
+						.with(accountAuth(attacker))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "x@example.com", "role": "ATHLETE" }
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_NOT_FOUND"));
+
+		mockMvc.perform(get("/api/v1/organizations/" + ownedOrgId + "/invitations").with(accountAuth(attacker)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ORGANIZATION_NOT_FOUND"));
+
+		mockMvc.perform(get("/api/v1/organizations/" + ownedOrgId + "/memberships").with(accountAuth(attacker)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ORGANIZATION_NOT_FOUND"));
 	}
 
 	@Test

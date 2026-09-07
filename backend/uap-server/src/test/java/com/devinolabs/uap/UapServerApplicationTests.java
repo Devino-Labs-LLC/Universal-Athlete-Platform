@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("30");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("31");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create organizations teams and org memberships");
+				.isEqualTo("team memberships invitations and active uniqueness");
 	}
 
 	@Test
@@ -744,6 +744,32 @@ class UapServerApplicationTests {
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description"))
 					.isEqualTo("create organizations teams and org memberships");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesTeamMembershipsInvitationsAndActiveUniquenessMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet teamMemberships = connection.getMetaData().getTables(null, null, "team_memberships",
+						new String[] { "TABLE" });
+				ResultSet invitations = connection.getMetaData().getTables(null, null, "invitations",
+						new String[] { "TABLE" });
+				ResultSet activeAccountId = connection.getMetaData().getColumns(null, null, "organization_memberships",
+						"active_account_id");
+				ResultSet pendingDedupe = connection.getMetaData().getColumns(null, null, "invitations",
+						"pending_dedupe_key");
+				ResultSet tokenHash = connection.getMetaData().getColumns(null, null, "invitations", "token_hash");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '31'")) {
+			assertThat(teamMemberships.next()).isTrue();
+			assertThat(invitations.next()).isTrue();
+			assertThat(activeAccountId.next()).isTrue();
+			assertThat(pendingDedupe.next()).isTrue();
+			assertThat(tokenHash.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description"))
+					.isEqualTo("team memberships invitations and active uniqueness");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

@@ -466,9 +466,9 @@ Non-destructive. Archive over delete. Continue Flyway sequence after current max
 | --- | --- | --- |
 | `organizations` | PK `id`; status; timestamps; `version` | Slice A |
 | `teams` | PK `id`; FK `organization_id`; unique `(organization_id, name)` | Slice A |
-| `organization_memberships` | unique `(organization_id, account_id)`; role/status CHECKs; optional `athlete_id` | **Slice A:** ORG_OWNER bootstrap only. Slice B owns invitations + broader membership lifecycle |
-| `team_memberships` | unique `(team_id, account_id)` where active; optional `athlete_id` | Slice B+ |
-| `invitations` | PK `id`; `token_hash` unique; team/org target; role; email/account bind; expires_at; status | **Slice B** |
+| `organization_memberships` | unique active `(organization_id, active_account_id)` via generated column (V31); role/status CHECKs; optional `athlete_id` | **Slice A:** ORG_OWNER bootstrap. **Slice B:** remove/leave/rejoin + org invites |
+| `team_memberships` | unique active `(team_id, active_account_id)`; optional `athlete_id` | **Slice B** |
+| `invitations` | PK `id`; `token_hash` unique; pending dedupe generated key; team/org target; role; email/account bind; expires_at; status | **Slice B** |
 | `consent_grants` | PK `id`; athlete_id; grantee membership/team; scope set; status; version/revoked_at | **Slice C** |
 | `security_audit_events` | PK `id`; append-only; actor_account_id; action; subject refs; correlation_id; created_at | Later; Slice A logging adapter only |
 | Optional `team_session_templates` | Slice F | Only if product needs team templates distinct from athlete plans |
@@ -784,7 +784,21 @@ V3 does not require provider work. If org roster later syncs from SIS/HR systems
 
 Slice A delivers Organization/Team foundation on `develop` with atomic ORG_OWNER bootstrap membership. Consent module is a seam only (`ConsentGrantsPort` empty). Audit persistence table deferred; `OrganizationAuditPort` + logging adapter only.
 
-When authorizing later slices, start at **Slice B** (invitations + membership lifecycle beyond owner bootstrap).
+---
+
+## 23b. Slice B implementation notes (locked behavior)
+
+Slice B adds team memberships + invitations on Flyway **V31**:
+
+- MySQL-safe active uniqueness via generated `active_account_id` (org + team); rejoin creates a **new** membership id.
+- Invitation tokens: CSPRNG 32-byte URL-safe Base64, SHA-256 hex at rest, 7-day TTL, raw token returned once on create.
+- Accept by raw token (`/api/v1/invitations/{token}/…`) or by invitation id for authenticated invitee (`/api/v1/me/invitations/{id}/…`).
+- Concurrent accept: conditional `PENDING→ACCEPTED` update; same-account replay is idempotent; exactly one ACTIVE membership.
+- Capability matrix enforced server-side (`InvitationAuthority`); foreign org/team → 404; no ConsentGrant / readiness / training writes.
+- `identity :: directory` publishes `AccountDirectoryPort` + `SecureTokenDigestPort`.
+- Org list includes orgs reachable via ACTIVE team memberships.
+
+Do **not** start Slice C (ConsentGrant runtime) from this slice.
 
 ---
 
