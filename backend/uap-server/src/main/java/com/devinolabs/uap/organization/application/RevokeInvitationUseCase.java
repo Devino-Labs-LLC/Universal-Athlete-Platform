@@ -39,7 +39,7 @@ public class RevokeInvitationUseCase {
 	@Transactional
 	public void revokeTeamInvitation(AccountId actorAccountId, TeamId teamId, InvitationId invitationId) {
 		Team team = teamAccessGuard.requireActiveTeam(actorAccountId, teamId);
-		Invitation invitation = invitationRepository.findById(invitationId)
+		Invitation invitation = invitationRepository.findByIdForUpdate(invitationId)
 				.orElseThrow(InvitationNotFoundException::new);
 		if (invitation.teamId() == null || !invitation.teamId().equals(teamId)) {
 			throw new InvitationNotFoundException();
@@ -54,7 +54,7 @@ public class RevokeInvitationUseCase {
 			OrganizationId organizationId,
 			InvitationId invitationId) {
 		organizationAccessGuard.requireOrgAdminOrOwner(actorAccountId, organizationId);
-		Invitation invitation = invitationRepository.findById(invitationId)
+		Invitation invitation = invitationRepository.findByIdForUpdate(invitationId)
 				.orElseThrow(InvitationNotFoundException::new);
 		if (!invitation.organizationId().equals(organizationId) || invitation.teamId() != null) {
 			throw new InvitationNotFoundException();

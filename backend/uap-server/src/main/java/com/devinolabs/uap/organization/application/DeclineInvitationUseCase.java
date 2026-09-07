@@ -39,22 +39,22 @@ public class DeclineInvitationUseCase {
 
 	@Transactional
 	public void executeByRawToken(AccountId accountId, String rawToken) {
-		Invitation invitation = loadByRawToken(rawToken);
+		Invitation invitation = loadByRawTokenForUpdate(rawToken);
 		decline(accountId, invitation);
 	}
 
 	@Transactional
 	public void executeByInvitationId(AccountId accountId, InvitationId invitationId) {
-		Invitation invitation = invitationRepository.findById(invitationId)
+		Invitation invitation = invitationRepository.findByIdForUpdate(invitationId)
 				.orElseThrow(InvitationNotFoundException::new);
 		decline(accountId, invitation);
 	}
 
-	private Invitation loadByRawToken(String rawToken) {
+	private Invitation loadByRawTokenForUpdate(String rawToken) {
 		if (rawToken == null || rawToken.isBlank()) {
 			throw new InvitationNotFoundException();
 		}
-		return invitationRepository.findByTokenHash(tokenDigestPort.digest(rawToken))
+		return invitationRepository.findByTokenHashForUpdate(tokenDigestPort.digest(rawToken))
 				.orElseThrow(InvitationNotFoundException::new);
 	}
 
