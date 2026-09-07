@@ -324,6 +324,21 @@ class CoachTrainingAuthorizationIntegrationTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
+								  "expectedVersion": 0,
+								  "title": "Tempo updated",
+								  "description": "adjusted",
+								  "scheduledDate": "%s"
+								}
+								""".formatted(ASSIGNED_DATE)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("Tempo updated"))
+				.andExpect(jsonPath("$.version").value(1));
+		mockMvc.perform(patch(coachPath(fx) + "/" + assignmentId)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
 								  "expectedVersion": 99,
 								  "title": "Stale",
 								  "scheduledDate": "%s"

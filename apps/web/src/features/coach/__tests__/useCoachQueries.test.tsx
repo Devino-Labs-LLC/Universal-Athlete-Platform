@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/core/api/errors';
 import { parseDateOnly } from '@/core/date/dateOnly';
 import {
+  useCoachAssignments,
   useCoachAthleteOverview,
   useCoachOrganizationTeams,
   useCoachOrganizations,
+  useCreateCoachAssignment,
   useTeamRoster,
 } from '@/features/coach/hooks/useCoachQueries';
 import { coachKeys } from '@/features/coach/models/queryKeys';
@@ -17,12 +19,16 @@ const fetchCoachOrganizations = vi.fn();
 const fetchCoachOrganizationTeams = vi.fn();
 const fetchTeamRoster = vi.fn();
 const fetchCoachAthleteOverview = vi.fn();
+const fetchCoachAssignments = vi.fn();
+const createCoachAssignment = vi.fn();
 
 vi.mock('@/features/coach/api/coachApi', () => ({
   fetchCoachOrganizations: (...args: unknown[]) => fetchCoachOrganizations(...args),
   fetchCoachOrganizationTeams: (...args: unknown[]) => fetchCoachOrganizationTeams(...args),
   fetchTeamRoster: (...args: unknown[]) => fetchTeamRoster(...args),
   fetchCoachAthleteOverview: (...args: unknown[]) => fetchCoachAthleteOverview(...args),
+  fetchCoachAssignments: (...args: unknown[]) => fetchCoachAssignments(...args),
+  createCoachAssignment: (...args: unknown[]) => createCoachAssignment(...args),
 }));
 
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
@@ -45,6 +51,8 @@ describe('useCoachQueries', () => {
     fetchCoachOrganizationTeams.mockReset();
     fetchTeamRoster.mockReset();
     fetchCoachAthleteOverview.mockReset();
+    fetchCoachAssignments.mockReset();
+    createCoachAssignment.mockReset();
   });
 
   it('loads organizations under account-scoped keys', async () => {
@@ -155,5 +163,50 @@ describe('useCoachQueries', () => {
 
     expect(result.current.data).toBeUndefined();
     await waitFor(() => expect(result.current.data?.[0]?.displayName).toBe('Team B'));
+  });
+
+  it('loads assignments under account, team, and athlete keys and clears on 404', async () => {
+    fetchCoachAssignments.mockRejectedValue(
+      new ApiError('missing', { category: 'NOT_FOUND', status: 404 }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(coachKeys.assignments('acc-1', 'team-1', 'ath-1'), [{ id: 'stale' }]);
+
+    const { result } = renderHook(() => useCoachAssignments('team-1', 'ath-1', true), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(queryClient.getQueryData(coachKeys.assignments('acc-1', 'team-1', 'ath-1'))).toBeUndefined();
+  });
+
+  it('creates an assignment and invalidates the assignment query', async () => {
+    fetchCoachAssignments.mockResolvedValue([]);
+    createCoachAssignment.mockResolvedValue({
+      id: 'asg-1',
+      title: 'Tempo intervals',
+      status: 'ASSIGNED',
+      provenance: 'COACH_ASSIGNMENT',
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHook(() => useCreateCoachAssignment('team-1', 'ath-1'), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        title: 'Tempo intervals',
+        description: '',
+        scheduledDate: '2026-09-07',
+        idempotencyKey: 'key-1',
+      });
+    });
+
+    expect(createCoachAssignment).toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: coachKeys.assignments('acc-1', 'team-1', 'ath-1'),
+    });
   });
 });

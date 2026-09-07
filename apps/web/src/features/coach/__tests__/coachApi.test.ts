@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '@/core/api/apiClient';
 import { parseDateOnly } from '@/core/date/dateOnly';
 import {
+  createCoachAssignment,
+  fetchCoachAssignments,
   fetchCoachAthleteOverview,
   fetchCoachOrganizationTeams,
   fetchCoachOrganizations,
@@ -10,9 +12,10 @@ import {
 } from '@/features/coach/api/coachApi';
 
 const get = vi.fn();
+const post = vi.fn();
 
 const client = {
-  axios: { get },
+  axios: { get, post },
 } as unknown as ApiClient;
 
 vi.mock('@/features/organization/api/organizationsApi', () => ({
@@ -105,5 +108,38 @@ describe('coachApi', () => {
     expect(get).toHaveBeenCalledWith('/api/v1/teams/team-1/athletes/ath-1/overview', {
       params: undefined,
     });
+  });
+
+  it('fetches and creates coach assignments without readiness fields', async () => {
+    const assignment = {
+      id: 'asg-1',
+      teamId: 'team-1',
+      athleteId: 'ath-1',
+      title: 'Tempo intervals',
+      description: null,
+      scheduledDate: '2026-09-07',
+      status: 'ASSIGNED',
+      athleteResponseNote: null,
+      respondedAt: null,
+      provenance: 'COACH_ASSIGNMENT',
+      assignedByRole: 'COACH',
+      version: 0,
+    };
+    get.mockResolvedValue({ data: [assignment] });
+    post.mockResolvedValue({ data: assignment });
+
+    await expect(fetchCoachAssignments(client, 'team-1', 'ath-1')).resolves.toEqual([assignment]);
+    await expect(
+      createCoachAssignment(client, 'team-1', 'ath-1', {
+        title: 'Tempo intervals',
+        description: '',
+        scheduledDate: '2026-09-07',
+        idempotencyKey: 'key-1',
+      }),
+    ).resolves.toEqual(assignment);
+    expect(post).toHaveBeenCalledWith(
+      '/api/v1/teams/team-1/athletes/ath-1/training/assignments',
+      expect.objectContaining({ title: 'Tempo intervals', idempotencyKey: 'key-1' }),
+    );
   });
 });
