@@ -1,0 +1,98 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+}
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--uap-space-4);
+  padding: var(--uap-space-4) var(--uap-space-5);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+}
+
+.cardBody {
+  min-width: 0;
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.orgName {
+  margin: 0;
+  font-size: var(--uap-font-size-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  align-items: center;
+}
+
+.tokenPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  max-width: 36rem;
+}
+
+.tokenField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+}
+
+.tokenValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: var(--uap-font-size-sm);
+  word-break: break-all;
+  padding: var(--uap-space-3);
+  background: var(--uap-surface-elevated);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  max-width: 28rem;
+}
+
+.successBanner {
+  margin: 0;
+  padding: var(--uap-space-3) var(--uap-space-4);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface);
+  border: 1px solid var(--uap-border-subtle);
+  color: var(--uap-text-primary);
+  font-size: var(--uap-font-size-sm);
+}
+
+.warningBanner {
+  margin: 0;
+  padding: var(--uap-space-3) var(--uap-space-4);
+  border-radius: var(--uap-radius-md);
+  border: 1px solid var(--uap-border-subtle);
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}

@@ -51,6 +51,10 @@ describe('ProfilePage hierarchy', () => {
     expect(screen.getByRole('button', { name: 'Manage sports' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Manage goals' })).toBeInTheDocument();
     expect(screen.getByText('Account & application')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Invitations' })).toHaveAttribute(
+      'href',
+      '/app/invitations',
+    );
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log out all devices' })).toBeInTheDocument();
     expect(screen.getByText('Back to home')).toBeInTheDocument();

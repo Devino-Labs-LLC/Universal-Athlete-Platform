@@ -39,6 +39,19 @@ const OnboardingGoalsPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('@/features/profile/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
+const InvitationsPage = lazy(() =>
+  import('@/features/organization/pages/InvitationsPage').then((m) => ({ default: m.InvitationsPage })),
+);
+const InvitationTokenPage = lazy(() =>
+  import('@/features/organization/pages/InvitationTokenPage').then((m) => ({
+    default: m.InvitationTokenPage,
+  })),
+);
+const CreateInvitationPage = lazy(() =>
+  import('@/features/organization/pages/CreateInvitationPage').then((m) => ({
+    default: m.CreateInvitationPage,
+  })),
+);
 const EditProfilePage = lazy(() =>
   import('@/features/profile/pages/EditProfilePage').then((m) => ({ default: m.EditProfilePage })),
 );
@@ -307,7 +320,32 @@ export function AppRouter() {
               <Route path="profile/edit" element={<EditProfilePage />} />
               <Route path="profile/sports" element={<ManageSportsPage />} />
               <Route path="profile/goals" element={<ManageGoalsPage />} />
+              <Route
+                path="invitations"
+                element={
+                  <LazyPage>
+                    <InvitationsPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="invitations/token/:token"
+                element={
+                  <LazyPage>
+                    <InvitationTokenPage />
+                  </LazyPage>
+                }
+              />
             </Route>
+
+            <Route
+              path="/org/invitations/new"
+              element={
+                <LazyPage>
+                  <CreateInvitationPage />
+                </LazyPage>
+              }
+            />
           </Route>
         </Route>
       </Route>

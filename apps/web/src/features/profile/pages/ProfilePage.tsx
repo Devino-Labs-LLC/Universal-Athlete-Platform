@@ -157,6 +157,13 @@ export function ProfilePage() {
             </div>
 
             <div className={styles.infoBlock}>
+              <p className={styles.panelHint}>Account</p>
+              <Link to="/app/invitations" className={styles.homeLink}>
+                Invitations
+              </Link>
+            </div>
+
+            <div className={styles.infoBlock}>
               <p className={styles.panelHint}>App info</p>
               <div className="stat">
                 <span className="statLabel">Contract</span>

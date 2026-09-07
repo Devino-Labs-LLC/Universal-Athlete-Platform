@@ -27,6 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/profile/edit': 'Edit profile',
   '/app/profile/sports': 'Manage sports',
   '/app/profile/goals': 'Manage goals',
+  '/app/invitations': 'Invitations',
 };
 
 function resolvePageTitle(pathname: string): string {
@@ -77,6 +78,9 @@ function resolvePageTitle(pathname: string): string {
   }
   if (pathname.includes('/performance/sessions/')) {
     return 'Session performance';
+  }
+  if (pathname.includes('/invitations/token/')) {
+    return 'Invitation';
   }
   return 'Universal Athlete Platform';
 }
