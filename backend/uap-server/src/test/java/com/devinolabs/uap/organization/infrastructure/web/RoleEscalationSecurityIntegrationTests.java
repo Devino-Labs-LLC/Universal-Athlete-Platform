@@ -2,7 +2,9 @@ package com.devinolabs.uap.organization.infrastructure.web;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -126,6 +128,59 @@ class RoleEscalationSecurityIntegrationTests {
 								{ "email": "%s", "role": "ORG_OWNER" }
 								""".formatted(target.email())))
 				.andExpect(status().isBadRequest());
+
+		VerifiedAccount coach = accounts.registerVerified("esc-coach");
+		VerifiedAccount teamAdmin = accounts.registerVerified("esc-team-admin");
+		VerifiedAccount athleteTarget = accounts.registerVerifiedAthlete("esc-athlete-t");
+
+		String coachToken = invite(owner.accountId(), teamId, coach.email(), "COACH");
+		mockMvc.perform(post("/api/v1/invitations/" + coachToken + "/accept")
+						.with(accountAuth(coach.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/v1/teams/" + teamId + "/invitations").with(accountAuth(coach.accountId())))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
+						.with(accountAuth(coach.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ATHLETE" }
+								""".formatted(athleteTarget.email())))
+				.andExpect(status().isCreated());
+
+		String teamAdminToken = invite(owner.accountId(), teamId, teamAdmin.email(), "TEAM_ADMIN");
+		mockMvc.perform(post("/api/v1/invitations/" + teamAdminToken + "/accept")
+						.with(accountAuth(teamAdmin.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk());
+
+		VerifiedAccount headTarget = accounts.registerVerified("esc-head-t");
+		mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
+						.with(accountAuth(teamAdmin.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "HEAD_COACH" }
+								""".formatted(headTarget.email())))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/archive")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "after-archive@example.com", "role": "ORG_ADMIN" }
+								"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ORGANIZATION_ARCHIVED"));
 	}
 
 	private String invite(AccountId actor, String teamId, String email, String role) throws Exception {

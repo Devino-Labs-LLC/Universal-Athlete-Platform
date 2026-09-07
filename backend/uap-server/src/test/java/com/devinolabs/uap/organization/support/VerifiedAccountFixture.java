@@ -40,10 +40,16 @@ public final class VerifiedAccountFixture {
 	}
 
 	public VerifiedAccount registerVerified(String localPart) {
-		String email = localPart + "+" + COUNTER.incrementAndGet() + "@example.com";
-		RegisterAccountResult registered = registerAccountUseCase.register(email, PASSWORD);
+		VerifiedAccount unverified = registerUnverified(localPart);
 		String rawToken = verificationNotifier.lastMessage().orElseThrow().rawToken();
 		verifyEmailUseCase.verify(rawToken);
+		return unverified;
+	}
+
+	/** Registers an account without verifying email (for EMAIL_UNVERIFIED accept paths). */
+	public VerifiedAccount registerUnverified(String localPart) {
+		String email = localPart + "+" + COUNTER.incrementAndGet() + "@example.com";
+		RegisterAccountResult registered = registerAccountUseCase.register(email, PASSWORD);
 		return new VerifiedAccount(registered.accountId(), email.toLowerCase());
 	}
 

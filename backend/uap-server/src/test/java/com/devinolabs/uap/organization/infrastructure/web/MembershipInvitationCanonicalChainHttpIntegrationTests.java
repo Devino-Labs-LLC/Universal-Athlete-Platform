@@ -1,6 +1,7 @@
 package com.devinolabs.uap.organization.infrastructure.web;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -120,7 +121,7 @@ class MembershipInvitationCanonicalChainHttpIntegrationTests {
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].accountId").value(athlete.accountId().value().toString()));
 
-		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+		MvcResult orgInvite = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
 						.with(accountAuth(owner.accountId()))
 						.with(csrf())
 						.contentType(MediaType.APPLICATION_JSON)
@@ -128,7 +129,41 @@ class MembershipInvitationCanonicalChainHttpIntegrationTests {
 								{ "email": "%s", "role": "ORG_ADMIN" }
 								""".formatted(adminInvitee.email())))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.role").value("ORG_ADMIN"));
+				.andExpect(jsonPath("$.role").value("ORG_ADMIN"))
+				.andReturn();
+		String adminInvitationId = JsonPath.read(orgInvite.getResponse().getContentAsString(), "$.id");
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(adminInvitee.email())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("PENDING_INVITATION_EXISTS"));
+
+		mockMvc.perform(get("/api/v1/me/invitations").with(accountAuth(adminInvitee.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id").value(adminInvitationId))
+				.andExpect(jsonPath("$[0].organizationName").value("Chain Org"))
+				.andExpect(jsonPath("$[0].teamName").value(nullValue()));
+
+		mockMvc.perform(post("/api/v1/me/invitations/" + adminInvitationId + "/accept")
+						.with(accountAuth(adminInvitee.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.organizationMembership.role").value("ORG_ADMIN"));
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId + "/memberships")
+						.with(accountAuth(adminInvitee.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)));
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(adminInvitee.accountId())))
+				.andExpect(status().isOk());
 	}
 
 	private static RequestPostProcessor accountAuth(AccountId accountId) {

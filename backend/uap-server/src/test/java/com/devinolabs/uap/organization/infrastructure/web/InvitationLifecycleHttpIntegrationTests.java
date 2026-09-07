@@ -140,6 +140,39 @@ class InvitationLifecycleHttpIntegrationTests {
 						.with(csrf()))
 				.andExpect(status().isNoContent());
 
+		mockMvc.perform(post("/api/v1/invitations/" + coachToken + "/accept")
+						.with(accountAuth(coach.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
+
+		VerifiedAccount unverified = accounts.registerUnverified("unverified");
+		MvcResult unverifiedInvite = mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "COACH" }
+								""".formatted(unverified.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String unverifiedToken = JsonPath.read(unverifiedInvite.getResponse().getContentAsString(), "$.rawToken");
+		mockMvc.perform(post("/api/v1/invitations/" + unverifiedToken + "/accept")
+						.with(accountAuth(unverified.accountId()))
+						.with(csrf()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("EMAIL_UNVERIFIED"));
+
+		mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "not-an-email", "role": "ATHLETE" }
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
 		VerifiedAccount head = accounts.registerVerified("head");
 		MvcResult headInvite = mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
 						.with(accountAuth(owner.accountId()))
@@ -155,6 +188,13 @@ class InvitationLifecycleHttpIntegrationTests {
 						.with(accountAuth(owner.accountId()))
 						.with(csrf()))
 				.andExpect(status().isNoContent());
+
+		String headToken = JsonPath.read(headInvite.getResponse().getContentAsString(), "$.rawToken");
+		mockMvc.perform(post("/api/v1/invitations/" + headToken + "/accept")
+						.with(accountAuth(head.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
 
 		VerifiedAccount expiredInvitee = accounts.registerVerifiedAthlete("expired");
 		MvcResult expiredInvite = mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
@@ -178,11 +218,29 @@ class InvitationLifecycleHttpIntegrationTests {
 						.with(csrf()))
 				.andExpect(status().isNotFound());
 
+		VerifiedAccount orgAdmin = accounts.registerVerified("org-admin-life");
+		MvcResult orgInvite = mockMvc.perform(post("/api/v1/organizations/" + organizationId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(orgAdmin.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String orgInviteToken = JsonPath.read(orgInvite.getResponse().getContentAsString(), "$.rawToken");
+		mockMvc.perform(post("/api/v1/invitations/" + orgInviteToken + "/accept")
+						.with(accountAuth(orgAdmin.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.organizationMembership.role").value("ORG_ADMIN"));
+
 		mockMvc.perform(get("/api/v1/me/invitations").with(accountAuth(athlete.accountId())))
 				.andExpect(status().isOk());
 
 		assert invitationId != null;
 		assert coachInvitationId != null;
+		assert expiredInvitationId != null;
 	}
 
 	private String createOrg(AccountId accountId, String name) throws Exception {

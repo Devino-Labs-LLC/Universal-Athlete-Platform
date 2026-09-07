@@ -137,6 +137,130 @@ class MembershipLifecycleIntegrationTests {
 				.andExpect(status().isNotFound());
 	}
 
+	@Test
+	void orgAdminInviteAcceptListRemoveLeaveAndLastOwnerGuards() throws Exception {
+		VerifiedAccount owner = accounts.registerVerified("org-life-owner");
+		VerifiedAccount admin = accounts.registerVerified("org-life-admin");
+		VerifiedAccount admin2 = accounts.registerVerified("org-life-admin2");
+
+		String orgId = createOrg(owner.accountId(), "Org Life Org");
+
+		MvcResult ownerMemberships = mockMvc.perform(get("/api/v1/organizations/" + orgId + "/memberships")
+						.with(accountAuth(owner.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].role").value("ORG_OWNER"))
+				.andReturn();
+		String ownerMembershipId = JsonPath.read(
+				ownerMemberships.getResponse().getContentAsString(),
+				"$[0].id");
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/memberships/me/leave")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("LAST_OWNER"));
+
+		mockMvc.perform(delete("/api/v1/organizations/" + orgId + "/memberships/" + ownerMembershipId)
+						.with(accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("CANNOT_REMOVE_SELF"));
+
+		MvcResult adminInvite = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(admin.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String adminToken = JsonPath.read(adminInvite.getResponse().getContentAsString(), "$.rawToken");
+		String adminInvitationId = JsonPath.read(adminInvite.getResponse().getContentAsString(), "$.id");
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id").value(adminInvitationId));
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(admin.email())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("PENDING_INVITATION_EXISTS"));
+
+		MvcResult accepted = mockMvc.perform(post("/api/v1/invitations/" + adminToken + "/accept")
+						.with(accountAuth(admin.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.organizationMembership.role").value("ORG_ADMIN"))
+				.andReturn();
+		String adminMembershipId = JsonPath.read(
+				accepted.getResponse().getContentAsString(),
+				"$.organizationMembership.id");
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(admin.email())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("MEMBERSHIP_ALREADY_ACTIVE"));
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId + "/memberships")
+						.with(accountAuth(admin.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(2)));
+
+		MvcResult admin2Invite = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(accountAuth(admin.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(admin2.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String admin2Token = JsonPath.read(admin2Invite.getResponse().getContentAsString(), "$.rawToken");
+		mockMvc.perform(post("/api/v1/invitations/" + admin2Token + "/accept")
+						.with(accountAuth(admin2.accountId()))
+						.with(csrf()))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(delete("/api/v1/organizations/" + orgId + "/memberships/" + adminMembershipId)
+						.with(accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId).with(accountAuth(admin.accountId())))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/memberships/me/leave")
+						.with(accountAuth(admin2.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/v1/organizations/" + orgId + "/memberships")
+						.with(accountAuth(owner.accountId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(3)))
+				.andExpect(jsonPath("$[?(@.status == 'ACTIVE')]", hasSize(1)))
+				.andExpect(jsonPath("$[?(@.status == 'ACTIVE' && @.role == 'ORG_OWNER')]", hasSize(1)));
+
+		mockMvc.perform(delete("/api/v1/organizations/" + orgId + "/memberships/" + ownerMembershipId)
+						.with(accountAuth(admin2.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNotFound());
+	}
+
 	private String invite(AccountId actor, String teamId, String email, String role) throws Exception {
 		MvcResult invite = mockMvc.perform(post("/api/v1/teams/" + teamId + "/invitations")
 						.with(accountAuth(actor))
