@@ -103,4 +103,59 @@ describe('CoachHomePage', () => {
 
     expect(navigate).toHaveBeenCalledWith('/coach/teams/team-1/roster');
   });
+
+  it('shows organization loading and error states', () => {
+    mockOrganizationsState = {
+      isLoading: true,
+      isError: false,
+      data: undefined,
+      refetch: refetchOrgs,
+    };
+    const { unmount } = renderWithProviders(<CoachHomePage />);
+    expect(screen.getByText('Loading organizations…')).toBeInTheDocument();
+    unmount();
+
+    mockOrganizationsState = {
+      isLoading: false,
+      isError: true,
+      data: undefined,
+      error: new Error('boom'),
+      refetch: refetchOrgs,
+    };
+    renderWithProviders(<CoachHomePage />);
+    expect(screen.getByText(/Unable to load organizations|boom/i)).toBeInTheDocument();
+  });
+
+  it('shows empty teams after organization selection', async () => {
+    const user = userEvent.setup();
+    mockTeamsState = {
+      isLoading: false,
+      isError: false,
+      data: [],
+    };
+    renderWithProviders(<CoachHomePage />);
+    await user.selectOptions(screen.getByLabelText('Organization'), 'org-1');
+    expect(screen.getByText('No teams')).toBeInTheDocument();
+  });
+
+  it('shows team error after organization selection', async () => {
+    const user = userEvent.setup();
+    mockTeamsState = {
+      isLoading: false,
+      isError: true,
+      data: undefined,
+      error: new Error('teams failed'),
+    };
+    renderWithProviders(<CoachHomePage />);
+    await user.selectOptions(screen.getByLabelText('Organization'), 'org-1');
+    expect(screen.getByText(/Unable to load teams|teams failed/i)).toBeInTheDocument();
+  });
+
+  it('does not navigate when team is unset', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<CoachHomePage />);
+    await user.selectOptions(screen.getByLabelText('Organization'), 'org-1');
+    await user.click(screen.getByRole('button', { name: 'Open roster' }));
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });
