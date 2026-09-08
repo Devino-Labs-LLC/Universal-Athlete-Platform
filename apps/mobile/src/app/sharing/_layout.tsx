@@ -51,6 +51,7 @@ export default function SharingLayout() {
       }}>
       <Stack.Screen name="index" options={{ title: 'Sharing' }} />
       <Stack.Screen name="grant" options={{ title: 'Share with a team' }} />
+      <Stack.Screen name="activity" options={{ title: 'Team activity' }} />
     </Stack>
   );
 }

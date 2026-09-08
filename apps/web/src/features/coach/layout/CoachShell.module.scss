@@ -77,6 +77,27 @@
   white-space: nowrap;
 }
 
+.teamNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  padding: var(--uap-space-3) var(--uap-space-6);
+  border-bottom: 1px solid var(--uap-border-subtle);
+}
+
+.teamNavLink {
+  color: var(--uap-text-secondary);
+  text-decoration: none;
+  font-size: var(--uap-font-size-sm);
+  padding: var(--uap-space-1) var(--uap-space-2);
+  border-radius: var(--uap-radius-sm);
+}
+
+.teamNavLink[aria-current='page'] {
+  color: var(--uap-text-primary);
+  background: var(--uap-surface-raised);
+}
+
 .content {
   flex: 1;
   min-width: 0;

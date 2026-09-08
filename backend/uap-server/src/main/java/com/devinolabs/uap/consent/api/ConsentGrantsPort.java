@@ -1,5 +1,7 @@
 package com.devinolabs.uap.consent.api;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -23,5 +25,13 @@ public interface ConsentGrantsPort {
 	Map<UUID, Set<String>> effectiveScopesForCurrentMemberships(
 			UUID teamId,
 			Map<UUID, UUID> currentMembershipIdToAthleteId);
+
+	/**
+	 * Grant and revoke timestamps for the athlete. No grant identifiers or tokens.
+	 */
+	List<ConsentHistory> listConsentHistory(UUID athleteId);
+
+	record ConsentHistory(UUID teamId, Instant grantedAt, Instant revokedAt) {
+	}
 
 }

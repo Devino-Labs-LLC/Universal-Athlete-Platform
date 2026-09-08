@@ -24,6 +24,12 @@ describe('coachKeys', () => {
     expect(coachKeys.teamReadiness('acc-1', 'team-a', date)).not.toEqual(
       coachKeys.teamReadiness('acc-1', 'team-b', date),
     );
+    expect(coachKeys.teamInvitations('acc-1', 'team-a')).toEqual([
+      'coach',
+      'acc-1',
+      'invitations',
+      'team-a',
+    ]);
     expect(coachKeys.overview('acc-1', 'team-a', 'ath-1', date)).toEqual([
       'coach',
       'acc-1',

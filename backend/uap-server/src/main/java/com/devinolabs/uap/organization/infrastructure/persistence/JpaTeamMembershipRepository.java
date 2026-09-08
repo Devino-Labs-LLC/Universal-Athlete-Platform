@@ -79,6 +79,13 @@ class JpaTeamMembershipRepository implements TeamMembershipRepository {
 	}
 
 	@Override
+	public List<TeamMembership> findAllByAccountId(AccountId accountId) {
+		return jpaRepository.findAllByAccountId(accountId.value()).stream()
+				.map(TeamMembershipPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
 	public boolean existsActiveMembership(AccountId accountId, TeamId teamId) {
 		return jpaRepository.existsByTeamIdAndAccountIdAndStatus(
 				teamId.value(),

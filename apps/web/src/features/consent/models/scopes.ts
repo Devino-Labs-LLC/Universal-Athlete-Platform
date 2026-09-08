@@ -20,7 +20,7 @@ export const CONSENT_SCOPE_CATALOG: readonly ConsentScopeInfo[] = [
   {
     scope: 'READINESS_CATEGORY',
     label: 'Readiness category',
-    description: 'Shares your readiness band only (for example ready, limited, or unavailable).',
+    description: 'Shares your stored readiness band only (High, Moderate, Low, or insufficient stored data).',
   },
   {
     scope: 'READINESS_SCORE',

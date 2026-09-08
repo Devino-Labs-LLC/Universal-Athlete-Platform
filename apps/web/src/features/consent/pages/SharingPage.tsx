@@ -229,6 +229,7 @@ export function SharingPage() {
     <Page
       title="Sharing"
       description="Choose what coaches on your teams can see. Joining a team does not share sensitive readiness or recovery data."
+      actions={<Link to="/app/sharing/activity">Team activity</Link>}
     >
       <div className={styles.layout}>
         {successMessage ? (

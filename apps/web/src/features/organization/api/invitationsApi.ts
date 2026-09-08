@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type { ApiClient } from '@/core/api/apiClient';
 import {
   acceptInvitationResponseSchema,
@@ -53,6 +55,19 @@ export async function createOrganizationInvitation(
     request,
   );
   return invitationSchema.parse(response.data);
+}
+
+export async function fetchTeamInvitations(client: ApiClient, teamId: string): Promise<Invitation[]> {
+  const response = await client.axios.get(`/api/v1/teams/${teamId}/invitations`);
+  return z.array(invitationSchema).parse(response.data);
+}
+
+export async function revokeTeamInvitation(
+  client: ApiClient,
+  teamId: string,
+  invitationId: string,
+): Promise<void> {
+  await client.axios.post(`/api/v1/teams/${teamId}/invitations/${invitationId}/revoke`);
 }
 
 export async function createTeamInvitation(

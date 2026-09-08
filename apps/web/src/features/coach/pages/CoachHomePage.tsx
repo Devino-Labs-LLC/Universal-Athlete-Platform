@@ -81,7 +81,7 @@ export function CoachHomePage() {
   return (
     <Page
       title="Coach"
-      description="Choose organization and team context. Access is always checked on the server."
+      description="Choose organization and team. Roster, Team readiness, and invitations are available after you open a team."
     >
       <form
         className={styles.pickerForm}

@@ -40,4 +40,7 @@ export const coachKeys = {
 
   teamReadiness: (accountId: string, teamId: string, date: DateOnly) =>
     [...coachKeys.all(accountId), 'team-readiness', teamId, date] as const,
+
+  teamInvitations: (accountId: string, teamId: string) =>
+    [...coachKeys.all(accountId), 'invitations', teamId] as const,
 };

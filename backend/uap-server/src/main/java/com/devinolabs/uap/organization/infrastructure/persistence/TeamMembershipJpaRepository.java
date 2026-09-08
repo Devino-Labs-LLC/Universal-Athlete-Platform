@@ -26,6 +26,8 @@ interface TeamMembershipJpaRepository extends JpaRepository<TeamMembershipJpaEnt
 
 	List<TeamMembershipJpaEntity> findAllByAccountIdAndStatus(UUID accountId, OrganizationMembershipStatus status);
 
+	List<TeamMembershipJpaEntity> findAllByAccountId(UUID accountId);
+
 	boolean existsByTeamIdAndAccountIdAndStatus(
 			UUID teamId,
 			UUID accountId,

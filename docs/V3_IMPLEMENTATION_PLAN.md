@@ -918,7 +918,19 @@ An athlete contributes only with ACTIVE athlete membership on that Team, current
 
 The response allow-list has no athlete, membership, account, name, email, score, or consent identifiers. GET does not generate state, readiness, recommendations, consent, membership, or assignments.
 
-Do **not** start Slice G from this slice.
+Do **not** start Slice H from this slice.
+
+---
+
+## 23g. Slice G implementation notes (locked behavior)
+
+Slice G completes coach and athlete UX around shipped V3 capabilities. It does not add a Team Readiness model, coach mobile console, or role-transfer API.
+
+Coach Web `/coach` remains a sibling shell. With a team selected, navigation reaches roster, Team readiness, and invitations. Athlete Home is unchanged. Coach view is offered only when the account has organization memberships. Athlete view is offered only when an athlete profile exists.
+
+`GET /api/v1/athletes/me/transparency` is a read-only athlete-self projection derived from stored team membership, consent grant/revoke timestamps, and coach assignments. It is not a raw audit log. Security audit adapters remain logging-only; Slice H still owns durable audit completeness. Role change and ORG_OWNER transfer are not implemented; invitations remain the membership-creation path.
+
+Schema remains **V33**.
 
 ---
 

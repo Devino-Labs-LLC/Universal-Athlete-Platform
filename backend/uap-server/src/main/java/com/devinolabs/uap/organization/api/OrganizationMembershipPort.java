@@ -1,5 +1,6 @@
 package com.devinolabs.uap.organization.api;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,5 +79,21 @@ public interface OrganizationMembershipPort {
 	List<TeamMembershipRef> listActiveAthleteMemberships(UUID teamId);
 
 	Optional<TeamLifecycleRef> findTeamLifecycle(UUID teamId);
+
+	/**
+	 * Athlete-role team memberships for the account, including LEFT and REMOVED.
+	 * Used only to project athlete transparency. Not an authorization grant.
+	 */
+	List<AthleteMembershipHistory> listAthleteMembershipHistory(UUID accountId);
+
+	record AthleteMembershipHistory(
+			UUID teamId,
+			String teamName,
+			UUID organizationId,
+			String organizationName,
+			String status,
+			Instant joinedAt,
+			Instant updatedAt) {
+	}
 
 }

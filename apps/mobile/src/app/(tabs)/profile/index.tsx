@@ -182,6 +182,12 @@ export default function ProfileScreen() {
           testID="profile-sharing-link"
           onPress={() => router.push('/sharing' as Href)}
         />
+        <Button
+          variant="secondary"
+          label="Team activity"
+          testID="profile-activity-link"
+          onPress={() => router.push('/sharing/activity' as Href)}
+        />
       </HomeCard>
 
       <HomeCard eyebrow="Client" title="App info">

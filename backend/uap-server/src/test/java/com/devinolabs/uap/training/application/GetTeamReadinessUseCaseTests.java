@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import com.devinolabs.uap.consent.api.ConsentGrantsPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
+import com.devinolabs.uap.organization.api.OrganizationMembershipPort.AthleteMembershipHistory;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort.TeamLifecycleRef;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort.TeamMembershipRef;
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -197,6 +198,11 @@ class GetTeamReadinessUseCaseTests {
 		public Optional<TeamLifecycleRef> findTeamLifecycle(UUID teamId) {
 			throw new UnsupportedOperationException();
 		}
+
+		@Override
+		public List<AthleteMembershipHistory> listAthleteMembershipHistory(UUID accountId) {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	private static final class ConsentFillingStub implements ConsentGrantsPort {
@@ -223,6 +229,12 @@ class GetTeamReadinessUseCaseTests {
 
 		@Override
 		public Set<String> effectiveScopes(UUID athleteId, UUID teamId) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public java.util.List<com.devinolabs.uap.consent.api.ConsentGrantsPort.ConsentHistory> listConsentHistory(
+				UUID athleteId) {
 			throw new UnsupportedOperationException();
 		}
 	}

@@ -23,6 +23,8 @@ public interface TeamMembershipRepository {
 
 	List<TeamMembership> findAllActiveByAccountId(AccountId accountId);
 
+	List<TeamMembership> findAllByAccountId(AccountId accountId);
+
 	boolean existsActiveMembership(AccountId accountId, TeamId teamId);
 
 }

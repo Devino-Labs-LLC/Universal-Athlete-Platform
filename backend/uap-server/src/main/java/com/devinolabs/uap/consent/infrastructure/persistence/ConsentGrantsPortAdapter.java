@@ -1,5 +1,6 @@
 package com.devinolabs.uap.consent.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -8,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.devinolabs.uap.consent.api.ConsentGrantsPort;
+import com.devinolabs.uap.consent.api.ConsentGrantsPort.ConsentHistory;
 import com.devinolabs.uap.consent.application.ConsentEffectiveAccessService;
 
 @Component
@@ -36,6 +38,14 @@ class ConsentGrantsPortAdapter implements ConsentGrantsPort {
 		return effectiveAccessService.effectiveScopesForCurrentMemberships(
 				teamId,
 				currentMembershipIdToAthleteId);
+	}
+
+	@Override
+	public List<ConsentHistory> listConsentHistory(UUID athleteId) {
+		if (athleteId == null) {
+			return List.of();
+		}
+		return effectiveAccessService.listConsentHistory(athleteId);
 	}
 
 }

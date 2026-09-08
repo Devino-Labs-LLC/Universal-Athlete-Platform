@@ -45,6 +45,9 @@ const InvitationsPage = lazy(() =>
 const SharingPage = lazy(() =>
   import('@/features/consent/pages/SharingPage').then((m) => ({ default: m.SharingPage })),
 );
+const TransparencyPage = lazy(() =>
+  import('@/features/consent/pages/TransparencyPage').then((m) => ({ default: m.TransparencyPage })),
+);
 const InvitationTokenPage = lazy(() =>
   import('@/features/organization/pages/InvitationTokenPage').then((m) => ({
     default: m.InvitationTokenPage,
@@ -67,6 +70,11 @@ const TeamRosterPage = lazy(() =>
 const TeamReadinessPage = lazy(() =>
   import('@/features/coach/pages/TeamReadinessPage').then((m) => ({
     default: m.TeamReadinessPage,
+  })),
+);
+const TeamInvitationsPage = lazy(() =>
+  import('@/features/coach/pages/TeamInvitationsPage').then((m) => ({
+    default: m.TeamInvitationsPage,
   })),
 );
 const CoachAthleteDetailPage = lazy(() =>
@@ -359,6 +367,14 @@ export function AppRouter() {
                 }
               />
               <Route
+                path="sharing/activity"
+                element={
+                  <LazyPage>
+                    <TransparencyPage />
+                  </LazyPage>
+                }
+              />
+              <Route
                 path="sharing"
                 element={
                   <LazyPage>
@@ -400,6 +416,14 @@ export function AppRouter() {
               element={
                 <LazyPage>
                   <TeamRosterPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="teams/:teamId/invitations"
+              element={
+                <LazyPage>
+                  <TeamInvitationsPage />
                 </LazyPage>
               }
             />

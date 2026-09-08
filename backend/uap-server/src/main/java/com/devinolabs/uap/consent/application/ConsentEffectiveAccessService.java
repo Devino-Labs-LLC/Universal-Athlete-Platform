@@ -1,6 +1,8 @@
 package com.devinolabs.uap.consent.application;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.consent.api.ConsentGrantsPort.ConsentHistory;
 import com.devinolabs.uap.consent.domain.ConsentGrant;
 import com.devinolabs.uap.consent.domain.ConsentScope;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
@@ -99,6 +102,16 @@ public class ConsentEffectiveAccessService {
 		}
 		UUID currentAthleteId = currentMembershipIdToAthleteId.get(grant.teamMembershipId());
 		return currentAthleteId != null && currentAthleteId.equals(grant.athleteId());
+	}
+
+	@Transactional(readOnly = true)
+	public List<ConsentHistory> listConsentHistory(UUID athleteId) {
+		Objects.requireNonNull(athleteId, "athleteId must not be null");
+		List<ConsentHistory> history = new ArrayList<>();
+		for (ConsentGrant grant : consentGrantRepository.findAllByAthleteId(athleteId)) {
+			history.add(new ConsentHistory(grant.teamId(), grant.createdAt(), grant.revokedAt()));
+		}
+		return List.copyOf(history);
 	}
 
 	@Transactional(readOnly = true)

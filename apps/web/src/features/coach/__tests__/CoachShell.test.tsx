@@ -11,6 +11,10 @@ vi.mock('@/features/coach/hooks/useCoachPersonaSwitch', () => ({
   useCoachPersonaSwitch: () => ({ goToAthleteView, goToCoachView: vi.fn() }),
 }));
 
+vi.mock('@/app/providers/AthleteOnboardingProvider', () => ({
+  useAthleteOnboarding: () => ({ snapshot: { profile: { firstName: 'Alex' } } }),
+}));
+
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
   useAuthSession: () => ({
     account: { accountId: 'acc-1', email: 'coach@example.com' },

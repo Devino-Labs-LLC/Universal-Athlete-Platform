@@ -20,7 +20,7 @@ const SCOPE_LABELS: Record<ConsentScope, string> = {
 
 const SCOPE_DESCRIPTIONS: Record<ConsentScope, string> = {
   AVAILABILITY: 'Practice and session availability flags for your coaches.',
-  READINESS_CATEGORY: 'Readiness band only (for example Ready / Limited).',
+  READINESS_CATEGORY: 'Stored readiness band only (High, Moderate, or Low).',
   READINESS_SCORE: 'Numeric readiness score and short summary.',
   LIMITING_DIMENSIONS: 'Which dimensions are limiting readiness.',
   RECOVERY_CHECK_IN_DETAIL: 'Raw recovery check-in fields and notes.',

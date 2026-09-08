@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
+import com.devinolabs.uap.organization.api.OrganizationMembershipPort.AthleteMembershipHistory;
 import com.devinolabs.uap.organization.application.OrganizationMembershipRepository;
 import com.devinolabs.uap.organization.application.OrganizationRepository;
 import com.devinolabs.uap.organization.application.TeamMembershipRepository;
@@ -180,6 +181,37 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 				organization.get().name(),
 				team.get().status().name(),
 				organization.get().status().name()));
+	}
+
+	@Override
+	public List<AthleteMembershipHistory> listAthleteMembershipHistory(UUID accountId) {
+		if (accountId == null) {
+			return List.of();
+		}
+		return teamMembershipRepository.findAllByAccountId(AccountId.of(accountId)).stream()
+				.filter(membership -> membership.role() == OrganizationMembershipRole.ATHLETE)
+				.map(this::toHistory)
+				.flatMap(Optional::stream)
+				.toList();
+	}
+
+	private Optional<AthleteMembershipHistory> toHistory(TeamMembership membership) {
+		Optional<Team> team = teamRepository.findById(membership.teamId());
+		if (team.isEmpty()) {
+			return Optional.empty();
+		}
+		Optional<Organization> organization = organizationRepository.findById(team.get().organizationId());
+		if (organization.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(new AthleteMembershipHistory(
+				team.get().id().value(),
+				team.get().name(),
+				organization.get().id().value(),
+				organization.get().name(),
+				membership.status().name(),
+				membership.createdAt(),
+				membership.updatedAt()));
 	}
 
 	private Optional<TeamMembershipRef> toRef(TeamMembership membership) {
