@@ -14,6 +14,16 @@ describe('coachKeys', () => {
     expect(coachKeys.roster('acc-1', 'team-a')).not.toEqual(coachKeys.roster('acc-1', 'team-b'));
 
     const date = parseDateOnly('2026-09-07');
+    expect(coachKeys.teamReadiness('acc-1', 'team-a', date)).toEqual([
+      'coach',
+      'acc-1',
+      'team-readiness',
+      'team-a',
+      date,
+    ]);
+    expect(coachKeys.teamReadiness('acc-1', 'team-a', date)).not.toEqual(
+      coachKeys.teamReadiness('acc-1', 'team-b', date),
+    );
     expect(coachKeys.overview('acc-1', 'team-a', 'ath-1', date)).toEqual([
       'coach',
       'acc-1',

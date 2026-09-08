@@ -10,6 +10,7 @@ import {
   useCoachOrganizationTeams,
   useCoachOrganizations,
   useCreateCoachAssignment,
+  useTeamReadiness,
   useTeamRoster,
 } from '@/features/coach/hooks/useCoachQueries';
 import { coachKeys } from '@/features/coach/models/queryKeys';
@@ -21,6 +22,7 @@ const fetchTeamRoster = vi.fn();
 const fetchCoachAthleteOverview = vi.fn();
 const fetchCoachAssignments = vi.fn();
 const createCoachAssignment = vi.fn();
+const fetchTeamReadiness = vi.fn();
 
 vi.mock('@/features/coach/api/coachApi', () => ({
   fetchCoachOrganizations: (...args: unknown[]) => fetchCoachOrganizations(...args),
@@ -29,6 +31,7 @@ vi.mock('@/features/coach/api/coachApi', () => ({
   fetchCoachAthleteOverview: (...args: unknown[]) => fetchCoachAthleteOverview(...args),
   fetchCoachAssignments: (...args: unknown[]) => fetchCoachAssignments(...args),
   createCoachAssignment: (...args: unknown[]) => createCoachAssignment(...args),
+  fetchTeamReadiness: (...args: unknown[]) => fetchTeamReadiness(...args),
 }));
 
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
@@ -53,6 +56,7 @@ describe('useCoachQueries', () => {
     fetchCoachAthleteOverview.mockReset();
     fetchCoachAssignments.mockReset();
     createCoachAssignment.mockReset();
+    fetchTeamReadiness.mockReset();
   });
 
   it('loads organizations under account-scoped keys', async () => {
@@ -207,6 +211,66 @@ describe('useCoachQueries', () => {
     expect(createCoachAssignment).toHaveBeenCalled();
     expect(invalidate).toHaveBeenCalledWith({
       queryKey: coachKeys.assignments('acc-1', 'team-1', 'ath-1'),
+    });
+  });
+
+  it('loads team readiness under account, team, and date keys', async () => {
+    fetchTeamReadiness.mockResolvedValue({
+      teamId: 'team-1',
+      date: '2026-09-07',
+      status: 'INSUFFICIENT_DATA',
+      cohort: 'BELOW_MINIMUM',
+      categoryDistribution: { status: 'INSUFFICIENT_DATA', cohort: 'BELOW_MINIMUM', cells: [] },
+      limitingDimensionDistribution: { status: 'INSUFFICIENT_DATA', cohort: 'BELOW_MINIMUM', cells: [] },
+      availability: { status: 'UNSUPPORTED' },
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const date = parseDateOnly('2026-09-07');
+
+    const { result } = renderHook(() => useTeamReadiness('team-1', date), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchTeamReadiness).toHaveBeenCalled();
+    expect(queryClient.getQueryData(coachKeys.teamReadiness('acc-1', 'team-1', date))).toBeDefined();
+  });
+
+  it('clears team readiness cache on 404', async () => {
+    fetchTeamReadiness.mockRejectedValue(
+      new ApiError('missing', { category: 'NOT_FOUND', status: 404 }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const date = parseDateOnly('2026-09-07');
+    queryClient.setQueryData(coachKeys.teamReadiness('acc-1', 'team-1', date), { stale: true });
+    queryClient.setQueryData(coachKeys.roster('acc-1', 'team-1'), [{ athleteId: 'ath-1' }]);
+
+    const { result } = renderHook(() => useTeamReadiness('team-1', date), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(queryClient.getQueryData(coachKeys.teamReadiness('acc-1', 'team-1', date))).toBeUndefined();
+    expect(queryClient.getQueryData(coachKeys.roster('acc-1', 'team-1'))).toBeUndefined();
+  });
+
+  it('clears all coach queries when team readiness returns 401', async () => {
+    fetchTeamReadiness.mockRejectedValue(
+      new ApiError('expired', { category: 'UNAUTHORIZED', status: 401 }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const date = parseDateOnly('2026-09-07');
+    queryClient.setQueryData(coachKeys.roster('acc-1', 'team-1'), [{ athleteId: 'ath-1' }]);
+    queryClient.setQueryData(coachKeys.organizationList('acc-1'), [{ id: 'org-1' }]);
+
+    const { result } = renderHook(() => useTeamReadiness('team-1', date), {
+      wrapper: wrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    await waitFor(() => {
+      expect(queryClient.getQueryData(coachKeys.roster('acc-1', 'team-1'))).toBeUndefined();
+      expect(queryClient.getQueryData(coachKeys.organizationList('acc-1'))).toBeUndefined();
     });
   });
 });

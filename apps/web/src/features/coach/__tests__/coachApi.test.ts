@@ -8,6 +8,7 @@ import {
   fetchCoachAthleteOverview,
   fetchCoachOrganizationTeams,
   fetchCoachOrganizations,
+  fetchTeamReadiness,
   fetchTeamRoster,
 } from '@/features/coach/api/coachApi';
 
@@ -141,5 +142,35 @@ describe('coachApi', () => {
       '/api/v1/teams/team-1/athletes/ath-1/training/assignments',
       expect.objectContaining({ title: 'Tempo intervals', idempotencyKey: 'key-1' }),
     );
+  });
+
+  it('fetches team readiness for an explicit date without identity fields', async () => {
+    get.mockResolvedValue({
+      data: {
+        teamId: 'team-1',
+        date: '2026-09-07',
+        status: 'PUBLISHED',
+        cohort: 'AT_LEAST_MINIMUM',
+        includedCount: null,
+        categoryDistribution: {
+          status: 'PUBLISHED',
+          cohort: 'AT_LEAST_MINIMUM',
+          cells: [{ category: 'HIGH', publication: 'SUPPRESSED' }],
+        },
+        limitingDimensionDistribution: {
+          status: 'INSUFFICIENT_DATA',
+          cohort: 'BELOW_MINIMUM',
+          cells: [],
+        },
+        availability: { status: 'UNSUPPORTED' },
+      },
+    });
+
+    const date = parseDateOnly('2026-09-07');
+    const view = await fetchTeamReadiness(client, 'team-1', date);
+    expect(get).toHaveBeenCalledWith('/api/v1/teams/team-1/readiness', { params: { date } });
+    expect(view.status).toBe('PUBLISHED');
+    expect(view).not.toHaveProperty('athleteId');
+    expect(view.categoryDistribution.cells[0]?.publication).toBe('SUPPRESSED');
   });
 });

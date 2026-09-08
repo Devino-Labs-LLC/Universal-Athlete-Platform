@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
@@ -89,6 +90,31 @@ class TeamReadinessPrivacySuppressionTests {
 		assertThat(result.cohort()).isEqualTo(CohortPublication.EXACT);
 		assertThat(result.includedCount()).isEqualTo(21);
 		assertThat(publishedCount(result, "HIGH")).isEqualTo(6);
+	}
+
+	@Test
+	void complementarySuppressionBreaksEqualCountTiesByName() {
+		SuppressedDistribution result = TeamReadinessSuppressionPolicy.suppress(List.of(
+				new NamedCount("HIGH", 8),
+				new NamedCount("LOW", 5),
+				new NamedCount("MODERATE", 5),
+				new NamedCount("INSUFFICIENT_DATA", 2)));
+
+		assertThat(result.includedCount()).isNull();
+		assertThat(publishedCount(result, "INSUFFICIENT_DATA")).isNull();
+		assertThat(publishedCount(result, "LOW")).isNull();
+		assertThat(publishedCount(result, "MODERATE")).isEqualTo(5);
+		assertThat(publishedCount(result, "HIGH")).isEqualTo(8);
+	}
+
+	@Test
+	void rejectsNegativeCountsAndNegativeEligibleCohort() {
+		assertThatThrownBy(() -> TeamReadinessSuppressionPolicy.suppress(List.of(new NamedCount("HIGH", -1))))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> TeamReadinessSuppressionPolicy.suppressEligible(-1, List.of()))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> new NamedCount(null, 1))
+				.isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
