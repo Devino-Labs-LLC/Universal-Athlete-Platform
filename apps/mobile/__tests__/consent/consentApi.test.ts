@@ -1,5 +1,6 @@
 import {
   createConsentGrant,
+  fetchAthleteTransparency,
   listMyAthleteTeamMemberships,
   listMyConsents,
   revokeConsentGrant,
@@ -112,6 +113,33 @@ describe('consentsApi', () => {
     });
     expect(post).toHaveBeenCalledWith('/api/v1/athletes/me/consents/cg-1/revoke');
     expect(get).toHaveBeenCalledWith('/api/v1/athletes/me/teams');
+  });
+
+  it('fetches the athlete-self transparency page without raw payloads', async () => {
+    const get = jest.fn().mockResolvedValue({
+      data: {
+        events: [
+          {
+            type: 'TEAM_JOINED',
+            occurredAt: '2026-09-01T12:00:00Z',
+            organizationName: 'Devino',
+            teamName: 'Varsity',
+            description: 'You joined Varsity.',
+            rawPayload: 'secret',
+          },
+        ],
+        page: 0,
+        size: 20,
+        hasMore: true,
+      },
+    });
+
+    const page = await fetchAthleteTransparency({ axios: { get } } as never, 0);
+    expect(get).toHaveBeenCalledWith('/api/v1/athletes/me/transparency', {
+      params: { page: 0, size: 20 },
+    });
+    expect(page.events[0]).not.toHaveProperty('rawPayload');
+    expect(page.hasMore).toBe(true);
   });
 });
 

@@ -4,8 +4,11 @@ import {
   acceptInvitationById,
   acceptInvitationByToken,
   createOrganizationInvitation,
+  createTeamInvitation,
   declineInvitationById,
   fetchMyInvitations,
+  fetchTeamInvitations,
+  revokeTeamInvitation,
 } from '@/features/organization/api/invitationsApi';
 import { fetchMyOrganizations, fetchOrganizationTeams } from '@/features/organization/api/organizationsApi';
 import { myInvitationSchema } from '@/features/organization/models/schemas';
@@ -122,6 +125,46 @@ describe('invitationsApi', () => {
       role: 'ORG_ADMIN',
     });
     expect(invitation.rawToken).toBe('one-time-token');
+  });
+
+  it('lists, creates, and revokes team invitations', async () => {
+    const client = makeClient();
+    const payload = {
+      id: 'inv-3',
+      organizationId: 'org-1',
+      teamId: 'team-1',
+      invitedEmail: 'athlete@example.com',
+      invitedAccountId: null,
+      role: 'ATHLETE',
+      status: 'PENDING',
+      expiresAt: '2026-09-13T12:00:00Z',
+      acceptedMembershipId: null,
+      createdByAccountId: 'acc-1',
+      createdAt: '2026-09-06T12:00:00Z',
+      updatedAt: '2026-09-06T12:00:00Z',
+      version: 0,
+    };
+    client.axios.get.mockResolvedValue({ data: [payload] });
+    client.axios.post
+      .mockResolvedValueOnce({ data: { ...payload, rawToken: 'one-time-token' } })
+      .mockResolvedValueOnce({ data: null });
+
+    const list = await fetchTeamInvitations(client as never, 'team-1');
+    const created = await createTeamInvitation(client as never, 'team-1', {
+      email: 'coach@example.com',
+      role: 'COACH',
+    });
+    await revokeTeamInvitation(client as never, 'team-1', 'inv-3');
+
+    expect(client.axios.get).toHaveBeenCalledWith('/api/v1/teams/team-1/invitations');
+    expect(client.axios.post).toHaveBeenNthCalledWith(1, '/api/v1/teams/team-1/invitations', {
+      email: 'coach@example.com',
+      role: 'COACH',
+    });
+    expect(client.axios.post).toHaveBeenNthCalledWith(2, '/api/v1/teams/team-1/invitations/inv-3/revoke');
+    expect(list[0]?.invitedEmail).toBe('athlete@example.com');
+    expect(list[0]?.rawToken).toBeUndefined();
+    expect(created.rawToken).toBe('one-time-token');
   });
 });
 
