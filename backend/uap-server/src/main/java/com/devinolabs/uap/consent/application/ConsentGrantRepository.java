@@ -16,6 +16,8 @@ public interface ConsentGrantRepository {
 
 	List<ConsentGrant> findActiveByAthleteIdAndTeamId(UUID athleteId, UUID teamId);
 
+	List<ConsentGrant> findActiveByTeamId(UUID teamId);
+
 	Optional<ConsentGrant> findActiveByTeamMembershipId(UUID teamMembershipId);
 
 	List<ConsentGrant> findAllByAthleteId(UUID athleteId);

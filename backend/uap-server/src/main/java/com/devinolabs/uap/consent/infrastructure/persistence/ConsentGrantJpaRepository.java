@@ -10,6 +10,8 @@ import com.devinolabs.uap.consent.domain.ConsentGrantStatus;
 
 interface ConsentGrantJpaRepository extends JpaRepository<ConsentGrantJpaEntity, UUID> {
 
+	List<ConsentGrantJpaEntity> findAllByTeamIdAndStatus(UUID teamId, ConsentGrantStatus status);
+
 	List<ConsentGrantJpaEntity> findAllByAthleteIdAndTeamIdAndStatus(
 			UUID athleteId,
 			UUID teamId,

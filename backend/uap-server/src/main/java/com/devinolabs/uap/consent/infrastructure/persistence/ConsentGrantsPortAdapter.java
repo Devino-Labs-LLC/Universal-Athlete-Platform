@@ -1,5 +1,6 @@
 package com.devinolabs.uap.consent.infrastructure.persistence;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +27,15 @@ class ConsentGrantsPortAdapter implements ConsentGrantsPort {
 	@Override
 	public Set<String> effectiveScopes(UUID athleteId, UUID teamId) {
 		return effectiveAccessService.effectiveScopeNames(athleteId, teamId);
+	}
+
+	@Override
+	public Map<UUID, Set<String>> effectiveScopesForCurrentMemberships(
+			UUID teamId,
+			Map<UUID, UUID> currentMembershipIdToAthleteId) {
+		return effectiveAccessService.effectiveScopesForCurrentMemberships(
+				teamId,
+				currentMembershipIdToAthleteId);
 	}
 
 }

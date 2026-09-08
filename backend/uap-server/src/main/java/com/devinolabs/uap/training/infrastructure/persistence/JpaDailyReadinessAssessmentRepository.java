@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -12,13 +13,16 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.devinolabs.uap.training.application.CurrentReadinessSlice;
 import com.devinolabs.uap.training.application.DailyReadinessAssessmentRepository;
 import com.devinolabs.uap.training.application.DailyReadinessAssessmentSummary;
+import com.devinolabs.uap.training.application.StoredLimitingDimension;
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessment;
 import com.devinolabs.uap.training.domain.DailyReadinessAssessmentId;
 import com.devinolabs.uap.training.domain.ReadinessAlgorithmVersion;
+import com.devinolabs.uap.training.domain.ReadinessBand;
 import com.devinolabs.uap.training.domain.ReadinessDimensionType;
 
 @Repository
@@ -102,6 +106,32 @@ class JpaDailyReadinessAssessmentRepository implements DailyReadinessAssessmentR
 		return rows.stream()
 				.map(row -> DailyReadinessAssessmentPersistenceMapper.toSummary(
 						row, currentSnapshotIds.contains(row.getDailyAthleteStateSnapshotId())))
+				.toList();
+	}
+
+	@Override
+	public List<CurrentReadinessSlice> findCurrentSlicesByAthleteIdsAndDate(
+			Collection<UUID> athleteIds,
+			LocalDate stateDate,
+			ReadinessAlgorithmVersion algorithmVersion) {
+		if (athleteIds == null || athleteIds.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository.findCurrentSlices(athleteIds, stateDate, algorithmVersion).stream()
+				.map(row -> new CurrentReadinessSlice(
+						(UUID) row[0],
+						(UUID) row[1],
+						(ReadinessBand) row[2]))
+				.toList();
+	}
+
+	@Override
+	public List<StoredLimitingDimension> findLimitingDimensionsByAssessmentIds(Collection<UUID> assessmentIds) {
+		if (assessmentIds == null || assessmentIds.isEmpty()) {
+			return List.of();
+		}
+		return jpaRepository.findLimitingDimensionsByAssessmentIds(assessmentIds).stream()
+				.map(row -> new StoredLimitingDimension((UUID) row[0], (ReadinessDimensionType) row[1]))
 				.toList();
 	}
 

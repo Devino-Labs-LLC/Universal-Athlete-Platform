@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,5 +77,32 @@ interface DailyReadinessAssessmentJpaRepository extends JpaRepository<DailyReadi
 			@Param("endDate") LocalDate endDate,
 			@Param("currentSnapshotOnly") boolean currentSnapshotOnly,
 			@Param("algorithmVersion") ReadinessAlgorithmVersion algorithmVersion);
+
+	@Query("""
+			select a.athleteId, a.id, a.readinessBand
+			from DailyReadinessAssessmentJpaEntity a
+			where a.athleteId in :athleteIds
+			  and a.stateDate = :stateDate
+			  and a.algorithmVersion = :algorithmVersion
+			  and exists (
+			    select 1 from DailyAthleteStateSnapshotJpaEntity s
+			    where s.id = a.dailyAthleteStateSnapshotId
+			      and s.currentSnapshot = true
+			  )
+			order by a.athleteId asc, a.assessedAt desc, a.id asc
+			""")
+	List<Object[]> findCurrentSlices(
+			@Param("athleteIds") Collection<UUID> athleteIds,
+			@Param("stateDate") LocalDate stateDate,
+			@Param("algorithmVersion") ReadinessAlgorithmVersion algorithmVersion);
+
+	@Query("""
+			select a.athleteId, d.dimensionType
+			from DailyReadinessLimitingDimensionJpaEntity d
+			join d.assessment a
+			where a.id in :assessmentIds
+			order by a.athleteId asc, d.rankOrder asc
+			""")
+	List<Object[]> findLimitingDimensionsByAssessmentIds(@Param("assessmentIds") Collection<UUID> assessmentIds);
 
 }

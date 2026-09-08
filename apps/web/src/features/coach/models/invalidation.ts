@@ -28,6 +28,9 @@ export function clearCoachTeamQueries(
   void queryClient.removeQueries({
     queryKey: [...coachKeys.all(accountId), 'assignments', teamId],
   });
+  void queryClient.removeQueries({
+    queryKey: [...coachKeys.all(accountId), 'team-readiness', teamId],
+  });
 }
 
 export function clearCoachRosterQuery(

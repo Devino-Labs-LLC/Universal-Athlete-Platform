@@ -896,7 +896,29 @@ DTO allow-list: assignment facts + `provenance=COACH_ASSIGNMENT`. No email, read
 
 `WORKOUT_ASSIGNED`, `WORKOUT_ASSIGNMENT_MODIFIED`, `WORKOUT_ASSIGNMENT_DECLINED`, `WORKOUT_ASSIGNMENT_UNABLE` — identifiers only.
 
-Do **not** start Slice F (Team Readiness) from this slice.
+Slice F notes are in §23f.
+
+---
+
+## 23f. Slice F implementation notes (locked behavior)
+
+Slice F adds a **training-owned** Team Readiness aggregate. It reads already-stored readiness only. There is no Team State Engine, no composite team score, and no new table. Schema remains **V33**.
+
+### API
+
+`GET /api/v1/teams/{teamId}/readiness?date=YYYY-MM-DD`
+
+Viewers: current ACTIVE `COACH`, `HEAD_COACH`, or `TEAM_ADMIN` on the Team, or ACTIVE `ORG_ADMIN` / `ORG_OWNER` on the parent Organization. `ATHLETE` and foreign viewers receive **404** `TEAM_READINESS_NOT_FOUND`. Unauthenticated: **401**.
+
+An athlete contributes only with ACTIVE athlete membership on that Team, current membership generation, and the exact scope for the metric. Category cells require `READINESS_CATEGORY`. Limiting dimensions require `LIMITING_DIMENSIONS`. `READINESS_SCORE` does not imply category. Availability is `UNSUPPORTED` because no canonical availability source exists. Raw recovery is not aggregated.
+
+### Privacy
+
+`minCohortSize = 5`. Fewer than five eligible stored rows returns `INSUFFICIENT_DATA` and `cohort=BELOW_MINIMUM` with no exact counts. Cells below 5 are `SUPPRESSED` without a count. If any positive small cell is suppressed, the smallest remaining exact cell is also suppressed, and the exact included count is withheld. This is complementary cell suppression, not differential privacy.
+
+The response allow-list has no athlete, membership, account, name, email, score, or consent identifiers. GET does not generate state, readiness, recommendations, consent, membership, or assignments.
+
+Do **not** start Slice G from this slice.
 
 ---
 

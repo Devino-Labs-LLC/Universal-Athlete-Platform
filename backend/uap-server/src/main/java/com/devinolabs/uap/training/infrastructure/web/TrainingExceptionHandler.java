@@ -44,6 +44,7 @@ import com.devinolabs.uap.training.application.InvalidWorkoutOccurrenceStatusExc
 import com.devinolabs.uap.training.application.TrainingPlanArchivedException;
 import com.devinolabs.uap.training.application.TrainingPlanDeleteNotAllowedException;
 import com.devinolabs.uap.training.application.CoachAthleteOverviewNotFoundException;
+import com.devinolabs.uap.training.application.TeamReadinessNotFoundException;
 import com.devinolabs.uap.training.application.InvalidTrainingAssignmentException;
 import com.devinolabs.uap.training.application.TrainingAssignmentConflictException;
 import com.devinolabs.uap.training.application.TrainingAssignmentNotFoundException;
@@ -912,6 +913,14 @@ class TrainingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("COACH_ATHLETE_OVERVIEW_NOT_FOUND", "Athlete overview was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(TeamReadinessNotFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleTeamReadinessNotFound(
+			TeamReadinessNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("TEAM_READINESS_NOT_FOUND", "Team readiness was not found", request, List.of()));
 	}
 
 	@ExceptionHandler(TrainingAssignmentNotFoundException.class)

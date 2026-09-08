@@ -10,6 +10,7 @@ import {
   fetchCoachOrganizations,
   fetchTeamRoster,
   fetchCoachAssignments,
+  fetchTeamReadiness,
 } from '@/features/coach/api/coachApi';
 import {
   isCoachNotFoundError,
@@ -19,6 +20,7 @@ import {
   clearAllCoachQueries,
   clearCoachOverviewQueries,
   clearCoachRosterQuery,
+  clearCoachTeamQueries,
 } from '@/features/coach/models/invalidation';
 import { coachKeys } from '@/features/coach/models/queryKeys';
 
@@ -168,6 +170,34 @@ export function useCoachAssignments(
       });
     }
   }, [query.error, queryClient, accountId, teamId, athleteId]);
+
+  return query;
+}
+
+export function useTeamReadiness(teamId: string | null, date: DateOnly | null) {
+  const { apiClient, status } = useAuthSession();
+  const accountId = useCoachAccountId();
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: coachKeys.teamReadiness(accountId ?? '', teamId ?? '', date ?? ('' as DateOnly)),
+    queryFn: () => fetchTeamReadiness(apiClient, teamId!, date!),
+    enabled: status === 'AUTHENTICATED' && Boolean(accountId) && Boolean(teamId) && Boolean(date),
+    placeholderData: undefined,
+  });
+
+  useEffect(() => {
+    if (!query.error || !accountId || !teamId) {
+      return;
+    }
+    if (isCoachUnauthorizedError(query.error)) {
+      clearAllCoachQueries(queryClient);
+      return;
+    }
+    if (isCoachNotFoundError(query.error)) {
+      clearCoachTeamQueries(queryClient, accountId, teamId);
+    }
+  }, [query.error, queryClient, accountId, teamId]);
 
   return query;
 }

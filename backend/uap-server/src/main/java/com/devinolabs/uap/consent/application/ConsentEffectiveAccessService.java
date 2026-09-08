@@ -1,6 +1,8 @@
 package com.devinolabs.uap.consent.application;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -56,6 +58,47 @@ public class ConsentEffectiveAccessService {
 				.findFirst()
 				.map(grant -> Set.<ConsentScope>copyOf(grant.scopes()))
 				.orElseGet(Set::of);
+	}
+
+	@Transactional(readOnly = true)
+	public Map<UUID, Set<String>> effectiveScopesForCurrentMemberships(
+			UUID teamId,
+			Map<UUID, UUID> currentMembershipIdToAthleteId) {
+		Objects.requireNonNull(teamId, "teamId must not be null");
+		if (currentMembershipIdToAthleteId == null || currentMembershipIdToAthleteId.isEmpty()) {
+			return Map.of();
+		}
+		Optional<TeamLifecycleRef> lifecycle = membershipPort.findTeamLifecycle(teamId);
+		if (lifecycle.isEmpty()
+				|| !ACTIVE.equals(lifecycle.get().teamStatus())
+				|| !ACTIVE.equals(lifecycle.get().organizationStatus())) {
+			return Map.of();
+		}
+		Map<UUID, Set<String>> scopesByAthlete = new HashMap<>();
+		for (ConsentGrant grant : consentGrantRepository.findActiveByTeamId(teamId)) {
+			if (!isBoundToCurrentMembership(grant, teamId, lifecycle.get(), currentMembershipIdToAthleteId)) {
+				continue;
+			}
+			scopesByAthlete.put(
+					grant.athleteId(),
+					grant.scopes().stream().map(ConsentScope::name).collect(Collectors.toUnmodifiableSet()));
+		}
+		return Map.copyOf(scopesByAthlete);
+	}
+
+	private boolean isBoundToCurrentMembership(
+			ConsentGrant grant,
+			UUID teamId,
+			TeamLifecycleRef lifecycle,
+			Map<UUID, UUID> currentMembershipIdToAthleteId) {
+		if (!grant.isActive() || !teamId.equals(grant.teamId())) {
+			return false;
+		}
+		if (!lifecycle.organizationId().equals(grant.organizationId())) {
+			return false;
+		}
+		UUID currentAthleteId = currentMembershipIdToAthleteId.get(grant.teamMembershipId());
+		return currentAthleteId != null && currentAthleteId.equals(grant.athleteId());
 	}
 
 	@Transactional(readOnly = true)

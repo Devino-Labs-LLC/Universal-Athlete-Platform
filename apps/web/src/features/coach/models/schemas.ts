@@ -128,3 +128,44 @@ export const trainingAssignmentSchema = z.object({
 export type TrainingAssignment = z.infer<typeof trainingAssignmentSchema>;
 
 export const trainingAssignmentListSchema = z.array(trainingAssignmentSchema);
+
+const publicationSchema = z.enum(['PUBLISHED', 'SUPPRESSED']);
+const aggregateStatusSchema = z.enum(['INSUFFICIENT_DATA', 'PUBLISHED']);
+const cohortSchema = z.enum(['BELOW_MINIMUM', 'AT_LEAST_MINIMUM', 'EXACT']);
+
+const categoryCellSchema = z.object({
+  category: z.string().min(1),
+  publication: publicationSchema,
+  count: z.number().int().nullable().optional(),
+});
+
+const dimensionCellSchema = z.object({
+  dimension: z.string().min(1),
+  publication: publicationSchema,
+  count: z.number().int().nullable().optional(),
+});
+
+export const teamReadinessSchema = z.object({
+  teamId: z.string().min(1),
+  date: z.string().min(1),
+  status: aggregateStatusSchema,
+  cohort: cohortSchema,
+  includedCount: z.number().int().nullable().optional(),
+  categoryDistribution: z.object({
+    status: aggregateStatusSchema,
+    cohort: cohortSchema,
+    includedCount: z.number().int().nullable().optional(),
+    cells: z.array(categoryCellSchema),
+  }),
+  limitingDimensionDistribution: z.object({
+    status: aggregateStatusSchema,
+    cohort: cohortSchema,
+    includedCount: z.number().int().nullable().optional(),
+    cells: z.array(dimensionCellSchema),
+  }),
+  availability: z.object({
+    status: z.literal('UNSUPPORTED'),
+  }),
+});
+
+export type TeamReadiness = z.infer<typeof teamReadinessSchema>;

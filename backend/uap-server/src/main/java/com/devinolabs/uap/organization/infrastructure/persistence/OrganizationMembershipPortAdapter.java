@@ -1,7 +1,9 @@
 package com.devinolabs.uap.organization.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -24,6 +26,14 @@ import com.devinolabs.uap.organization.domain.TeamStatus;
 
 @Component
 class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
+
+	private static final Set<OrganizationMembershipRole> TEAM_READINESS_ROLES = Set.of(
+			OrganizationMembershipRole.COACH,
+			OrganizationMembershipRole.HEAD_COACH,
+			OrganizationMembershipRole.TEAM_ADMIN);
+	private static final Set<OrganizationMembershipRole> ORG_READINESS_ROLES = Set.of(
+			OrganizationMembershipRole.ORG_ADMIN,
+			OrganizationMembershipRole.ORG_OWNER);
 
 	private final OrganizationMembershipRepository membershipRepository;
 	private final TeamMembershipRepository teamMembershipRepository;
@@ -110,6 +120,47 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 			return true;
 		}
 		return membershipRepository.existsActiveMembership(account, team.get().organizationId());
+	}
+
+	@Override
+	public boolean canViewTeamReadinessAggregate(UUID accountId, UUID teamId) {
+		if (accountId == null || teamId == null) {
+			return false;
+		}
+		Optional<Team> team = teamRepository.findById(TeamId.of(teamId));
+		if (team.isEmpty() || team.get().status() != TeamStatus.ACTIVE) {
+			return false;
+		}
+		Optional<Organization> organization = organizationRepository.findById(team.get().organizationId());
+		if (organization.isEmpty() || organization.get().status() != OrganizationStatus.ACTIVE) {
+			return false;
+		}
+		AccountId account = AccountId.of(accountId);
+		Optional<TeamMembership> teamMembership = teamMembershipRepository
+				.findActiveByTeamIdAndAccountId(team.get().id(), account);
+		if (teamMembership.isPresent()
+				&& teamMembership.get().isActive()
+				&& TEAM_READINESS_ROLES.contains(teamMembership.get().role())) {
+			return true;
+		}
+		return membershipRepository.findActiveByOrganizationIdAndAccountId(team.get().organizationId(), account)
+				.filter(membership -> membership.isActive())
+				.filter(membership -> ORG_READINESS_ROLES.contains(membership.role()))
+				.isPresent();
+	}
+
+	@Override
+	public List<TeamMembershipRef> listActiveAthleteMemberships(UUID teamId) {
+		if (teamId == null) {
+			return List.of();
+		}
+		return teamMembershipRepository.findAllByTeamId(TeamId.of(teamId)).stream()
+				.filter(TeamMembership::isActive)
+				.filter(membership -> membership.role() == OrganizationMembershipRole.ATHLETE)
+				.filter(membership -> membership.athleteId() != null)
+				.map(this::toRef)
+				.flatMap(Optional::stream)
+				.toList();
 	}
 
 	@Override

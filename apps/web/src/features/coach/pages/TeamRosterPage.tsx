@@ -61,9 +61,14 @@ export function TeamRosterPage() {
         title="Team roster"
         description="Active athletes on this team."
         actions={
-          <Link to="/coach" className={styles.inlineLink}>
-            Change team
-          </Link>
+          <>
+            <Link to={`/coach/teams/${teamId}/readiness`} className={styles.inlineLink}>
+              Team readiness
+            </Link>
+            <Link to="/coach" className={styles.inlineLink}>
+              Change team
+            </Link>
+          </>
         }
       >
         <EmptyView title="No athletes" message="There are no active athletes on this roster." />
@@ -76,9 +81,14 @@ export function TeamRosterPage() {
       title="Team roster"
       description="Active athletes on this team. Only roster-safe fields are shown."
       actions={
-        <Link to="/coach" className={styles.inlineLink}>
-          Change team
-        </Link>
+        <>
+          <Link to={`/coach/teams/${teamId}/readiness`} className={styles.inlineLink}>
+            Team readiness
+          </Link>
+          <Link to="/coach" className={styles.inlineLink}>
+            Change team
+          </Link>
+        </>
       }
     >
       <ul className={styles.list} aria-label="Team roster">

@@ -1,8 +1,10 @@
 package com.devinolabs.uap.training.application;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import com.devinolabs.uap.training.domain.AthleteId;
 import com.devinolabs.uap.training.domain.DailyAthleteStateSnapshotId;
@@ -45,6 +47,19 @@ public interface DailyReadinessAssessmentRepository {
 			ReadinessAlgorithmVersion algorithmVersion,
 			int page,
 			int size);
+
+	/**
+	 * Current-snapshot readiness slices for the date. Header fields only.
+	 */
+	List<CurrentReadinessSlice> findCurrentSlicesByAthleteIdsAndDate(
+			Collection<UUID> athleteIds,
+			LocalDate stateDate,
+			ReadinessAlgorithmVersion algorithmVersion);
+
+	/**
+	 * Athlete/dimension pairs for the given assessments. Caller dedupes.
+	 */
+	List<StoredLimitingDimension> findLimitingDimensionsByAssessmentIds(Collection<UUID> assessmentIds);
 
 	long countHistory(
 			AthleteId athleteId,

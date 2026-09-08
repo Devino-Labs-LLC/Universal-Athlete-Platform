@@ -64,6 +64,11 @@ const CoachHomePage = lazy(() =>
 const TeamRosterPage = lazy(() =>
   import('@/features/coach/pages/TeamRosterPage').then((m) => ({ default: m.TeamRosterPage })),
 );
+const TeamReadinessPage = lazy(() =>
+  import('@/features/coach/pages/TeamReadinessPage').then((m) => ({
+    default: m.TeamReadinessPage,
+  })),
+);
 const CoachAthleteDetailPage = lazy(() =>
   import('@/features/coach/pages/CoachAthleteDetailPage').then((m) => ({
     default: m.CoachAthleteDetailPage,
@@ -395,6 +400,14 @@ export function AppRouter() {
               element={
                 <LazyPage>
                   <TeamRosterPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="teams/:teamId/readiness"
+              element={
+                <LazyPage>
+                  <TeamReadinessPage />
                 </LazyPage>
               }
             />

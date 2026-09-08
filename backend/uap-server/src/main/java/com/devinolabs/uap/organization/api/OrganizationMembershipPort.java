@@ -1,5 +1,6 @@
 package com.devinolabs.uap.organization.api;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,6 +64,18 @@ public interface OrganizationMembershipPort {
 	 * with Team ACTIVE and Organization ACTIVE.
 	 */
 	boolean canViewTeam(UUID accountId, UUID teamId);
+
+	/**
+	 * Team-readiness viewers: ACTIVE COACH, HEAD_COACH, or TEAM_ADMIN on the Team,
+	 * or ACTIVE ORG_ADMIN / ORG_OWNER on the parent Organization. ATHLETE is excluded.
+	 * Team and Organization must be ACTIVE.
+	 */
+	boolean canViewTeamReadinessAggregate(UUID accountId, UUID teamId);
+
+	/**
+	 * ACTIVE ATHLETE memberships on the Team with a non-null athleteId. Not an authorization check.
+	 */
+	List<TeamMembershipRef> listActiveAthleteMemberships(UUID teamId);
 
 	Optional<TeamLifecycleRef> findTeamLifecycle(UUID teamId);
 

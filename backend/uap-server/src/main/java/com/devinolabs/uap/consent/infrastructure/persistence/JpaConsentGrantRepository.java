@@ -51,6 +51,13 @@ class JpaConsentGrantRepository implements ConsentGrantRepository {
 	}
 
 	@Override
+	public List<ConsentGrant> findActiveByTeamId(UUID teamId) {
+		return jpaRepository.findAllByTeamIdAndStatus(teamId, ConsentGrantStatus.ACTIVE).stream()
+				.map(ConsentGrantPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
 	public Optional<ConsentGrant> findActiveByTeamMembershipId(UUID teamMembershipId) {
 		return jpaRepository.findByTeamMembershipIdAndStatus(teamMembershipId, ConsentGrantStatus.ACTIVE)
 				.map(ConsentGrantPersistenceMapper::toDomain);

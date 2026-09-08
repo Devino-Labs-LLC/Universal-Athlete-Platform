@@ -3,8 +3,10 @@ import type { DateOnly } from '@/core/date/dateOnly';
 import {
   coachAthleteOverviewSchema,
   teamRosterSchema,
+  teamReadinessSchema,
   trainingAssignmentListSchema,
   trainingAssignmentSchema,
+  type TeamReadiness,
   type CoachAthleteOverview,
   type TeamRosterEntry,
   type TrainingAssignment,
@@ -58,6 +60,17 @@ export async function fetchCoachAssignments(
     `/api/v1/teams/${teamId}/athletes/${athleteId}/training/assignments`,
   );
   return trainingAssignmentListSchema.parse(response.data);
+}
+
+export async function fetchTeamReadiness(
+  client: ApiClient,
+  teamId: string,
+  date: DateOnly,
+): Promise<TeamReadiness> {
+  const response = await client.axios.get(`/api/v1/teams/${teamId}/readiness`, {
+    params: { date },
+  });
+  return teamReadinessSchema.parse(response.data);
 }
 
 export async function createCoachAssignment(
