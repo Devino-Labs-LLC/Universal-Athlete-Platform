@@ -64,6 +64,17 @@ export function TeamInvitationsPage() {
     },
   });
 
+  useEffect(() => {
+    if (
+      teamId
+      && invitationsQuery.isError
+      && isCoachNotFoundError(invitationsQuery.error)
+      && account?.accountId
+    ) {
+      clearCoachTeamQueries(queryClient, account.accountId, teamId);
+    }
+  }, [account?.accountId, invitationsQuery.error, invitationsQuery.isError, queryClient, teamId]);
+
   if (!teamId) {
     return (
       <Page title="Invitations">
@@ -71,12 +82,6 @@ export function TeamInvitationsPage() {
       </Page>
     );
   }
-
-  useEffect(() => {
-    if (invitationsQuery.isError && isCoachNotFoundError(invitationsQuery.error) && account?.accountId) {
-      clearCoachTeamQueries(queryClient, account.accountId, teamId);
-    }
-  }, [account?.accountId, invitationsQuery.error, invitationsQuery.isError, queryClient, teamId]);
 
   const pending = (invitationsQuery.data ?? []).filter((invitation) => invitation.status === 'PENDING');
 
