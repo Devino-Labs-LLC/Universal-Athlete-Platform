@@ -27,7 +27,7 @@ Typical sections:
 
 Ordinary implementation details (invitation TTL defaults, UI route prefixes, copy) belong in `docs/V3_IMPLEMENTATION_PLAN.md` or slice contracts — **not** new ADRs.
 
-## Index (V3 lock)
+## Index (V3 lock — Accepted)
 
 | ADR | Title |
 | --- | --- |
@@ -40,3 +40,20 @@ Ordinary implementation details (invitation TTL defaults, UI route prefixes, cop
 | [035](035-audit-model.md) | Audit model |
 
 Product Owner decisions that ground these ADRs are recorded in [`docs/V3_IMPLEMENTATION_PLAN.md`](../V3_IMPLEMENTATION_PLAN.md) §20.
+
+## Index (V4 commercialization — Proposed)
+
+Awaiting Product Owner decision lock in [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4_IMPLEMENTATION_PLAN.md) §22. **Not Accepted.** Do not begin V4 Slice A until decisions are recorded and ADRs Accepted.
+
+| ADR | Title |
+| --- | --- |
+| [036](036-billing-bounded-context.md) | Billing bounded-context ownership |
+| [037](037-provider-neutral-entitlements.md) | Provider-neutral entitlement model |
+| [038](038-organization-vs-individual-subscriptions.md) | Organization vs individual subscription ownership |
+| [039](039-billing-provider-channel-strategy.md) | Billing-provider / channel strategy |
+| [040](040-subscription-lifecycle.md) | Subscription lifecycle |
+| [041](041-seat-and-usage-semantics.md) | Seat / usage semantics |
+| [042](042-authorization-vs-entitlement.md) | Authorization vs entitlement |
+| [043](043-tax-channel-boundaries.md) | Tax responsibility boundaries |
+| [044](044-provider-webhook-idempotency.md) | Provider webhook / idempotency model |
+| [045](045-duplicate-subscription-and-provider-switch.md) | Duplicate-subscription / provider-switch policy |

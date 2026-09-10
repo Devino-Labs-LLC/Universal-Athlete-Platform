@@ -694,7 +694,7 @@ V3 is complete only when:
 | Version | Scope | V3 stance |
 | --- | --- | --- |
 | **V3** | Coaches, Teams & Schools | **This plan** |
-| **V4** | Commercial billing / organization subscriptions | Extension seam: `Organization` may later link billing account id — **do not implement** |
+| **V4** | Commercial billing / organization subscriptions | See [`docs/V4_IMPLEMENTATION_PLAN.md`](V4_IMPLEMENTATION_PLAN.md) — **planning / PO decision lock**; do not implement until authorized |
 | **V5** | Wearables / provider integrations | Extension seam: integrations module remains separate; State Engine consumes mapped domain knowledge only — **do not implement** |
 | **V6** | Generative / predictive AI coach | Purple/AI tokens reserved; no AI coach — **do not implement** |
 | **V7** | Marketplace / social / ecosystem | **do not implement** |
