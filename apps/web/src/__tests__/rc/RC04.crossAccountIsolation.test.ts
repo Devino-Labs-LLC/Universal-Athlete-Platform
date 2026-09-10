@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { clearLocalAuthState } from '@/core/auth/clearLocalAuthState';
 import { parseDateOnly } from '@/core/date/dateOnly';
 import { coachKeys } from '@/features/coach/models/queryKeys';
+import { consentKeys } from '@/features/consent/models/queryKeys';
 import { trainingClientKeys } from '@/features/home/queryKeys';
 import { athleteQueryKeys } from '@/features/profile/queryKeys';
 
@@ -113,5 +114,44 @@ describe('RC04 — cross-account cache isolation on the same device/tab', () => 
       queryClient.getQueryData(coachKeys.roster('acc-1', 'team-b')),
     );
     expect(coachKeys.roster('acc-1', 'team-a')).not.toEqual(coachKeys.roster('acc-1', 'team-b'));
+  });
+
+  it('clears account-scoped athlete transparency cache on logout', async () => {
+    const queryClient = new QueryClient();
+    const accountAKey = consentKeys.transparency('acc-a', 0);
+    const accountBKey = consentKeys.transparency('acc-b', 0);
+
+    queryClient.setQueryData(accountAKey, {
+      events: [{ type: 'TEAM_JOINED', description: 'You joined Varsity.' }],
+      page: 0,
+      size: 20,
+      hasMore: false,
+    });
+    // Without logout, A and B keys remain distinct (account-scoped isolation).
+    queryClient.setQueryData(accountBKey, {
+      events: [{ type: 'CONSENT_GRANTED', description: 'B shared readiness.' }],
+      page: 0,
+      size: 20,
+      hasMore: false,
+    });
+    expect(queryClient.getQueryData(accountAKey)).not.toEqual(queryClient.getQueryData(accountBKey));
+
+    await clearLocalAuthState({
+      queryClient,
+      setAccount: () => undefined,
+      setStatus: () => undefined,
+    });
+
+    expect(queryClient.getQueryData(accountAKey)).toBeUndefined();
+    expect(queryClient.getQueryData(accountBKey)).toBeUndefined();
+
+    queryClient.setQueryData(accountBKey, {
+      events: [],
+      page: 0,
+      size: 20,
+      hasMore: false,
+    });
+    expect(queryClient.getQueryData(accountAKey)).toBeUndefined();
+    expect(consentKeys.transparency('acc-a', 0)).not.toEqual(consentKeys.transparency('acc-b', 0));
   });
 });

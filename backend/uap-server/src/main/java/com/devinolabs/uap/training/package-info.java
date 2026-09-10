@@ -4,6 +4,7 @@
 				"athlete :: context",
 				"athlete :: roster-identity",
 				"organization :: membership",
-				"consent :: grants"
+				"consent :: grants",
+				"audit :: writer"
 		})
 package com.devinolabs.uap.training;

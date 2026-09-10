@@ -10,12 +10,13 @@ import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
 import { fetchAthleteTransparency } from '@/features/consent/api/transparencyApi';
 import { consentErrorMessage } from '@/features/consent/models/errors';
+import { consentKeys } from '@/features/consent/models/queryKeys';
 
 export function TransparencyPage() {
   const { apiClient, account } = useAuthSession();
   const [page, setPage] = useState(0);
   const activityQuery = useQuery({
-    queryKey: ['athlete', account?.accountId ?? '', 'transparency', page],
+    queryKey: consentKeys.transparency(account?.accountId ?? '', page),
     queryFn: () => fetchAthleteTransparency(apiClient, page, 20),
     enabled: Boolean(account?.accountId),
   });

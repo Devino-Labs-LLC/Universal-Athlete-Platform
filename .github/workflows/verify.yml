@@ -41,6 +41,7 @@ jobs:
                 --tests 'com.devinolabs.uap.athlete.*' \
                 --tests 'com.devinolabs.uap.organization.*' \
                 --tests 'com.devinolabs.uap.consent.*' \
+                --tests 'com.devinolabs.uap.audit.*' \
                 --tests 'com.devinolabs.uap.training.domain.*'
               ;;
             training-app)

@@ -3,6 +3,7 @@
 				"identity :: auth",
 				"identity :: directory",
 				"athlete :: context",
-				"athlete :: roster-identity"
+				"athlete :: roster-identity",
+				"audit :: writer"
 		})
 package com.devinolabs.uap.organization;

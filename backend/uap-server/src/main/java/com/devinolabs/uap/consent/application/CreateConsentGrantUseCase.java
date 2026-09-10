@@ -104,6 +104,7 @@ public class CreateConsentGrantUseCase {
 
 		auditPort.consentGranted(
 				saved.id(),
+				accountId,
 				saved.athleteId(),
 				saved.teamId(),
 				saved.organizationId(),

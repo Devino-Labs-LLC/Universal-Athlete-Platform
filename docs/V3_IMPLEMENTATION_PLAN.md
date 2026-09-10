@@ -470,7 +470,7 @@ Non-destructive. Archive over delete. Continue Flyway sequence after current max
 | `team_memberships` | unique active `(team_id, active_account_id)`; optional `athlete_id` | **Slice B** |
 | `invitations` | PK `id`; `token_hash` unique; pending dedupe generated key; team/org target; role; email/account bind; expires_at; status | **Slice B** |
 | `consent_grants` | PK `id`; athlete_id; grantee membership/team; scope set; status; version/revoked_at | **Slice C** |
-| `security_audit_events` | PK `id`; append-only; actor_account_id; action; subject refs; correlation_id; created_at | Later; Slice A logging adapter only |
+| `security_audit_events` | PK `id`; append-only; actor_account_id; action; subject refs; correlation_id; created_at | **Slice H** (V34); earlier slices used logging adapters only |
 | Optional `team_session_templates` | Slice F | Only if product needs team templates distinct from athlete plans |
 
 Indexes: foreign keys; `(token_hash)`; `(team_id, status)` for roster; `(athlete_id, status)` for consents; audit `(organization_id, created_at)`.
@@ -928,9 +928,22 @@ Slice G completes coach and athlete UX around shipped V3 capabilities. It does n
 
 Coach Web `/coach` remains a sibling shell. With a team selected, navigation reaches roster, Team readiness, and invitations. Athlete Home is unchanged. Coach view is offered only when the account has organization memberships. Athlete view is offered only when an athlete profile exists.
 
-`GET /api/v1/athletes/me/transparency` is a read-only athlete-self projection derived from stored team membership, consent grant/revoke timestamps, and coach assignments. It is not a raw audit log. Security audit adapters remain logging-only; Slice H still owns durable audit completeness. Role change and ORG_OWNER transfer are not implemented; invitations remain the membership-creation path.
+`GET /api/v1/athletes/me/transparency` is a read-only athlete-self projection derived from stored team membership, consent grant/revoke timestamps, and coach assignments. It is not a raw audit log. At Slice G, security audit adapters were still logging-only; durable audit completeness is Slice H (§23h). Role change and ORG_OWNER transfer are not implemented; invitations remain the membership-creation path.
 
 Schema remains **V33**.
+
+---
+
+## 23h. Slice H implementation notes
+
+Slice H lands durable security audit and the V3 release-candidate gate. It does not add role-change, `ORG_OWNER` transfer, export, or coach mobile.
+
+- Module `com.devinolabs.uap.audit` — append-only `SecurityAuditWriter` / `SecurityAuditRecord` (allow-listed fields only).
+- Flyway **V34** `security_audit_events` — append-only; no application UPDATE/DELETE path.
+- Durable adapters behind existing Organization / Consent / Training audit ports (replacing logging-only adapters from earlier slices).
+- Athlete transparency remains the Slice G **transactional** projection; it is not the raw audit stream and is unchanged by H.
+- Role change is **not** shipped (`ROLE_CHANGED` deferred; invitations remain the membership-creation path).
+- RC evidence template: [`docs/V3_RELEASE_CERTIFICATION.md`](V3_RELEASE_CERTIFICATION.md). Authorization freeze: [`docs/security/V3_AUTHORIZATION_MATRIX.md`](security/V3_AUTHORIZATION_MATRIX.md).
 
 ---
 

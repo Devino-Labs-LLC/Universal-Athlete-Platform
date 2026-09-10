@@ -56,6 +56,7 @@ public class RevokeConsentGrantUseCase {
 		if (changed) {
 			auditPort.consentRevoked(
 					saved.id(),
+					accountId,
 					saved.athleteId(),
 					saved.teamId(),
 					saved.organizationId(),

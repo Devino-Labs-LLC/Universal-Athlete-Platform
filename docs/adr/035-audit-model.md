@@ -19,11 +19,12 @@ The repository has training revision/history tables but no security audit stream
 
 ## Consequences
 
-- Slice H hardens completeness; earlier slices emit audits when those actions ship.
+- Slice H hardens completeness; earlier slices emit audits when those actions ship. Slice H lands the durable append-only `security_audit_events` store (Flyway V34) via `com.devinolabs.uap.audit`, replacing Slice A–G logging-only adapters.
 - Web/mobile athlete transparency UI consumes a dedicated projection API, not admin audit dumps.
 - Training content revisions remain separate from security audit.
 
 ## References
 
-- `docs/V3_IMPLEMENTATION_PLAN.md` §13, §20
+- `docs/V3_IMPLEMENTATION_PLAN.md` §13, §20, §23h
+- `docs/V3_RELEASE_CERTIFICATION.md`
 - ADR-032, ADR-033, ADR-034

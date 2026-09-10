@@ -10,6 +10,7 @@ public interface ConsentAuditPort {
 
 	void consentGranted(
 			ConsentGrantId consentGrantId,
+			UUID actorAccountId,
 			UUID athleteId,
 			UUID teamId,
 			UUID organizationId,
@@ -18,6 +19,7 @@ public interface ConsentAuditPort {
 
 	void consentRevoked(
 			ConsentGrantId consentGrantId,
+			UUID actorAccountId,
 			UUID athleteId,
 			UUID teamId,
 			UUID organizationId,
