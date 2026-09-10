@@ -101,6 +101,7 @@ class SecurityAuditCompletenessIntegrationTests {
 						"INVITATION_ACCEPTED",
 						"MEMBERSHIP_ACTIVATED");
 		assertThat(auditRepository.findLatestByOrganizationId(organizationUuid, 50))
+				.isNotEmpty()
 				.allSatisfy(event -> assertNoForbiddenPayload(event));
 
 		MvcResult granted = mockMvc.perform(post("/api/v1/athletes/me/consents")

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -59,8 +60,11 @@ class SecurityAuditPersistenceIntegrationTests {
 			assertThat(stored.metadataJson()).isNull();
 		});
 
-		assertThat(Arrays.stream(SecurityAuditEventRepository.class.getMethods()).map(Method::getName))
-				.doesNotContain("delete", "deleteById", "deleteAll", "update");
+		List<String> repositoryMethods = Arrays.stream(SecurityAuditEventRepository.class.getMethods())
+				.map(Method::getName)
+				.toList();
+		assertThat(repositoryMethods).isNotEmpty();
+		assertThat(repositoryMethods).doesNotContain("delete", "deleteById", "deleteAll", "update");
 	}
 
 	@Test
@@ -69,15 +73,13 @@ class SecurityAuditPersistenceIntegrationTests {
 		var created = createOrganizationUseCase.execute(creator, "Audited Org " + creator.value());
 
 		assertThat(membershipRepository.findActiveOwner(created.id(), creator)).isPresent();
-		assertThat(auditRepository.findLatestByOrganizationId(created.id().value(), 10))
-				.extracting(SecurityAuditRecord::eventType)
-				.contains("ORGANIZATION_CREATED");
-		assertThat(auditRepository.findLatestByOrganizationId(created.id().value(), 10))
-				.allSatisfy(event -> {
-					assertThat(event.metadataJson() == null || !event.metadataJson().toLowerCase().contains("token"))
-							.isTrue();
-					assertThat(event.eventType()).doesNotContain("password");
-				});
+		var events = auditRepository.findLatestByOrganizationId(created.id().value(), 10);
+		assertThat(events).isNotEmpty().extracting(SecurityAuditRecord::eventType).contains("ORGANIZATION_CREATED");
+		assertThat(events).allSatisfy(event -> {
+			assertThat(event.metadataJson() == null || !event.metadataJson().toLowerCase().contains("token"))
+					.isTrue();
+			assertThat(event.eventType()).doesNotContain("password");
+		});
 	}
 
 }
