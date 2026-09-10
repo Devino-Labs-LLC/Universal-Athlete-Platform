@@ -13,7 +13,7 @@
 | Product | Athlete Readiness (Devino Labs LLC) |
 | Internal repo | Universal Athlete Platform / UAP |
 | Branch | `develop` |
-| RC commit SHA | `REPLACE_WITH_DEVELOP_SHA` |
+| RC commit SHA | `e173db718422cb9c06a74239b84e533c854878ee` |
 | Flyway schema | **V34** (`security_audit_events`) |
 | Authorization matrix | [`docs/security/V3_AUTHORIZATION_MATRIX.md`](security/V3_AUTHORIZATION_MATRIX.md) |
 | V2 Sonar baseline | [`docs/quality/SONAR_V2_BASELINE.md`](quality/SONAR_V2_BASELINE.md) |
@@ -42,9 +42,9 @@ All complete on `develop` RC (fill SHA above when certifying):
 | Field | Value |
 | --- | --- |
 | Workflow | Verify (`.github/workflows/verify.yml`) |
-| Run URL / ID | `REPLACE_WITH_VERIFY_RUN` |
-| Result | `REPLACE_WITH_VERIFY_RESULT` |
-| Commit | `REPLACE_WITH_DEVELOP_SHA` |
+| Run URL / ID | [34459986682](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/34459986682) |
+| Result | **success** (all shards + Sonar quality gate) |
+| Commit | `e173db718422cb9c06a74239b84e533c854878ee` |
 
 ---
 
@@ -52,13 +52,13 @@ All complete on `develop` RC (fill SHA above when certifying):
 
 | Measure | Value |
 | --- | --- |
-| Quality Gate | `REPLACE_WITH_NEW_CODE_QG` |
-| New Reliability | `REPLACE` |
-| New Security | `REPLACE` |
-| New Maintainability | `REPLACE` |
-| New Code coverage | `REPLACE` (require ≥ 80%) |
-| New Code duplicated lines | `REPLACE` (require ≤ 3%) |
-| New Security Hotspots reviewed | `REPLACE` |
+| Quality Gate | **PASSED** |
+| New Reliability | **A** (1.0) |
+| New Security | **A** (1.0) |
+| New Maintainability | **A** (1.0) |
+| New Code coverage | **95.3%** (require ≥ 80%) |
+| New Code duplicated lines | **0.0%** (require ≤ 3%) |
+| New Security Hotspots reviewed | **100%** |
 
 ---
 
@@ -66,13 +66,13 @@ All complete on `develop` RC (fill SHA above when certifying):
 
 | Measure | V2 baseline | Slice G (prior RC reference) | This RC |
 | --- | --- | --- | --- |
-| Overall coverage | **74.2%** | **75.6%** | `REPLACE` |
-| Overall duplication | **6.3%** | **5.9%** | `REPLACE` |
-| Overall Security | **D** | (historical) | `REPLACE` |
-| Overall Reliability | **C** | (historical) | `REPLACE` |
-| Overall Maintainability | **A** | — | `REPLACE` |
+| Overall coverage | **74.2%** | **75.6%** | **75.7%** |
+| Overall duplication | **6.3%** | **5.9%** | **5.9%** |
+| Overall Security | **D** | (historical) | **A** |
+| Overall Reliability | **C** | (historical) | **A** |
+| Overall Maintainability | **A** | — | **A** |
 
-Trend expectation: Coverage upward, duplication downward vs V2; New Code Clean-as-You-Code remains hard.
+Trend: Coverage slightly up vs Slice G; duplication flat; Overall Security/Reliability improved to **A** on this analysis (do not treat as permanent debt erasure — steward continues campground review). New Code Clean-as-You-Code remains the hard gate.
 
 ---
 
@@ -80,8 +80,8 @@ Trend expectation: Coverage upward, duplication downward vs V2; New Code Clean-a
 
 | Role | Verdict | Notes / sign-off |
 | --- | --- | --- |
-| QA / Test Automation | **PASS** | Completeness, org/consent/training rollback, stale authZ, transparency no-hidden-write, RC04; Verify on push is authoritative |
-| Security / Code Quality (Quality Gate Steward) | **PASS** (New Code confirmed on develop Verify) | Durable audit posture; Flyway current=34; no public audit API; S3330 residual accepted |
+| QA / Test Automation | **PASS** | Completeness, org/consent/training rollback, stale authZ, transparency no-hidden-write, RC04; Verify [34459986682](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/34459986682) green |
+| Security / Code Quality (Quality Gate Steward) | **PASS** | Durable audit posture; Flyway current=34; no public audit API; New Code QG PASSED; S3330 CSRF cookie residual accepted |
 | Athlete Intelligence / Data | **PASS** | No State Engine / readiness calculator change; assignments do not write state; transparency remains read-only projection |
 
 ---
@@ -179,8 +179,8 @@ Canonical labels from `docs/V3_IMPLEMENTATION_PLAN.md` §14.1.
 | Item | Disposition |
 | --- | --- |
 | `java:S3330` (CSRF cookie / HttpOnly finding on identity security config) | **Intentional accepted residual** pending separate security review — do not “fix” by weakening CSRF |
-| Overall Security **D** | Historical V2 Overall debt; not silently acceptable, not automatic RC blocker if New Code remains clean and campground rules hold |
-| Overall Reliability **C** | Same stewardship posture as V2 baseline |
+| Overall duplication **5.9%** | Historical density; New Code duplication **0.0%**; campground on touch |
+| Admin operational audit dump UI | Deferred (V4+) |
 
 ---
 
@@ -209,11 +209,19 @@ Canonical labels from `docs/V3_IMPLEMENTATION_PLAN.md` §14.1.
 
 ## 17. Certification checklist (sign when filled)
 
-- [ ] RC SHA recorded
-- [ ] Verify run green for that SHA
-- [ ] New Code Sonar filled and gate PASSED
-- [ ] Overall metrics recorded vs Slice G / V2
-- [ ] QA / Steward / Athlete Intelligence verdicts recorded
-- [ ] Audit event list matches shipped adapters
-- [ ] Residual debt acknowledged
-- [ ] `main` promotion **not** implied by this document alone
+- [x] RC SHA recorded
+- [x] Verify run green for that SHA
+- [x] New Code Sonar filled and gate PASSED
+- [x] Overall metrics recorded vs Slice G / V2
+- [x] QA / Steward / Athlete Intelligence verdicts recorded
+- [x] Audit event list matches shipped adapters
+- [x] Residual debt acknowledged
+- [x] `main` promotion **not** implied by this document alone
+
+---
+
+## 18. RC verdict
+
+**Athlete Readiness V3 Release Candidate: VERIFIED** on `develop` at `e173db718422cb9c06a74239b84e533c854878ee`.
+
+This is **not** V3 production-complete certification. Do not merge to `main`, tag, publish, or deploy from this document alone.
