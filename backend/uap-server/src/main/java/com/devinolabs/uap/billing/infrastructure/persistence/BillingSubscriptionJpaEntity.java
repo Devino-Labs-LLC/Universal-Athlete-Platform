@@ -7,19 +7,34 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 import com.devinolabs.uap.billing.api.BillingSubjectType;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
 
+/**
+ * Billing-owned subscription persistence. Fields are local to this entity (not a
+ * shared mapped superclass) to avoid New Code duplication across Modulith modules.
+ */
 @Entity
 @Table(name = "billing_subscriptions")
-class BillingSubscriptionJpaEntity extends AbstractPersistableUuidJpaEntity {
+class BillingSubscriptionJpaEntity implements Persistable<UUID> {
+
+	@Id
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
+	private UUID id;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "subject_type", nullable = false, updatable = false, length = 20)
@@ -56,6 +71,19 @@ class BillingSubscriptionJpaEntity extends AbstractPersistableUuidJpaEntity {
 	@Column(name = "grace_ends_at")
 	private Instant graceEndsAt;
 
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private Instant createdAt;
+
+	@Column(name = "updated_at", nullable = false)
+	private Instant updatedAt;
+
+	@Version
+	@Column(name = "version", nullable = false)
+	private long version;
+
+	@Transient
+	private boolean newlyPersisted = true;
+
 	protected BillingSubscriptionJpaEntity() {
 	}
 
@@ -74,8 +102,8 @@ class BillingSubscriptionJpaEntity extends AbstractPersistableUuidJpaEntity {
 			Instant createdAt,
 			Instant updatedAt,
 			long version,
-			boolean isNew) {
-		super(id, createdAt, updatedAt, version, isNew);
+			boolean newlyPersisted) {
+		this.id = id;
 		this.subjectType = subjectType;
 		this.subjectId = subjectId;
 		this.provider = provider;
@@ -86,6 +114,26 @@ class BillingSubscriptionJpaEntity extends AbstractPersistableUuidJpaEntity {
 		this.trialEndsAt = trialEndsAt;
 		this.currentPeriodEndsAt = currentPeriodEndsAt;
 		this.graceEndsAt = graceEndsAt;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+		this.version = version;
+		this.newlyPersisted = newlyPersisted;
+	}
+
+	@Override
+	public UUID getId() {
+		return id;
+	}
+
+	@Override
+	public boolean isNew() {
+		return newlyPersisted;
+	}
+
+	@PostLoad
+	@PostPersist
+	void markLoaded() {
+		this.newlyPersisted = false;
 	}
 
 	BillingSubjectType getSubjectType() {
@@ -126,6 +174,18 @@ class BillingSubscriptionJpaEntity extends AbstractPersistableUuidJpaEntity {
 
 	Instant getGraceEndsAt() {
 		return graceEndsAt;
+	}
+
+	Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	long getVersion() {
+		return version;
 	}
 
 	void applyDomainState(
