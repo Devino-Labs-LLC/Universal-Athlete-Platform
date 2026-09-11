@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("34");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("35");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create security audit events");
+				.isEqualTo("create billing subscriptions");
 	}
 
 	@Test
@@ -812,6 +812,24 @@ class UapServerApplicationTests {
 			assertThat(eventType.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create security audit events");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesBillingSubscriptionsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet table = connection.getMetaData().getTables(null, null, "billing_subscriptions",
+						new String[] { "TABLE" });
+				ResultSet planKey = connection.getMetaData().getColumns(null, null, "billing_subscriptions",
+						"plan_key");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '35'")) {
+			assertThat(table.next()).isTrue();
+			assertThat(planKey.next()).isTrue();
+			assertThat(planKey.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create billing subscriptions");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

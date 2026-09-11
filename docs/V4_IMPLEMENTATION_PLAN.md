@@ -8,9 +8,10 @@
 **Production baseline (`main`):** `5b714f787b690acda8240402d26fe955577b2fc8`  
 **Production schema:** Flyway **V34**  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
-**§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)
+**§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
+**Slice A status:** **Implemented on develop** — commercial foundation only (see §30). No Slice B.
 
-**This document does not authorize V4 Slice A or any runtime implementation.** Slice A still requires explicit implementation authorization.
+**This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B still requires explicit authorization.
 
 ---
 
@@ -640,5 +641,84 @@ Training/state/consent must **never** import Stripe/Apple/Google types.
 
 **V4 Product Owner decision lock: COMPLETE**
 
-Do not begin Slice A until explicitly authorized.
+---
+
+## 30. Slice A — Commercial foundation (implementation evidence)
+
+**Status:** Implemented on `develop` (runtime foundation only).  
+**Does not authorize Slice B.** No Stripe/Apple/Google integration. **No V3 product-edge paywall** (enforcement deferred to Slice C).
+
+### 30.1 Module architecture
+
+| Item | Value |
+| --- | --- |
+| Modulith module | `com.devinolabs.uap.billing` |
+| Published API | `billing :: entitlements` → `EntitlementPort` |
+| Layers | `api/`, `application/`, `domain/`, `infrastructure/persistence/` |
+| Allowed dependencies | `{}` (UUID refs only; no shared JPA with identity/org/consent/training) |
+| Public HTTP | **None** |
+
+### 30.2 Schema
+
+| Item | Value |
+| --- | --- |
+| Flyway | **V35** `create_billing_subscriptions` |
+| Table | `billing_subscriptions` |
+| Stores | subject type/id, provider enum, plan key, lifecycle state, optional opaque provider refs, trial/period/grace timestamps, version |
+| Does not store | payment credentials, card/bank data, dollar amounts, Stripe Price IDs, Apple/Google product IDs |
+
+### 30.3 Catalog keys
+
+`ORG_BAND_25`, `ORG_BAND_75`, `ORG_BAND_250`, `INDIVIDUAL_PREMIUM`
+
+Organization bands max active athletes: **25 / 75 / 250** (definition only; usage counting = Slice D).
+
+### 30.4 Capability vocabulary
+
+Organization: `ORG_TEAM_MANAGEMENT`, `ORG_COACH_COLLABORATION`, `ORG_COACH_ATHLETE_VIEW`, `ORG_TEAM_READINESS`  
+Individual: `INDIVIDUAL_PREMIUM`
+
+### 30.5 Lifecycle & entitlement
+
+States: `PENDING`, `TRIALING`, `ACTIVE`, `PAST_DUE`, `GRACE_PERIOD`, `CANCEL_AT_PERIOD_END`, `EXPIRED`  
+(No separate `CANCELLED` in Slice A.)
+
+Centralized on `Subscription.isCommerciallyEntitledAt(Instant)` / `effectiveCapabilitiesAt`:
+
+| State | Entitled? |
+| --- | --- |
+| PENDING / PAST_DUE / EXPIRED | No |
+| TRIALING | Yes until `trialEndsAt` (org 14-day only) |
+| ACTIVE | Yes |
+| GRACE_PERIOD | Yes until explicit `graceEndsAt` (7 calendar days) |
+| CANCEL_AT_PERIOD_END | Yes until `currentPeriodEndsAt` |
+
+Provider identity does not change capability semantics.
+
+### 30.6 Explicit non-goals (Slice A)
+
+- No checkout / portal / webhooks / IAP  
+- No seat enforcement  
+- No existing V3 surface paywalled  
+- No mandatory Stripe env vars  
+- No provider SDKs or network clients  
+
+### 30.7 Sonar develop-scope investigation
+
+`sonar-project.properties` already sets:
+
+`sonar.sources=backend/uap-server/src/main/java,apps/web/src,apps/mobile/src`
+
+The planning-era ~**939 ncloc** develop reading is **not** explained by missing source paths. Treat as incomplete/collapsed short-lived branch analysis presentation vs `main` Overall (~113k ncloc at V2). **No repo-side sonar.sources fix required** for Slice A. Use **`main`** for Overall debt until DevOps restores full-scope develop analysis confidence. Quality Gate thresholds unchanged.
+
+### 30.8 Reviews
+
+| Role | Verdict |
+| --- | --- |
+| QA / Test Automation | PASS (billing suite + Flyway V35 + Verify core shard includes `billing.*`) |
+| Security / Quality Gate Steward | PASS |
+| Athlete Intelligence / Data | PASS (State Engine / readiness / Team Readiness / consent / membership / no-hidden-write untouched) |
+
+Do not begin Slice B until explicitly authorized.
+
 
