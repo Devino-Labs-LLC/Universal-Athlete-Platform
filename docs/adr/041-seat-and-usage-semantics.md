@@ -1,31 +1,26 @@
-# ADR-041 — Seat and usage semantics
+# ADR-041 — Seat and usage semantics (active-athlete bands)
 
 ## Status
 
-**Proposed** — awaiting Product Owner pricing and billable-athlete definition.
+**Accepted** — V4 Product Owner decision lock (§22.1 #2, #3, #10).
 
 ## Context
 
-Organization commercial plans may include athlete limits or seat pricing. Counting must be deterministic and fair across multi-team memberships.
+Organization commercialization needs deterministic athlete counting without usage-metered per-athlete monthly billing.
 
-## Decision (proposed)
+## Decision
 
-If seats/bands/limits ship:
-
-- Define **billable athlete** from domain membership data (typically ACTIVE athlete memberships).  
-- **Default proposal:** one Athlete counts **once per Organization**, even if on multiple Teams in that Organization.  
-- Pending invitations are not billable unless PO explicitly says otherwise.  
-- LEFT/REMOVED are not billable.  
-- Cross-Organization memberships count independently per Organization.  
-- Downgrades that exceed limits must not delete athletes or memberships; use block/schedule/read-only policy (PO).
-
-If fixed tiers without seats are chosen, this ADR records “no seat metering” explicitly.
+- Pricing shape: **fixed active-athlete bands** (architecture supports **up to 25 / 75 / 250**). Exact Organization **dollar** prices are locked commercially **before** Slice B sandbox Product/Price creation — not invented in this ADR.  
+- Billable unit: one **ACTIVE** Athlete identity counts **once per Organization**, even across multiple Teams.  
+- Not billable: pending invitation, LEFT, REMOVED.  
+- Cross-Organization: independent counts.  
+- Downgrade: **cannot become effective** while active billable count exceeds the target band; ORG_OWNER remediates; never automatically delete/remove athletes or memberships.
 
 ## Consequences
 
-- Seat races need transactional guards  
-- Billing disputes resolvable from domain queries  
+- Band enforcement needs transactional reads of ACTIVE athlete memberships  
+- Billing disputes resolvable from domain data  
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §14
+`docs/V4_IMPLEMENTATION_PLAN.md` §§14, 22

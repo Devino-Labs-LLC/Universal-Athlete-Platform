@@ -2,21 +2,18 @@
 
 ## Status
 
-**Proposed** — awaiting tax display and Stripe Tax launch posture decisions; legal counsel remains a live-launch dependency.
+**Accepted** — V4 Product Owner decision lock (§22.1 #13–14).
 
 ## Context
 
 Tax is channel-specific. Double-taxing Apple/Google renewals through Stripe Tax would be incorrect. Domain booleans like `athlete.salesTax` are the wrong model.
 
-## Decision (proposed)
+## Decision
 
-- **Stripe/Web:** evaluate Stripe Tax + Product Tax Codes + registrations; treat `automatic_tax.enabled` as calculation config, **not** proof of registration in every jurisdiction.  
-- **Apple:** App Store tax category; Apple owns storefront tax handling per its rules — do not re-run through Stripe Tax.  
-- **Google:** Play product/tax classification; do not double-tax via Stripe.  
-- Advertise tax-inclusive vs exclusive pricing per PO decision.  
-- No Athlete/Organization tax boolean fields for “whether sales tax applies.”
-
-This ADR does not give legal advice; Devino Labs must confirm registrations with appropriate counsel before live collection.
+- **Stripe/Web:** Stripe Tax is the intended tax-calculation integration. Advertised pricing is **tax-exclusive** where applicable (`price + applicable taxes`). Enable for **live** charging only after Devino Labs’ relevant tax registrations and product tax classification are reviewed/configured. `automatic_tax.enabled` is **not** registration.  
+- **Apple / Google:** Use storefront-required localized/tax presentation; **do not** run those renewals through Stripe Tax or force a single display convention.  
+- No Athlete/Organization tax boolean fields for “whether sales tax applies.”  
+- This ADR does not give legal advice; counsel remains a live-launch dependency.
 
 ## Consequences
 
@@ -25,4 +22,4 @@ This ADR does not give legal advice; Devino Labs must confirm registrations with
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §10
+`docs/V4_IMPLEMENTATION_PLAN.md` §§10, 22

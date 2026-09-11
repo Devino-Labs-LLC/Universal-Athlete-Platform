@@ -3,12 +3,14 @@
 **Theme:** Commercialization / Billing / Entitlements  
 **Product question:** Can Athlete Readiness become a commercially operable SaaS product where individuals and organizations can pay through an appropriate billing channel, receive provider-neutral entitlements, manage subscriptions safely, and retain access across Web/iOS/Android without billing logic contaminating the product domain?
 
-**Document type:** PLANNING ONLY — Product Owner decision lock  
-**Baseline:** `main` = `develop` = `5b714f787b690acda8240402d26fe955577b2fc8`  
+**Document type:** Product Owner decision lock (docs)  
+**Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
+**Production baseline (`main`):** `5b714f787b690acda8240402d26fe955577b2fc8`  
 **Production schema:** Flyway **V34**  
-**Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**
+**Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
+**§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)
 
-**This document does not authorize V4 Slice A or any runtime implementation.**
+**This document does not authorize V4 Slice A or any runtime implementation.** Slice A still requires explicit implementation authorization.
 
 ---
 
@@ -26,7 +28,7 @@ Lead / Architect coordinated planning and consulted:
 | Security / Code Quality | Commercial threat model; Sonar maintainability debt strategy; campground |
 | QA / Test Automation | Entitlement matrix, webhook replay, seat races, duplicate-subscription tests |
 | DevOps / CI-CD | Sandbox-first secrets; Verify inclusion later; restore full `develop` Sonar scope |
-| Documentation / Release | This plan + proposed ADRs |
+| Documentation / Release | This plan + ADRs (Accepted at §22 lock) |
 | Athlete Intelligence / Data | Billing must not contaminate State Engine, readiness math, Team Readiness semantics, or consent |
 
 Stripe guidance consulted for ordinary SaaS subscriptions (Checkout `mode=subscription`, Customer Portal, signature-verified idempotent webhooks). **Stripe Connect is out of scope** unless a multi-party payout requirement appears later (Athlete Readiness is not a marketplace paying third-party sellers).
@@ -41,13 +43,13 @@ Stripe guidance consulted for ordinary SaaS subscriptions (Checkout `mode=subscr
 | V3 deferred V4 | `docs/V3_IMPLEMENTATION_PLAN.md` §19 — org may later link billing account id; **do not implement** in V3 |
 | Modulith modules | `identity`, `athlete`, `organization`, `consent`, `training`, `audit` |
 | Org roles | `ATHLETE`, `COACH`, `HEAD_COACH`, `TEAM_ADMIN`, `ORG_ADMIN`, `ORG_OWNER` |
-| Org manage capability today | Invitation/admin ops: ORG_ADMIN or ORG_OWNER; `canManageOrganization` currently **ORG_OWNER-only** for some paths — **billing authority is a separate PO decision** |
+| Org manage capability today | Invitation/admin ops: ORG_ADMIN or ORG_OWNER; **V4 billing authority locked: ORG_OWNER only** (§22.1 #5) |
 | Account / Athlete | One Account; ≤1 Athlete; coach-only accounts OK (ADR-030) |
 | Audit | Durable append-only `security_audit_events` (V34 / ADR-035); adapters in org/consent/training |
 | Web IA | Athlete `/app/*`; coach sibling `/coach/*`; no billing routes |
 | Mobile IA | Athlete-first tabs; no coach console |
 | Config pattern | Fail-fast required secrets; no silent prod/sandbox fallbacks |
-| Highest accepted ADR | **ADR-035** |
+| Highest accepted ADR | **ADR-045** (V4 commercialization set 036–045 Accepted) |
 
 Internal names remain **UAP**. Commercial name remains **Athlete Readiness**. No repository-wide rename.
 
@@ -87,23 +89,27 @@ Provider adapters answer **how** commercial state is synchronized.
 
 ### 3.1 Organization subscription
 
-| Item | Planning stance |
+| Item | Locked |
 | --- | --- |
 | Customer | School, club, team organization, other Organization account |
-| Preferred channel | **Stripe / Web** |
+| Channel | **Stripe / Web** only |
 | Not forced through | Apple App Store or Google Play billing |
-| Later options (not locked) | Monthly/annual, athlete/team limits, org features, invoices, commercial contracts |
+| Pricing shape | Fixed **active-athlete bands** (architecture supports up to 25 / 75 / 250); dollar amounts locked before Slice B sandbox catalog — **not invented here** |
+| Cadence | Monthly + annual Price variants of the same tier/entitlement |
+| Trial | 14-day org trial; payment method required up front |
+| Billing authority | **ORG_OWNER only** |
 
 ### 3.2 Individual athlete subscription
 
-| Item | Planning stance |
+| Item | Locked |
 | --- | --- |
+| In V4 | **Yes** — Slice **G** (later); org slices A–F must not depend on Apple/Google implementation |
 | Customer | Individual Athlete Readiness Account |
-| Potential providers | `STRIPE`, `APPLE_APP_STORE`, `GOOGLE_PLAY` |
-| Cross-client rule | One active individual entitlement → same product capability on **Web + iOS + Android** after sign-in to the same Account |
-| Separation | **Billing owner** (who charges) ≠ **entitlement** (what product allows) |
-
-**Whether V4 ships individual monetization at all is Product Owner Decision #1** (§22). Do not silently assume.
+| Providers | `STRIPE` (Web), `APPLE_APP_STORE`, `GOOGLE_PLAY` |
+| Cross-client rule | One valid individual entitlement → same Premium capability on **Web + iOS + Android** after sign-in |
+| Tier | Internal **PREMIUM**; commercial targets $9.99/mo and $99.99/yr (catalog creation not authorized by this lock) |
+| Trial | **No** individual trial in initial V4 |
+| Separation | **Billing owner** ≠ **entitlement** |
 
 ---
 
@@ -202,20 +208,20 @@ Sandbox/test first. Live Products/Prices only after V4 gates. Separate sandbox v
 
 ---
 
-## 7. Apple / Google individual billing (conditional)
+## 7. Apple / Google individual billing (locked for Slice G)
 
-Only if PO includes individual monetization in V4:
+Individual monetization is **in V4** (Slice **G**). Organization slices A–F must not depend on Apple/Google adapters.
 
 | Platform | Approach |
 | --- | --- |
 | iOS | Apple auto-renewable subscription; **server-side** validation/sync (App Store Server API / notifications) |
 | Android | Google Play recurring subscription; **server-side** validation/sync (Play Developer API / RTDN) |
 
-Mobile clients must not be the sole trust root for entitlement. Map provider notifications into the same internal lifecycle + entitlements.
+Mobile clients must not be the sole trust root for entitlement. Map provider notifications into the same internal lifecycle + entitlements (Premium).
 
 ---
 
-## 8. Cross-platform entitlement UX (desired lock)
+## 8. Cross-platform entitlement UX (locked)
 
 | Origin | Web | iOS | Android |
 | --- | --- | --- | --- |
@@ -227,35 +233,31 @@ Billing continues with the **originating** provider until cancel/expire/explicit
 
 ---
 
-## 9. Duplicate subscription prevention & provider switch
+## 9. Duplicate subscription prevention & provider switch (locked)
 
 ### 9.1 Prevention
 
-If Account already has **ACTIVE** (or grace-valid) individual entitlement from any provider:
+If Account already has **ACTIVE** or **grace-valid** individual entitlement from any provider:
 
-- Show paid/premium state
-- Identify billing provider appropriately
-- **Do not** present normal Stripe/Apple/Google duplicate checkout
-- Direct management to the correct provider channel
+- Show paid/Premium state  
+- Identify billing provider  
+- **Do not** present normal Stripe/Apple/Google duplicate checkout  
+- Direct management to the correct provider channel  
 
-### 9.2 Explicit switch (not accidental)
-
-Recommended policy options for PO (Decision #12):
+### 9.2 Explicit switch
 
 1. Cancel/stop renewals on current provider  
-2. Retain access until paid-through  
-3. Start new provider subscription only after (2) is scheduled or after overlap policy  
-4. Never silent migrate  
-
-Overlap avoidance: prefer **no double-charge window**; if brief overlap is unavoidable, document and audit.
+2. Retain entitlement until paid-through  
+3. Begin replacement provider **after** the existing paid period  
+4. Never silent migrate; never automatic double subscription  
 
 ---
 
-## 10. Tax architecture (channel-specific)
+## 10. Tax architecture (channel-specific — locked)
 
-| Channel | Planning stance |
+| Channel | Locked stance |
 | --- | --- |
-| Stripe / Web | Evaluate Stripe Tax; Product Tax Codes; `automatic_tax` configuration; Devino Labs tax registrations; location collection; tax-inclusive vs exclusive **display** (PO) |
+| Stripe / Web | Stripe Tax is the intended Web tax-calculation integration. Advertised pricing is **tax-exclusive** where applicable (`price + applicable taxes`). Enable for **live** charging only after Devino Labs tax registrations + product tax classification are reviewed/configured. |
 | Apple | App Store tax category; Apple owns storefront tax handling per its rules — **do not** run Apple renewals through Stripe Tax |
 | Google | Play product/tax classification; provider jurisdiction rules — **do not** double-tax via Stripe |
 
@@ -267,23 +269,17 @@ Planning documents **who is merchant / billing processor / tax handler by channe
 
 ---
 
-## 11. Entitlement model
+## 11. Entitlement model (locked principles)
 
-Provider-neutral capabilities (examples — **not locked**):
+Provider-neutral capabilities:
 
-| Subject | Example capabilities |
+| Subject | Locked direction |
 | --- | --- |
-| Individual | paid individual tier, advanced insights, richer history |
-| Organization | team management suite, coach collaboration suite, Team Readiness product access, reporting, athlete limits, team limits |
+| Always free (when authorized) | Auth/account; invite accept/decline; leave Team; consent grant/revoke/re-grant; transparency/activity; athlete-owned retained history per existing contracts |
+| Organization gated (candidates) | Active Team management; coach collaboration; consent-aware coach product views; Team Readiness — final matrix in Slice A/C |
+| Individual | **PREMIUM** = richer/advanced individual capability; must not arbitrarily remove basic athlete functionality — final matrix in Slice A/C |
 
-**V1–V3 free vs paid split is Product Owner Decision #4.** Do not retroactively paywall shipped athlete/coach foundations without explicit approval.
-
-Product checks:
-
-```text
-if (!entitlementPort.has(orgId, ORG_TEAM_READINESS_PRODUCT)) deny product surface;
-// then existing V3 authZ + consent unchanged
-```
+Product checks use `EntitlementPort`; never provider identity.
 
 ---
 
@@ -305,83 +301,82 @@ Examples:
 
 ## 13. Individual vs organization entitlement precedence
 
-**Preferred principle (proposed):** effective capability = **safe union** of currently valid entitlements, unless a capability has explicit exclusive semantics.
+**Locked principle:** effective capability = **safe union** of currently valid entitlements, unless a capability has explicit exclusive semantics.
 
 | Event | Effect |
 | --- | --- |
-| Athlete loses org membership | Lose **organization-provided** commercial access; **keep** personal subscription |
+| Athlete loses org membership | Lose **organization-provided** commercial access; **keep** personal Premium |
 | Personal subscription cancels/expires | Lose personal capabilities; **keep** valid org-granted access |
 | Both active | Union |
 
-Document exceptions only with PO approval.
-
 ---
 
-## 14. Seat / billable-athlete model (PO required)
+## 14. Active-athlete band model (locked — ADR-041)
 
-Alternatives for evaluation:
+**Not** usage-metered/per-athlete monthly billing.
 
-1. Fixed organization tiers (soft/hard athlete caps)  
-2. Per-athlete seat pricing  
-3. Base subscription + seat add-ons  
-4. Tiered athlete bands  
-5. Custom enterprise pricing (likely deferred)
-
-**Critical proposed default if seats/bands ship:**
-
-> One ACTIVE Athlete Account/Athlete identity inside an Organization counts **once** for that Organization’s billing, even if on multiple Teams.
-
-Still need PO definition of:
-
-- ACTIVE membership definition  
-- Pending invitations (usually **not** billable)  
-- LEFT/REMOVED (not billable)  
-- Cross-Organization (count per org independently)  
-- Grace conditions  
+| Rule | Locked |
+| --- | --- |
+| Shape | Fixed bands (architecture supports **up to 25 / 75 / 250**) |
+| Dollar prices | Commercial catalog lock **before** Slice B sandbox Product/Price creation — do not invent prices in code or ADRs |
+| Billable unit | One **ACTIVE** Athlete identity **once per Organization** (multi-Team does not multiply) |
+| Not billable | Pending invitation, LEFT, REMOVED |
+| Cross-org | Independent count per Organization |
+| Downgrade | Cannot take effect while count exceeds target band; ORG_OWNER remediates; never auto-delete athletes |
 
 Billing disputes must resolve from deterministic domain data.
 
 ---
 
-## 15. Canonical internal subscription lifecycle (proposed)
+## 15. Canonical internal subscription lifecycle (locked — ADR-040)
 
 Do not mirror every provider status into product code.
 
-| Internal state | Meaning (planning) |
+| Internal state | Meaning |
 | --- | --- |
 | `PENDING` | Checkout/purchase started; not yet entitled |
-| `ACTIVE` | Entitled |
-| `PAST_DUE` | Payment failed; may still be in grace |
-| `GRACE_PERIOD` | Explicit commercial grace (if PO enables) |
-| `CANCEL_AT_PERIOD_END` | Will end; still entitled until paid-through |
-| `EXPIRED` | Period ended without renewal |
-| `CANCELLED` | Ended by cancel path |
+| `TRIALING` | Organization 14-day trial (payment method on file); entitled |
+| `ACTIVE` | Paid entitled |
+| `PAST_DUE` | Payment failed; within or entering grace accounting |
+| `GRACE_PERIOD` | Explicit **7 calendar day** failed-payment grace; entitled capabilities remain; billing-owner messaging |
+| `CANCEL_AT_PERIOD_END` | Cancel scheduled; entitled until paid-through / period end |
+| `EXPIRED` | Period ended without renewal / after grace without recovery |
+| `CANCELLED` | Terminal cancel path after period end (keep distinct from EXPIRED only if ops need it; prefer minimal set) |
 
-Provider-status mapping tables live in adapters. Exact machine finalized in ADR-040 after PO grace/cancel decisions.
+**Primary happy paths:**
+
+```text
+PENDING → TRIALING → ACTIVE → …
+PENDING → ACTIVE → …          (no trial / individual)
+ACTIVE | TRIALING → CANCEL_AT_PERIOD_END → EXPIRED
+ACTIVE → PAST_DUE / GRACE_PERIOD → ACTIVE | EXPIRED
+```
+
+Provider-status mapping tables live in adapters (ADR-044).
 
 ---
 
-## 16. Grace / dunning / cancellation / downgrade (options for PO)
+## 16. Grace / cancellation / downgrade (locked)
 
-| Topic | Options (not chosen) |
+| Topic | Locked behavior |
 | --- | --- |
-| Failed payment | Immediate restrict vs N-day grace; which features remain; admin messaging; recovery on `invoice.paid` |
-| Cancellation | Immediate vs end-of-period; paid-through access; reactivate; resubscribe |
-| Downgrade over limit | Block until usage fits; schedule + remediation; read-only grace — **never delete athletes/memberships as billing side effect** |
-| Data retention | Billing end ≠ delete wellness/training history |
-
-Stripe may retry payments; Athlete Readiness still needs deterministic entitlement behavior.
+| Failed payment | **7 calendar days** grace; normal entitled capability remains; billing-owner messaging; then restrict **commercial-gated** capabilities only |
+| Never on billing failure | Delete memberships, consent, athlete data, readiness, training history, or audit |
+| Cancellation | **Cancel at period end**; entitlements through paid-through; reactivation before expiry supported |
+| Downgrade over limit | **Cannot become effective** while active billable athletes exceed target band; ORG_OWNER must remediate first; never auto-delete/remove athletes |
+| Data retention | Billing end ≠ delete product data |
 
 ---
 
-## 17. Trials / monthly-annual / coupons / enterprise
+## 17. Trials / cadence / promotions / enterprise (locked)
 
-All **PO decisions** (§22). Architecture must support:
-
-- No trial **or** fixed trial with abuse controls  
-- Monthly only **or** monthly+annual (discount amount not invented here)  
-- Coupons/promotions V4 vs deferred  
-- Enterprise/custom invoicing V4 vs deferred  
+| Topic | Locked |
+| --- | --- |
+| Org trial | **14 days**; payment method required up front |
+| Individual trial | **None** in initial V4 |
+| Cadence | **Monthly + annual** (Price variants; same entitlement) |
+| Coupons/promotions | **Deferred** beyond initial V4 |
+| Enterprise/custom invoicing | **Deferred**; initial org path is self-service Stripe Billing |
 
 ---
 
@@ -471,73 +466,105 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 
 ---
 
-## 22. Required Product Owner decision lock
+## 22. Product Owner decision lock (normative)
 
-Answer explicitly before Slice A:
+**Status:** COMPLETE  
+**Recorded from Product Owner authorization for V4 commercialization.**
 
-1. **Scope:** Organizations only, or Organizations + Individuals?  
-2. **Org pricing model:** fixed tiers / seats / base+seats / bands / other?  
-3. **Billable athlete definition:** exact ACTIVE rules; multi-team same-org counting?  
-4. **Free vs entitled:** which V1–V3 capabilities remain free?  
-5. **Org billing authority:** ORG_OWNER only, or ORG_OWNER + ORG_ADMIN?  
-6. **Cadence:** monthly only, or monthly + annual?  
-7. **Trial:** none / fixed / org-only / individual — days? payment method up front?  
-8. **Grace after failed payment:** duration + which features remain?  
-9. **Cancellation:** immediate vs end-of-period?  
-10. **Downgrade over limit:** block / schedule / read-only grace?  
-11. **Individual tier/pricing** (if individuals in V4)?  
-12. **Provider-switch policy** for individuals?  
-13. **Advertised pricing:** tax-inclusive vs exclusive?  
-14. **Stripe Tax launch posture** + registration prerequisites?  
-15. **Coupons/promotions:** V4 or deferred?  
-16. **Enterprise/custom invoicing:** V4 or deferred?  
+### 22.1 Approved decisions
 
-Do **not** invent answers to unblock coding.
+| # | Topic | Decision |
+| --- | --- | --- |
+| 1 | Scope | **Organizations + Individuals.** Org = Stripe/Web. Individual = Stripe Web and/or Apple and/or Google → same provider-neutral entitlement across Web/iOS/Android. Individual work is **Slice G**; slices A–F must not depend on Apple/Google adapters. |
+| 2 | Org pricing | **Fixed active-athlete bands** (not usage-metered/per-athlete monthly). Architecture supports bands such as **up to 25 / 75 / 250**. Exact org **dollar** prices are a commercial catalog lock **before** Slice B sandbox Product/Price creation — **do not invent prices** in code or ADRs. |
+| 3 | Billable athlete | One **ACTIVE** Athlete identity counts **once per Organization** regardless of Team count. Pending invitation / LEFT / REMOVED = **not** billable. Same athlete in separate Orgs counts independently. |
+| 4 | Free vs entitled | Billing **never** gates privacy/account-control rights. Always available when otherwise authorized: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; access to athlete-owned retained data/history per existing contracts. Org commercial entitlement gates paid org/coach capabilities (candidates: active Team management, coach collaboration, consent-aware coach views, Team Readiness). V3 authZ + consent remain independent. Individual **PREMIUM** must not arbitrarily remove basic athlete functionality; final capability matrix defined in **Slice A/C** before enforcement. |
+| 5 | Billing authority | **ORG_OWNER only** may initiate/manage/cancel/change Organization billing. ORG_ADMIN does **not** gain financial authority from operational authority. |
+| 6 | Cadence | **Monthly + annual** as Price variants of the same commercial tier/entitlement. |
+| 7 | Trial | Org: **14-day** trial; **payment method required up front**. Individual: **no** Stripe/Apple/Google trial in initial V4. |
+| 8 | Failed-payment grace | **7 calendar days.** During grace: entitled capability remains + billing-owner messaging. After grace: restrict commercial-gated capabilities only. **Never** delete memberships, consent, athlete data, readiness, training history, or audit because billing failed. |
+| 9 | Cancellation | **Cancel at period end.** Entitlements through paid-through/current period end. Reactivation before expiry supported. Cancellation does not delete product data. |
+| 10 | Downgrade over limit | Downgrade **cannot become effective** while active usage exceeds target band. ORG_OWNER must remediate first. Never auto-delete/remove athletes or memberships. |
+| 11 | Individual tier | Internal **PREMIUM**. Launch **targets** (not live-catalog authorization): **$9.99/month**, **$99.99/year**. Apple/Google use storefront/localized tiers resolving to the same Premium entitlement. |
+| 12 | Provider switching | One individual provider owns billing at a time. Block normal duplicate checkout while another ACTIVE or grace-valid subscription exists. Switch: cancel/stop renewal → retain through paid-through → begin replacement after existing paid period. No silent migration; no automatic double subscription. |
+| 13 | Tax display | Stripe/Web advertised pricing is **tax-exclusive** where applicable (`price + applicable taxes`). Apple/Google follow storefront-required presentation. Do not force one display convention across providers. |
+| 14 | Stripe Tax | Intended Web tax-calculation integration. Enable for **live** charging only after Devino Labs tax registrations + product tax classification are reviewed/configured. `automatic_tax.enabled` ≠ registration. Never double-apply Stripe Tax to Apple/Google. No unsupported legal/tax claims. |
+| 15 | Promotions | Coupons/promotion codes **deferred** beyond initial V4. |
+| 16 | Enterprise | Enterprise/custom contract invoicing **deferred**. Initial org commercialization = self-service Stripe Billing. |
+
+### 22.2 Pre-Slice-A normative contract
+
+| Contract item | Locked value |
+| --- | --- |
+| Bounded context | `billing` module; UUID refs only to Account/Organization; no shared JPA with org/consent/training |
+| Entitlement principle | Provider-neutral capabilities; product asks `has(capability)` |
+| AuthZ × entitlement | Authorization = WHO; entitlement = WHETHER purchased; both may be required; neither replaces the other |
+| Org channel | Stripe Billing + Checkout + Customer Portal |
+| Individual channels | Stripe Web, Apple App Store, Google Play (Slice G) |
+| Org pricing shape | Fixed active-athlete bands (25 / 75 / 250 supported); dollar amounts deferred to pre–Slice B catalog lock |
+| Billable athlete | ACTIVE once per Organization; invite/LEFT/REMOVED not billable |
+| Org billing role | ORG_OWNER only |
+| Cadence | Monthly + annual Price variants |
+| Org trial | 14 days; payment method up front |
+| Individual trial | None (initial V4) |
+| Grace | 7 calendar days; then restrict commercial-gated only |
+| Cancel | At period end; paid-through access; reactivation OK |
+| Downgrade | Block effective downgrade until usage ≤ band |
+| Individual product | PREMIUM entitlement |
+| Free surfaces | Account/privacy/consent/invite/leave/transparency/retained athlete history (when authorized) — never paywalled |
+| Lifecycle states | `PENDING`, `TRIALING`, `ACTIVE`, `PAST_DUE`, `GRACE_PERIOD`, `CANCEL_AT_PERIOD_END`, `EXPIRED` (+ `CANCELLED` only if needed) |
+| Tax | Channel-specific; Stripe/Web tax-exclusive display; Stripe Tax after registration review |
+| Promotions / enterprise | Deferred |
+| Connect | Out of scope |
+| V1–V3 invariants | Membership, consent, IDOR, Team Readiness privacy, State Engine ownership, no-hidden-write **untouched** |
+| Maintainability | Campground on touched paths only; no mass smell cleanup in lock/Slice A docs |
+
+### 22.3 Slice A readiness
+
+| Role | Verdict |
+| --- | --- |
+| Lead / Architect | **Ready** — §22 locked; ADR-036–045 Accepted; A–I order final |
+| Backend / External Integration | **Ready** to implement after **explicit Slice A authorization** |
+| Web / Mobile / QA / Security / AI / DevOps / Docs | Planning lock sufficient; no runtime in this task |
+
+**Remaining blocker before Slice A runtime:** explicit user authorization to implement code/migrations — **not** an open PO decision.
 
 ---
 
-## 23. Proposed V4 slices
-
-Hypothesis refined after repository inspection. Final lettering depends on Decision #1.
-
-### If Organizations **and** Individuals (A–I)
+## 23. Final V4 slices (A–I)
 
 | Slice | Theme |
 | --- | --- |
-| **A** | Commercial foundation — `billing` module, ports, entitlement model, ADRs Accepted after PO lock |
-| **B** | Stripe Organization subscription — sandbox catalog, Checkout, customer mapping, lifecycle sync |
-| **C** | Entitlements — server-side capability enforcement at product edges |
-| **D** | Seats & usage — org athlete usage / tier enforcement |
-| **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate UX |
-| **F** | Webhooks / dunning / reconciliation — robust events, grace/recovery |
-| **G** | Individual monetization — Stripe Web + Apple + Google (only if PO approved) |
+| **A** | Commercial foundation — `billing` module, ports, entitlement model, catalog keys (no live Stripe mutation unless separately authorized) |
+| **B** | Stripe Organization subscription — sandbox catalog after price lock, Checkout, customer mapping, lifecycle sync |
+| **C** | Entitlements — server-side commercial capability enforcement; finalize free vs gated matrix |
+| **D** | Bands & usage — active-athlete band enforcement |
+| **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
+| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery |
+| **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
 | **H** | Commercial UX completion — pricing/billing cohesion |
-| **I** | Hardening / RC — threat T12–T22, entitlement matrix, tax/config, production certification |
+| **I** | Hardening / RC — T12–T22, entitlement matrix, tax/config, production certification |
 
-### If Organizations **only** (A–H)
-
-Omit individual Slice G; renumber H→G, I→H. Defer Apple/Google individual work to a later version.
-
-**Do not implement any slice in this planning task.**
+**Do not begin Slice A from this decision-lock task.**
 
 ---
 
-## 24. Proposed ADRs (036–045)
+## 24. ADRs (036–045) — Accepted
 
-Status: **Proposed** — awaiting Product Owner decision lock. Not Accepted.
+| ADR | Title | Status |
+| --- | --- | --- |
+| [036](adr/036-billing-bounded-context.md) | Billing bounded-context ownership | **Accepted** |
+| [037](adr/037-provider-neutral-entitlements.md) | Provider-neutral entitlement model | **Accepted** |
+| [038](adr/038-organization-vs-individual-subscriptions.md) | Organization vs individual subscription ownership | **Accepted** |
+| [039](adr/039-billing-provider-channel-strategy.md) | Billing-provider / channel strategy | **Accepted** |
+| [040](adr/040-subscription-lifecycle.md) | Subscription lifecycle | **Accepted** |
+| [041](adr/041-seat-and-usage-semantics.md) | Seat / usage semantics (active-athlete bands) | **Accepted** |
+| [042](adr/042-authorization-vs-entitlement.md) | Authorization vs entitlement | **Accepted** |
+| [043](adr/043-tax-channel-boundaries.md) | Tax responsibility boundaries | **Accepted** |
+| [044](adr/044-provider-webhook-idempotency.md) | Provider webhook / idempotency model | **Accepted** |
+| [045](adr/045-duplicate-subscription-and-provider-switch.md) | Duplicate-subscription / provider-switch policy | **Accepted** |
 
-| ADR | Title |
-| --- | --- |
-| [036](adr/036-billing-bounded-context.md) | Billing bounded-context ownership |
-| [037](adr/037-provider-neutral-entitlements.md) | Provider-neutral entitlement model |
-| [038](adr/038-organization-vs-individual-subscriptions.md) | Organization vs individual subscription ownership |
-| [039](adr/039-billing-provider-channel-strategy.md) | Billing-provider / channel strategy |
-| [040](adr/040-subscription-lifecycle.md) | Subscription lifecycle |
-| [041](adr/041-seat-and-usage-semantics.md) | Seat / usage semantics |
-| [042](adr/042-authorization-vs-entitlement.md) | Authorization vs entitlement |
-| [043](adr/043-tax-channel-boundaries.md) | Tax responsibility boundaries |
-| [044](adr/044-provider-webhook-idempotency.md) | Provider webhook / idempotency model |
-| [045](adr/045-duplicate-subscription-and-provider-switch.md) | Duplicate-subscription / provider-switch policy |
+None left Proposed after this lock.
 
 ---
 
@@ -592,32 +619,26 @@ Training/state/consent must **never** import Stripe/Apple/Google types.
 
 ---
 
-## 28. Delivery notes
+## 28. Delivery notes (decision lock)
 
 | Item | Value |
 | --- | --- |
 | Branch | `develop` |
-| Allowed | Planning docs + proposed ADRs |
-| Commit intent | `docs: plan Athlete Readiness V4 commercialization` |
-| After push | Verify may run; **no** main merge/tag/deploy |
+| Allowed | Docs + ADR status updates only |
+| Commit intent | `docs: lock V4 commercialization decisions` |
+| After push | Verify may run; **no** main merge/tag/deploy/Stripe/Apple/Google mutation |
 
 ---
 
-## 29. Planning readiness
-
-Independent planning confirmation:
+## 29. Decision-lock readiness
 
 | Role | Verdict |
 | --- | --- |
-| Lead / Architect | Plan coherent; PO lock required before ADR Accept / Slice A |
-| Backend | `billing` module + ports + webhook model implementable after PO |
-| Web / Mobile | IA homes identified; mobile IAP conditional |
-| External Integration | Stripe SaaS path clear; Apple/Google conditional; no Connect |
-| Security / QA | Threats T12–T22 + test themes defined |
-| DevOps | Secrets/env fail-fast pattern exists; Sonar `develop` scope follow-up |
-| Athlete Intelligence | Boundary PASS for planning |
-| Documentation | This plan + proposed ADRs |
+| Lead / Architect | **COMPLETE** — §22 locked; ADR-036–045 Accepted; A–I final |
+| Documentation / Release | Plan + ADRs updated |
+| All other planning roles | Unchanged from planning review; no runtime |
 
-**V4 planning: READY FOR PRODUCT OWNER DECISION LOCK**
+**V4 Product Owner decision lock: COMPLETE**
 
-Do not begin Slice A until decisions in §22 are recorded and ADRs Accepted.
+Do not begin Slice A until explicitly authorized.
+

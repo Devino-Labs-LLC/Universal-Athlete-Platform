@@ -41,9 +41,9 @@ Ordinary implementation details (invitation TTL defaults, UI route prefixes, cop
 
 Product Owner decisions that ground these ADRs are recorded in [`docs/V3_IMPLEMENTATION_PLAN.md`](../V3_IMPLEMENTATION_PLAN.md) §20.
 
-## Index (V4 commercialization — Proposed)
+## Index (V4 commercialization — Accepted)
 
-Awaiting Product Owner decision lock in [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4_IMPLEMENTATION_PLAN.md) §22. **Not Accepted.** Do not begin V4 Slice A until decisions are recorded and ADRs Accepted.
+Product Owner decisions: [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4_IMPLEMENTATION_PLAN.md) §22. Do not begin V4 Slice A until explicitly authorized to implement.
 
 | ADR | Title |
 | --- | --- |
@@ -52,7 +52,7 @@ Awaiting Product Owner decision lock in [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4
 | [038](038-organization-vs-individual-subscriptions.md) | Organization vs individual subscription ownership |
 | [039](039-billing-provider-channel-strategy.md) | Billing-provider / channel strategy |
 | [040](040-subscription-lifecycle.md) | Subscription lifecycle |
-| [041](041-seat-and-usage-semantics.md) | Seat / usage semantics |
+| [041](041-seat-and-usage-semantics.md) | Active-athlete band / usage semantics |
 | [042](042-authorization-vs-entitlement.md) | Authorization vs entitlement |
 | [043](043-tax-channel-boundaries.md) | Tax responsibility boundaries |
 | [044](044-provider-webhook-idempotency.md) | Provider webhook / idempotency model |

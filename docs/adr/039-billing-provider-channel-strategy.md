@@ -2,18 +2,21 @@
 
 ## Status
 
-**Proposed** — awaiting Product Owner scope and channel decisions.
+**Accepted** — V4 Product Owner decision lock (§22.1 #1, #5–7, #14–16).
 
 ## Context
 
 Ordinary SaaS billing does not require Stripe Connect. Athlete Readiness is not a marketplace paying third-party sellers.
 
-## Decision (proposed)
+## Decision
 
-- Organization billing: **Stripe Billing + Checkout Sessions + Customer Portal** on Web.  
-- Individual billing (if approved): Stripe and/or Apple App Store and/or Google Play with server-side validation.  
+- Organization billing: **Stripe Billing + Checkout Sessions + Customer Portal** on Web; **ORG_OWNER only** financial authority.  
+- Organization trial: **14 days** with payment method required up front.  
+- Individual billing (Slice G): Stripe Web and/or Apple and/or Google with server-side validation; **no** individual trial in initial V4.  
+- Cadence: monthly + annual as Price variants of the same entitlement.  
+- Coupons/promotions and enterprise/custom invoicing: **deferred**.  
 - **No Stripe Connect** unless a genuine multi-party payout requirement appears later.  
-- Sandbox/test first; live catalog only after V4 gates. Separate secrets/IDs per environment; fail fast on mismatch.
+- Sandbox/test first; live catalog only after V4 gates and org dollar-price catalog lock. Separate secrets/IDs per environment; fail fast on mismatch.
 
 ## Consequences
 
@@ -22,4 +25,4 @@ Ordinary SaaS billing does not require Stripe Connect. Athlete Readiness is not 
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §§6–7, 21
+`docs/V4_IMPLEMENTATION_PLAN.md` §§6–7, 17, 21–22

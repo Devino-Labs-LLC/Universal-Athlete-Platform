@@ -2,13 +2,13 @@
 
 ## Status
 
-**Proposed** — ready to Accept with Slice A/B once PO scope is locked (technical pattern is stable).
+**Accepted** — V4 Product Owner decision lock (technical pattern + lifecycle from §22).
 
 ## Context
 
 Provider webhooks are at-least-once and may arrive out of order. Trusting redirects or unverified payloads enables free entitlement.
 
-## Decision (proposed)
+## Decision
 
 For each provider event:
 
@@ -16,10 +16,10 @@ For each provider event:
 2. Persist/dedupe by provider event id (idempotent).  
 3. Prefer refetch of authoritative subscription/purchase objects when applying state.  
 4. Guard against stale updates (provider timestamps/versions).  
-5. Derive internal lifecycle + entitlements transactionally with commercial audit where required.  
+5. Derive internal lifecycle (ADR-040) + entitlements transactionally with commercial audit where required.  
 6. Do not store arbitrary raw payloads by default; keep minimal refs/evidence.
 
-Fulfillment is webhook/sync driven — not success-URL driven.
+Fulfillment is webhook/sync driven — not success-URL driven. Grace recovery and cancel-at-period-end follow ADR-040.
 
 ## Consequences
 
@@ -28,4 +28,4 @@ Fulfillment is webhook/sync driven — not success-URL driven.
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §§6, 18, 20
+`docs/V4_IMPLEMENTATION_PLAN.md` §§6, 18, 20, 22; ADR-040
