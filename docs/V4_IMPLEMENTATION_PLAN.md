@@ -5,13 +5,14 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main`):** `5b714f787b690acda8240402d26fe955577b2fc8`  
-**Production schema:** Flyway **V34**  
+**Production baseline (`main` = `develop`):** `acc5bb3c47f4e617f6b5226d3ef17804e4831ace`  
+**Production schema:** Flyway **V35**  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
-**Slice A status:** **Implemented on develop** — commercial foundation only (see §30). No Slice B.
+**Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30). No Slice B.  
+**Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31). Slice B still requires explicit authorization.
 
-**This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B still requires explicit authorization.
+**This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Organization dollar prices are locked in §31 for future Slice B sandbox catalog creation. Slice B still requires explicit authorization.
 
 ---
 
@@ -95,7 +96,7 @@ Provider adapters answer **how** commercial state is synchronized.
 | Customer | School, club, team organization, other Organization account |
 | Channel | **Stripe / Web** only |
 | Not forced through | Apple App Store or Google Play billing |
-| Pricing shape | Fixed **active-athlete bands** (architecture supports up to 25 / 75 / 250); dollar amounts locked before Slice B sandbox catalog — **not invented here** |
+| Pricing shape | Fixed **active-athlete bands** (up to 25 / 75 / 250). Dollar amounts **locked** in §31 (Starter / Team / Organization) |
 | Cadence | Monthly + annual Price variants of the same tier/entitlement |
 | Trial | 14-day org trial; payment method required up front |
 | Billing authority | **ORG_OWNER only** |
@@ -190,22 +191,27 @@ Do **not** build a universal payment framework. Do **not** store card/bank crede
 
 Mandatory: **signature verification**, **idempotent** processing by `event.id`, **refetch** subscription from Stripe when resolving races, reject stale out-of-order updates using provider timestamps/version where available.
 
-### 6.3 Catalog (plan only — do not create in Stripe now)
+### 6.3 Catalog (locked commercially — do not create in Stripe until Slice B)
 
 Prefer **one Product per commercial tier**, separate **Prices** for monthly/annual/currency.
 
-Example structure only (names/prices **not locked**):
+**Product Owner-approved Organization catalog** (tax-exclusive Web/Stripe; see §31):
 
 ```text
 Athlete Readiness Starter
-  monthly Price / annual Price
+  monthly: $49
+  annual:  $490
 Athlete Readiness Team
-  monthly / annual
+  monthly: $99
+  annual:  $990
 Athlete Readiness Organization
-  monthly / annual
+  monthly: $149
+  annual:  $1,490
 ```
 
-Sandbox/test first. Live Products/Prices only after V4 gates. Separate sandbox vs live IDs and webhook secrets. **Fail fast** if environment mismatch.
+Internal catalog keys remain `ORG_BAND_25` / `ORG_BAND_75` / `ORG_BAND_250`. Marketing names must never replace stable identifiers.
+
+This docs lock does **not** authorize Stripe Product/Price creation. Slice B creates the **sandbox** catalog after explicit Slice B authorization. Live Products/Prices only after V4 gates. Separate sandbox vs live IDs and webhook secrets. **Fail fast** if environment mismatch.
 
 ---
 
@@ -318,8 +324,8 @@ Examples:
 
 | Rule | Locked |
 | --- | --- |
-| Shape | Fixed bands (architecture supports **up to 25 / 75 / 250**) |
-| Dollar prices | Commercial catalog lock **before** Slice B sandbox Product/Price creation — do not invent prices in code or ADRs |
+| Shape | Fixed bands (**up to 25 / 75 / 250**) |
+| Dollar prices | **Locked** in §31 (Starter $49/$490; Team $99/$990; Organization $149/$1,490) — tax-exclusive; do not invent alternate prices in code |
 | Billable unit | One **ACTIVE** Athlete identity **once per Organization** (multi-Team does not multiply) |
 | Not billable | Pending invitation, LEFT, REMOVED |
 | Cross-org | Independent count per Organization |
@@ -477,7 +483,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | # | Topic | Decision |
 | --- | --- | --- |
 | 1 | Scope | **Organizations + Individuals.** Org = Stripe/Web. Individual = Stripe Web and/or Apple and/or Google → same provider-neutral entitlement across Web/iOS/Android. Individual work is **Slice G**; slices A–F must not depend on Apple/Google adapters. |
-| 2 | Org pricing | **Fixed active-athlete bands** (not usage-metered/per-athlete monthly). Architecture supports bands such as **up to 25 / 75 / 250**. Exact org **dollar** prices are a commercial catalog lock **before** Slice B sandbox Product/Price creation — **do not invent prices** in code or ADRs. |
+| 2 | Org pricing | **Fixed active-athlete bands** (not usage-metered/per-athlete monthly): **up to 25 / 75 / 250**. Exact org **dollar** prices are Product Owner-locked in **§31** (Starter / Team / Organization). Do not invent alternate prices in code. Stripe Product/Price creation remains Slice B (not authorized by §22 alone). |
 | 3 | Billable athlete | One **ACTIVE** Athlete identity counts **once per Organization** regardless of Team count. Pending invitation / LEFT / REMOVED = **not** billable. Same athlete in separate Orgs counts independently. |
 | 4 | Free vs entitled | Billing **never** gates privacy/account-control rights. Always available when otherwise authorized: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; access to athlete-owned retained data/history per existing contracts. Org commercial entitlement gates paid org/coach capabilities (candidates: active Team management, coach collaboration, consent-aware coach views, Team Readiness). V3 authZ + consent remain independent. Individual **PREMIUM** must not arbitrarily remove basic athlete functionality; final capability matrix defined in **Slice A/C** before enforcement. |
 | 5 | Billing authority | **ORG_OWNER only** may initiate/manage/cancel/change Organization billing. ORG_ADMIN does **not** gain financial authority from operational authority. |
@@ -502,7 +508,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | AuthZ × entitlement | Authorization = WHO; entitlement = WHETHER purchased; both may be required; neither replaces the other |
 | Org channel | Stripe Billing + Checkout + Customer Portal |
 | Individual channels | Stripe Web, Apple App Store, Google Play (Slice G) |
-| Org pricing shape | Fixed active-athlete bands (25 / 75 / 250 supported); dollar amounts deferred to pre–Slice B catalog lock |
+| Org pricing shape | Fixed active-athlete bands (25 / 75 / 250); dollar amounts **locked** in §31 |
 | Billable athlete | ACTIVE once per Organization; invite/LEFT/REMOVED not billable |
 | Org billing role | ORG_OWNER only |
 | Cadence | Monthly + annual Price variants |
@@ -537,7 +543,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | Slice | Theme |
 | --- | --- |
 | **A** | Commercial foundation — `billing` module, ports, entitlement model, catalog keys (no live Stripe mutation unless separately authorized) |
-| **B** | Stripe Organization subscription — sandbox catalog after price lock, Checkout, customer mapping, lifecycle sync |
+| **B** | Stripe Organization subscription — sandbox catalog from §31 lock, Checkout, customer mapping, lifecycle sync |
 | **C** | Entitlements — server-side commercial capability enforcement; finalize free vs gated matrix |
 | **D** | Bands & usage — active-athlete band enforcement |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
@@ -571,16 +577,23 @@ None left Proposed after this lock.
 
 ## 25. Maintainability debt strategy (V4 engineering objective)
 
-SonarCloud **`main`** (2026-09-10 steward review):
+SonarCloud **`main`** (post–Slice A production tip `acc5bb3c`, 2026-09-11):
 
 | Measure | Value |
 | --- | --- |
-| Open CODE_SMELL | **~1,414** |
-| Maintainability | **A** (debt ratio ~0.3%) |
-| Top 5 rules ≈ **72%** | `java:S5778`, `typescript:S1874`, `typescript:S6759`, `java:S107`, `java:S1128` |
-| New Code vs `2.0.0` | QG PASSED; Maintainability A |
+| Open CODE_SMELL | **1,424** |
+| Prior planning reference | **~1,414** |
+| Delta | **+10** — exactly **10** New Code smells from Slice A billing files (not a Sonar rule/scope admin change) |
+| Maintainability | **A** |
+| New Code vs `2.0.0` | QG PASSED (Slice A); Maintainability A |
 
-**Caveat:** current `develop` analysis may be incomplete (~939 ncloc) — DevOps should restore full-scope analysis; use **`main`** for Overall debt.
+**Slice A smell follow-up (not a Slice B blocker):**
+
+- Repeated validation-message findings (`java:S1192`) may be cleaned when those billing files are touched  
+- Tiny test-style findings may be cleaned opportunistically  
+- Do **not** mass-refactor intentional `java:S107` aggregate/JPA constructors  
+- Do **not** launch repository-wide `java:S5778` cleanup  
+- No NOSONAR / suppression / exclusions  
 
 ### V4 rule
 
@@ -721,8 +734,86 @@ Slice A New Code (post-dedupe tip `ebfdb8ea`): Reliability/Security/Maintainabil
 | Security / Quality Gate Steward | PASS |
 | Athlete Intelligence / Data | PASS (State Engine / readiness / Team Readiness / consent / membership / no-hidden-write untouched) |
 
-**develop tip after Slice A:** `ebfdb8ea4b2e327cd9806b990fb6dbc35b8a834e`  
-**Verify (QG green):** https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/34558418596  
+**develop tip after Slice A:** `acc5bb3c47f4e617f6b5226d3ef17804e4831ace` (also `main`; production verified)  
+**Verify (QG green, develop Slice A tip):** https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/34558418596  
+
+Do not begin Slice B until explicitly authorized.
+
+---
+
+## 31. Pre-Slice-B Organization Catalog Lock
+
+**Status:** **COMPLETE** — Product Owner-approved initial V4 Organization pricing.  
+**Does not authorize Slice B.** Does not create Stripe Products/Prices. Does not change runtime code.
+
+### 31.1 Locked commercial names and catalog keys
+
+| Web / Stripe-facing name | Internal catalog key | Active-athlete capacity |
+| --- | --- | --- |
+| **Starter** | `ORG_BAND_25` | Up to **25** |
+| **Team** | `ORG_BAND_75` | Up to **75** |
+| **Organization** | `ORG_BAND_250` | Up to **250** |
+
+Marketing names must **never** replace stable internal identifiers.
+
+### 31.2 Locked Organization prices (tax-exclusive)
+
+| Tier | Monthly | Annual | Effective annual monthly | Approx. annual discount |
+| --- | --- | --- | --- | --- |
+| Starter | **$49** | **$490** | $40.83 | ~16.7% (10× monthly / two months free) |
+| Team | **$99** | **$990** | $82.50 | ~16.7% (10× monthly / two months free) |
+| Organization | **$149** | **$1,490** | $124.17 | ~16.7% (10× monthly / two months free) |
+
+Annual pricing is intentionally **10 × monthly**. No alternate annual discount percentages, coupons, promo codes, or negotiated enterprise pricing in initial V4 (those remain deferred per §22.1 #15–16).
+
+### 31.3 Future Slice B sandbox catalog shape (not created yet)
+
+```text
+Athlete Readiness Starter
+  monthly: $49
+  annual:  $490
+
+Athlete Readiness Team
+  monthly: $99
+  annual:  $990
+
+Athlete Readiness Organization
+  monthly: $149
+  annual:  $1,490
+```
+
+Slice B may create these **sandbox** objects only after explicit Slice B authorization.
+
+### 31.4 Band, trial, tax, and authority (unchanged)
+
+| Rule | Locked value |
+| --- | --- |
+| Billable unit | One **ACTIVE** Athlete identity once per Organization |
+| Multi-Team | Does **not** multiply the count |
+| Not billable | Pending invitation; LEFT; REMOVED |
+| Cross-Organization | Independent count per Organization |
+| Capacity model | **25 / 75 / 250** unchanged |
+| Trial | 14-day Organization trial; payment method required up front |
+| Cadence | Monthly + annual |
+| Grace | 7 calendar days on failed payment |
+| Cancel | At period end |
+| Billing authority | **ORG_OWNER** only |
+| Tax display | Advertised Web price **+ applicable taxes** (prices above are **not** tax-inclusive) |
+| Stripe Tax live | Only after Devino Labs tax registration / product classification review; `automatic_tax.enabled = true` ≠ registration |
+| Apple/Google tax | Separate; not part of this Organization price lock |
+
+### 31.5 Individual Premium (unchanged)
+
+| Item | Value |
+| --- | --- |
+| Targets | **$9.99/month**, **$99.99/year** |
+| This lock | Does **not** alter Individual pricing |
+
+### 31.6 Sonar follow-up note
+
+Slice A CODE_SMELL **~1,414 → 1,424** (+10) is attributed to exactly **10** new Slice A findings. **Not a Slice B blocker.** Campground guidance in §25 applies; no runtime cleanup in this docs lock.
+
+**V4 Organization price lock: COMPLETE**
 
 Do not begin Slice B until explicitly authorized.
 

@@ -16,7 +16,7 @@ Ordinary SaaS billing does not require Stripe Connect. Athlete Readiness is not 
 - Cadence: monthly + annual as Price variants of the same entitlement.  
 - Coupons/promotions and enterprise/custom invoicing: **deferred**.  
 - **No Stripe Connect** unless a genuine multi-party payout requirement appears later.  
-- Sandbox/test first; live catalog only after V4 gates and org dollar-price catalog lock. Separate secrets/IDs per environment; fail fast on mismatch.
+- Sandbox/test first; Organization dollar catalog is Product Owner-locked in `docs/V4_IMPLEMENTATION_PLAN.md` §31. Sandbox Product/Price creation is Slice B (not authorized by this ADR alone). Live catalog only after V4 gates. Separate secrets/IDs per environment; fail fast on mismatch.
 
 ## Consequences
 
@@ -25,4 +25,4 @@ Ordinary SaaS billing does not require Stripe Connect. Athlete Readiness is not 
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §§6–7, 17, 21–22
+`docs/V4_IMPLEMENTATION_PLAN.md` §§6–7, 17, 21–22, 31
