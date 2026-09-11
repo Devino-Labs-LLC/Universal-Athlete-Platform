@@ -711,6 +711,8 @@ Provider identity does not change capability semantics.
 
 The planning-era ~**939 ncloc** develop reading is **not** explained by missing source paths. Treat as incomplete/collapsed short-lived branch analysis presentation vs `main` Overall (~113k ncloc at V2). **No repo-side sonar.sources fix required** for Slice A. Use **`main`** for Overall debt until DevOps restores full-scope develop analysis confidence. Quality Gate thresholds unchanged.
 
+Slice A New Code (post-dedupe tip `ebfdb8ea`): Reliability/Security/Maintainability **A**, coverage **~80.1%**, duplication **0.0%**, hotspots **100%**, Quality Gate **PASSED**. First tip failed on New Code duplication **3.8%** (copied Modulith-local JPA base); fixed by inlining into `BillingSubscriptionJpaEntity`.
+
 ### 30.8 Reviews
 
 | Role | Verdict |
@@ -718,6 +720,9 @@ The planning-era ~**939 ncloc** develop reading is **not** explained by missing 
 | QA / Test Automation | PASS (billing suite + Flyway V35 + Verify core shard includes `billing.*`) |
 | Security / Quality Gate Steward | PASS |
 | Athlete Intelligence / Data | PASS (State Engine / readiness / Team Readiness / consent / membership / no-hidden-write untouched) |
+
+**develop tip after Slice A:** `ebfdb8ea4b2e327cd9806b990fb6dbc35b8a834e`  
+**Verify (QG green):** https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/34558418596  
 
 Do not begin Slice B until explicitly authorized.
 
