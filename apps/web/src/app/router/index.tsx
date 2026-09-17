@@ -77,9 +77,19 @@ const TeamInvitationsPage = lazy(() =>
     default: m.TeamInvitationsPage,
   })),
 );
-const CoachAthleteDetailPage = lazy(() =>
-  import('@/features/coach/pages/CoachAthleteDetailPage').then((m) => ({
-    default: m.CoachAthleteDetailPage,
+const OrganizationBillingPage = lazy(() =>
+  import('@/features/coach/pages/OrganizationBillingPage').then((m) => ({
+    default: m.OrganizationBillingPage,
+  })),
+);
+const BillingCheckoutSuccessPage = lazy(() =>
+  import('@/features/coach/pages/BillingCheckoutReturnPages').then((m) => ({
+    default: m.BillingCheckoutSuccessPage,
+  })),
+);
+const BillingCheckoutCancelPage = lazy(() =>
+  import('@/features/coach/pages/BillingCheckoutReturnPages').then((m) => ({
+    default: m.BillingCheckoutCancelPage,
   })),
 );
 const EditProfilePage = lazy(() =>
@@ -436,10 +446,26 @@ export function AppRouter() {
               }
             />
             <Route
-              path="teams/:teamId/athletes/:athleteId"
+              path="organizations/:organizationId/billing"
               element={
                 <LazyPage>
-                  <CoachAthleteDetailPage />
+                  <OrganizationBillingPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="billing/success"
+              element={
+                <LazyPage>
+                  <BillingCheckoutSuccessPage />
+                </LazyPage>
+              }
+            />
+            <Route
+              path="billing/cancel"
+              element={
+                <LazyPage>
+                  <BillingCheckoutCancelPage />
                 </LazyPage>
               }
             />

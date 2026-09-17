@@ -45,3 +45,20 @@ uap:
       rate-limit:
         capacity: ${UAP_IDENTITY_RATE_LIMIT_CAPACITY:30}
         window: ${UAP_IDENTITY_RATE_LIMIT_WINDOW:1m}
+  billing:
+    stripe:
+      # Explicit opt-in. Tests and default local boot leave Stripe disabled.
+      # When true, a test-mode key, all Price IDs, and return URLs are required.
+      # Live keys (sk_live_ / rk_live_) are rejected — Slice B is sandbox-only.
+      enabled: ${UAP_BILLING_STRIPE_ENABLED:false}
+      secret-key: ${UAP_BILLING_STRIPE_SECRET_KEY:}
+      webhook-secret: ${UAP_BILLING_STRIPE_WEBHOOK_SECRET:}
+      success-url: ${UAP_BILLING_STRIPE_SUCCESS_URL:}
+      cancel-url: ${UAP_BILLING_STRIPE_CANCEL_URL:}
+      prices:
+        org-band-25-monthly: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_25_MONTHLY:}
+        org-band-25-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_25_ANNUAL:}
+        org-band-75-monthly: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_75_MONTHLY:}
+        org-band-75-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_75_ANNUAL:}
+        org-band-250-monthly: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_250_MONTHLY:}
+        org-band-250-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_250_ANNUAL:}

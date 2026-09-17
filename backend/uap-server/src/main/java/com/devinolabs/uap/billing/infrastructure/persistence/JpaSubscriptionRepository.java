@@ -38,6 +38,7 @@ class JpaSubscriptionRepository implements SubscriptionRepository {
 					subscription.trialEndsAt(),
 					subscription.currentPeriodEndsAt(),
 					subscription.graceEndsAt(),
+					subscription.providerStateAsOf(),
 					subscription.updatedAt());
 			saved = jpaRepository.save(entity);
 		}

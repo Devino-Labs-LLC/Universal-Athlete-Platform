@@ -150,6 +150,11 @@ export function CoachHomePage() {
           <Button type="submit" disabled={!teamId}>
             Open roster
           </Button>
+          {organizationId ? (
+            <Link to={`/coach/organizations/${organizationId}/billing`} className={styles.inlineLink}>
+              Organization billing
+            </Link>
+          ) : null}
         </div>
       </form>
     </Page>

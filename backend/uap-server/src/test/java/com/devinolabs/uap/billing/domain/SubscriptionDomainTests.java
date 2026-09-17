@@ -210,6 +210,112 @@ class SubscriptionDomainTests {
 		assertThat(BillingSubject.organization(id).type()).isEqualTo(BillingSubjectType.ORGANIZATION);
 	}
 
+	@Test
+	void organizationCheckoutKeepsCadenceAndUsesProviderSnapshotTrialClock() {
+		Subscription subscription = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.organization(UUID.randomUUID()),
+				CommercialPlanKey.ORG_BAND_75,
+				BillingCadence.ANNUAL,
+				CLOCK);
+		Instant providerAsOf = T0.plusSeconds(10);
+		Instant trialEnd = T0.plusSeconds(14 * 24 * 60 * 60);
+
+		boolean changed = subscription.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_trial",
+						"sub_trial",
+						ProviderCommercialStatus.TRIALING,
+						false,
+						trialEnd,
+						T0.plusSeconds(30 * 24 * 60 * 60),
+						providerAsOf),
+				CLOCK);
+
+		assertThat(changed).isTrue();
+		assertThat(subscription.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.TRIALING);
+		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
+		assertThat(subscription.providerStateAsOf()).isEqualTo(providerAsOf);
+		assertThat(subscription.isCommerciallyEntitledAt(T0)).isTrue();
+	}
+
+	@Test
+	void staleAndEqualProviderSnapshotsAreIgnored() {
+		Subscription subscription = pendingCheckout();
+		ProviderSubscriptionSnapshot current = activeSnapshot(T0.plusSeconds(20));
+		assertThat(subscription.synchronizeProviderSnapshot(current, CLOCK)).isTrue();
+
+		ProviderSubscriptionSnapshot equal = activeSnapshot(T0.plusSeconds(20));
+		ProviderSubscriptionSnapshot stale = activeSnapshot(T0.plusSeconds(19));
+		assertThat(subscription.synchronizeProviderSnapshot(equal, CLOCK)).isFalse();
+		assertThat(subscription.synchronizeProviderSnapshot(stale, CLOCK)).isFalse();
+	}
+
+	@Test
+	void providerReferenceMismatchAndUnknownStatusFailClosed() {
+		Subscription subscription = pendingCheckout();
+		subscription.synchronizeProviderSnapshot(activeSnapshot(T0.plusSeconds(20)), CLOCK);
+
+		assertThatThrownBy(() -> subscription.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_foreign",
+						"sub_active",
+						ProviderCommercialStatus.ACTIVE,
+						false,
+						null,
+						T0.plusSeconds(1_000),
+						T0.plusSeconds(21)),
+				CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("customer");
+
+		Subscription unknown = pendingCheckout();
+		assertThatThrownBy(() -> unknown.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_unknown",
+						"sub_unknown",
+						ProviderCommercialStatus.UNKNOWN,
+						false,
+						null,
+						null,
+						T0.plusSeconds(30)),
+				CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Unknown provider status");
+		assertThat(unknown.isCommerciallyEntitledAt(T0)).isFalse();
+	}
+
+	@Test
+	void providerSnapshotRequiresSubscriptionReferenceAndStateTimestamp() {
+		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
+				"cus_test", " ", ProviderCommercialStatus.PENDING, false, null, null, T0))
+				.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
+				"cus_test", "sub_test", ProviderCommercialStatus.PENDING, false, null, null, null))
+				.isInstanceOf(NullPointerException.class);
+	}
+
+	private static Subscription pendingCheckout() {
+		return Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.organization(UUID.randomUUID()),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+	}
+
+	private static ProviderSubscriptionSnapshot activeSnapshot(Instant providerAsOf) {
+		return new ProviderSubscriptionSnapshot(
+				"cus_active",
+				"sub_active",
+				ProviderCommercialStatus.ACTIVE,
+				false,
+				null,
+				T0.plusSeconds(30 * 24 * 60 * 60),
+				providerAsOf);
+	}
+
 	private static Subscription pendingOrg() {
 		return Subscription.startPending(
 				SubscriptionId.generate(),

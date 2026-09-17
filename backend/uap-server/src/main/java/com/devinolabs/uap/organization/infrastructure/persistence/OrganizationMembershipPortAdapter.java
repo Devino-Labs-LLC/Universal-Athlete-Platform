@@ -61,9 +61,14 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 
 	@Override
 	public boolean canManageOrganization(UUID accountId, UUID organizationId) {
-		return membershipRepository.existsActiveOwner(
-				AccountId.of(accountId),
-				OrganizationId.of(organizationId));
+		if (accountId == null || organizationId == null) {
+			return false;
+		}
+		OrganizationId id = OrganizationId.of(organizationId);
+		return organizationRepository.findById(id)
+				.filter(organization -> organization.status() == OrganizationStatus.ACTIVE)
+				.filter(organization -> membershipRepository.existsActiveOwner(AccountId.of(accountId), id))
+				.isPresent();
 	}
 
 	@Override

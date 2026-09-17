@@ -21,12 +21,14 @@ public class Subscription {
 	private final BillingSubject subject;
 	private final BillingProvider provider;
 	private final CommercialPlanKey planKey;
+	private final BillingCadence billingCadence;
 	private SubscriptionLifecycleState lifecycleState;
 	private String providerCustomerRef;
 	private String providerSubscriptionRef;
 	private Instant trialEndsAt;
 	private Instant currentPeriodEndsAt;
 	private Instant graceEndsAt;
+	private Instant providerStateAsOf;
 	private final Instant createdAt;
 	private Instant updatedAt;
 	private long version;
@@ -36,12 +38,14 @@ public class Subscription {
 			BillingSubject subject,
 			BillingProvider provider,
 			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
 			SubscriptionLifecycleState lifecycleState,
 			String providerCustomerRef,
 			String providerSubscriptionRef,
 			Instant trialEndsAt,
 			Instant currentPeriodEndsAt,
 			Instant graceEndsAt,
+			Instant providerStateAsOf,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -49,12 +53,14 @@ public class Subscription {
 		this.subject = Objects.requireNonNull(subject, "subject must not be null");
 		this.provider = Objects.requireNonNull(provider, "provider must not be null");
 		this.planKey = Objects.requireNonNull(planKey, "planKey must not be null");
+		this.billingCadence = billingCadence;
 		this.lifecycleState = Objects.requireNonNull(lifecycleState, "lifecycleState must not be null");
 		this.providerCustomerRef = normalizeRef(providerCustomerRef);
 		this.providerSubscriptionRef = normalizeRef(providerSubscriptionRef);
 		this.trialEndsAt = trialEndsAt;
 		this.currentPeriodEndsAt = currentPeriodEndsAt;
 		this.graceEndsAt = graceEndsAt;
+		this.providerStateAsOf = providerStateAsOf;
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
 		if (version < 0) {
@@ -81,7 +87,40 @@ public class Subscription {
 				subject,
 				provider,
 				planKey,
+				null,
 				SubscriptionLifecycleState.PENDING,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				now,
+				now,
+				0L);
+	}
+
+	/** Starts an Organization checkout with an explicit recurring cadence. */
+	public static Subscription startPendingOrganizationCheckout(
+			SubscriptionId id,
+			BillingSubject subject,
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
+			Clock clock) {
+		Objects.requireNonNull(billingCadence, "billingCadence must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (subject.type() != BillingSubjectType.ORGANIZATION || !planKey.isOrganizationPlan()) {
+			throw new IllegalArgumentException("Organization checkout requires an Organization subject and org plan");
+		}
+		Instant now = Instant.now(clock);
+		return new Subscription(
+				id,
+				subject,
+				BillingProvider.STRIPE,
+				planKey,
+				billingCadence,
+				SubscriptionLifecycleState.PENDING,
+				null,
 				null,
 				null,
 				null,
@@ -97,12 +136,14 @@ public class Subscription {
 			BillingSubject subject,
 			BillingProvider provider,
 			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
 			SubscriptionLifecycleState lifecycleState,
 			String providerCustomerRef,
 			String providerSubscriptionRef,
 			Instant trialEndsAt,
 			Instant currentPeriodEndsAt,
 			Instant graceEndsAt,
+			Instant providerStateAsOf,
 			Instant createdAt,
 			Instant updatedAt,
 			long version) {
@@ -111,15 +152,84 @@ public class Subscription {
 				subject,
 				provider,
 				planKey,
+				billingCadence,
 				lifecycleState,
 				providerCustomerRef,
 				providerSubscriptionRef,
 				trialEndsAt,
 				currentPeriodEndsAt,
 				graceEndsAt,
+				providerStateAsOf,
 				createdAt,
 				updatedAt,
 				version);
+	}
+
+	/**
+	 * Applies a verified, authoritative provider snapshot and ignores stale replays.
+	 * Provider-native status mapping remains outside this aggregate.
+	 */
+	public boolean synchronizeProviderSnapshot(ProviderSubscriptionSnapshot snapshot, Clock clock) {
+		Objects.requireNonNull(snapshot, "snapshot must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (snapshot.status() == ProviderCommercialStatus.UNKNOWN) {
+			throw new IllegalArgumentException("Unknown provider status cannot update commercial state");
+		}
+		if (providerStateAsOf != null && !snapshot.providerStateAsOf().isAfter(providerStateAsOf)) {
+			return false;
+		}
+		requireMatchingReference(providerCustomerRef, snapshot.providerCustomerRef(), "provider customer");
+		requireMatchingReference(providerSubscriptionRef, snapshot.providerSubscriptionRef(), "provider subscription");
+
+		SubscriptionLifecycleState target = lifecycleFor(snapshot);
+		SubscriptionLifecycleTransitions.requireAllowed(lifecycleState, target);
+		validateProviderSnapshotInvariants(target, snapshot);
+		Instant now = Instant.now(clock);
+		this.lifecycleState = target;
+		this.providerCustomerRef = snapshot.providerCustomerRef();
+		this.providerSubscriptionRef = snapshot.providerSubscriptionRef();
+		this.trialEndsAt = snapshot.trialEndsAt();
+		this.currentPeriodEndsAt = snapshot.currentPeriodEndsAt();
+		this.graceEndsAt = null;
+		this.providerStateAsOf = snapshot.providerStateAsOf();
+		this.updatedAt = now;
+		validateStateInvariants();
+		return true;
+	}
+
+	private static SubscriptionLifecycleState lifecycleFor(ProviderSubscriptionSnapshot snapshot) {
+		if (snapshot.cancelAtPeriodEnd()
+				&& (snapshot.status() == ProviderCommercialStatus.ACTIVE
+						|| snapshot.status() == ProviderCommercialStatus.TRIALING)) {
+			return SubscriptionLifecycleState.CANCEL_AT_PERIOD_END;
+		}
+		return switch (snapshot.status()) {
+			case PENDING -> SubscriptionLifecycleState.PENDING;
+			case TRIALING -> SubscriptionLifecycleState.TRIALING;
+			case ACTIVE -> SubscriptionLifecycleState.ACTIVE;
+			case PAYMENT_ATTENTION_REQUIRED -> SubscriptionLifecycleState.PAST_DUE;
+			case ENDED -> SubscriptionLifecycleState.EXPIRED;
+			case UNKNOWN -> throw new IllegalArgumentException("Unknown provider status cannot update commercial state");
+		};
+	}
+
+	private static void validateProviderSnapshotInvariants(
+			SubscriptionLifecycleState target,
+			ProviderSubscriptionSnapshot snapshot) {
+		if (target == SubscriptionLifecycleState.TRIALING && snapshot.trialEndsAt() == null) {
+			throw new IllegalArgumentException("Provider TRIALING snapshot requires trialEndsAt");
+		}
+		if ((target == SubscriptionLifecycleState.ACTIVE
+				|| target == SubscriptionLifecycleState.CANCEL_AT_PERIOD_END)
+				&& snapshot.currentPeriodEndsAt() == null) {
+			throw new IllegalArgumentException("Provider entitled snapshot requires currentPeriodEndsAt");
+		}
+	}
+
+	private static void requireMatchingReference(String current, String incoming, String label) {
+		if (current != null && incoming != null && !current.equals(incoming)) {
+			throw new IllegalArgumentException(label + " reference does not match existing subscription");
+		}
 	}
 
 	/**
@@ -351,6 +461,10 @@ public class Subscription {
 		return planKey;
 	}
 
+	public BillingCadence billingCadence() {
+		return billingCadence;
+	}
+
 	public SubscriptionLifecycleState lifecycleState() {
 		return lifecycleState;
 	}
@@ -373,6 +487,10 @@ public class Subscription {
 
 	public Instant graceEndsAt() {
 		return graceEndsAt;
+	}
+
+	public Instant providerStateAsOf() {
+		return providerStateAsOf;
 	}
 
 	public Instant createdAt() {

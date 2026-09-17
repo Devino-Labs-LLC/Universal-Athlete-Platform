@@ -55,6 +55,8 @@ class IdentitySecurityConfiguration {
 	static final String TEAMS_API = "/api/v1/teams/**";
 	static final String INVITATIONS_API = "/api/v1/invitations/**";
 	static final String ME_INVITATIONS_API = "/api/v1/me/invitations/**";
+	static final String BILLING_API = "/api/v1/billing/**";
+	static final String STRIPE_WEBHOOK_PATH = "/api/v1/billing/webhooks/stripe";
 
 	@Bean
 	AuthTokenTransport authTokenTransport(
@@ -126,7 +128,7 @@ class IdentitySecurityConfiguration {
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(csrfTokenRepository)
 						.csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
-						.ignoringRequestMatchers(REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH))
+						.ignoringRequestMatchers(REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH, STRIPE_WEBHOOK_PATH))
 				.cors(Customizer.withDefaults())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.httpBasic(AbstractHttpConfigurer::disable)
@@ -140,6 +142,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(HttpMethod.POST, REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH, REFRESH_PATH)
 						.permitAll()
 						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+						.requestMatchers(HttpMethod.POST, STRIPE_WEBHOOK_PATH).permitAll()
 						.requestMatchers(HttpMethod.GET, IDENTITY_ME_PATH).authenticated()
 						.requestMatchers(HttpMethod.POST, LOGOUT_PATH, LOGOUT_ALL_PATH).authenticated()
 						.requestMatchers(ATHLETES_API).authenticated()
@@ -148,6 +151,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(TEAMS_API).authenticated()
 						.requestMatchers(INVITATIONS_API).authenticated()
 						.requestMatchers(ME_INVITATIONS_API).authenticated()
+						.requestMatchers(BILLING_API).authenticated()
 						.anyRequest().denyAll())
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);

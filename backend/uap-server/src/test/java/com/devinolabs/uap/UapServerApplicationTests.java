@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("35");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("36");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create billing subscriptions");
+				.isEqualTo("create billing stripe org foundation");
 	}
 
 	@Test
@@ -830,6 +830,31 @@ class UapServerApplicationTests {
 			assertThat(planKey.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create billing subscriptions");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesStripeOrganizationBillingFoundationMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet customers = connection.getMetaData().getTables(
+						null, null, "billing_organization_customers", new String[] { "TABLE" });
+				ResultSet cadence = connection.getMetaData().getColumns(
+						null, null, "billing_subscriptions", "billing_cadence");
+				ResultSet providerStateAsOf = connection.getMetaData().getColumns(
+						null, null, "billing_subscriptions", "provider_state_as_of");
+				ResultSet providerEvents = connection.getMetaData().getTables(
+						null, null, "billing_provider_events", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '36'")) {
+			assertThat(customers.next()).isTrue();
+			assertThat(cadence.next()).isTrue();
+			assertThat(cadence.getInt("NULLABLE")).isEqualTo(1);
+			assertThat(providerStateAsOf.next()).isTrue();
+			assertThat(providerStateAsOf.getInt("NULLABLE")).isEqualTo(1);
+			assertThat(providerEvents.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create billing stripe org foundation");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

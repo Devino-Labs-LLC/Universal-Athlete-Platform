@@ -9,10 +9,11 @@
 **Production schema:** Flyway **V35**  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
-**Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30). No Slice B.  
-**Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31). Slice B still requires explicit authorization.
+**Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
+**Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
+**Slice B status:** Repository implementation on `develop` (see §32); **sandbox certification pending**. Slice C still requires explicit authorization.
 
-**This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Organization dollar prices are locked in §31 for future Slice B sandbox catalog creation. Slice B still requires explicit authorization.
+**This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
 ---
 
@@ -739,8 +740,6 @@ Slice A New Code (post-dedupe tip `ebfdb8ea`): Reliability/Security/Maintainabil
 
 Do not begin Slice B until explicitly authorized.
 
----
-
 ## 31. Pre-Slice-B Organization Catalog Lock
 
 **Status:** **COMPLETE** — Product Owner-approved initial V4 Organization pricing.  
@@ -817,4 +816,85 @@ Slice A CODE_SMELL **~1,414 → 1,424** (+10) is attributed to exactly **10** ne
 
 Do not begin Slice B until explicitly authorized.
 
+---
 
+## 32. Slice B — Stripe Organization subscription (implementation evidence)
+
+**Status:** Repository implementation on `develop`. **Sandbox catalog/Checkout/webhook certification is pending** (this Cursor environment has Stripe disabled and no authorized sandbox credentials or Stripe MCP).
+**Does not authorize Slice C.** No V3 product-edge paywall. **Stripe Tax collection remains OFF.**
+
+### 32.1 Runtime contract
+
+| Item | Implemented behavior |
+| --- | --- |
+| SDK | `com.stripe:stripe-java:33.4.2` via `StripeClient` (no deprecated global API key) |
+| Enablement | Disabled by default (`uap.billing.stripe.enabled=false`). When enabled: fail-fast test-mode `rk_test_`/`sk_test_` key, `whsec_` webhook secret, six distinct Price IDs, HTTPS or local HTTP success/cancel URLs |
+| Live safety | `prod`/`production` activation rejected; live keys and non-sandbox Stripe objects rejected |
+| Catalog | Server-owned allowlist maps `ORG_BAND_25`/`75`/`250` × `MONTHLY`/`ANNUAL` to configured sandbox Price IDs; clients never submit Price IDs or amounts |
+| Checkout | Hosted Checkout Session, `mode=subscription`, quantity `1`, 14-day trial, payment method required up front, dynamic payment methods, **no automatic tax** |
+| Authority | Active `ORG_OWNER` on an active Organization only; foreign accounts and `ORG_ADMIN` receive non-oracle not-found |
+| Retry safety | Client supplies a stable request UUID; Stripe idempotency keys; unique Organization→Stripe Customer mapping |
+| Fulfillment | Checkout persists `PENDING` (not entitled). Success redirect is **not** authoritative. Verified Stripe webhooks (and optional owner sync) refetch Stripe and apply a provider-neutral snapshot |
+| Durable webhook idempotency | `billing_provider_events` unique `(provider, provider_event_id)` claimed in `REQUIRES_NEW`. `PROCESSED`/`IGNORED` replays after restart do not re-apply. `RECEIVED` remains retryable |
+| Stale state | Authoritative Stripe Subscription refetch; `provider_state_as_of` ignores equal/older snapshots; unknown provider statuses fail closed |
+| Invoice events | UAP IDs from Invoice `parent.subscription_details.metadata` (not Invoice.metadata) |
+| Event object | Prefer typed `getObject()`; if empty, `deserializeUnsafe()`. Failure is 502 so Stripe retries — not HTTP 200 ignore |
+| Webhook API version | Pin Dashboard endpoint to stripe-java train **`2026-08-26.dahlia`** |
+| Audit | `BILLING_CHECKOUT_INITIATED`, `BILLING_SUBSCRIPTION_SYNCHRONIZED`, `BILLING_SUBSCRIPTION_ACTIVATED` — plan/cadence/state only |
+
+### 32.2 HTTP API
+
+```text
+POST /api/v1/billing/organizations/{organizationId}/checkout-sessions
+{
+  "requestId": "UUID",
+  "planKey": "ORG_BAND_25 | ORG_BAND_75 | ORG_BAND_250",
+  "cadence": "MONTHLY | ANNUAL"
+}
+
+POST /api/v1/billing/organizations/{organizationId}/subscriptions/{subscriptionId}/sync
+{
+  "checkoutSessionId": "cs_..."
+}
+
+GET /api/v1/billing/organizations/{organizationId}
+
+POST /api/v1/billing/webhooks/stripe
+  Stripe-Signature: t=...,v1=...
+  raw JSON body (no CSRF; signature is the trust root)
+```
+
+Checkout/sync/GET: authenticated `ORG_OWNER`, CSRF on mutations. Webhook: unauthenticated, CSRF ignored, signature required.
+
+Webhook events handled (current Stripe names): `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Live-mode events are ignored.
+
+### 32.3 Schema (Flyway V36)
+
+- nullable `billing_cadence`, `provider_state_as_of` on `billing_subscriptions`
+- `billing_organization_customers` — one Stripe customer per Organization
+- `billing_provider_events` — provider, provider_event_id, event_type, received_at, processed_at, processing_status; unique `(provider, provider_event_id)`; **no raw payload**
+
+No Apple/Google processing tables.
+
+### 32.4 Explicit non-goals preserved
+
+- **No Slice C** entitlement enforcement or V1–V3 endpoint paywall
+- No Customer Portal, upgrade/downgrade/cancel/reactivate management (Slice E)
+- No dunning/grace automation/reconciliation beyond initial webhook sync (Slice F)
+- No individual Stripe / Apple / Google monetization (Slice G)
+- No Stripe Tax enablement, promotions, enterprise invoicing, or Connect
+- No live Stripe mutation, `main` merge, release, tag, or deployment
+
+### 32.5 Sandbox catalog and smoke (external)
+
+| Item | Result |
+| --- | --- |
+| Stripe MCP / authorized sandbox tooling in this Cursor session | **Not available** |
+| Local `UAP_BILLING_STRIPE_ENABLED` | `false` (no sandbox secret/price IDs in the authorized environment) |
+| Canonical 3 Products / 6 Prices | **Not created or verified in this session** — do not invent `prod_*` / `price_*` IDs |
+| Hosted Checkout smoke | **Not performed** |
+| 14-day trial remote proof | **Not performed** |
+| Signed webhook smoke | **Not performed** |
+| Live Stripe | **Untouched** |
+
+Slice B is **not complete for external certification** until an authorized DEVINO LABS LLC test-mode session records real Product/Price IDs and Checkout/webhook smoke.

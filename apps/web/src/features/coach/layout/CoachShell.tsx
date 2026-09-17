@@ -19,8 +19,14 @@ function resolveCoachTitle(pathname: string, teamId?: string): string {
   if (pathname.includes('/readiness')) {
     return 'Team readiness';
   }
-  if (pathname.includes('/invitations')) {
-    return 'Invitations';
+  if (pathname.includes('/billing/success')) {
+    return 'Checkout received';
+  }
+  if (pathname.includes('/billing/cancel')) {
+    return 'Checkout canceled';
+  }
+  if (pathname.includes('/billing')) {
+    return 'Organization billing';
   }
   if (teamId && pathname.includes('/roster')) {
     return 'Team roster';

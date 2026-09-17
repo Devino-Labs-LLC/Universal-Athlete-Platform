@@ -19,6 +19,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
 import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
@@ -53,6 +54,10 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 	private CommercialPlanKey planKey;
 
 	@Enumerated(EnumType.STRING)
+	@Column(name = "billing_cadence", length = 10)
+	private BillingCadence billingCadence;
+
+	@Enumerated(EnumType.STRING)
 	@Column(name = "lifecycle_state", nullable = false, length = 30)
 	private SubscriptionLifecycleState lifecycleState;
 
@@ -70,6 +75,9 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 
 	@Column(name = "grace_ends_at")
 	private Instant graceEndsAt;
+
+	@Column(name = "provider_state_as_of")
+	private Instant providerStateAsOf;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -93,12 +101,14 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 			UUID subjectId,
 			BillingProvider provider,
 			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
 			SubscriptionLifecycleState lifecycleState,
 			String providerCustomerRef,
 			String providerSubscriptionRef,
 			Instant trialEndsAt,
 			Instant currentPeriodEndsAt,
 			Instant graceEndsAt,
+			Instant providerStateAsOf,
 			Instant createdAt,
 			Instant updatedAt,
 			long version,
@@ -108,12 +118,14 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 		this.subjectId = subjectId;
 		this.provider = provider;
 		this.planKey = planKey;
+		this.billingCadence = billingCadence;
 		this.lifecycleState = lifecycleState;
 		this.providerCustomerRef = providerCustomerRef;
 		this.providerSubscriptionRef = providerSubscriptionRef;
 		this.trialEndsAt = trialEndsAt;
 		this.currentPeriodEndsAt = currentPeriodEndsAt;
 		this.graceEndsAt = graceEndsAt;
+		this.providerStateAsOf = providerStateAsOf;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.version = version;
@@ -152,6 +164,10 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 		return planKey;
 	}
 
+	BillingCadence getBillingCadence() {
+		return billingCadence;
+	}
+
 	SubscriptionLifecycleState getLifecycleState() {
 		return lifecycleState;
 	}
@@ -176,6 +192,10 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 		return graceEndsAt;
 	}
 
+	Instant getProviderStateAsOf() {
+		return providerStateAsOf;
+	}
+
 	Instant getCreatedAt() {
 		return createdAt;
 	}
@@ -195,6 +215,7 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 			Instant trialEndsAt,
 			Instant currentPeriodEndsAt,
 			Instant graceEndsAt,
+			Instant providerStateAsOf,
 			Instant updatedAt) {
 		this.lifecycleState = lifecycleState;
 		this.providerCustomerRef = providerCustomerRef;
@@ -202,6 +223,7 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 		this.trialEndsAt = trialEndsAt;
 		this.currentPeriodEndsAt = currentPeriodEndsAt;
 		this.graceEndsAt = graceEndsAt;
+		this.providerStateAsOf = providerStateAsOf;
 		this.updatedAt = updatedAt;
 	}
 

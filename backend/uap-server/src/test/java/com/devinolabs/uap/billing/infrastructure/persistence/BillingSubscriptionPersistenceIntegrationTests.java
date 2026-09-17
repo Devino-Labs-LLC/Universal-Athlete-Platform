@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -22,10 +23,18 @@ import com.devinolabs.uap.billing.api.BillingSubjectType;
 import com.devinolabs.uap.billing.api.CommercialCapability;
 import com.devinolabs.uap.billing.api.EntitlementPort;
 import com.devinolabs.uap.billing.application.EntitlementQueryService;
+import com.devinolabs.uap.billing.application.OrganizationBillingCustomerRepository;
+import com.devinolabs.uap.billing.application.ProviderEventInbox;
+import com.devinolabs.uap.billing.application.ProviderEventReceipt;
 import com.devinolabs.uap.billing.application.SubscriptionRepository;
+import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.OrganizationBillingCustomer;
+import com.devinolabs.uap.billing.domain.ProviderCommercialStatus;
+import com.devinolabs.uap.billing.domain.ProviderEventProcessingStatus;
+import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
@@ -44,6 +53,12 @@ class BillingSubscriptionPersistenceIntegrationTests {
 
 	@Autowired
 	private EntitlementQueryService entitlementQueryService;
+
+	@Autowired
+	private OrganizationBillingCustomerRepository customerRepository;
+
+	@Autowired
+	private ProviderEventInbox providerEventInbox;
 
 	@Test
 	void persistsAndRehydratesSubscriptionRoundTrip() {
@@ -138,6 +153,68 @@ class BillingSubscriptionPersistenceIntegrationTests {
 
 		assertThat(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId)).hasSize(1);
 		assertThat(entitlementQueryService.findEffectiveIndividualSubscriptions(accountId)).hasSize(1);
+	}
+
+	@Test
+	void persistsStripeCheckoutCadenceProviderClockAndOrganizationCustomer() {
+		UUID organizationId = UUID.randomUUID();
+		Subscription subscription = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.organization(organizationId),
+				CommercialPlanKey.ORG_BAND_250,
+				BillingCadence.MONTHLY,
+				Clock.fixed(T0, ZoneOffset.UTC));
+		Instant providerAsOf = T0.plusSeconds(1);
+		subscription.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_org_250",
+						"sub_org_250",
+						ProviderCommercialStatus.TRIALING,
+						false,
+						T0.plusSeconds(14 * 24 * 60 * 60),
+						T0.plusSeconds(30 * 24 * 60 * 60),
+						providerAsOf),
+				Clock.fixed(T0, ZoneOffset.UTC));
+		customerRepository.save(OrganizationBillingCustomer.stripe(organizationId, "cus_org_250", T0));
+
+		Subscription loaded = subscriptionRepository.findById(subscriptionRepository.save(subscription).id())
+				.orElseThrow();
+
+		assertThat(loaded.billingCadence()).isEqualTo(BillingCadence.MONTHLY);
+		assertThat(loaded.providerStateAsOf()).isEqualTo(providerAsOf);
+		assertThat(customerRepository.findByOrganizationId(organizationId))
+				.get()
+				.extracting(OrganizationBillingCustomer::providerCustomerRef)
+				.isEqualTo("cus_org_250");
+	}
+
+	@Test
+	void organizationCustomerMappingIsOnePerOrganizationAndProviderReference() {
+		UUID organizationId = UUID.randomUUID();
+		customerRepository.save(OrganizationBillingCustomer.stripe(organizationId, "cus_unique_org", T0));
+
+		assertThatThrownBy(() -> customerRepository.save(
+				OrganizationBillingCustomer.stripe(organizationId, "cus_second_org", T0)))
+				.isInstanceOf(DataIntegrityViolationException.class);
+		assertThatThrownBy(() -> customerRepository.save(
+				OrganizationBillingCustomer.stripe(UUID.randomUUID(), "cus_unique_org", T0)))
+				.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	@Test
+	void providerEventInboxClaimsOnceAndIgnoresReplayAfterProcessing() {
+		Optional<ProviderEventReceipt> first = providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_persist_1", "checkout.session.completed", T0);
+		assertThat(first).isPresent();
+		providerEventInbox.complete(first.orElseThrow().id(), ProviderEventProcessingStatus.PROCESSED, T0);
+
+		assertThat(providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_persist_1", "checkout.session.completed", T0.plusSeconds(30)))
+				.isEmpty();
+		assertThat(providerEventInbox.find(BillingProvider.STRIPE, "evt_persist_1"))
+				.get()
+				.extracting(ProviderEventReceipt::processingStatus)
+				.isEqualTo(ProviderEventProcessingStatus.PROCESSED);
 	}
 
 	@TestConfiguration

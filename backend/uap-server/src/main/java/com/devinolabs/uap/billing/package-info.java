@@ -1,3 +1,7 @@
 @org.springframework.modulith.ApplicationModule(
-		allowedDependencies = {})
+		allowedDependencies = {
+				"identity :: auth",
+				"organization :: membership",
+				"audit :: writer"
+		})
 package com.devinolabs.uap.billing;
