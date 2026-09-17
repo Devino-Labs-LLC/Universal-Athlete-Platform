@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OrganizationBillingPage } from '@/features/coach/pages/OrganizationBillingPage';
-import { BillingCheckoutSuccessPage } from '@/features/coach/pages/BillingCheckoutReturnPages';
+import { BillingCheckoutCancelPage, BillingCheckoutSuccessPage } from '@/features/coach/pages/BillingCheckoutReturnPages';
 import { renderWithProviders, screen, userEvent } from '@/test/utils';
 
 const createCheckout = vi.fn();
@@ -50,9 +50,9 @@ describe('Organization billing acquisition', () => {
     );
   });
 
-  it('success return does not claim the subscription is activated', () => {
-    renderWithProviders(<BillingCheckoutSuccessPage />);
-    expect(screen.getByText(/Payment setup received/i)).toBeInTheDocument();
+  it('cancel return does not claim a subscription change', () => {
+    renderWithProviders(<BillingCheckoutCancelPage />);
+    expect(screen.getByText(/Checkout was not completed/i)).toBeInTheDocument();
     expect(screen.queryByText(/Subscription activated/i)).not.toBeInTheDocument();
   });
 });

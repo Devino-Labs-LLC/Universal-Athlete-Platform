@@ -20,7 +20,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -128,7 +134,7 @@ class IdentitySecurityConfiguration {
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(csrfTokenRepository)
 						.csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
-						.ignoringRequestMatchers(REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH, STRIPE_WEBHOOK_PATH))
+						.requireCsrfProtectionMatcher(csrfProtectionExceptPublicAuthAndStripeWebhook()))
 				.cors(Customizer.withDefaults())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.httpBasic(AbstractHttpConfigurer::disable)
@@ -157,6 +163,19 @@ class IdentitySecurityConfiguration {
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
+	}
+
+	/**
+	 * CSRF remains enabled. Public identity POSTs and the Stripe webhook (signature-authenticated)
+	 * are excluded via an allowlist matcher rather than {@code csrf.disable()}.
+	 */
+	static RequestMatcher csrfProtectionExceptPublicAuthAndStripeWebhook() {
+		RequestMatcher csrfExempt = new OrRequestMatcher(
+				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, REGISTER_PATH),
+				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, VERIFY_EMAIL_PATH),
+				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, LOGIN_PATH),
+				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, STRIPE_WEBHOOK_PATH));
+		return new AndRequestMatcher(CsrfFilter.DEFAULT_CSRF_MATCHER, new NegatedRequestMatcher(csrfExempt));
 	}
 
 	private static OncePerRequestFilter csrfCookieFilter() {
