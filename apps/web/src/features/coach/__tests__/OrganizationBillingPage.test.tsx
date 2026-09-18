@@ -50,6 +50,12 @@ describe('Organization billing acquisition', () => {
     );
   });
 
+  it('success return does not claim the subscription is activated', () => {
+    renderWithProviders(<BillingCheckoutSuccessPage />);
+    expect(screen.getByText(/Payment setup received/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Subscription activated/i)).not.toBeInTheDocument();
+  });
+
   it('cancel return does not claim a subscription change', () => {
     renderWithProviders(<BillingCheckoutCancelPage />);
     expect(screen.getByText(/Checkout was not completed/i)).toBeInTheDocument();
