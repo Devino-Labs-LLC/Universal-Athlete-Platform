@@ -186,7 +186,7 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		catch (SignatureVerificationException ex) {
 			throw new InvalidWebhookSignatureException();
 		}
-		catch (IllegalStateException ex) {
+		catch (RuntimeException ex) {
 			throw new BillingProviderUnavailableException(ex);
 		}
 	}

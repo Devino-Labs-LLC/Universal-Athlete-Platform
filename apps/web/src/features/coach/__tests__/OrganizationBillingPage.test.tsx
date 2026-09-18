@@ -50,6 +50,25 @@ describe('Organization billing acquisition', () => {
     );
   });
 
+  it('submits the selected annual plan and surfaces checkout failure', async () => {
+    createCheckout.mockRejectedValue(new Error('Unable to start checkout.'));
+    renderWithProviders(<OrganizationBillingPage />);
+
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'ORG_BAND_75');
+    await userEvent.click(screen.getByRole('radio', { name: /Annual/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Start Checkout' }));
+
+    expect(createCheckout).toHaveBeenCalledWith(
+      { axios: {} },
+      'org-1',
+      expect.objectContaining({
+        planKey: 'ORG_BAND_75',
+        cadence: 'ANNUAL',
+      }),
+    );
+    expect(await screen.findByText('Unable to start checkout.')).toBeInTheDocument();
+  });
+
   it('success return does not claim the subscription is activated', () => {
     renderWithProviders(<BillingCheckoutSuccessPage />);
     expect(screen.getByText(/Payment setup received/i)).toBeInTheDocument();

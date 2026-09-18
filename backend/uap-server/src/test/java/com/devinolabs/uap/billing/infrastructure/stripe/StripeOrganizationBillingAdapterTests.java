@@ -76,6 +76,20 @@ class StripeOrganizationBillingAdapterTests {
 	}
 
 	@Test
+	void nativeStripeStatusesMapUnknownWhenMissing() {
+		assertThat(StripeOrganizationBillingAdapter.mapStatus(null))
+				.isEqualTo(ProviderCommercialStatus.UNKNOWN);
+	}
+
+	@Test
+	void invoiceMetadataFallsBackToInvoiceMetadataWhenParentIsAbsent() {
+		Invoice invoice = new Invoice();
+		invoice.setMetadata(java.util.Map.of("uap_organization_id", "from-invoice"));
+		assertThat(StripeOrganizationBillingAdapter.invoiceMetadata(invoice))
+				.containsEntry("uap_organization_id", "from-invoice");
+	}
+
+	@Test
 	void invoiceMetadataPrefersSubscriptionDetailsOverInvoiceMetadata() {
 		UUID organizationId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
 		UUID subscriptionId = UUID.fromString("11111111-2222-3333-4444-555555555555");
@@ -106,6 +120,11 @@ class StripeOrganizationBillingAdapterTests {
 		String header = signedHeader(payload, secret, timestamp);
 		assertThatThrownBy(() -> Webhook.constructEvent(payload, header, "whsec_other_secret"))
 				.isInstanceOf(SignatureVerificationException.class);
+	}
+
+	static String signedWebhookHeader(String payload, String secret)
+			throws NoSuchAlgorithmException, InvalidKeyException {
+		return signedHeader(payload, secret, Instant.now().getEpochSecond());
 	}
 
 	private static String signedHeader(String payload, String secret, long timestamp)

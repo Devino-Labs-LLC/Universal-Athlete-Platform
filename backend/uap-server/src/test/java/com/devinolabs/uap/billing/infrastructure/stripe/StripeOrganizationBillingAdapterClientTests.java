@@ -142,6 +142,100 @@ class StripeOrganizationBillingAdapterClientTests {
 				.isInstanceOf(BillingProviderUnavailableException.class);
 	}
 
+	@Test
+	void createCheckoutSessionRejectsLiveMode() throws Exception {
+		Session live = new Session();
+		live.setId("cs_live");
+		live.setUrl("https://checkout.stripe.com/cs_live");
+		live.setLivemode(true);
+		when(stripeClient.v1().checkout().sessions().create(any(SessionCreateParams.class), any())).thenReturn(live);
+
+		assertThatThrownBy(() -> adapter.createCheckoutSession(
+				organizationId, subscriptionId, "cus_sandbox", CommercialPlanKey.ORG_BAND_75, BillingCadence.ANNUAL))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("sandbox");
+	}
+
+	@Test
+	void fetchCheckoutSubscriptionRejectsMetadataMismatchAndLiveMode() throws Exception {
+		Session live = checkoutSession();
+		live.setLivemode(true);
+		when(stripeClient.v1().checkout().sessions().retrieve("cs_test_1")).thenReturn(live);
+		assertThatThrownBy(() -> adapter.fetchCheckoutSubscription(
+				organizationId,
+				subscriptionId,
+				"cs_test_1",
+				"cus_sandbox",
+				CommercialPlanKey.ORG_BAND_75,
+				BillingCadence.ANNUAL))
+				.isInstanceOf(IllegalStateException.class);
+
+		Session mismatched = checkoutSession();
+		mismatched.setCustomer("cus_other");
+		when(stripeClient.v1().checkout().sessions().retrieve("cs_test_1")).thenReturn(mismatched);
+		assertThatThrownBy(() -> adapter.fetchCheckoutSubscription(
+				organizationId,
+				subscriptionId,
+				"cs_test_1",
+				"cus_sandbox",
+				CommercialPlanKey.ORG_BAND_75,
+				BillingCadence.ANNUAL))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("customer");
+	}
+
+	@Test
+	void fetchAuthoritativeSnapshotUsesCheckoutSessionWhenPresent() throws Exception {
+		when(stripeClient.v1().checkout().sessions().retrieve("cs_test_1")).thenReturn(checkoutSession());
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("trialing"));
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_checkout",
+				"checkout.session.completed",
+				false,
+				NOW.plusSeconds(10),
+				"cs_test_1",
+				"sub_test_1",
+				organizationId,
+				subscriptionId);
+
+		assertThat(adapter.fetchAuthoritativeSnapshot(event).providerSubscriptionRef()).isEqualTo("sub_test_1");
+	}
+
+	@Test
+	void verifyWebhookRejectsInvalidSignatureAndUnsignedPayload() {
+		assertThatThrownBy(() -> adapter.verifyWebhook("{}".getBytes(), "t=1,v1=deadbeef"))
+				.isInstanceOf(InvalidWebhookSignatureException.class);
+		assertThatThrownBy(() -> adapter.verifyWebhook(new byte[0], "sig"))
+				.isInstanceOf(InvalidWebhookSignatureException.class);
+	}
+
+	@Test
+	void verifyWebhookAcceptsSignedSubscriptionEvent() throws Exception {
+		String payload = """
+				{"id":"evt_test_1","object":"event","api_version":"2026-08-26.dahlia","created":1757764800,"type":"customer.subscription.updated","livemode":false,"data":{"object":{"id":"sub_test_1","object":"subscription","customer":"cus_sandbox","status":"active","livemode":false,"metadata":{"uap_organization_id":"%s","uap_subscription_id":"%s"}}}}
+				""".formatted(organizationId, subscriptionId).strip();
+		String header = StripeOrganizationBillingAdapterTests.signedWebhookHeader(
+				payload, StripeBillingPropertiesTests.validProperties().getWebhookSecret());
+
+		assertThat(adapter.verifyWebhook(payload.getBytes(), header)).satisfies(event -> {
+			assertThat(event.eventId()).isEqualTo("evt_test_1");
+			assertThat(event.eventType()).isEqualTo("customer.subscription.updated");
+			assertThat(event.providerSubscriptionRef()).isEqualTo("sub_test_1");
+			assertThat(event.organizationId()).isEqualTo(organizationId);
+			assertThat(event.subscriptionId()).isEqualTo(subscriptionId);
+			assertThat(event.liveMode()).isFalse();
+		});
+	}
+
+	@Test
+	void verifyWebhookSignedEventWithoutObjectIsProviderUnavailable() throws Exception {
+		String payload = "{\"id\":\"evt_empty\"}";
+		String header = StripeOrganizationBillingAdapterTests.signedWebhookHeader(
+				payload, StripeBillingPropertiesTests.validProperties().getWebhookSecret());
+		assertThatThrownBy(() -> adapter.verifyWebhook(payload.getBytes(), header))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+	}
+
 	private Session checkoutSession() {
 		Session session = new Session();
 		session.setId("cs_test_1");

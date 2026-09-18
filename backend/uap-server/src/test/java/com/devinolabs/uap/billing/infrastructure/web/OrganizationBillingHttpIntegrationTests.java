@@ -225,6 +225,46 @@ class OrganizationBillingHttpIntegrationTests {
 	}
 
 	@Test
+	void checkoutValidationConflictAndOpenRelationshipReturnSafeCodes() throws Exception {
+		UUID ownerId = UUID.randomUUID();
+		UUID organizationId = createOrganizationUseCase.execute(AccountId.of(ownerId), "Billing Conflict Org")
+				.id().value();
+		UUID requestId = UUID.randomUUID();
+
+		mockMvc.perform(post(checkoutPath(organizationId))
+					.with(authentication(authFor(ownerId)))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"planKey\":\"ORG_BAND_25\",\"cadence\":\"MONTHLY\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("requestId"));
+
+		mockMvc.perform(post(checkoutPath(organizationId))
+					.with(authentication(authFor(ownerId)))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(checkoutBody(requestId, "ORG_BAND_25", "MONTHLY")))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(post(checkoutPath(organizationId))
+					.with(authentication(authFor(ownerId)))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(checkoutBody(UUID.randomUUID(), "ORG_BAND_75", "MONTHLY")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("BILLING_CHECKOUT_IN_PROGRESS"));
+
+		mockMvc.perform(post(checkoutPath(organizationId))
+					.with(authentication(authFor(ownerId)))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(checkoutBody(requestId, "ORG_BAND_75", "MONTHLY")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("BILLING_REQUEST_CONFLICT"));
+	}
+
+	@Test
 	void providerFailureReturnsSafeErrorAndRollsBackPendingSubscription() throws Exception {
 		UUID ownerId = UUID.randomUUID();
 		UUID organizationId = createOrganizationUseCase.execute(AccountId.of(ownerId), "Provider Failure Org")

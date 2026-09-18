@@ -22,10 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -134,7 +131,7 @@ class IdentitySecurityConfiguration {
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(csrfTokenRepository)
 						.csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
-						.requireCsrfProtectionMatcher(csrfProtectionExceptPublicAuthAndStripeWebhook()))
+						.ignoringRequestMatchers(REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH))
 				.cors(Customizer.withDefaults())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.httpBasic(AbstractHttpConfigurer::disable)
@@ -159,6 +156,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(ME_INVITATIONS_API).authenticated()
 						.requestMatchers(BILLING_API).authenticated()
 						.anyRequest().denyAll())
+				.addFilterBefore(new StripeWebhookCsrfSkipFilter(), CsrfFilter.class)
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -166,16 +164,25 @@ class IdentitySecurityConfiguration {
 	}
 
 	/**
-	 * CSRF remains enabled. Public identity POSTs and the Stripe webhook (signature-authenticated)
-	 * are excluded via an allowlist matcher rather than {@code csrf.disable()}.
+	 * Stripe signs webhooks; CSRF cookies cannot be sent by Stripe. CSRF stays enabled for the
+	 * rest of the API. This filter marks the webhook request skipped before {@link CsrfFilter}
+	 * without {@code csrf.disable()} or {@code requireCsrfProtectionMatcher}.
 	 */
-	static RequestMatcher csrfProtectionExceptPublicAuthAndStripeWebhook() {
-		RequestMatcher csrfExempt = new OrRequestMatcher(
-				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, REGISTER_PATH),
-				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, VERIFY_EMAIL_PATH),
-				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, LOGIN_PATH),
-				PathPatternRequestMatcher.pathPattern(HttpMethod.POST, STRIPE_WEBHOOK_PATH));
-		return new AndRequestMatcher(CsrfFilter.DEFAULT_CSRF_MATCHER, new NegatedRequestMatcher(csrfExempt));
+	static final class StripeWebhookCsrfSkipFilter extends OncePerRequestFilter {
+
+		private static final RequestMatcher STRIPE_WEBHOOK_POST = PathPatternRequestMatcher.pathPattern(
+				HttpMethod.POST, STRIPE_WEBHOOK_PATH);
+
+		@Override
+		protected void doFilterInternal(
+				HttpServletRequest request,
+				HttpServletResponse response,
+				FilterChain filterChain) throws ServletException, IOException {
+			if (STRIPE_WEBHOOK_POST.matches(request)) {
+				CsrfFilter.skipRequest(request);
+			}
+			filterChain.doFilter(request, response);
+		}
 	}
 
 	private static OncePerRequestFilter csrfCookieFilter() {
