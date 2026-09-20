@@ -151,6 +151,39 @@ class OrganizationCommercialEntitlementHttpIntegrationTests {
 	}
 
 	@Test
+	void orgAdminCannotCreateTeamWhenOrganizationIsActive() throws Exception {
+		VerifiedAccount owner = accounts.registerVerified("c-2c-owner");
+		VerifiedAccount admin = accounts.registerVerified("c-2c-admin");
+		String orgId = ConsentHttpFixtures.createOrg(mockMvc, owner.accountId(), "Role Org");
+		OrganizationSubscriptionFixtures.saveActiveOrganization(
+				subscriptionRepository, UUID.fromString(orgId), clock);
+		MvcResult invite = mockMvc.perform(post("/api/v1/organizations/" + orgId + "/invitations")
+						.with(ConsentHttpFixtures.accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "ORG_ADMIN" }
+								""".formatted(admin.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		ConsentHttpFixtures.acceptInvite(
+				mockMvc,
+				admin.accountId(),
+				JsonPath.read(invite.getResponse().getContentAsString(), "$.rawToken"));
+
+		mockMvc.perform(post("/api/v1/organizations/" + orgId + "/teams")
+						.with(ConsentHttpFixtures.accountAuth(admin.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "name": "Admin Team" }
+								"""))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ORGANIZATION_NOT_FOUND"))
+				.andExpect(jsonPath("$.code").value(not(CommercialEntitlementRequiredException.CODE)));
+	}
+
+	@Test
 	void authorizedWithoutSubscriptionCreatesNoTeamAndReturnsCommercial402() throws Exception {
 		VerifiedAccount owner = accounts.registerVerified("c-nosub-owner");
 		String orgId = ConsentHttpFixtures.createOrg(mockMvc, owner.accountId(), "No Sub Org");

@@ -1,6 +1,7 @@
 package com.devinolabs.uap.training.infrastructure.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -145,6 +146,13 @@ class TrainingCommercialEntitlementHttpIntegrationTests {
 				.andExpect(status().isOk());
 
 		expire(fx);
+		mockMvc.perform(get(assignmentPath(fx)).with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isPaymentRequired())
+				.andExpect(jsonPath("$.code").value(CommercialEntitlementRequiredException.CODE));
+		mockMvc.perform(get(assignmentPath(fx) + "/" + assignmentId)
+						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isPaymentRequired())
+				.andExpect(jsonPath("$.code").value(CommercialEntitlementRequiredException.CODE));
 		mockMvc.perform(patch(assignmentPath(fx) + "/" + assignmentId)
 						.with(ConsentHttpFixtures.accountAuth(fx.coach.accountId()))
 						.with(csrf())
@@ -171,6 +179,62 @@ class TrainingCommercialEntitlementHttpIntegrationTests {
 								"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("DECLINED"));
+	}
+
+	@Test
+	void unauthenticatedGetsNeverReturn402WhetherOrgIsPaidOrNot() throws Exception {
+		Fixture fx = seedEntitledCoachTeam("c-unauth");
+		assertUnauthenticatedGetNever402(overviewPath(fx));
+		assertUnauthenticatedGetNever402("/api/v1/teams/" + fx.teamId + "/readiness");
+		assertUnauthenticatedGetNever402(assignmentPath(fx));
+		expire(fx);
+		assertUnauthenticatedGetNever402(overviewPath(fx));
+		assertUnauthenticatedGetNever402("/api/v1/teams/" + fx.teamId + "/readiness");
+		assertUnauthenticatedGetNever402(assignmentPath(fx));
+	}
+
+	@Test
+	void insufficientRoleWithActiveOrgNeverReturns402() throws Exception {
+		Fixture fx = seedEntitledCoachTeam("c-role");
+		grant(fx.athlete, fx.teamId, "TRAINING_COLLABORATION");
+		VerifiedAccount teamAdmin = accounts.registerVerified("c-role-admin");
+		MvcResult adminInvite = mockMvc.perform(post("/api/v1/teams/" + fx.teamId + "/invitations")
+						.with(ConsentHttpFixtures.accountAuth(fx.owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "email": "%s", "role": "TEAM_ADMIN" }
+								""".formatted(teamAdmin.email())))
+				.andExpect(status().isCreated())
+				.andReturn();
+		ConsentHttpFixtures.acceptInvite(
+				mockMvc,
+				teamAdmin.accountId(),
+				JsonPath.read(adminInvite.getResponse().getContentAsString(), "$.rawToken"));
+
+		mockMvc.perform(post(assignmentPath(fx))
+						.with(ConsentHttpFixtures.accountAuth(teamAdmin.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(assignmentBody("admin-denied", "Tempo")))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TRAINING_ASSIGNMENT_NOT_FOUND"))
+				.andExpect(jsonPath("$.code").value(not(CommercialEntitlementRequiredException.CODE)));
+		mockMvc.perform(get("/api/v1/teams/" + fx.teamId + "/readiness")
+						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("TEAM_READINESS_NOT_FOUND"))
+				.andExpect(jsonPath("$.code").value(not(CommercialEntitlementRequiredException.CODE)));
+	}
+
+	@Test
+	void unpaidOverviewWithoutSectionConsentReturns402NotNotShared() throws Exception {
+		Fixture fx = seedEntitledCoachTeam("c-ov-8e");
+		expire(fx);
+		mockMvc.perform(get(overviewPath(fx)).with(ConsentHttpFixtures.accountAuth(fx.coach.accountId())))
+				.andExpect(status().isPaymentRequired())
+				.andExpect(jsonPath("$.code").value(CommercialEntitlementRequiredException.CODE))
+				.andExpect(jsonPath("$.readinessCategory").doesNotExist());
 	}
 
 	@Test
@@ -225,6 +289,23 @@ class TrainingCommercialEntitlementHttpIntegrationTests {
 		expire(fx);
 		LocalDate today = LocalDate.now(clock);
 
+		MvcResult granted = mockMvc.perform(post("/api/v1/athletes/me/consents")
+						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{ "teamId": "%s", "scopes": ["READINESS_CATEGORY"] }
+								""".formatted(fx.teamId)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String consentId = JsonPath.read(granted.getResponse().getContentAsString(), "$.id");
+		mockMvc.perform(get("/api/v1/athletes/me/consents")
+						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId())))
+				.andExpect(status().isOk());
+		mockMvc.perform(post("/api/v1/athletes/me/consents/" + consentId + "/revoke")
+						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
 		mockMvc.perform(post("/api/v1/athletes/me/consents")
 						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId()))
 						.with(csrf())
@@ -233,9 +314,6 @@ class TrainingCommercialEntitlementHttpIntegrationTests {
 								{ "teamId": "%s", "scopes": ["READINESS_CATEGORY"] }
 								""".formatted(fx.teamId)))
 				.andExpect(status().isCreated());
-		mockMvc.perform(get("/api/v1/athletes/me/consents")
-						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId())))
-				.andExpect(status().isOk());
 		mockMvc.perform(get("/api/v1/athletes/me/transparency")
 						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId())))
 				.andExpect(status().isOk());
@@ -269,6 +347,13 @@ class TrainingCommercialEntitlementHttpIntegrationTests {
 						.with(ConsentHttpFixtures.accountAuth(fx.athlete.accountId()))
 						.with(csrf()))
 				.andExpect(status().isOk());
+	}
+
+	private void assertUnauthenticatedGetNever402(String path) throws Exception {
+		mockMvc.perform(get(path))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+				.andExpect(jsonPath("$.code").value(not(CommercialEntitlementRequiredException.CODE)));
 	}
 
 	private Fixture seedEntitledCoachTeam(String prefix) throws Exception {
