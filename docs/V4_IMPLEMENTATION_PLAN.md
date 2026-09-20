@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** `212f3f44bfe4c8709b636a7839d83c0a978edaa3`  
-**`develop`:** not equal to `main` (docs-only ahead). Pre-Slice-C matrix lock `c64ba79eae5d4199ac8a1c7845ea4debfb79dcc5`; this file continues on `develop`.  
+**`develop`:** not equal to `main` (docs-only ahead). Matrix lock `c64ba79…`; clarification `cedf1049a1fdf2c023114cc3de609963380f2da1`.  
 **Production schema:** Flyway **V36** (inferred — see §33)  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **AWAITING EXPLICIT PRODUCT OWNER APPROVAL** (see §34). Slice C enforcement is **not** authorized. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). Slice C **runtime implementation** is authorized only after this rollout lock is committed. **Production activation** of enforcement remains a later explicit commercial-launch gate. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -551,7 +551,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | --- | --- |
 | **A** | Commercial foundation — `billing` module, ports, entitlement model, catalog keys (no live Stripe mutation unless separately authorized) |
 | **B** | Stripe Organization subscription — sandbox catalog from §31 lock, Checkout, customer mapping, lifecycle sync |
-| **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix (not started; requires explicit implementation authorization) |
+| **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
 | **D** | Bands & usage — active-athlete band enforcement |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
 | **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery |
@@ -998,16 +998,17 @@ Production Hibernate `ddl-auto=validate` plus billing JPA entities that are **no
 | No V1–V3 paywall | Surfaces remain auth/consent bounded, not entitlement-gated |
 | Slice C | **Not started.** `EntitlementPort` / `EntitlementQueryService` unused outside the billing module and billing tests |
 
-V4 is **not** complete. Do not begin Slice C until explicitly authorized.
+V4 is **not** complete. Slice C **runtime** is authorized only after §34.13 is on `develop`. Production **activation** (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`) is a later commercial-launch gate.
 
 ---
 
 ## 34. Pre-Slice-C Organization entitlement matrix (Product Owner lock)
 
-**Status:** **AWAITING EXPLICIT PRODUCT OWNER APPROVAL** — docs only.  
-**Does not authorize Slice C implementation.** No runtime enforcement, Flyway, Stripe, deployment, or Slice D.
+**Status:** **PRODUCT OWNER-APPROVED** matrix + **rollout policy locked**. Docs only in this subsection’s originating commit.  
+**Slice C runtime implementation** is authorized **after** this rollout lock is committed on `develop`.  
+**Does not authorize** production enforcement activation, live Stripe, Flyway beyond existing V36, Slice D, or commercial launch.
 
-**Refs:** `main` = `212f3f44bfe4c8709b636a7839d83c0a978edaa3` (Slice B **PRODUCTION VERIFIED**, Stripe disabled in production). `develop` docs tip at lock = `c64ba79eae5d4199ac8a1c7845ea4debfb79dcc5`.
+**Refs:** `main` = `212f3f44bfe4c8709b636a7839d83c0a978edaa3` (Slice B **PRODUCTION VERIFIED**, Stripe disabled in production). Matrix lock `c64ba79eae5d4199ac8a1c7845ea4debfb79dcc5`; clarification `cedf1049a1fdf2c023114cc3de609963380f2da1`.
 
 ### 34.1 Principles
 
@@ -1083,6 +1084,8 @@ At exactly the end instant → not entitled → 402.
 | Side effects | Gated mutations that 402 must write **nothing** |
 
 Clients must key on **`code`**, not status category alone (web `errorMapper` has no 402 branch today).
+
+**402 applies only when `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`** (see §34.13). With the default `false`, gated surfaces keep pre-Slice-C V3 responses.
 
 ### 34.6 Durable free-vs-gated matrix
 
@@ -1269,7 +1272,8 @@ Failed payment restricts gated **surfaces** only (V4 §22.1 #8). Never delete me
 - No Slice D band / seat enforcement
 - No Customer Portal / dunning product work
 - No live Stripe mutation from this lock
-- No runtime code in this task
+- No production enforcement **activation** in the initial Slice C promotion
+- No Slice D
 
 ### 34.12 Agent reviews
 
@@ -1283,4 +1287,47 @@ Failed payment restricts gated **surfaces** only (V4 §22.1 #8). Never delete me
 | Athlete Intelligence / Data | **PASS** — surface gates only; math/consent/membership commercially blind |
 | Documentation / Release | **PASS** — §1 reframed as planning baseline; §34 is the durable lock |
 
-**Slice C implementation remains unauthorized** until Product Owner explicitly approves this matrix **and** authorizes enforcement work.
+**§34 matrix is Product Owner-approved.** Slice C **runtime** is authorized only after **§34.13** is committed. **Deployment of entitlement code ≠ activation of commercial enforcement.** Production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true` remains a later explicit commercial-launch gate.
+
+### 34.13 Rollout: deploy code without activating enforcement
+
+**Rule:** `DEPLOYMENT OF ENTITLEMENT CODE ≠ ACTIVATION OF COMMERCIAL ENFORCEMENT`.
+
+Production currently has Stripe **disabled** and no live Organization subscriptions. Deploying Slice C product-edge 402s with no rollout control would commercialize every otherwise-authorized Organization that lacks an entitlement row. That must not happen merely because Slice C code reaches production before commercial launch.
+
+#### Server-owned flag
+
+| Item | Lock |
+| --- | --- |
+| Name | `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` |
+| Owner | Server configuration only. **No client** may set, send, or override it |
+| Default | **`false`** |
+| `false` | Product-edge entitlement **enforcement is inactive**. Existing V1–V3 behavior unchanged. `EntitlementPort` / domain lifecycle still exist and **may be tested**. Billing HTTP remains under existing Slice B rules (`UAP_BILLING_STRIPE_ENABLED`, owner authZ). **Never 402** merely because a subscription row is absent |
+| `true` | §34 server-side enforcement is **active**. After AuthN → CSRF → V3 authZ / consent-for-existence, otherwise-authorized actors without the capability receive **402** `COMMERCIAL_ENTITLEMENT_REQUIRED`. Fail closed per §34 |
+
+Do **not** couple this flag to `UAP_BILLING_STRIPE_ENABLED`.
+
+| Flag | Question |
+| --- | --- |
+| `UAP_BILLING_STRIPE_ENABLED` | May this runtime use the Stripe **provider adapter**? |
+| `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` | Do **product edges** enforce commercial capability? |
+
+Stripe enabled must **not** silently turn enforcement on. Enforcement enabled must **not** require Stripe at startup.
+
+#### Tests (Slice C)
+
+- All §34 authZ × entitlement cases run with **enforcement=`true`**. Default-off must not make those tests vacuous.
+- Regression with **enforcement=`false`**: gated surfaces keep pre-Slice-C V3 status/`code`; **never 402** solely because a subscription is absent.
+
+#### Production
+
+| Stage | Enforcement flag | Meaning |
+| --- | --- | --- |
+| Initial Slice C production promotion | **`false`** (or absent → default false) | Code may deploy; production regression without premature commercialization |
+| Commercial launch | **`true`** only after an **explicit** later gate | Not authorized by this lock |
+
+Commercial-launch gate (document only; **do not authorize** here) must require at least: live billing explicitly authorized; live Stripe configuration complete; live Product/Price catalog approved; live webhook destination configured; tax/classification launch review complete; billing management/recovery sufficiently operable; entitlement matrix verified; no sandbox credentials in production.
+
+#### Safety
+
+This flag must **not**: alter membership, consent, readiness math, or Team Readiness privacy; create fake entitlements; grant billing authority; expose Stripe/provider identity to product modules; be client-controlled; enable itself because Stripe is enabled.

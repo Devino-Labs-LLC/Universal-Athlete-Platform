@@ -18,7 +18,7 @@ Organization commercial entitlements gate paid org/coach product surfaces (candi
 
 **Final capability enum/matrix** is defined in Slice A/C before enforcement — this ADR locks the model, not every capability string.
 
-The Organization free-vs-gated matrix is now recorded in `docs/V4_IMPLEMENTATION_PLAN.md` **§34**. Slice C **enforcement** remains unauthorized until Product Owner explicitly approves implementation. `INDIVIDUAL_PREMIUM` is not enforced in Slice C (Slice G).
+The Organization free-vs-gated matrix is recorded in `docs/V4_IMPLEMENTATION_PLAN.md` **§34** and is **Product Owner-approved**. Product-edge 402 enforcement is additionally gated by server-owned `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` (default **false**; independent of `UAP_BILLING_STRIPE_ENABLED`). Deploying Slice C code does **not** activate commercial enforcement. Production `true` requires a later explicit commercial-launch gate. `INDIVIDUAL_PREMIUM` is not enforced in Slice C (Slice G).
 
 ## Consequences
 
