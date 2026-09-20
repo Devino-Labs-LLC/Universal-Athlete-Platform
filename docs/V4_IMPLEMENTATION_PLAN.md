@@ -1202,7 +1202,7 @@ No coach HTTP to another athlete’s history. Coach projection is **E** only.
 
 Gated families: team create/update/archive; org/team **invite create**; coach assignment list/get/create/update; coach overview; Team Readiness.
 
-For each family, Slice C tests must include at least:
+For each family, Slice C tests with **`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`** must include at least:
 
 | # | Fixture | Expected |
 | --- | --- | --- |
