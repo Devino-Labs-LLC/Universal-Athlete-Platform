@@ -5,13 +5,14 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main` = `develop`):** `4031328152a031fbbb2815afa0373a01cbc16534` (code promotion; docs evidence in §33)  
+**Production baseline (`main` = `develop`):** `212f3f44bfe4c8709b636a7839d83c0a978edaa3`  
 **Production schema:** Flyway **V36** (inferred — see §33)  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
-**Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production). Slice C still requires explicit authorization. V4 is **not** complete.
+**Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
+**Pre-Slice-C entitlement matrix:** **LOCKED for Product Owner approval** (see §34). Slice C enforcement is **not** authorized by this lock. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -38,18 +39,22 @@ Stripe guidance consulted for ordinary SaaS subscriptions (Checkout `mode=subscr
 
 ---
 
-## 1. Repository findings (current reality)
+## 1. Planning baseline (pre-V4 repository findings)
 
-| Finding | Evidence |
+This section is the **planning-era snapshot** taken before Slice A–B runtime. It is **not** a description of current production.
+
+Current production: `billing` module exists (V35–V36), Organization Stripe sandbox is certified, Slice B is **PRODUCTION VERIFIED** with Stripe **disabled** in production, and `EntitlementPort` exists but is **not** used at V3 product edges. See §§30–34.
+
+| Finding (at planning) | Evidence at that time |
 | --- | --- |
-| **No billing runtime** | No Stripe / Apple IAP / Google Play / RevenueCat / entitlement modules, DTOs, or config |
+| **No billing runtime (then)** | No Stripe / Apple IAP / Google Play / RevenueCat / entitlement modules, DTOs, or config |
 | V3 deferred V4 | `docs/V3_IMPLEMENTATION_PLAN.md` §19 — org may later link billing account id; **do not implement** in V3 |
-| Modulith modules | `identity`, `athlete`, `organization`, `consent`, `training`, `audit` |
+| Modulith modules (then) | `identity`, `athlete`, `organization`, `consent`, `training`, `audit` |
 | Org roles | `ATHLETE`, `COACH`, `HEAD_COACH`, `TEAM_ADMIN`, `ORG_ADMIN`, `ORG_OWNER` |
-| Org manage capability today | Invitation/admin ops: ORG_ADMIN or ORG_OWNER; **V4 billing authority locked: ORG_OWNER only** (§22.1 #5) |
+| Org manage capability | Invitation/admin ops: ORG_ADMIN or ORG_OWNER; **V4 billing authority locked: ORG_OWNER only** (§22.1 #5) |
 | Account / Athlete | One Account; ≤1 Athlete; coach-only accounts OK (ADR-030) |
 | Audit | Durable append-only `security_audit_events` (V34 / ADR-035); adapters in org/consent/training |
-| Web IA | Athlete `/app/*`; coach sibling `/coach/*`; no billing routes |
+| Web IA (then) | Athlete `/app/*`; coach sibling `/coach/*`; no billing routes (billing Web now exists under `/coach/.../billing` — §32/§33) |
 | Mobile IA | Athlete-first tabs; no coach console |
 | Config pattern | Fail-fast required secrets; no silent prod/sandbox fallbacks |
 | Highest accepted ADR | **ADR-045** (V4 commercialization set 036–045 Accepted) |
@@ -486,7 +491,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | 1 | Scope | **Organizations + Individuals.** Org = Stripe/Web. Individual = Stripe Web and/or Apple and/or Google → same provider-neutral entitlement across Web/iOS/Android. Individual work is **Slice G**; slices A–F must not depend on Apple/Google adapters. |
 | 2 | Org pricing | **Fixed active-athlete bands** (not usage-metered/per-athlete monthly): **up to 25 / 75 / 250**. Exact org **dollar** prices are Product Owner-locked in **§31** (Starter / Team / Organization). Do not invent alternate prices in code. Stripe Product/Price creation remains Slice B (not authorized by §22 alone). |
 | 3 | Billable athlete | One **ACTIVE** Athlete identity counts **once per Organization** regardless of Team count. Pending invitation / LEFT / REMOVED = **not** billable. Same athlete in separate Orgs counts independently. |
-| 4 | Free vs entitled | Billing **never** gates privacy/account-control rights. Always available when otherwise authorized: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; access to athlete-owned retained data/history per existing contracts. Org commercial entitlement gates paid org/coach capabilities (candidates: active Team management, coach collaboration, consent-aware coach views, Team Readiness). V3 authZ + consent remain independent. Individual **PREMIUM** must not arbitrarily remove basic athlete functionality; final capability matrix defined in **Slice A/C** before enforcement. |
+| 4 | Free vs entitled | Billing **never** gates privacy/account-control rights. Always available when otherwise authorized: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; access to athlete-owned retained data/history per existing contracts. Org commercial entitlement gates paid org/coach capabilities. V3 authZ + consent remain independent. Individual **PREMIUM** must not arbitrarily remove basic athlete functionality. **Final Organization free-vs-gated matrix: §34** (Product Owner lock; Slice C enforcement not authorized by §34 alone). |
 | 5 | Billing authority | **ORG_OWNER only** may initiate/manage/cancel/change Organization billing. ORG_ADMIN does **not** gain financial authority from operational authority. |
 | 6 | Cadence | **Monthly + annual** as Price variants of the same commercial tier/entitlement. |
 | 7 | Trial | Org: **14-day** trial; **payment method required up front**. Individual: **no** Stripe/Apple/Google trial in initial V4. |
@@ -545,7 +550,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | --- | --- |
 | **A** | Commercial foundation — `billing` module, ports, entitlement model, catalog keys (no live Stripe mutation unless separately authorized) |
 | **B** | Stripe Organization subscription — sandbox catalog from §31 lock, Checkout, customer mapping, lifecycle sync |
-| **C** | Entitlements — server-side commercial capability enforcement; finalize free vs gated matrix |
+| **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix (not started; requires explicit implementation authorization) |
 | **D** | Bands & usage — active-athlete band enforcement |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
 | **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery |
@@ -993,3 +998,276 @@ Production Hibernate `ddl-auto=validate` plus billing JPA entities that are **no
 | Slice C | **Not started.** `EntitlementPort` / `EntitlementQueryService` unused outside the billing module and billing tests |
 
 V4 is **not** complete. Do not begin Slice C until explicitly authorized.
+
+---
+
+## 34. Pre-Slice-C Organization entitlement matrix (Product Owner lock)
+
+**Status:** **LOCKED for Product Owner approval** — docs only.  
+**Does not authorize Slice C implementation.** No runtime enforcement, Flyway, Stripe, deployment, or Slice D.
+
+**Baseline:** `main` = `develop` = `212f3f44bfe4c8709b636a7839d83c0a978edaa3` (Slice B **PRODUCTION VERIFIED**, Stripe disabled in production).
+
+### 34.1 Principles
+
+| Principle | Lock |
+| --- | --- |
+| Authorization | WHO may act — existing V3 membership, role, consent, IDOR (ADR-032, ADR-033, `docs/security/V3_AUTHORIZATION_MATRIX.md`) |
+| Entitlement | WHETHER the **Organization** purchased a capability — `EntitlementPort.hasCapability(ORGANIZATION, organizationId, capability)` (ADR-037, ADR-042) |
+| Both may be required | Paid status never replaces membership, role, consent, IDOR, or Team Readiness privacy |
+| Subject | Organization capabilities check **`BillingSubjectType.ORGANIZATION` + the authorized `organizationId`**. Never the coach Account subscription. Never `INDIVIDUAL_PREMIUM` on Organization edges |
+| Catalog | All org bands grant the same four org capabilities (`CommercialCatalog`). Slice D bands are **not** this lock |
+| Provider | Product edges must not branch on Stripe/Apple/Google, plan names, or `STRIPE_ACTIVE` |
+| Server is authoritative | React route guards, button visibility, and client plan state are not security |
+| Athlete Intelligence | Billing may gate **product-surface access** only. No billing in State Engine, readiness/recovery/recommendation calculators, Team Readiness math, consent determination, or membership ports |
+
+### 34.2 Evaluation order (authZ before entitlement)
+
+1. **Unauthenticated** → existing **401** `UNAUTHENTICATED`.
+2. **CSRF** on unsafe methods → existing **403** `CSRF_INVALID` (filter; not commercial).
+3. **V3 authZ** (membership, role, resource graph, consent-for-existence where V3 already 404s) → existing **404** + existing surface `code`. No existence oracle.
+4. **Only then** entitlement, using `organizationId` from the **already-authorized** graph (Team parent org or the org that just passed membership). Never evaluate entitlement first. Never check a client-supplied org id before that graph check.
+5. Authenticated **and otherwise authorized** but missing capability → **HTTP 402** `COMMERCIAL_ENTITLEMENT_REQUIRED` (see §34.5). Never 404 for commercial denial.
+
+Insufficient V3 role on a **paid** org remains the existing **404**, never 402 (example: `TEAM_ADMIN` cannot create coach assignments).
+
+### 34.3 Temporal semantics (do not reimplement at edges)
+
+Use `EntitlementPort` only. `Subscription.isCommerciallyEntitledAt` already encodes:
+
+| State | Entitled? |
+| --- | --- |
+| `PENDING` | No |
+| `TRIALING` | Yes until **exclusive** `trialEndsAt` (`isBefore`) |
+| `ACTIVE` | Yes |
+| `PAST_DUE` | No (unless Slice F has entered `GRACE_PERIOD`) |
+| `GRACE_PERIOD` | Yes until exclusive `graceEndsAt` |
+| `CANCEL_AT_PERIOD_END` | Yes until exclusive `currentPeriodEndsAt` |
+| `EXPIRED` | No |
+| No subscription row | No (same 402 as EXPIRED; keep separate test fixtures) |
+
+At exactly the end instant → not entitled → 402.
+
+### 34.4 Capability mapping
+
+| Capability | Paid behavior (Slice C) | Must not include |
+| --- | --- | --- |
+| `ORG_TEAM_MANAGEMENT` | Creating, renaming, and archiving **Teams**; **creating** org/team invitations | Accept/decline invite; leave; consent; roster-safe identity; list/revoke outstanding invites; remove members; org create/rename/archive; billing |
+| `ORG_COACH_COLLABORATION` | Coach `TrainingAssignment` list/get/create/update | Athlete-owned `TrainingPlan` graph; athlete decline/unable/list-mine |
+| `ORG_COACH_ATHLETE_VIEW` | Consent-aware coach athlete **overview** HTTP | Roster-safe identity; athlete self-history |
+| `ORG_TEAM_READINESS` | `GET /api/v1/teams/{teamId}/readiness` surface | Aggregation math, k-anonymity, stored-read, no mega-score |
+| `INDIVIDUAL_PREMIUM` | **Not enforced in Slice C** (Slice G) | Do not paywall basic athlete functionality |
+
+### 34.5 Commercial-denial contract (recommendation; not implemented)
+
+| Item | Lock |
+| --- | --- |
+| HTTP | **402** (`Payment Required`) |
+| Machine `code` | `COMMERCIAL_ENTITLEMENT_REQUIRED` |
+| Body | Existing problem JSON: `code`, `message`, `timestamp`, `path`, `details` |
+| Why not 404 | Would disguise commerce as IDOR and leak/hide inconsistently |
+| Why not 403 | Already `CSRF_INVALID` / `ACCESS_DENIED` / account-state; ADR-032 forbids 403 as a tenant oracle |
+| Message | Must not include Stripe ids, Price IDs, plan keys, or foreign-org hints |
+| Side effects | Gated mutations that 402 must write **nothing** |
+
+Clients must key on **`code`**, not status category alone (web `errorMapper` has no 402 branch today).
+
+### 34.6 Durable free-vs-gated matrix
+
+Legend: **Free** = never 402. **Gated** = after V3 authZ, require the named capability.
+
+AuthZ column is the **existing** V3 rule (unchanged). Consent column is V3 (unchanged).
+
+#### Identity / account (always Free)
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| Register / verify-email / login | Public (+ CSRF ignore on those POSTs) | None | — | **Free** | `IdentityController` — do not call `EntitlementPort` |
+| Refresh / logout / logout-all / GET me | Session / cookie as today | None | — | **Free** | Same |
+| Athlete onboarding / profile graph | Caller athlete | None | — | **Free** | Athlete use cases |
+
+#### A. Organization / Team administration
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `POST /api/v1/organizations` | Authenticated; creator → `ORG_OWNER` | None | — | **Free** | `CreateOrganizationUseCase` — needed to reach billing |
+| `GET /api/v1/organizations` | Active org **or** team membership in that org | None | — | **Free** | `ListOrganizationsForAccountUseCase` |
+| `GET /api/v1/organizations/{organizationId}` | Same; else `ORGANIZATION_NOT_FOUND` | None | — | **Free** | `GetOrganizationUseCase` |
+| `PATCH /api/v1/organizations/{organizationId}` | ACTIVE `ORG_OWNER` | None | — | **Free** | `UpdateOrganizationUseCase` — owner identity, not paid workspace |
+| `POST /api/v1/organizations/{organizationId}/archive` | ACTIVE `ORG_OWNER` | None | — | **Free** | `ArchiveOrganizationUseCase` — emergency wind-down |
+| `POST /api/v1/organizations/{organizationId}/teams` | ACTIVE `ORG_OWNER` + org ACTIVE | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `CreateTeamUseCase` after `requireManageAccess` |
+| `GET /api/v1/organizations/{organizationId}/teams` | Active **org** member | None | — | **Free** | `ListTeamsForOrganizationUseCase` — needed to leave/navigate |
+| `GET /api/v1/teams/{teamId}` | `TeamAccessGuard.requireVisibleTeam` | None | — | **Free** | `GetTeamUseCase` |
+| `PATCH /api/v1/teams/{teamId}` | ACTIVE `ORG_OWNER` of parent org | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `UpdateTeamUseCase` after owner check |
+| `POST /api/v1/teams/{teamId}/archive` | ACTIVE `ORG_OWNER` | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `ArchiveTeamUseCase` after owner check |
+
+No dedicated org-settings, hard-delete, or ownership-transfer APIs exist — do not invent them.
+
+#### B. Invitations and memberships
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `POST …/organizations/{organizationId}/invitations` | `requireOrgAdminOrOwner`; role `ORG_ADMIN` only | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `CreateOrganizationInvitationUseCase` after invite authZ |
+| `GET …/organizations/{organizationId}/invitations` | `requireOrgAdminOrOwner` | None | — | **Free** | `ListOrganizationInvitationsUseCase` — required to operate revoke |
+| `POST …/invitations/{invitationId}/revoke` (org) | `requireOrgAdminOrOwner` | None | — | **Free** | `RevokeInvitationUseCase` — containment after lapse |
+| `GET …/organizations/{organizationId}/memberships` | Active org member | None | — | **Free** | `ListOrganizationMembershipsUseCase` |
+| `DELETE …/memberships/{membershipId}` (org) | Admin/owner + `InvitationAuthority` | None | — | **Free** | `RemoveOrganizationMemberUseCase` — eject compromised staff; Slice D remediation |
+| `POST …/memberships/me/leave` (org) | Own active membership; last owner blocked | None | — | **Free** | `LeaveOrganizationUseCase` |
+| `POST /api/v1/teams/{teamId}/invitations` | `requireInviteCapability` | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `CreateTeamInvitationUseCase` after invite authZ |
+| `GET /api/v1/teams/{teamId}/invitations` | `requireListInvitationsCapability` | None | — | **Free** | `ListTeamInvitationsUseCase` |
+| `POST /api/v1/teams/{teamId}/invitations/{id}/revoke` | Invite capability | None | — | **Free** | `RevokeInvitationUseCase` |
+| `GET /api/v1/teams/{teamId}/memberships` | `requireVisibleTeam` | None | — | **Free** | `ListTeamMembershipsUseCase` — **not** consent-filtered |
+| `DELETE /api/v1/teams/{teamId}/memberships/{membershipId}` | `requireManageRoster` | None | — | **Free** | `RemoveTeamMemberUseCase` |
+| `POST /api/v1/teams/{teamId}/memberships/me/leave` | Own active team membership | None | — | **Free** | `LeaveTeamUseCase` |
+| `GET /api/v1/me/invitations` | Invited email | None | — | **Free** | `ListMyInvitationsUseCase` |
+| `POST /api/v1/me/invitations/{id}/accept\|decline` | Invited email (+ verified on accept) | None | — | **Free** | `AcceptInvitationUseCase` / `DeclineInvitationUseCase` |
+| `POST /api/v1/invitations/{rawToken}/accept\|decline` | Same | None | — | **Free** | Token variants of the same use cases |
+| `GET /api/v1/athletes/me/teams` | Active ATHLETE memberships | None | — | **Free** | `ListMyAthleteTeamsUseCase` |
+
+No membership **role-change** API exists.
+
+#### C. Coach assignment / collaboration
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| Coach `GET/POST/PATCH …/teams/{teamId}/athletes/{athleteId}/training/assignments` | `CoachTrainingAuthorization.requireCollaborationWrite` (`COACH`/`HEAD_COACH`) | **`TRAINING_COLLABORATION`** else 404 | `ORG_COACH_COLLABORATION` | **Gated** | `AssignCoachTrainingUseCase` / `UpdateCoachTrainingAssignmentUseCase` after V3 404s |
+| Athlete `GET /api/v1/athletes/me/training/assignments` | Caller athlete | Owner | — | **Free** | `AthleteTrainingAssignmentUseCase.listMine` |
+| Athlete decline / unable | Assignment owned by caller | Owner | — | **Free** | `decline` / `markUnable` |
+
+This is **not** TrainingPlan sharing. Athlete-owned plans stay free (F/I).
+
+#### D. Coach roster
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `GET /api/v1/teams/{teamId}/roster` | `requireVisibleTeam` | **None** — roster-safe identity | — | **Free** | `GetTeamRosterUseCase` — needed to leave/revoke with context |
+
+#### E. Consent-aware athlete views
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `GET …/teams/{teamId}/athletes/{athleteId}/overview` | `canViewTeam` + athlete on team | Per-section scopes; missing → `notShared` (HTTP 200) | `ORG_COACH_ATHLETE_VIEW` | **Gated** | `GetCoachAthleteOverviewUseCase` after membership 404; **then** entitlement; **then** existing stored projection. Never generate State/readiness on GET |
+| `POST/GET /api/v1/athletes/me/consents` | Caller athlete + active ATHLETE membership on grant | Athlete-owned | — | **Free** | `CreateConsentGrantUseCase` / `ListMyConsentGrantsUseCase` |
+| `POST …/consents/{consentId}/revoke` | Grant owned by caller | Owner | — | **Free** | `RevokeConsentGrantUseCase` |
+
+Paid Organization **never** grants scopes. Unpaid **never** revokes them.
+
+#### F. Training-plan assignment
+
+**Coach TrainingPlan assignment HTTP does not exist.** Athlete-owned `/api/v1/training/plans/**` and schedule mutations remain **Free**. Do not silently treat them as `ORG_COACH_COLLABORATION`.
+
+#### G. Team Readiness
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `GET /api/v1/teams/{teamId}/readiness` | `canViewTeamReadinessAggregate` (team COACH/HEAD_COACH/TEAM_ADMIN or org ADMIN/OWNER); else 404 | Athletes included only with readiness scopes; `minCohortSize = 5`; complementary suppression; GET stored-read only; no mega-score | `ORG_TEAM_READINESS` | **Gated** | `GetTeamReadinessUseCase` after role 404; entitlement; then **identical** V3 aggregate. Do not import billing into `TeamReadinessSuppressionPolicy` or membership predicates |
+
+Entitled + below-minimum cohort remains existing `INSUFFICIENT_DATA` / `BELOW_MINIMUM`, not 402.
+
+#### H–I. Athlete transparency and owned history
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `GET /api/v1/athletes/me/transparency` | Caller athlete | Owner | — | **Free** | `GetAthleteTransparencyUseCase` |
+| Athlete-owned state / readiness / recovery / recommendations / load / PRs / calendar / client facades / generate+regenerate | Caller athlete | Owner | — | **Free** | Existing training use cases — including **explicit generate** POSTs |
+
+No coach HTTP to another athlete’s history. Coach projection is **E** only.
+
+#### J. Billing (recovery; always Free commercially)
+
+| Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
+| --- | --- | --- | --- | --- | --- |
+| `POST/GET /api/v1/billing/organizations/{organizationId}…` | ACTIVE `ORG_OWNER` (`canManageOrganization`); else 404 | None | — | **Free** | `OrganizationCheckoutService` — do not nest entitlement on billing itself. Stripe flag still required for beans |
+| `POST /api/v1/billing/webhooks/stripe` | Signature; `permitAll` | None | — | **Free** | `OrganizationWebhookService` |
+| Web `/coach/organizations/:organizationId/billing` + success/cancel | Client is not authZ | — | — | **Free** (UX) | Server checkout remains owner-only |
+
+`ORG_ADMIN` must **not** gain billing because a feature is gated. Billing 404 for non-owners stays 404, never 402.
+
+### 34.7 AuthZ × entitlement tests (every gated family)
+
+Gated families: team create/update/archive; org/team **invite create**; coach assignment list/get/create/update; coach overview; Team Readiness.
+
+For each family, Slice C tests must include at least:
+
+| # | Fixture | Expected |
+| --- | --- | --- |
+| 1a | Unauthenticated, no entitlement | Existing 401 (GET) or 403 `CSRF_INVALID` (unsafe without CSRF) — **never 402** |
+| 1b | Authenticated inaccessible, no entitlement | Existing 404 + existing `code` — **never 402** |
+| 2a/2b | Same actors, org **ACTIVE** | **Identical** 401/403/404 as 1a/1b — paid is not an oracle |
+| 2c | Insufficient V3 role, org ACTIVE | Existing 404 — **never 402** |
+| 3 | V3-authorized, no subscription | **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` |
+| 4 | V3-authorized, `ACTIVE` | Existing success |
+| 5 | `EXPIRED` | 402 |
+| 6 | `TRIALING` before / at `trialEndsAt` | success / 402 |
+| 7 | `CANCEL_AT_PERIOD_END` before / at `currentPeriodEndsAt` | success / 402 |
+| 8a | Overview: entitled + no section consent | **200** `notShared` (not 402) |
+| 8b | Overview: entitled + valid consent | Existing shared sections |
+| 8c | Assignment: entitled + no `TRAINING_COLLABORATION` | Existing **404** (consent-for-existence **before** 402) |
+| 8d | Assignment: entitled + valid collaboration consent | Existing success |
+| 8e | V3-authorized + **unpaid** + no consent | **402** (do not skip to `notShared`/consent 404) |
+| 9 | `PAST_DUE` | 402 |
+| 10 | `GRACE_PERIOD` before / at `graceEndsAt` | success / 402 |
+| 11 | `PENDING` | 402 |
+| 12 | Org unpaid; coach `ACCOUNT` + `INDIVIDUAL_PREMIUM` | **402** |
+| 13 | Other org ACTIVE; this org unpaid | 402 on **this** org; foreign still 404 |
+
+Reuse `EntitlementPort` with a fixed `Clock`. Do not re-code lifecycle in product tests. Do not delete existing V3 success tests — add ACTIVE org entitlement fixtures when Slice C lands.
+
+Gated mutations that 402 must be side-effect free. Team Readiness GET remains stored-read on 200 and 402.
+
+### 34.8 Free-surface regression (must never 402)
+
+Prove each of these with the Organization in `EXPIRED` / `PAST_DUE` / `PENDING` (or no row):
+
+- Identity register/login/verify/refresh/logout/me
+- Invite accept/decline (`/me` and token) and `GET /api/v1/me/invitations`
+- Invitation **list + revoke** (org and team)
+- Leave Team and leave Organization
+- Remove org/team member (existing role rules)
+- Consent grant / revoke / re-grant / list
+- Transparency / activity
+- Athlete-owned history **and** explicit generate/regenerate
+- Roster / memberships / GET team / GET org / list org teams
+- Billing checkout / sync / GET current (ORG_OWNER); non-owner still 404 not 402
+
+Billing lapse must not strand a user: they can still revoke consent, leave, inspect transparency, and the owner can still open billing.
+
+### 34.9 Web UX contract (not implemented)
+
+On `COMMERCIAL_ENTITLEMENT_REQUIRED`:
+
+- Explain that the **Organization** does not currently have access to that capability. Do not say the user is unauthorized when authZ succeeded.
+- **Billing CTA only for `ORG_OWNER`.** `ORG_ADMIN` and coaches do not receive financial controls.
+- Avoid aggressive full-screen payment walls.
+- Client hide/disable is optional UX later; **server enforcement is the gate**.
+- Note: `/coach/teams/:teamId/athletes/:athleteId` is **not registered** in `AppRouter` today; Slice C still locks the **backend** overview/assignment APIs.
+
+### 34.10 Athlete Intelligence boundary
+
+Forbidden in `training.domain` calculators, `DailyAthleteStateGenerationService`, all athlete `Generate*` / `Regenerate*` use cases, `ConsentEffectiveAccessService`, and `OrganizationMembershipPort` (including `canViewTeam` / `canViewTeamReadinessAggregate`): `EntitlementPort`, `CommercialCapability`, Stripe/Apple/Google types.
+
+Allowed: post-authZ surface guard in `GetTeamReadinessUseCase`, `GetCoachAthleteOverviewUseCase`, coach assignment use cases, and the gated org invitation/team-management use cases — **after** V3 404s.
+
+Failed payment restricts gated **surfaces** only (V4 §22.1 #8). Never delete memberships, consent, athlete data, readiness, history, or audit.
+
+### 34.11 Explicit non-goals
+
+- No Individual Premium enforcement
+- No Slice D band / seat enforcement
+- No Customer Portal / dunning product work
+- No live Stripe mutation from this lock
+- No runtime code in this task
+
+### 34.12 Agent reviews
+
+| Role | Verdict |
+| --- | --- |
+| Lead / Architect | **PASS** — authZ × entitlement split, org subject, catalog capabilities, no Slice D/G |
+| Backend | **PASS** — inventory from live controllers; enforce in named use cases after guards |
+| Web | **PASS-WITH-NOTES** — server is the gate; 402 UX + owner-only CTA; coach athlete-detail route is unregistered |
+| QA / Test Automation | **PASS-WITH-NOTES** — 8-cell grid expanded in §34.7; pin V3 status+`code`; 402 testable via HTTP + `$.code` |
+| Security / Code Quality | **PASS-WITH-NOTES** after required reclass: invite **list/revoke** and **remove-member** stay **Free** (containment / Slice D remediation). Invite **create** remains gated. **402** accepted. AuthZ-before-entitlement required |
+| Athlete Intelligence / Data | **PASS** — surface gates only; math/consent/membership commercially blind |
+| Documentation / Release | **PASS** — §1 reframed as planning baseline; §34 is the durable lock |
+
+**Slice C implementation remains unauthorized** until Product Owner explicitly approves this matrix **and** authorizes enforcement work.
