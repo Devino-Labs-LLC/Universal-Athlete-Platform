@@ -5,14 +5,15 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main` = `develop`):** `212f3f44bfe4c8709b636a7839d83c0a978edaa3`  
+**Production baseline (`main`):** `212f3f44bfe4c8709b636a7839d83c0a978edaa3`  
+**`develop`:** not equal to `main` (docs-only ahead). Pre-Slice-C matrix lock `c64ba79eae5d4199ac8a1c7845ea4debfb79dcc5`; this file continues on `develop`.  
 **Production schema:** Flyway **V36** (inferred — see §33)  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **LOCKED for Product Owner approval** (see §34). Slice C enforcement is **not** authorized by this lock. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **AWAITING EXPLICIT PRODUCT OWNER APPROVAL** (see §34). Slice C enforcement is **not** authorized. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1003,10 +1004,10 @@ V4 is **not** complete. Do not begin Slice C until explicitly authorized.
 
 ## 34. Pre-Slice-C Organization entitlement matrix (Product Owner lock)
 
-**Status:** **LOCKED for Product Owner approval** — docs only.  
+**Status:** **AWAITING EXPLICIT PRODUCT OWNER APPROVAL** — docs only.  
 **Does not authorize Slice C implementation.** No runtime enforcement, Flyway, Stripe, deployment, or Slice D.
 
-**Baseline:** `main` = `develop` = `212f3f44bfe4c8709b636a7839d83c0a978edaa3` (Slice B **PRODUCTION VERIFIED**, Stripe disabled in production).
+**Refs:** `main` = `212f3f44bfe4c8709b636a7839d83c0a978edaa3` (Slice B **PRODUCTION VERIFIED**, Stripe disabled in production). `develop` docs tip at lock = `c64ba79eae5d4199ac8a1c7845ea4debfb79dcc5`.
 
 ### 34.1 Principles
 
@@ -1030,6 +1031,17 @@ V4 is **not** complete. Do not begin Slice C until explicitly authorized.
 5. Authenticated **and otherwise authorized** but missing capability → **HTTP 402** `COMMERCIAL_ENTITLEMENT_REQUIRED` (see §34.5). Never 404 for commercial denial.
 
 Insufficient V3 role on a **paid** org remains the existing **404**, never 402 (example: `TEAM_ADMIN` cannot create coach assignments).
+
+**Consent vs entitlement (do not collapse unpaid + no-consent):**
+
+Global order remains AuthN → CSRF → V3 authZ / **consent-for-existence** → entitlement. Paid/unpaid must not become an existence oracle (unauthorized + paid and unauthorized + unpaid return the **same** 401/404).
+
+Split the two consent kinds:
+
+| Surface | Missing consent while membership/role/resource authZ already passed | Unpaid Organization |
+| --- | --- | --- |
+| Coach athlete overview | Section-level consent is **projection shaping**, not existence denial. Entitled + missing section → **200** `notShared`. | Membership/role/resource passed + unpaid + missing section consent → **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` (do not skip to `notShared`) |
+| Coach training assignment | `TRAINING_COLLABORATION` is part of the existing V3 **authorization/existence** gate. Missing it → existing **404** **before** entitlement, **even if** the Organization is unpaid. | Same 404 whether paid or unpaid — never 402 |
 
 ### 34.3 Temporal semantics (do not reimplement at edges)
 
@@ -1107,9 +1119,9 @@ No dedicated org-settings, hard-delete, or ownership-transfer APIs exist — do 
 
 | Product action | Existing authZ | Consent | Capability | Free/Gated | Server enforcement boundary |
 | --- | --- | --- | --- | --- | --- |
-| `POST …/organizations/{organizationId}/invitations` | `requireOrgAdminOrOwner`; role `ORG_ADMIN` only | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `CreateOrganizationInvitationUseCase` after invite authZ |
-| `GET …/organizations/{organizationId}/invitations` | `requireOrgAdminOrOwner` | None | — | **Free** | `ListOrganizationInvitationsUseCase` — required to operate revoke |
-| `POST …/invitations/{invitationId}/revoke` (org) | `requireOrgAdminOrOwner` | None | — | **Free** | `RevokeInvitationUseCase` — containment after lapse |
+| `POST …/organizations/{organizationId}/invitations` | `ORG_ADMIN` or `ORG_OWNER` (`requireOrgAdminOrOwner`) | None | `ORG_TEAM_MANAGEMENT` | **Gated** | `CreateOrganizationInvitationUseCase` after invite authZ. Invited role remains `ORG_ADMIN` (cannot invite `ORG_OWNER`) |
+| `GET …/organizations/{organizationId}/invitations` | `ORG_ADMIN` or `ORG_OWNER` (`requireOrgAdminOrOwner`) | None | — | **Free** | `ListOrganizationInvitationsUseCase` — required to operate revoke |
+| `POST …/invitations/{invitationId}/revoke` (org) | `ORG_ADMIN` or `ORG_OWNER` (`requireOrgAdminOrOwner`) | None | — | **Free** | `RevokeInvitationUseCase` — containment after lapse |
 | `GET …/organizations/{organizationId}/memberships` | Active org member | None | — | **Free** | `ListOrganizationMembershipsUseCase` |
 | `DELETE …/memberships/{membershipId}` (org) | Admin/owner + `InvitationAuthority` | None | — | **Free** | `RemoveOrganizationMemberUseCase` — eject compromised staff; Slice D remediation |
 | `POST …/memberships/me/leave` (org) | Own active membership; last owner blocked | None | — | **Free** | `LeaveOrganizationUseCase` |
@@ -1204,7 +1216,8 @@ For each family, Slice C tests must include at least:
 | 8b | Overview: entitled + valid consent | Existing shared sections |
 | 8c | Assignment: entitled + no `TRAINING_COLLABORATION` | Existing **404** (consent-for-existence **before** 402) |
 | 8d | Assignment: entitled + valid collaboration consent | Existing success |
-| 8e | V3-authorized + **unpaid** + no consent | **402** (do not skip to `notShared`/consent 404) |
+| 8e | Overview: membership/role/resource passed, Organization **unpaid**, section consent missing | **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` (section consent is projection shaping, not an existence denial — do not skip to `notShared`) |
+| 8f | Assignment: `TRAINING_COLLABORATION` missing, Organization **unpaid** | Existing **404** **before** entitlement (same as paid). Paid/unpaid must not become an oracle |
 | 9 | `PAST_DUE` | 402 |
 | 10 | `GRACE_PERIOD` before / at `graceEndsAt` | success / 402 |
 | 11 | `PENDING` | 402 |
