@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,6 +29,8 @@ public class OrganizationWebhookService {
 			"customer.subscription.deleted",
 			"invoice.paid",
 			"invoice.payment_failed");
+
+	private static final int MAX_APPLY_ATTEMPTS = 3;
 
 	private final OrganizationBillingProvider billingProvider;
 	private final ProviderEventInbox eventInbox;
@@ -60,10 +63,20 @@ public class OrganizationWebhookService {
 		if (claimed == null) {
 			return;
 		}
-		billingTransactions.executeWithoutResult(status -> {
-			ProviderEventProcessingStatus outcome = apply(event);
-			eventInbox.complete(claimed.id(), outcome, Instant.now(clock));
-		});
+		ObjectOptimisticLockingFailureException lastConflict = null;
+		for (int attempt = 1; attempt <= MAX_APPLY_ATTEMPTS; attempt++) {
+			try {
+				billingTransactions.executeWithoutResult(status -> {
+					ProviderEventProcessingStatus outcome = apply(event);
+					eventInbox.complete(claimed.id(), outcome, Instant.now(clock));
+				});
+				return;
+			}
+			catch (ObjectOptimisticLockingFailureException ex) {
+				lastConflict = ex;
+			}
+		}
+		throw lastConflict;
 	}
 
 	private ProviderEventProcessingStatus apply(OrganizationBillingProvider.VerifiedProviderEvent event) {

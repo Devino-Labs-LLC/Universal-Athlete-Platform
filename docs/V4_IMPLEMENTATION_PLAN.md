@@ -11,7 +11,7 @@
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
-**Slice B status:** Repository implementation on `develop` (see §32); **sandbox certification pending**. Slice C still requires explicit authorization.
+**Slice B status:** **COMPLETE on `develop`** (see §32). Slice C still requires explicit authorization.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -820,8 +820,8 @@ Do not begin Slice B until explicitly authorized.
 
 ## 32. Slice B — Stripe Organization subscription (implementation evidence)
 
-**Status:** Repository implementation on `develop`. **Sandbox catalog/Checkout/webhook certification is pending** (this Cursor environment has Stripe disabled and no authorized sandbox credentials or Stripe MCP).
-**Does not authorize Slice C.** No V3 product-edge paywall. **Stripe Tax collection remains OFF.**
+**Status:** **COMPLETE on `develop`.** Sandbox catalog, hosted Checkout, and signed webhook certification recorded in §32.5.
+**Does not authorize Slice C.** No V3 product-edge paywall. **Stripe Tax collection remains OFF.** Live Stripe was not used.
 
 ### 32.1 Runtime contract
 
@@ -835,7 +835,7 @@ Do not begin Slice B until explicitly authorized.
 | Authority | Active `ORG_OWNER` on an active Organization only; foreign accounts and `ORG_ADMIN` receive non-oracle not-found |
 | Retry safety | Client supplies a stable request UUID; Stripe idempotency keys; unique Organization→Stripe Customer mapping |
 | Fulfillment | Checkout persists `PENDING` (not entitled). Success redirect is **not** authoritative. Verified Stripe webhooks (and optional owner sync) refetch Stripe and apply a provider-neutral snapshot |
-| Durable webhook idempotency | `billing_provider_events` unique `(provider, provider_event_id)` claimed in `REQUIRES_NEW`. `PROCESSED`/`IGNORED` replays after restart do not re-apply. `RECEIVED` remains retryable |
+| Durable webhook idempotency | `billing_provider_events` unique `(provider, provider_event_id)` claimed in `REQUIRES_NEW`. `PROCESSED`/`IGNORED` replays after restart do not re-apply. `RECEIVED` remains retryable. Concurrent applies retry optimistic-lock conflicts and then complete the receipt |
 | Stale state | Authoritative Stripe Subscription refetch; `provider_state_as_of` ignores equal/older snapshots; unknown provider statuses fail closed |
 | Invoice events | UAP IDs from Invoice `parent.subscription_details.metadata` (not Invoice.metadata) |
 | Event object | Prefer typed `getObject()`; if empty, `deserializeUnsafe()`. Failure is 502 so Stripe retries — not HTTP 200 ignore |
@@ -885,16 +885,33 @@ No Apple/Google processing tables.
 - No Stripe Tax enablement, promotions, enterprise invoicing, or Connect
 - No live Stripe mutation, `main` merge, release, tag, or deployment
 
-### 32.5 Sandbox catalog and smoke (external)
+### 32.5 Sandbox catalog and smoke (Athlete Readiness sandbox)
 
-| Item | Result |
+**Account:** Athlete Readiness sandbox `acct_1UHZjZD418eILvNQ` (Stripe CLI `whoami` `mode=test`; Session/Customer/Subscription `livemode=false`). Not the generic DEVINO LABS LLC live/test accounts.
+
+| Product | Product ID | Monthly Price | Annual Price |
+| --- | --- | --- | --- |
+| Athlete Readiness Starter (`ORG_BAND_25`) | `prod_VIAHNlhHCs6m2K` | `price_1UHa1BD418eILvNQY5et2YSU` **4900 USD / month** | `price_1UHa1DD418eILvNQvsvcQWzK` **49000 USD / year** |
+| Athlete Readiness Team (`ORG_BAND_75`) | `prod_VIALhxOIzkPIGT` | `price_1UHa1FD418eILvNQSHnLU9uW` **9900 USD / month** | `price_1UHa1HD418eILvNQNpJaOC8k` **99000 USD / year** |
+| Athlete Readiness Organization (`ORG_BAND_250`) | `prod_VIALuN39AJt5PC` | `price_1UHa1ID418eILvNQ6ZHSZQ1F` **14900 USD / month** | `price_1UHa1LD418eILvNQlILJOp3p` **149000 USD / year** |
+
+Exactly **3** Products and **6** recurring licensed Prices. Tax behavior **exclusive**. `automatic_tax.enabled=false` on Checkout Sessions and Subscriptions. No tax registrations created.
+
+| Check | Result |
 | --- | --- |
-| Stripe MCP / authorized sandbox tooling in this Cursor session | **Not available** |
-| Local `UAP_BILLING_STRIPE_ENABLED` | `false` (no sandbox secret/price IDs in the authorized environment) |
-| Canonical 3 Products / 6 Prices | **Not created or verified in this session** — do not invent `prod_*` / `price_*` IDs |
-| Hosted Checkout smoke | **Not performed** |
-| 14-day trial remote proof | **Not performed** |
-| Signed webhook smoke | **Not performed** |
-| Live Stripe | **Untouched** |
+| Hosted Checkout (prior sandbox cert) | Session `cs_test_a1G5ku309lD2fFapaKkRrwsHtwrq5YjZquTN9Vgc1z2S3AzKZTgVPqNgeh`: `status=complete`, `payment_status=paid`, `mode=subscription`, `payment_method_collection=always`, **$0 due today**, card collected, Subscription `sub_1UHaOKD418eILvNQ2evsoO9Z` **trialing**, Customer `cus_VIAgQcdqprYAbs`, 14-day trial, Starter monthly $49. Browser redirect to an unrelated success URL is **not** fulfillment. |
+| Server Checkout this cert | `ORG_OWNER` `POST /checkout-sessions` → HTTP 201, internal **PENDING**, Stripe Customer `cus_VIBXbn5nIM56Lq`, Session `cs_test_a1SwjkcaOnfnPYOKeiEDMbMDg7xJsOaC4UQXCQZqNUvRlivYyeduyYE2JF` (`open`, `unpaid`, `mode=subscription`, `payment_method_collection=always`, `amount_total=0`, `automatic_tax.enabled=false`, livemode=false). Same `requestId` replay returned the **same** Session/Customer. Second `requestId` while PENDING → `BILLING_CHECKOUT_IN_PROGRESS`. |
+| Fulfillment webhook | Stripe CLI listen (`2026-08-26.dahlia`) to `http://127.0.0.1:8080/api/v1/billing/webhooks/stripe`. Real Subscription `sub_1UHbGQD418eILvNQ7qLePd1m` **trialing**, trial_end **2026-10-04 03:18:02Z** (~14 days), default PM present, Price `price_1UHa1BD418eILvNQY5et2YSU`. Internal `4ba8f1c1-9088-4fe7-b32a-409bb83938f4` **PENDING → TRIALING**. |
+| Event IDs | `invoice.paid` `evt_1UHbGRD418eILvNQ1IoGiLN7` **PROCESSED**; `customer.subscription.created` `evt_1UHbGRD418eILvNQTpdslLWm` **PROCESSED** (unique `STRIPE` + event id). |
+| Signature | Missing/invalid `Stripe-Signature` → HTTP **400** empty body. CLI-forwarded signed events → HTTP **200** after the lock retry. |
+| Duplicate replay | Resend both event IDs: HTTP 200, still one subscription, one customer, one `BILLING_SUBSCRIPTION_ACTIVATED`, `provider_state_as_of` unchanged. |
+| Restart replay | Backend stopped and started; resend `invoice.paid` → HTTP 200, still TRIALING / version 1 / one customer / one activation audit. |
+| Stale / out-of-order | Domain: equal/older `provider_state_as_of` ignored (`SubscriptionDomainTests`). Live: replay of the same Stripe snapshot did not regress TRIALING. |
+| Customer reuse | One `billing_organization_customers` row `cus_VIBXbn5nIM56Lq`; Stripe lists **one** Subscription for that Customer. |
+| Duplicate Checkout guard | After TRIALING, new Checkout → HTTP **409** `BILLING_SUBSCRIPTION_EXISTS` (no second Stripe Subscription). |
+| Live Stripe | **Untouched** (`stripe listen` without `--live`; objects `livemode=false`). |
+| Slice C | **Not started.** `EntitlementPort` unused outside billing tests. |
 
-Slice B is **not complete for external certification** until an authorized DEVINO LABS LLC test-mode session records real Product/Price IDs and Checkout/webhook smoke.
+Secrets, webhook signing secrets, API keys, and card numbers are not recorded here. Repository default remains `UAP_BILLING_STRIPE_ENABLED=false`.
+
+Slice B is **COMPLETE on `develop`** for Organization Stripe sandbox acquisition. `main` is unchanged.

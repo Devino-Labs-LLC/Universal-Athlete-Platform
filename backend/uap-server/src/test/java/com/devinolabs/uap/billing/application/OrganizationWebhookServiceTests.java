@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -132,6 +133,41 @@ class OrganizationWebhookServiceTests {
 		assertThat(pending.synchronizeProviderSnapshot(
 				snapshot(ProviderCommercialStatus.PENDING, NOW.plusSeconds(1)), CLOCK)).isFalse();
 		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.TRIALING);
+	}
+
+	@Test
+	void concurrentSubscriptionWritesAreRetriedThenCompleted() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.organization(organizationId),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_race",
+				"invoice.paid",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(
+				event("evt_race", "invoice.paid", organizationId, subscriptionId, NOW.plusSeconds(30)));
+		when(eventInbox.tryBegin(any(), eq("evt_race"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(billingProvider.fetchAuthoritativeSnapshot(any())).thenReturn(snapshot(
+				ProviderCommercialStatus.TRIALING, NOW.plusSeconds(30)));
+		when(subscriptionRepository.save(any()))
+				.thenThrow(new ObjectOptimisticLockingFailureException(Subscription.class, subscriptionId))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.TRIALING);
+		verify(subscriptionRepository, times(2)).findById(SubscriptionId.of(subscriptionId));
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
 	}
 
 	@Test
