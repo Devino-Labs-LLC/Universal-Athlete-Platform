@@ -1375,6 +1375,12 @@ Create/get/list/rename/archive Organization; get/list/GET Team; invitation list/
 - HTTP enforcement=`true` + Stripe disabled: 401/CSRF 403/404 never 402; authorized unpaid 402 side-effect free; ACTIVE success; lifecycle HTTP on create-team; individual premium ≠ org capability; foreign paid org remains 404; consent-before-entitlement on assignments; overview unpaid+no section consent → 402; entitled+no section consent → 200 `NOT_SHARED`; team readiness entitled+small cohort → existing `INSUFFICIENT_DATA`; unpaid → 402 read-only; free/control surfaces after lapse
 - Web: 402 maps to `COMMERCIAL_ENTITLEMENT`, not UNAUTHORIZED/FORBIDDEN
 
+### GitHub Verify and Sonar
+
+- GitHub Verify run **35500008730**: all jobs **success** (Backend core / training-app / training-http / Backend aggregate / Web / Mobile / Sonar)
+- Sonar Quality Gate **PASSED** on `develop`: [dashboard](https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=develop)
+- New Code: Reliability A (1.0), Security A (1.0), Maintainability A (1.0), Coverage **100%**, Duplication **0.1%**, Security Hotspots reviewed **100%**; 0 new bugs / vulnerabilities / code smells
+
 ### Production / next
 
 Do **not** set production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
