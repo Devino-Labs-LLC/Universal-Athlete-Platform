@@ -5,13 +5,13 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main` = `develop`):** `acc5bb3c47f4e617f6b5226d3ef17804e4831ace`  
-**Production schema:** Flyway **V35**  
+**Production baseline (`main` = `develop`):** `4031328152a031fbbb2815afa0373a01cbc16534` (code promotion; docs evidence in §33)  
+**Production schema:** Flyway **V36** (inferred — see §33)  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
-**Slice B status:** **COMPLETE on `develop`** (see §32). Slice C still requires explicit authorization.
+**Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production). Slice C still requires explicit authorization. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -914,4 +914,82 @@ Exactly **3** Products and **6** recurring licensed Prices. Tax behavior **exclu
 
 Secrets, webhook signing secrets, API keys, and card numbers are not recorded here. Repository default remains `UAP_BILLING_STRIPE_ENABLED=false`.
 
-Slice B is **COMPLETE on `develop`** for Organization Stripe sandbox acquisition. `main` is unchanged.
+Slice B sandbox certification is **COMPLETE**. Production promotion with Stripe remaining **disabled** is recorded in **§33**.
+
+---
+
+## 33. Slice B — PRODUCTION VERIFIED
+
+**Status:** **V4 Slice B — PRODUCTION VERIFIED**  
+**Does not authorize Slice C.** No entitlement enforcement. No live Stripe Products, Prices, Customers, Checkout Sessions, Subscriptions, webhook destinations, or API keys.
+
+### 33.1 Fast-forward promotion
+
+| Item | Value |
+| --- | --- |
+| Pre-promotion `develop` / `origin/develop` | `4031328152a031fbbb2815afa0373a01cbc16534` |
+| Pre-promotion `main` / `origin/main` | `acc5bb3c47f4e617f6b5226d3ef17804e4831ace` |
+| Topology | `develop` **6** commits ahead of `main`, **0** behind; merge-base = `main` |
+| Method | Solo-maintainer `git merge --ff-only develop` on `main` (no PR, rebase, squash, or force push) |
+| Code promotion SHA | `4031328152a031fbbb2815afa0373a01cbc16534` |
+| Authoritative develop Verify (pre-promotion) | [35487328304](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35487328304) **SUCCESS** |
+
+### 33.2 Main Verify / Sonar
+
+| Item | Value |
+| --- | --- |
+| Main Verify | [35487870740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35487870740) **SUCCESS** |
+| Jobs | Backend core, Backend training-app, Backend training-http, Backend aggregate, Web, Mobile, Sonar Quality Gate — all **success** |
+| Quality Gate | **PASSED** (`alert_status=OK`) — https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=main |
+| New Code reliability | **A** |
+| New Code security | **A** |
+| New Code maintainability | **A** |
+| New Code coverage | **82.8%** |
+| New Code duplication | **0.4%** |
+| New Code hotspot review | **100%** |
+
+Gate thresholds were not weakened.
+
+### 33.3 Railway production
+
+| Item | Evidence |
+| --- | --- |
+| Auto-deploy | GitHub environment `Universal Athlete Platform / production` deployment **6548800901** for SHA `4031328…` — **success** (2026-09-20T03:57:56Z). No manual recovery deploy. |
+| `UAP_Server` | `https://uapserver-production.up.railway.app` remains **UP** after auto-deploy |
+| `UAP_Client_Web` | `https://uapclientweb-production.up.railway.app` HTTP 200; bundle `index-4xIvjPtN.js` contains `OrganizationBilling`; no `sk_test_`, `rk_test_`, `whsec_`, or sandbox Price IDs in the bundle |
+| `/actuator/health` | HTTP 200 `{"status":"UP"}` |
+| `/actuator/health/liveness` | HTTP 200 `{"status":"UP"}` |
+| `/actuator/health/readiness` | HTTP 200 `{"status":"UP"}` |
+
+Railway dashboard variable listing was **not** available (no Railway CLI / token in this environment). Stripe-disabled conclusions below do **not** claim a direct Railway variable dump.
+
+### 33.4 V36
+
+`V36__create_billing_stripe_org_foundation.sql` — **inferred**, not a direct Flyway history or MySQL query.
+
+Production Hibernate `ddl-auto=validate` plus billing JPA entities that are **not** `@ConditionalOnProperty` would fail startup if V36 tables were missing. The server stayed healthy after the `4031328` auto-deploy. Direct `flyway_schema_history` evidence was not available.
+
+### 33.5 Production Stripe remained disabled; live Stripe untouched
+
+| Check | Result |
+| --- | --- |
+| Repository default | `uap.billing.stripe.enabled: ${UAP_BILLING_STRIPE_ENABLED:false}` |
+| GitHub Actions secrets | Only `SONAR_TOKEN`; no Stripe keys |
+| This promotion | No sandbox `sk_test_` / `rk_test_` / `whsec_` / Price IDs / localhost Checkout URLs were written to Railway production |
+| Boot | Healthy with **no** Stripe credential requirement. `StripeBillingConfiguration` is `@ConditionalOnProperty(... enabled=true)` and **refuses** the `prod`/`production` profile even if enabled |
+| Webhook | `POST /api/v1/billing/webhooks/stripe` with a dummy `Stripe-Signature` → HTTP **401** `/error` (controller not registered). Enabled Stripe would return **400** for an invalid signature |
+| Checkout HTTP | Unauthenticated billing mutations do not reach Stripe; `OrganizationBillingController` is not registered while disabled |
+| Live Stripe | **Untouched** (no live Products/Prices/Customers/Checkout/Subscriptions/webhooks/keys created) |
+
+### 33.6 V1–V3 regression / billing boundary / Slice C
+
+| Check | Result |
+| --- | --- |
+| Unauthenticated protected APIs | `/api/v1/identity/me`, athletes, organizations, training overview, readiness, teams → **401** |
+| CSRF intact | `POST /api/v1/identity/logout` and `POST /api/v1/organizations` without CSRF → **403** `CSRF_INVALID` |
+| Login CSRF exemption intact | `POST /api/v1/identity/login` still authenticates (invalid credentials **401**, not CSRF) |
+| Webhook CSRF skip | Did not weaken unrelated mutations |
+| No V1–V3 paywall | Surfaces remain auth/consent bounded, not entitlement-gated |
+| Slice C | **Not started.** `EntitlementPort` / `EntitlementQueryService` unused outside the billing module and billing tests |
+
+V4 is **not** complete. Do not begin Slice C until explicitly authorized.
