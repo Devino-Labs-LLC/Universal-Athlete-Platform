@@ -1379,5 +1379,5 @@ Create/get/list/rename/archive Organization; get/list/GET Team; invitation list/
 
 Do **not** set production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
 
-Implementation SHAs are the Slice C commits on `develop` after this section (recorded in git history of this file on the completing commit).
+**Implementation SHA:** `50572362d10ae220958b252c3846dc648cdecce0` on `develop`.
 
