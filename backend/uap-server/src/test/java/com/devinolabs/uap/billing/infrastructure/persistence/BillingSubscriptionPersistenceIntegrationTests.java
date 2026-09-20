@@ -19,9 +19,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.devinolabs.uap.TestcontainersConfiguration;
-import com.devinolabs.uap.billing.api.BillingSubjectType;
-import com.devinolabs.uap.billing.api.CommercialCapability;
-import com.devinolabs.uap.billing.api.EntitlementPort;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.EntitlementPort;
 import com.devinolabs.uap.billing.application.EntitlementQueryService;
 import com.devinolabs.uap.billing.application.OrganizationBillingCustomerRepository;
 import com.devinolabs.uap.billing.application.ProviderEventInbox;

@@ -17,6 +17,9 @@ function categoryFromStatus(status: number, code?: string): ApiErrorCategory {
   if (status === 403) return 'FORBIDDEN';
   if (status === 404) return 'NOT_FOUND';
   if (status === 409) return 'CONFLICT';
+  if (status === 402 || code === 'COMMERCIAL_ENTITLEMENT_REQUIRED') {
+    return 'COMMERCIAL_ENTITLEMENT';
+  }
   if (status === 422 || status === 400) return 'VALIDATION';
   if (status >= 500) return 'SERVER';
   return 'UNKNOWN';

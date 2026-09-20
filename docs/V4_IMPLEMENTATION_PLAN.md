@@ -13,7 +13,7 @@
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). Slice C **runtime implementation** is authorized only after this rollout lock is committed. **Production activation** of enforcement remains a later explicit commercial-launch gate. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C runtime:** **COMPLETE on `develop`** (see §35). **Production activation** of enforcement remains unauthorized. V4 is **not** complete. Slice D is **not** started.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1331,3 +1331,53 @@ Commercial-launch gate (document only; **do not authorize** here) must require a
 #### Safety
 
 This flag must **not**: alter membership, consent, readiness math, or Team Readiness privacy; create fake entitlements; grant billing authority; expose Stripe/provider identity to product modules; be client-controlled; enable itself because Stripe is enabled.
+
+---
+
+## 35. V4 Slice C — COMPLETE on develop (not PRODUCTION VERIFIED)
+
+**Status:** **COMPLETE on `develop`.** Not production-verified. Production enforcement remains **disabled / unmodified**. Slice D is **not** authorized by this section.
+
+### Implementation
+
+| Item | Evidence |
+| --- | --- |
+| Config flag | `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` → `uap.billing.entitlement-enforcement.enabled` |
+| Repository default | **`false`** (`application.yaml` `:false`, `.env.example` commented false) |
+| Stripe independence | Flag is a sibling of `uap.billing.stripe.enabled`. Enforcement `true` does not require Stripe or credentials. Stripe `true` does not enable enforcement. `OrganizationBillingHttpIntegrationTests` runs with enforcement `true` and still uses existing owner billing authZ only |
+| Published contract | Modulith module `entitlements`: `EntitlementPort`, `CommercialEntitlementGuard`, `CommercialEntitlementRequiredException`, `CommercialCapability`, `BillingSubjectType`. Billing implements the port/guard. Organization and training depend on `entitlements` only — not `billing.application` / `billing.domain` / `billing.infrastructure` / Stripe |
+| Cycle break | Billing already depends on `organization :: membership` (Slice B owner checks). Product modules therefore cannot depend on the billing module without a cycle. The provider-neutral API was extracted to sibling module `entitlements` |
+| 402 contract | HTTP **402** `COMMERCIAL_ENTITLEMENT_REQUIRED`; body `{code,message,timestamp,path,details}`; generic message; no Stripe/Price/subscription/plan/org oracle leakage |
+| AuthZ order | Authentication → CSRF → V3 membership/role/IDOR/consent-for-existence → `CommercialEntitlementGuard` → mutation/projection |
+| Flyway | **No new migration** (V36 remains current) |
+| Stripe mutation | **None** |
+| Individual Premium / bands / seats | **Not enforced** |
+
+### Gated surfaces (enforcement=`true`, after V3 authZ)
+
+| Capability | Surfaces |
+| --- | --- |
+| `ORG_TEAM_MANAGEMENT` | POST org teams; PATCH team; POST team archive; POST org invitations; POST team invitations |
+| `ORG_COACH_COLLABORATION` | Coach list/get/create/update TrainingAssignment |
+| `ORG_COACH_ATHLETE_VIEW` | GET team athlete overview (after membership/lifecycle; before section-consent projection) |
+| `ORG_TEAM_READINESS` | GET team readiness (after `canViewTeamReadinessAggregate`; before aggregate math) |
+
+### Free surfaces (never 402 for missing entitlement)
+
+Create/get/list/rename/archive Organization; get/list/GET Team; invitation list/revoke/accept/decline; membership lists; remove/leave org/team; roster-safe identity; athlete `/me` teams; consent grant/list/revoke/re-grant; transparency; athlete-owned history/state/readiness/recovery/recommendations/generate; billing owner recovery APIs; auth identity surfaces.
+
+### Tests
+
+- Flag bind: absent/false/true; Stripe enabled does not bind enforcement
+- Guard unit: disabled no-op; enabled present/absent; `INDIVIDUAL_PREMIUM` rejected on org edges
+- Lifecycle matrix via `EntitlementPort` + fixed `Clock` (PENDING, ACTIVE, EXPIRED, PAST_DUE, TRIALING exclusive end, CANCEL_AT_PERIOD_END exclusive end, GRACE_PERIOD exclusive end)
+- HTTP enforcement=`false`: team create/update/archive, org/team invite create, coach assignment, overview, team readiness — no subscription, never 402
+- HTTP enforcement=`true` + Stripe disabled: 401/CSRF 403/404 never 402; authorized unpaid 402 side-effect free; ACTIVE success; lifecycle HTTP on create-team; individual premium ≠ org capability; foreign paid org remains 404; consent-before-entitlement on assignments; overview unpaid+no section consent → 402; entitled+no section consent → 200 `NOT_SHARED`; team readiness entitled+small cohort → existing `INSUFFICIENT_DATA`; unpaid → 402 read-only; free/control surfaces after lapse
+- Web: 402 maps to `COMMERCIAL_ENTITLEMENT`, not UNAUTHORIZED/FORBIDDEN
+
+### Production / next
+
+Do **not** set production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
+
+Implementation SHAs are the Slice C commits on `develop` after this section (recorded in git history of this file on the completing commit).
+

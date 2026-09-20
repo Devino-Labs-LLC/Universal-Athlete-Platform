@@ -10,8 +10,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
-import com.devinolabs.uap.billing.api.CommercialCapability;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
+import com.devinolabs.uap.entitlements.CommercialCapability;
 
 class SubscriptionDomainTests {
 

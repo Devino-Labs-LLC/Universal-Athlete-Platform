@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.devinolabs.uap.athlete.api.rosteridentity.AthleteRosterIdentityPort;
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.consent.api.ConsentGrantsPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort.TeamLifecycleRef;
@@ -57,6 +59,7 @@ public class GetCoachAthleteOverviewUseCase {
 	private static final int PERFORMANCE_HISTORY_WINDOW_DAYS = 90;
 
 	private final OrganizationMembershipPort organizationMembershipPort;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final AthleteRosterIdentityPort athleteRosterIdentityPort;
 	private final ConsentGrantsPort consentGrantsPort;
 	private final DailyReadinessAssessmentRepository readinessRepository;
@@ -67,6 +70,7 @@ public class GetCoachAthleteOverviewUseCase {
 
 	public GetCoachAthleteOverviewUseCase(
 			OrganizationMembershipPort organizationMembershipPort,
+			CommercialEntitlementGuard entitlementGuard,
 			AthleteRosterIdentityPort athleteRosterIdentityPort,
 			ConsentGrantsPort consentGrantsPort,
 			DailyReadinessAssessmentRepository readinessRepository,
@@ -75,6 +79,7 @@ public class GetCoachAthleteOverviewUseCase {
 			AthleteExercisePersonalRecordRepository personalRecordRepository,
 			Clock clock) {
 		this.organizationMembershipPort = Objects.requireNonNull(organizationMembershipPort);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.athleteRosterIdentityPort = Objects.requireNonNull(athleteRosterIdentityPort);
 		this.consentGrantsPort = Objects.requireNonNull(consentGrantsPort);
 		this.readinessRepository = Objects.requireNonNull(readinessRepository);
@@ -103,6 +108,8 @@ public class GetCoachAthleteOverviewUseCase {
 		if (!"ACTIVE".equals(lifecycle.teamStatus()) || !"ACTIVE".equals(lifecycle.organizationStatus())) {
 			throw new CoachAthleteOverviewNotFoundException();
 		}
+		entitlementGuard.requireOrganizationCapability(
+				lifecycle.organizationId(), CommercialCapability.ORG_COACH_ATHLETE_VIEW);
 
 		LocalDate viewDate = date == null ? LocalDate.now(clock) : date;
 		String displayName = athleteRosterIdentityPort.findByAthleteId(athleteId)

@@ -7,8 +7,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
-import com.devinolabs.uap.billing.api.CommercialCapability;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
+import com.devinolabs.uap.entitlements.CommercialCapability;
 
 /**
  * Canonical provider-neutral subscription aggregate (ADR-036 / ADR-040).

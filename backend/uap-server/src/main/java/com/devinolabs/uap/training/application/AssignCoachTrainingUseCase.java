@@ -10,6 +10,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.training.domain.TrainingAssignment;
 
 @Service
@@ -18,16 +20,19 @@ public class AssignCoachTrainingUseCase {
 	private static final int LIST_LIMIT = 50;
 
 	private final CoachTrainingAuthorization authorization;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final TrainingAssignmentRepository assignments;
 	private final TrainingAuditPort auditPort;
 	private final Clock clock;
 
 	public AssignCoachTrainingUseCase(
 			CoachTrainingAuthorization authorization,
+			CommercialEntitlementGuard entitlementGuard,
 			TrainingAssignmentRepository assignments,
 			TrainingAuditPort auditPort,
 			Clock clock) {
 		this.authorization = Objects.requireNonNull(authorization);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.assignments = Objects.requireNonNull(assignments);
 		this.auditPort = Objects.requireNonNull(auditPort);
 		this.clock = Objects.requireNonNull(clock);
@@ -44,6 +49,8 @@ public class AssignCoachTrainingUseCase {
 			String idempotencyKey) {
 		CoachTrainingAuthorization.AuthorizedCoachAssignment access =
 				authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		entitlementGuard.requireOrganizationCapability(
+				access.lifecycle().organizationId(), CommercialCapability.ORG_COACH_COLLABORATION);
 		String key = requireKey(idempotencyKey);
 		LocalDate date = Objects.requireNonNull(scheduledDate, "scheduledDate must not be null");
 
@@ -91,13 +98,19 @@ public class AssignCoachTrainingUseCase {
 
 	@Transactional(readOnly = true)
 	public java.util.List<TrainingAssignment> list(UUID accountId, UUID teamId, UUID athleteId) {
-		authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		CoachTrainingAuthorization.AuthorizedCoachAssignment access =
+				authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		entitlementGuard.requireOrganizationCapability(
+				access.lifecycle().organizationId(), CommercialCapability.ORG_COACH_COLLABORATION);
 		return assignments.findByTeamAndAthlete(teamId, athleteId, LIST_LIMIT);
 	}
 
 	@Transactional(readOnly = true)
 	public TrainingAssignment get(UUID accountId, UUID teamId, UUID athleteId, UUID assignmentId) {
-		authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		CoachTrainingAuthorization.AuthorizedCoachAssignment access =
+				authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		entitlementGuard.requireOrganizationCapability(
+				access.lifecycle().organizationId(), CommercialCapability.ORG_COACH_COLLABORATION);
 		TrainingAssignment assignment = assignments.findById(assignmentId)
 				.orElseThrow(TrainingAssignmentNotFoundException::new);
 		if (!teamId.equals(assignment.teamId()) || !athleteId.equals(assignment.athleteId())) {

@@ -15,6 +15,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.consent.api.ConsentGrantsPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort.TeamMembershipRef;
@@ -37,16 +39,19 @@ public class GetTeamReadinessUseCase {
 	static final String AVAILABILITY_UNSUPPORTED = "UNSUPPORTED";
 
 	private final OrganizationMembershipPort organizationMembershipPort;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final ConsentGrantsPort consentGrantsPort;
 	private final DailyReadinessAssessmentRepository readinessRepository;
 	private final Clock clock;
 
 	public GetTeamReadinessUseCase(
 			OrganizationMembershipPort organizationMembershipPort,
+			CommercialEntitlementGuard entitlementGuard,
 			ConsentGrantsPort consentGrantsPort,
 			DailyReadinessAssessmentRepository readinessRepository,
 			Clock clock) {
 		this.organizationMembershipPort = Objects.requireNonNull(organizationMembershipPort);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.consentGrantsPort = Objects.requireNonNull(consentGrantsPort);
 		this.readinessRepository = Objects.requireNonNull(readinessRepository);
 		this.clock = Objects.requireNonNull(clock);
@@ -59,6 +64,10 @@ public class GetTeamReadinessUseCase {
 		if (!organizationMembershipPort.canViewTeamReadinessAggregate(accountId, teamId)) {
 			throw new TeamReadinessNotFoundException();
 		}
+		UUID organizationId = organizationMembershipPort.findTeamLifecycle(teamId)
+				.map(OrganizationMembershipPort.TeamLifecycleRef::organizationId)
+				.orElseThrow(TeamReadinessNotFoundException::new);
+		entitlementGuard.requireOrganizationCapability(organizationId, CommercialCapability.ORG_TEAM_READINESS);
 
 		LocalDate viewDate = date == null ? LocalDate.now(clock) : date;
 		List<TeamMembershipRef> athletes = organizationMembershipPort.listActiveAthleteMemberships(teamId);

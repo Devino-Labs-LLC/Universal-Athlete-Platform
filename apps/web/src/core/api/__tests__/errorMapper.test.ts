@@ -60,6 +60,27 @@ describe('mapAxiosError', () => {
     expect(error.category).toBe('NOT_FOUND');
   });
 
+  it('maps commercial entitlement denials without treating them as authorization failures', () => {
+    const error = mapAxiosError(
+      new axios.AxiosError('Payment Required', undefined, undefined, undefined, {
+        status: 402,
+        statusText: 'Payment Required',
+        headers: {},
+        config: { headers: new axios.AxiosHeaders() },
+        data: {
+          code: 'COMMERCIAL_ENTITLEMENT_REQUIRED',
+          message: 'The organization does not currently have access to this capability',
+        },
+      }),
+    );
+
+    expect(error.category).toBe('COMMERCIAL_ENTITLEMENT');
+    expect(error.status).toBe(402);
+    expect(error.code).toBe('COMMERCIAL_ENTITLEMENT_REQUIRED');
+    expect(error.category).not.toBe('UNAUTHORIZED');
+    expect(error.category).not.toBe('FORBIDDEN');
+  });
+
   it('maps conflict responses', () => {
     const error = mapAxiosError(
       new axios.AxiosError('Conflict', undefined, undefined, undefined, {

@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;

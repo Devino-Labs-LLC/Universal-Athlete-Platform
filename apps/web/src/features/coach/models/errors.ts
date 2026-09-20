@@ -8,6 +8,9 @@ export function coachErrorMessage(error: unknown, fallback = 'Something went wro
     if (error.category === 'UNAUTHORIZED') {
       return 'Your session expired. Sign in again to continue.';
     }
+    if (error.category === 'COMMERCIAL_ENTITLEMENT' || error.code === 'COMMERCIAL_ENTITLEMENT_REQUIRED') {
+      return 'This organization does not currently have access to this capability.';
+    }
     return error.message || fallback;
   }
   if (error instanceof Error) {

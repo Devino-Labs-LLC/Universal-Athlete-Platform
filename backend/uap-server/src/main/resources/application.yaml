@@ -46,6 +46,9 @@ uap:
         capacity: ${UAP_IDENTITY_RATE_LIMIT_CAPACITY:30}
         window: ${UAP_IDENTITY_RATE_LIMIT_WINDOW:1m}
   billing:
+    entitlement-enforcement:
+      # Product-edge 402s. Independent of Stripe. Production launch requires an explicit gate.
+      enabled: ${UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED:false}
     stripe:
       # Explicit opt-in. Tests and default local boot leave Stripe disabled.
       # When true, a test-mode key, all Price IDs, and return URLs are required.

@@ -15,6 +15,24 @@ describe('coach errors', () => {
     expect(
       coachErrorMessage(new ApiError('x', { category: 'UNAUTHORIZED', status: 401 })),
     ).toBe('Your session expired. Sign in again to continue.');
+    expect(
+      coachErrorMessage(
+        new ApiError('x', {
+          category: 'COMMERCIAL_ENTITLEMENT',
+          status: 402,
+          code: 'COMMERCIAL_ENTITLEMENT_REQUIRED',
+        }),
+      ),
+    ).toBe('This organization does not currently have access to this capability.');
+    expect(
+      coachErrorMessage(
+        new ApiError('x', {
+          category: 'COMMERCIAL_ENTITLEMENT',
+          status: 402,
+          code: 'COMMERCIAL_ENTITLEMENT_REQUIRED',
+        }),
+      ),
+    ).not.toContain('session expired');
     expect(isCoachNotFoundError(new ApiError('x', { category: 'NOT_FOUND' }))).toBe(true);
     expect(isCoachUnauthorizedError(new ApiError('x', { category: 'UNAUTHORIZED' }))).toBe(true);
   });

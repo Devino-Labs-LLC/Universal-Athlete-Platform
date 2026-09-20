@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.consent.api.ConsentGrantsPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort.AthleteMembershipHistory;
@@ -39,13 +40,17 @@ class GetTeamReadinessUseCaseTests {
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-07T15:00:00Z"), ZoneOffset.UTC);
 	private static final LocalDate TODAY = LocalDate.of(2026, 9, 7);
 	private static final UUID TEAM_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
+	private static final UUID ORG_ID = UUID.fromString("30000000-0000-0000-0000-000000000001");
 	private static final UUID COACH_ID = UUID.fromString("20000000-0000-0000-0000-000000000001");
+	private static final CommercialEntitlementGuard NO_OP_GUARD = (organizationId, capability) -> {
+	};
 
 	@Test
 	void emptyRosterDoesNotQueryReadinessRows() {
 		ReadinessStub readiness = new ReadinessStub(List.of(), List.of());
 		GetTeamReadinessUseCase useCase = new GetTeamReadinessUseCase(
 				new MembershipStub(true, List.of()),
+				NO_OP_GUARD,
 				new ConsentFillingStub(List.of()),
 				readiness,
 				CLOCK);
@@ -59,9 +64,13 @@ class GetTeamReadinessUseCaseTests {
 	}
 
 	@Test
-	void unauthorizedViewerIsNotFound() {
+	void unauthorizedViewerIsNotFoundBeforeEntitlement() {
+		CommercialEntitlementGuard exploding = (organizationId, capability) -> {
+			throw new AssertionError("entitlement must not run before authorization");
+		};
 		GetTeamReadinessUseCase useCase = new GetTeamReadinessUseCase(
 				new MembershipStub(false, List.of()),
+				exploding,
 				new ConsentFillingStub(List.of()),
 				new ReadinessStub(List.of(), List.of()),
 				CLOCK);
@@ -97,6 +106,7 @@ class GetTeamReadinessUseCaseTests {
 		ReadinessStub readiness = new ReadinessStub(slices, dimensions);
 		GetTeamReadinessUseCase useCase = new GetTeamReadinessUseCase(
 				new MembershipStub(true, athletes),
+				NO_OP_GUARD,
 				new ConsentFillingStub(athletes),
 				readiness,
 				CLOCK);
@@ -133,7 +143,7 @@ class GetTeamReadinessUseCaseTests {
 		return new TeamMembershipRef(
 				membershipId,
 				TEAM_ID,
-				UUID.fromString("30000000-0000-0000-0000-000000000001"),
+				ORG_ID,
 				athleteId,
 				athleteId,
 				"ATHLETE",
@@ -196,7 +206,16 @@ class GetTeamReadinessUseCaseTests {
 
 		@Override
 		public Optional<TeamLifecycleRef> findTeamLifecycle(UUID teamId) {
-			throw new UnsupportedOperationException();
+			if (!allowed) {
+				return Optional.empty();
+			}
+			return Optional.of(new TeamLifecycleRef(
+					TEAM_ID,
+					ORG_ID,
+					"Team",
+					"Org",
+					"ACTIVE",
+					"ACTIVE"));
 		}
 
 		@Override

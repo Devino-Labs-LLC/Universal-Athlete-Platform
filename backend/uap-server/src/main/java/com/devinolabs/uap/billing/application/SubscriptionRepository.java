@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;

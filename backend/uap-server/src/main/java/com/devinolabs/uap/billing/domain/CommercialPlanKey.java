@@ -1,6 +1,6 @@
 package com.devinolabs.uap.billing.domain;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 
 /**
  * Stable internal catalog keys. No dollar amounts. No provider Price / product IDs.

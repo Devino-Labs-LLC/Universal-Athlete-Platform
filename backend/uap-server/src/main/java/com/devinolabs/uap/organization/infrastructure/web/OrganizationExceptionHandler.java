@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.devinolabs.uap.entitlements.CommercialEntitlementRequiredException;
 import com.devinolabs.uap.organization.application.InvalidOrganizationStatusException;
 import com.devinolabs.uap.organization.application.InvitationConflictException;
 import com.devinolabs.uap.organization.application.InvitationNotFoundException;
@@ -29,6 +30,18 @@ import com.devinolabs.uap.organization.application.TeamNotFoundException;
 		MyInvitationsController.class
 })
 class OrganizationExceptionHandler {
+
+	@ExceptionHandler(CommercialEntitlementRequiredException.class)
+	ResponseEntity<ApiErrorResponse> handleCommercialEntitlement(
+			CommercialEntitlementRequiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+				.body(apiError(
+						CommercialEntitlementRequiredException.CODE,
+						ex.getMessage(),
+						request,
+						List.of()));
+	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {

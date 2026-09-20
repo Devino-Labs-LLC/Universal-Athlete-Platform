@@ -8,6 +8,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.identity.api.AccountDirectoryPort;
 import com.devinolabs.uap.identity.api.AccountDirectoryRef;
 import com.devinolabs.uap.identity.api.SecureTokenDigestPort;
@@ -27,6 +29,7 @@ public class CreateOrganizationInvitationUseCase {
 	private final InvitationRepository invitationRepository;
 	private final OrganizationMembershipRepository membershipRepository;
 	private final OrganizationAccessGuard accessGuard;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final AccountDirectoryPort accountDirectoryPort;
 	private final SecureTokenDigestPort tokenDigestPort;
 	private final OrganizationAuditPort auditPort;
@@ -37,6 +40,7 @@ public class CreateOrganizationInvitationUseCase {
 			InvitationRepository invitationRepository,
 			OrganizationMembershipRepository membershipRepository,
 			OrganizationAccessGuard accessGuard,
+			CommercialEntitlementGuard entitlementGuard,
 			AccountDirectoryPort accountDirectoryPort,
 			SecureTokenDigestPort tokenDigestPort,
 			OrganizationAuditPort auditPort,
@@ -45,6 +49,7 @@ public class CreateOrganizationInvitationUseCase {
 		this.invitationRepository = Objects.requireNonNull(invitationRepository);
 		this.membershipRepository = Objects.requireNonNull(membershipRepository);
 		this.accessGuard = Objects.requireNonNull(accessGuard);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.accountDirectoryPort = Objects.requireNonNull(accountDirectoryPort);
 		this.tokenDigestPort = Objects.requireNonNull(tokenDigestPort);
 		this.auditPort = Objects.requireNonNull(auditPort);
@@ -70,6 +75,8 @@ public class CreateOrganizationInvitationUseCase {
 		if (organization.status() == OrganizationStatus.ARCHIVED) {
 			throw new OrganizationArchivedException();
 		}
+		entitlementGuard.requireOrganizationCapability(
+				organizationId.value(), CommercialCapability.ORG_TEAM_MANAGEMENT);
 
 		String normalizedEmail = requireEmail(email);
 		AccountDirectoryRef boundAccount = accountDirectoryPort.findByNormalizedEmail(normalizedEmail).orElse(null);

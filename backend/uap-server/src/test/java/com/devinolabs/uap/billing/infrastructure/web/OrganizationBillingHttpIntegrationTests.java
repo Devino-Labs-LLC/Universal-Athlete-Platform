@@ -45,6 +45,7 @@ import com.devinolabs.uap.organization.domain.OrganizationMembershipId;
 import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 
 @SpringBootTest(properties = {
+		"uap.billing.entitlement-enforcement.enabled=true",
 		"uap.billing.stripe.enabled=true",
 		"uap.billing.stripe.secret-key=rk_test_placeholder_for_http_tests",
 		"uap.billing.stripe.webhook-secret=whsec_placeholder_for_http_tests",

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 
 interface BillingSubscriptionJpaRepository extends JpaRepository<BillingSubscriptionJpaEntity, UUID> {

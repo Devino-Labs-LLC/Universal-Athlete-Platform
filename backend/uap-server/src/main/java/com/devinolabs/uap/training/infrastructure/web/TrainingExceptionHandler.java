@@ -18,6 +18,7 @@ import com.devinolabs.uap.athlete.api.AthleteArchivedException;
 import com.devinolabs.uap.athlete.api.AthleteGoalNotOwnedException;
 import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.athlete.api.AthleteSportNotOwnedException;
+import com.devinolabs.uap.entitlements.CommercialEntitlementRequiredException;
 import com.devinolabs.uap.training.application.DuplicateTrainingPlanException;
 import com.devinolabs.uap.training.application.DuplicateWorkoutDayException;
 import com.devinolabs.uap.training.application.DuplicateWorkoutExerciseException;
@@ -239,6 +240,18 @@ import com.devinolabs.uap.training.domain.WorkoutExerciseSubstitutionIdentityCon
 		TrainingClientController.class
 })
 class TrainingExceptionHandler {
+
+	@ExceptionHandler(CommercialEntitlementRequiredException.class)
+	ResponseEntity<ApiErrorResponse> handleCommercialEntitlement(
+			CommercialEntitlementRequiredException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+				.body(error(
+						CommercialEntitlementRequiredException.CODE,
+						ex.getMessage(),
+						request,
+						List.of()));
+	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {

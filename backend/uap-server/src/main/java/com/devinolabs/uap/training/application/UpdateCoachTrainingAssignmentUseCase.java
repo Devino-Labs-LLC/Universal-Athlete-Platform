@@ -9,22 +9,27 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.training.domain.TrainingAssignment;
 
 @Service
 public class UpdateCoachTrainingAssignmentUseCase {
 
 	private final CoachTrainingAuthorization authorization;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final TrainingAssignmentRepository assignments;
 	private final TrainingAuditPort auditPort;
 	private final Clock clock;
 
 	public UpdateCoachTrainingAssignmentUseCase(
 			CoachTrainingAuthorization authorization,
+			CommercialEntitlementGuard entitlementGuard,
 			TrainingAssignmentRepository assignments,
 			TrainingAuditPort auditPort,
 			Clock clock) {
 		this.authorization = Objects.requireNonNull(authorization);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.assignments = Objects.requireNonNull(assignments);
 		this.auditPort = Objects.requireNonNull(auditPort);
 		this.clock = Objects.requireNonNull(clock);
@@ -40,7 +45,10 @@ public class UpdateCoachTrainingAssignmentUseCase {
 			String title,
 			String description,
 			LocalDate scheduledDate) {
-		authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		CoachTrainingAuthorization.AuthorizedCoachAssignment access =
+				authorization.requireCollaborationWrite(accountId, teamId, athleteId);
+		entitlementGuard.requireOrganizationCapability(
+				access.lifecycle().organizationId(), CommercialCapability.ORG_COACH_COLLABORATION);
 		TrainingAssignment assignment = assignments.findById(assignmentId)
 				.orElseThrow(TrainingAssignmentNotFoundException::new);
 		if (!teamId.equals(assignment.teamId()) || !athleteId.equals(assignment.athleteId())) {

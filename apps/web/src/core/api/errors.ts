@@ -5,6 +5,7 @@ export type ApiErrorCategory =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'VERSION_CONFLICT'
+  | 'COMMERCIAL_ENTITLEMENT'
   | 'SERVER'
   | 'NETWORK'
   | 'TIMEOUT'

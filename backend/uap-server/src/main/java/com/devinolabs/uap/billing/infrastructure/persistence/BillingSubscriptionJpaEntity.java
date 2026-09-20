@@ -18,7 +18,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;

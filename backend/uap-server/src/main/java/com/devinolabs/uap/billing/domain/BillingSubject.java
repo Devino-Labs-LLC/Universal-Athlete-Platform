@@ -3,7 +3,7 @@ package com.devinolabs.uap.billing.domain;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 
 /**
  * Commercial subject: Account or Organization identity by UUID value only.

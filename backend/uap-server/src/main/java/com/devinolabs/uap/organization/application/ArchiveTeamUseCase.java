@@ -6,6 +6,8 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.CommercialEntitlementGuard;
 import com.devinolabs.uap.organization.domain.AccountId;
 import com.devinolabs.uap.organization.domain.Team;
 import com.devinolabs.uap.organization.domain.TeamId;
@@ -16,16 +18,19 @@ public class ArchiveTeamUseCase {
 
 	private final TeamRepository teamRepository;
 	private final OrganizationAccessGuard accessGuard;
+	private final CommercialEntitlementGuard entitlementGuard;
 	private final OrganizationAuditPort auditPort;
 	private final Clock clock;
 
 	public ArchiveTeamUseCase(
 			TeamRepository teamRepository,
 			OrganizationAccessGuard accessGuard,
+			CommercialEntitlementGuard entitlementGuard,
 			OrganizationAuditPort auditPort,
 			Clock clock) {
 		this.teamRepository = Objects.requireNonNull(teamRepository);
 		this.accessGuard = Objects.requireNonNull(accessGuard);
+		this.entitlementGuard = Objects.requireNonNull(entitlementGuard);
 		this.auditPort = Objects.requireNonNull(auditPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
@@ -39,6 +44,8 @@ public class ArchiveTeamUseCase {
 		catch (OrganizationNotFoundException ex) {
 			throw new TeamNotFoundException();
 		}
+		entitlementGuard.requireOrganizationCapability(
+				team.organizationId().value(), CommercialCapability.ORG_TEAM_MANAGEMENT);
 		if (team.status() == TeamStatus.ARCHIVED) {
 			throw new TeamArchivedException();
 		}

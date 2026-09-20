@@ -11,13 +11,14 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.devinolabs.uap.billing.api.BillingSubjectType;
-import com.devinolabs.uap.billing.api.CommercialCapability;
-import com.devinolabs.uap.billing.api.EntitlementPort;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
+import com.devinolabs.uap.entitlements.CommercialCapability;
+import com.devinolabs.uap.entitlements.EntitlementPort;
 import com.devinolabs.uap.billing.domain.Subscription;
 
 /**
- * Published entitlement lookup. Does not enforce product edges (Slice C).
+ * Published entitlement lookup. Product-edge enforcement uses
+ * {@link com.devinolabs.uap.entitlements.CommercialEntitlementGuard}.
  */
 @Service
 @Transactional(readOnly = true)

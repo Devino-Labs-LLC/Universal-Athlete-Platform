@@ -1,10 +1,12 @@
-package com.devinolabs.uap.billing.api;
+package com.devinolabs.uap.entitlements;
 
 /**
  * Provider-neutral commercial capabilities (Slice A vocabulary).
  *
- * <p>Enforcement at V3 product edges is deferred to Slice C. Free privacy/account-control
+ * <p>Organization capabilities are enforced at approved product edges when
+ * {@code UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED} is true. Free privacy/account-control
  * surfaces are never represented here and must never be paywalled.
+ * {@code INDIVIDUAL_PREMIUM} is not enforced in Slice C.
  */
 public enum CommercialCapability {
 

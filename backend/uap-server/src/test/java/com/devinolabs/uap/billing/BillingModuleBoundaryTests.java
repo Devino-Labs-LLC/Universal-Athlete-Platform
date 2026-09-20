@@ -14,20 +14,17 @@ class BillingModuleBoundaryTests {
 		ApplicationModules modules = ApplicationModules.of(UapServerApplication.class);
 
 		assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
-				.anyMatch(name -> name.equals("billing"));
+				.contains("billing", "entitlements");
 		modules.verify();
 	}
 
 	@Test
-	void entitlementsNamedInterfaceIsPublished() {
+	void organizationAndTrainingDependOnEntitlementsModuleNotBillingInternals() {
 		ApplicationModules modules = ApplicationModules.of(UapServerApplication.class);
-
-		assertThat(modules.getModuleByName("billing"))
-				.isPresent()
-				.get()
-				.satisfies(module -> assertThat(module.getNamedInterfaces().stream()
-						.map(named -> named.getName())
-						.toList()).anyMatch(name -> name.equals("entitlements")));
+		assertThat(modules.getModuleByName("organization")).isPresent();
+		assertThat(modules.getModuleByName("training")).isPresent();
+		assertThat(modules.getModuleByName("entitlements")).isPresent();
+		modules.verify();
 	}
 
 }

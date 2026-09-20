@@ -1,4 +1,4 @@
-package com.devinolabs.uap.billing.api;
+package com.devinolabs.uap.entitlements;
 
 /**
  * Commercial subject kinds. Billing references Account / Organization IDs by value only.
