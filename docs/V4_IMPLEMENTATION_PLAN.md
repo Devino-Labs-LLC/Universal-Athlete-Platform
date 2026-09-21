@@ -13,7 +13,7 @@
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** see **§37** (docs only; Slice D runtime **not** authorized). **§37.23 Product Owner decision required** (unpaid/no-plan +1). V4 is **not** complete. Slice D / E are **not** started.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). Slice D runtime **not** authorized. V4 is **not** complete. Slice D / E are **not** started.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1528,7 +1528,7 @@ V4 is **not** complete. Slice D is **not** started. Production `UAP_BILLING_ENTI
 
 ## 37. Pre-Slice-D — Organization Active-Athlete Band & Capacity Lock
 
-**Status:** **PRODUCT OWNER LOCK** (docs / ADR clarification only).  
+**Status:** **PRODUCT OWNER LOCKED** (docs / ADR only). Option **B** is final.  
 **Does not authorize Slice D runtime.** Does not authorize Slice E, Customer Portal, plan changes, Individual Premium, Flyway, Stripe mutation, Railway mutation, `main` merge, or commercial launch.
 
 **Baseline:** `main` = `develop` = `0349424d1a05b543370ed9b75d25b58644d53a03` (Slice C **PRODUCTION VERIFIED**). Schema **V36**. Production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` **false**. Production `UAP_BILLING_STRIPE_ENABLED` **false**.
@@ -1606,7 +1606,20 @@ Pending invitations **do not reserve slots**. Creating an ATHLETE team invitatio
 
 Invitation **accept remains Slice C commercially FREE**: never `ORG_TEAM_MANAGEMENT`, never HTTP **402** `COMMERCIAL_ENTITLEMENT_REQUIRED`, never billing authority for the athlete.
 
-When the accept would **increase** distinct ACTIVE athlete count and commercial capacity is unavailable:
+**Normative principle:** Organization capacity enforcement constrains an **effective commercial band**; absence of an effective commercial band is **not** itself a zero-seat band.
+
+A capacity **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` requires **all** of:
+
+1. valid V3 invitation / authentication lifecycle
+2. ATHLETE role
+3. distinct active-athlete count **would increase**
+4. **exactly one** effective commercial Organization subscription
+5. that subscription supplies a fixed band (`ORG_BAND_25` / `75` / `250`)
+6. current distinct count is already **at or above** that band’s maximum
+
+No effective band → **no capacity denial** (existing V3 accept). Multiple effective subscriptions → §37.9 (fail-closed **+1** only; not “no plan”).
+
+When those six conditions hold:
 
 | Item | Lock |
 | --- | --- |
@@ -1627,29 +1640,36 @@ Denied accept is **atomic**: invitation remains **PENDING**; no TeamMembership; 
 
 At 25/25 (or EXPIRED / no subscription): an Athlete **already counted** in that Organization accepting another Team invitation **succeeds** under existing V3 invitation rules. Distinct usage unchanged. Dedicated Slice D tests required.
 
-### 37.8 Subscription states that grant new-athlete capacity
+### 37.8 When numeric band capacity applies
 
 Reuse `Subscription.isCommerciallyEntitledAt` exclusive-end semantics. Do **not** re-code lifecycle at the membership edge. Do **not** inspect Stripe Price IDs.
 
-| State | New distinct athlete |
+**Organization capacity enforcement constrains an effective commercial band; absence of an effective commercial band is not itself a zero-seat band.**
+
+| Effective commercial band (`isCommerciallyEntitledAt` = true, exactly one org subscription) | Numeric capacity on **+1** ATHLETE accept |
 | --- | --- |
-| No org subscription row | **deny** |
-| `PENDING` | **deny** |
-| `TRIALING` before `trialEndsAt` | **grant** current band |
-| `TRIALING` at/after `trialEndsAt` | **deny** |
-| `ACTIVE` | **grant** |
-| `PAST_DUE` | **deny** (until Slice F `GRACE_PERIOD`) |
-| `GRACE_PERIOD` before `graceEndsAt` | **grant** |
-| `GRACE_PERIOD` at/after `graceEndsAt` | **deny** |
-| `CANCEL_AT_PERIOD_END` before `currentPeriodEndsAt` | **grant** |
-| `CANCEL_AT_PERIOD_END` at/after `currentPeriodEndsAt` | **deny** |
-| `EXPIRED` | **deny** |
+| `TRIALING` before `trialEndsAt` | Enforce current band max |
+| `ACTIVE` | Enforce current band max |
+| `GRACE_PERIOD` before `graceEndsAt` | Enforce current band max |
+| `CANCEL_AT_PERIOD_END` before `currentPeriodEndsAt` | Enforce current band max |
 
-Loss of capacity **never** auto-removes members. It only blocks **+1** activations.
+| No effective commercial band | **+1** / zero-delta ATHLETE accept |
+| --- | --- |
+| No org subscription row | Existing V3 **success** — not 409, not 402 |
+| `PENDING` | Existing V3 **success** |
+| `PAST_DUE` | Existing V3 **success** |
+| `EXPIRED` | Existing V3 **success** |
+| `TRIALING` at/after `trialEndsAt` | Existing V3 **success** |
+| `GRACE_PERIOD` at/after `graceEndsAt` | Existing V3 **success** |
+| `CANCEL_AT_PERIOD_END` at/after `currentPeriodEndsAt` | Existing V3 **success** |
 
-Existing counted athlete additional Team: **allow** even when commercial capacity would deny a new athlete.
+These no-band states are **not** commercially entitled. Slice C product-edge capabilities may still **402** when `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Invitation **accept** remains outside that gate.
 
-**OPEN — unpaid / no commercially entitled plan (see §37.23).** The table’s “No org subscription row / PENDING / PAST_DUE / EXPIRED → deny +1” is the **fail-closed** reading from the Pre-Slice-D authorization prompt. Independent Security review **rejects that reading** for unpaid orgs (ADR-037 / §11 “invite accept always free”). Slice D runtime must **not** start until Product Owner picks Option A or B in §37.23.
+Outstanding-invite scenario: entitled org issues a valid ATHLETE invitation; commercial relationship **expires before accept**; athlete accepts under V3 rules → **SUCCESS** (must be tested in Slice D).
+
+Loss of an effective band **never** auto-removes members.
+
+Existing counted athlete additional Team: **allow** at any boundary, with or without an effective band.
 
 `INDIVIDUAL_PREMIUM` never supplies an Organization band. Staff/coach TeamMemberships never consume athlete capacity even if that Account also has an Athlete profile.
 
@@ -1659,9 +1679,9 @@ Existing counted athlete additional Team: **allow** even when commercial capacit
 
 | Effective temporally entitled org subscriptions | Behavior |
 | --- | --- |
-| Exactly one | Use that band’s max |
-| Zero | No **+1** capacity |
-| Two or more | **Fail closed** for **+1** only. Invitee still sees generic **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE`. Operators see an internal invariant / log (no Stripe ids, no other-org data). |
+| Exactly one | Use that band’s max for **+1** |
+| Zero | **Not a zero-seat band.** Valid ATHLETE accept follows V3 (**success**) |
+| Two or more | **Fail closed** for **+1** only (ambiguous/corrupt commercial state, **not** absence of a relationship). Invitee still sees generic **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE`. Operators see an internal invariant / log (no Stripe ids, no other-org data). Do not union, sum, pick highest, or pick lowest. Zero-delta extra Team still **succeeds**. |
 
 ### 37.10 Hard band boundaries
 
@@ -1677,9 +1697,10 @@ Billing already depends on `organization :: membership`. Organization must **not
 
 Conceptual seam: `OrganizationCommercialCapacityPort.allowance(organizationId)` → provider-neutral snapshot:
 
-- whether **new** distinct-athlete capacity is granted **now**
-- effective band identity (`BAND_25` / `BAND_75` / `BAND_250`) when granted
-- integer `maxActiveAthletes` when granted
+- whether an **effective band exists** (exactly one entitled org subscription)
+- if none: **admit** (no numeric denial)
+- if exactly one: band identity + `maxActiveAthletes`
+- if two or more entitled org rows: **fail closed** for **+1** (same generic 409; not exposed as “duplicate subscription”)
 
 No Stripe types, Price IDs, Customer IDs, JPA entities, or mutable seat counters.
 
@@ -1689,7 +1710,9 @@ Organization **consumes** the port **only** on ATHLETE team accept after V3 invi
 
 Existing `CommercialEntitlementGuard` / Slice C capabilities are **orthogonal**. Invitation accept **never** calls the 402 guard.
 
-Optional helper (Slice E prep, not Stripe): `minimumRequiredBandFor(activeAthleteCount)` → `BAND_25` for 0..25, `BAND_75` for 26..75, `BAND_250` for 76..250; **>250** cannot be satisfied by initial self-service bands.
+Optional helper (Slice E / launch hardening, **not** Stripe Checkout in Slice D): `minimumRequiredBandFor(activeAthleteCount)` → `BAND_25` for 0..25, `BAND_75` for 26..75, `BAND_250` for 76..250; **>250** cannot be satisfied by initial self-service bands.
+
+**Forward requirement:** an Organization whose `activeAthleteCount` exceeds a target band **must not** be allowed to make that undersized band effectively valid through initial purchase, downgrade, or plan change without remediation (example: count 40 → `ORG_BAND_25` must not become effective; count 100 → 25 and 75 insufficient; count >250 → no initial self-service band). Option B must not be used later to bypass the commercial tier model. This is **not** Slice D plan-management implementation.
 
 ### 37.12 Concurrency (T18)
 
@@ -1732,7 +1755,7 @@ Drive from `idx_teams_organization_id` + `idx_team_memberships_team_id`. Scale i
 
 ### 37.14 Over-capacity / legacy
 
-If distinct count already exceeds the effective band (legacy, downgrade race, import, bug): keep memberships; leave/remove/decline/revoke remain allowed; **no +1**; zero-delta additional Team **allowed**; owner usage read model reports over-capacity truthfully. **Never auto-remove**, auto-archive Teams, or pick victims.
+If distinct count already exceeds the effective band (legacy, downgrade race, import, bug, **or unpaid/no-band accumulation via Option B outstanding invites**): keep memberships; leave/remove/decline/revoke remain allowed; **no +1** while an effective band exists and count ≥ max; zero-delta additional Team **allowed**; owner usage read model reports the **actual** distinct count (`overCapacity=true` when a band exists and count exceeds it). **Never auto-remove**, auto-archive Teams, or pick victims. Unpaid Organizations do **not** receive paid coach/product capabilities from Option B.
 
 ### 37.15 Authorization order (non-oracle)
 
@@ -1768,7 +1791,9 @@ Web Slice D: optional `"23 of 25 active athletes"` for owner. No Slice E portal/
 | Value | Behavior |
 | --- | --- |
 | `false` / absent | No accept denied for band capacity. V1–V3 membership unchanged. Count/read may exist for tests |
-| `true` | **+1** ATHLETE accepts enforce the effective band |
+| `true` + no effective band | Invite acceptance follows **V3** (no 409, no 402 from capacity) |
+| `true` + exactly one effective band | Numeric band enforcement on **+1** |
+| `true` + two or more effective org subscriptions | **+1** generic 409 (invariant); zero-delta still succeeds |
 
 Wiring when runtime is authorized (sibling of Slice C, **not** nested under Stripe or entitlement; comment must not say 402):
 
@@ -1811,11 +1836,17 @@ Audit: success remains existing `invitationAccepted` + `membershipActivated`. Do
 
 **Boundaries:** 24→25; 25 blocked; 74→75; 75 blocked; 249→250; 250 blocked. JDBC-seed roster to N−1/N/N+1; do not HTTP-register 249 athletes.
 
-**Zero-delta:** 25/25 existing athlete second Team **success**; EXPIRED (separate fixture from no-row) existing athlete second Team **success**.
+**Zero-delta:** 25/25 existing athlete second Team **success**; no-row / EXPIRED / PAST_DUE existing athlete second Team **success** (separate fixtures).
+
+**No effective band (CAPACITY=true):** no-row / EXPIRED / PAST_DUE / PENDING + **first** distinct athlete → **SUCCESS** (never capacity 409, never 402). Keep no-row vs EXPIRED as separate fixtures.
+
+**Outstanding invite:** org entitled when invite created; relationship expires before accept; valid ATHLETE accept → **SUCCESS**.
+
+**Effective band:** 25/25 BAND_25 + new athlete → 409; 75/75; 250/250. 24→25 / 74→75 / 249→250 success.
+
+**Lifecycle (exactly one entitled row):** TRIALING / ACTIVE / GRACE-before-end / CANCEL-before-end enforce numeric max. Temporal **at-end** of those states is **no effective band** → V3 success, not 409.
 
 **Concurrency:** 24/25 two distinct accepts → one success, one 409, final **25**; 24/25 same athlete two Teams → both valid, distinct **25**; existing same-token idempotency still exactly one membership.
-
-**Lifecycle:** TRIALING / ACTIVE grant; PAST_DUE / PENDING deny +1; GRACE and CANCEL exclusive ends (fixed Clock, at-end denies). Parameterize via `EntitlementPort` / entitled-at; do not re-code lifecycle in edge tests.
 
 **Atomic 409:** invite PENDING; no membership; no `INVITATION_ACCEPTED` / `MEMBERSHIP_ACTIVATED`. Then decline still succeeds. Replay of a **successful** 24→25 token at 25/25 stays **200**.
 
@@ -1823,7 +1854,7 @@ Audit: success remains existing `invitationAccepted` + `membershipActivated`. Do
 
 **Non-athlete at cap:** COACH / HEAD_COACH / TEAM_ADMIN / ORG_ADMIN accept at 25/25 **success**; distinct athlete count unchanged.
 
-**LEFT/REMOVED rejoin:** no other ACTIVE membership + at cap → **+1** 409; still ACTIVE on another team → **+0** success.
+**LEFT/REMOVED rejoin:** with an effective band at cap and no other ACTIVE membership → **+1** 409; still ACTIVE on another team → **+0** success. No effective band → V3 success.
 
 **Dual HTTP surfaces:** token accept and `/me/{id}/accept` both pin 409 + PENDING leftover.
 
@@ -1835,11 +1866,9 @@ Audit: success remains existing `invitationAccepted` + `membershipActivated`. Do
 
 **Accept never 402:** `ENTITLEMENT=true` + `CAPACITY=true` count-increasing denial is **409**, not `COMMERCIAL_ENTITLEMENT_REQUIRED`.
 
-**Flags:** absent/false → V3 success at over-band (never capacity 409). `true` independent of Stripe and entitlement. Client header cannot override. Keep **no-row vs EXPIRED** as separate fixtures.
+**Flags:** absent/false → V3 success at over-band (never capacity 409). `true` + no effective band → V3 success. `true` + one band → numeric 409 at max. Independent of Stripe and entitlement. Client header cannot override.
 
 **Owner GET:** ORG_OWNER snapshot; non-owner 404 without usage numbers. Not folded into invitation tests.
-
-**Unpaid/no-plan +1:** fixture exists in both Option A and Option B (see §37.23) — implement only the option Product Owner selects.
 
 Reuse: `VerifiedAccountFixture`, `ConsentHttpFixtures` (do **not** use `acceptInvite` on 409 paths), `OrganizationSubscriptionFixtures` with a plan-key argument, `CountDownLatch` sibling of `InvitationAcceptConcurrencyIntegrationTests`. Dedicated Slice D HTTP class; do not append to the invitation lifecycle god-test.
 
@@ -1851,29 +1880,34 @@ Prefer the relational distinct count + Organization `FOR UPDATE`. Complexity O(m
 
 | Role | Verdict | Notes |
 | --- | --- | --- |
-| Lead / Architect | **PASS-WITH-NOTES** | No ADR-046. Narrow ADR-041 + one-line ADR-042. Unpaid +1 **must be an explicit PO sentence** because it amends “invite accept always available.” |
-| Backend | **PASS** | Sole +1 writer is ATHLETE team accept. No DB unique on one effective org subscription. Count via `team_memberships ⋈ teams`. Optional count method on `organization :: membership` for billing to implement the entitlements port. |
-| QA / Test Automation | **PASS-WITH-NOTES** | Required cells were present; §37.20 now includes dual accept paths, machine-code 409, staff-at-cap, invite-create at cap, replay/decline-after-409, LEFT rejoin, JDBC seeding, flag independence, 409 redaction. |
-| Security / Code Quality | **PASS-WITH-NOTES** | 409 never 402; authZ before capacity; org lock for T18; default-off flag. **Steward: unpaid/no-plan must not 409/402** or accept is paywalled vs ADR-037. That conflicts with fail-closed §37.8 — **§37.23**. |
-| DevOps / CI-CD | **PASS** | Sibling YAML default false; first production Slice D promotion leaves flag unset/false; no Railway `true`. |
-| Web | **PASS-WITH-NOTES** | Prefer additive owner GET billing fields + `"23 of 25"`; map invitee 409 by `code` (not 402, no upgrade CTA). GET is Stripe-conditional today — §37.16. |
-| Athlete Intelligence / Data | **PASS** | Capacity only on `AcceptInvitationUseCase` athlete activation. Do not reuse `listActiveAthleteMemberships` or min-cohort 5 as the seat counter. |
-| Documentation / Release | **PASS-WITH-NOTES** | This amendment records reviews. Runtime still unauthorized. Unpaid cell blocks “READY” until PO chooses A or B. |
+| Lead / Architect | **PASS-WITH-NOTES** | No ADR-046. Option **B** is now PO-locked. |
+| Backend | **PASS** | Sole +1 writer is ATHLETE team accept. Count via `team_memberships ⋈ teams`. Port must **admit** when no effective band. |
+| QA / Test Automation | **PASS-WITH-NOTES** | §37.20 pins no-band SUCCESS vs at-band 409 vs outstanding-invite SUCCESS. |
+| Security / Code Quality | **PASS** (on Option B) | Unpaid/no-plan is not a synthetic zero-seat gate. 409 only for actual band overflow or duplicate-effective-sub invariant. |
+| DevOps / CI-CD | **PASS** | Sibling YAML default false; first production Slice D promotion leaves flag unset/false. |
+| Web | **PASS-WITH-NOTES** | Owner usage line; invitee 409-by-`code`; no upgrade CTA. |
+| Athlete Intelligence / Data | **PASS** | Capacity only on athlete TeamMembership activation. |
+| Documentation / Release | **PASS** | Option B locked. Slice D runtime still separately unauthorized. |
 
-### 37.23 Open Product Owner decision (blocks Slice D runtime)
+### 37.23 Product Owner resolution — Option B
 
-**Unpaid / no commercially entitled Organization plan — first distinct athlete accept when `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true`.**
+**Locked.** No commercially entitled Organization plan does **not** impose a band limit on invitation acceptance.
 
-| Option | Behavior | Aligns with |
-| --- | --- | --- |
-| **A — Fail closed** | No row / PENDING / PAST_DUE / EXPIRED / not `isCommerciallyEntitledAt` → **+1** returns generic **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` (never 402). Zero-delta extra Team still **200**. Amends §11 / ADR-037 “invite accept always available” to: **never 402**; **may 409** for a **new** distinct athlete when no band is in force. | This Pre-Slice-D authorization prompt §11–12; Lead fail-closed reading |
-| **B — Unpaid remain V3** | No commercially entitled org plan → **+1 succeeds** (existing V3 accept). Numeric band is enforced **only** when exactly one entitled org subscription grants a band. | Independent Security / Code Quality review: otherwise Slice D paywalls ADR-037/§34.8 free accept |
+**Rationale:**
 
-**Do not implement Slice D until Product Owner selects A or B in writing.** Do not code a third behavior (different codes for unpaid vs at-cap; leaking “upgrade”; 402 on accept).
+- invitation acceptance remains an athlete/control surface, not a payment gate
+- billing state changing after an invitation is issued must not strand the athlete
+- treating “no plan” as zero capacity would still paywall accept even if the status were 409 instead of 402
+- capacity is the limit of an **effective purchased band**, not a synthetic zero-seat plan
+- Slice C entitlement enforcement still controls paid-workspace **invitation create** at commercial launch
+- outstanding invitations remain acceptable after lapse
+- over-capacity truth is retained; memberships are never auto-pruned
+- unpaid Organizations **do not** receive paid coach/product capabilities
 
-Already locked (not open): archived Teams still occupy seats until LEFT/REMOVED; 409 not 402 for at-band when an entitled band exists; dedicated capacity flag; owner-only usage; staff do not consume seats; `INDIVIDUAL_PREMIUM` does not grant org capacity; no pending-invite reservation; no auto-prune; fail-closed on **multiple** entitled org subscriptions (same generic 409, no invitee oracle).
+No unresolved Product Owner decision remains for Slice D semantics.
 
-Slice D **runtime** still requires a **separate explicit authorization** after this decision.
+Slice D **runtime** still requires a **separate explicit authorization**.
 
 Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` is **not** authorized here.
+
 

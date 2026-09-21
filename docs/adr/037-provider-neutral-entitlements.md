@@ -14,7 +14,7 @@ Subscriptions may originate from Stripe, Apple App Store, or Google Play. Produc
 
 Locked free surfaces (when otherwise authorized) are never **402-paywalled**: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; athlete-owned retained data/history per existing contracts.
 
-Invitation **decline** always remains available. Invitation **accept** is never HTTP **402**. Whether a **new** distinct athlete accept may return HTTP **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` when no commercially entitled Organization band is in force is **§37.23** (not implied by this ADR). At-band denial **after** an entitled band exists is ADR-041 / §37.6.
+Invitation **decline** always remains available. Invitation **accept** is never HTTP **402**. Absence of an effective Organization commercial band does **not** create a synthetic zero-capacity gate and must not return **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` merely because no plan is in force (`docs/V4_IMPLEMENTATION_PLAN.md` §37 Option B). Numeric band overflow after exactly one effective entitled Organization subscription is ADR-041 / §37.6.
 
 
 Organization commercial entitlements gate paid org/coach product surfaces (candidates include active Team management, coach collaboration, consent-aware coach views, Team Readiness). Individual commercial tier is internal **PREMIUM** (richer/advanced capability without arbitrarily removing basic athlete functionality).
