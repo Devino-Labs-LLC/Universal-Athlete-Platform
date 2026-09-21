@@ -12,7 +12,10 @@ Subscriptions may originate from Stripe, Apple App Store, or Google Play. Produc
 
 **Billing provider can vary. Entitlement cannot.** Canonical product checks ask whether a subject (Account or Organization) currently possesses capability **X**.
 
-Locked free surfaces (when otherwise authorized) are never paywalled: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; athlete-owned retained data/history per existing contracts.
+Locked free surfaces (when otherwise authorized) are never **402-paywalled**: authentication/account access; invitation accept/decline; leave Team; consent grant/revoke/re-grant; athlete transparency/activity; athlete-owned retained data/history per existing contracts.
+
+Invitation **decline** always remains available. Invitation **accept** is never HTTP **402**. Whether a **new** distinct athlete accept may return HTTP **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` when no commercially entitled Organization band is in force is **§37.23** (not implied by this ADR). At-band denial **after** an entitled band exists is ADR-041 / §37.6.
+
 
 Organization commercial entitlements gate paid org/coach product surfaces (candidates include active Team management, coach collaboration, consent-aware coach views, Team Readiness). Individual commercial tier is internal **PREMIUM** (richer/advanced capability without arbitrarily removing basic athlete functionality).
 
@@ -27,4 +30,4 @@ The Organization free-vs-gated matrix is recorded in `docs/V4_IMPLEMENTATION_PLA
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §§2, 11, 22, 34
+`docs/V4_IMPLEMENTATION_PLAN.md` §§2, 11, 22, 34, 37

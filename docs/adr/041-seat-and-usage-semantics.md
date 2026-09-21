@@ -21,7 +21,8 @@ Organization commercialization needs deterministic athlete counting without usag
 - **Archive is not a usage delete:** Team/Organization `ARCHIVED` does **not** rewrite memberships. ACTIVE athlete memberships on an archived Team **still count** until LEFT or REMOVED (`docs/V4_IMPLEMENTATION_PLAN.md` §37.3).  
 - Cross-Organization: independent counts.  
 - **+1 only at ATHLETE team invitation accept** when that athlete is not already counted in the Organization. Invitation **create** does not reserve capacity.  
-- Capacity denial for a **new** distinct athlete: HTTP **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` — **never 402**. Invitation stays PENDING. Existing counted athletes may still join another Team (zero-delta) even at band max or when billing is inactive.  
+- Capacity denial for a **new** distinct athlete **when an entitled Organization band cannot admit another identity**: HTTP **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` — **never 402**. Invitation stays PENDING. Existing counted athletes may still join another Team (zero-delta) even at band max or when billing is inactive.  
+- Unpaid / no commercially entitled org plan **+1** accept: **not locked here** — `docs/V4_IMPLEMENTATION_PLAN.md` §37.23.  
 - Downgrade: **cannot become effective** while active billable count exceeds the target band; ORG_OWNER remediates; never automatically delete/remove athletes or memberships.  
 - Count is **derived** from membership domain data (no mutable billing seat counter).  
 - Enforcement is additionally gated by server-owned `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags).  

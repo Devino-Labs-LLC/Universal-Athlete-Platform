@@ -19,6 +19,9 @@ Both may be required. Subscription status never replaces consent or membership. 
 
 **Evaluation order (pre-Slice C lock):** AuthN → V3 authorization (membership, role, IDOR, consent-for-existence) → `EntitlementPort`. Commercial denial for an **already-authorized** actor is **HTTP 402** `COMMERCIAL_ENTITLEMENT_REQUIRED`, never 404. Entitlement is never evaluated before authorization (paid status must not become an existence oracle). Durable matrix: `docs/V4_IMPLEMENTATION_PLAN.md` §34.
 
+**Band/capacity (Slice D, §37):** 402 remains **missing commercial capability** only. Organization active-athlete band conflict is **HTTP 409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE`, never 402, and never evaluated before V3 invitation validity (ADR-032 non-oracle). Unpaid/no-plan **+1** accept is **§37.23** (Product Owner A/B).
+
+
 **Rollout:** Product-edge 402s apply only when server-owned `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Default **false** preserves pre-Slice-C V3 product-edge behavior. The flag is not client-controlled and is not implied by `UAP_BILLING_STRIPE_ENABLED`.
 
 ## Consequences
@@ -28,4 +31,4 @@ Both may be required. Subscription status never replaces consent or membership. 
 
 ## References
 
-`docs/V4_IMPLEMENTATION_PLAN.md` §12, 22, 34; ADR-032; ADR-033
+`docs/V4_IMPLEMENTATION_PLAN.md` §12, 22, 34, 37; ADR-032; ADR-033
