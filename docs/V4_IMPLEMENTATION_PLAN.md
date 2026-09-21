@@ -5,15 +5,15 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main`):** `212f3f44bfe4c8709b636a7839d83c0a978edaa3`  
-**`develop`:** not equal to `main` (docs-only ahead). Matrix lock `c64ba79…`; clarification `cedf1049a1fdf2c023114cc3de609963380f2da1`.  
+**Production baseline (`main`):** Slice C **PRODUCTION VERIFIED** at promotion SHA `03fbdb1a827539bf66557750bf009ebb89e2f7e7` (see §36). Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
+**`develop`:** tracks `main` after Slice C promotion (docs-evidence tip follows in §36). Matrix lock `c64ba79…`; clarification `cedf1049a1fdf2c023114cc3de609963380f2da1`.  
 **Production schema:** Flyway **V36** (inferred — see §33)  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C runtime:** **COMPLETE on `develop`** (see §35). **Production activation** of enforcement remains unauthorized. V4 is **not** complete. Slice D is **not** started.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. V4 is **not** complete. Slice D is **not** started.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1405,10 +1405,122 @@ Historical implementation-era Verify (runtime SHA `5057236` / early docs evidenc
 
 Sonar Quality Gate **PASSED** on `develop`: [dashboard](https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=develop). New Code (measured after the implementation-era scan; QG still PASS on 35501112746): Reliability A (1.0), Security A (1.0), Maintainability A (1.0), Coverage **100%**, Duplication **0.1%**, Security Hotspots reviewed **100%**; 0 new bugs / vulnerabilities / code smells.
 
-### Production / next
+### Production / next (at develop certification)
 
 - `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` repository default remains **`false`**.
 - Production enforcement has **not** been activated. Production Stripe remains **disabled / unmodified**. Railway variables were **not** changed.
 - Slice C code on `develop` ≠ commercial enforcement activation.
-- Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
+- Fast-forward to `main` and production verification are recorded in **§36**. Slice D is **not** authorized.
+
+---
+
+## 36. Slice C — PRODUCTION VERIFIED
+
+**Status:** **V4 Slice C — PRODUCTION VERIFIED**  
+**Does not mark V4 complete.** **Does not authorize Slice D.** **Does not activate commercial enforcement.** Live Stripe remains **untouched**.
+
+Production rule preserved: `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` is **false** (repository default). Deployment of Slice C code ≠ commercial launch.
+
+### 36.1 Pre-promotion refs and topology
+
+| Item | Value |
+| --- | --- |
+| Pre-promotion `develop` / `origin/develop` | `03fbdb1a827539bf66557750bf009ebb89e2f7e7` |
+| Pre-promotion `main` / `origin/main` | `212f3f44bfe4c8709b636a7839d83c0a978edaa3` |
+| Topology | `develop` **9** commits ahead of `main`, **0** behind; merge-base = `main` |
+| Range | `c64ba79` … `03fbdb1` (matrix lock, rollout lock, runtime `5057236`, QA-hardening `8a8c52b`, develop certification docs) |
+| Method | Solo-maintainer `git merge --ff-only develop` on `main` (no PR, rebase, squash, or force push) |
+| Code promotion SHA | `03fbdb1a827539bf66557750bf009ebb89e2f7e7` |
+| Runtime implementation SHA | `50572362d10ae220958b252c3846dc648cdecce0` |
+| QA-hardening SHA | `8a8c52b1a644f9162227f99d5a671a2f3099ba73` |
+| Authoritative develop QA Verify | [35501112746](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35501112746) **SUCCESS** |
+| Develop docs-certification Verify | [35552661133](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35552661133) **SUCCESS** |
+
+No Flyway `V37+`. No Slice D band/seat enforcement. No Individual Premium enforcement. No Customer Portal / dunning expansion. No live Stripe files in the promotion range.
+
+### 36.2 Runtime main Verify / Sonar
+
+| Item | Value |
+| --- | --- |
+| Main Verify (promotion SHA `03fbdb1`) | [35553576380](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35553576380) **SUCCESS** |
+| Jobs | Backend core, Backend training-app, Backend training-http, Backend aggregate, Web, Mobile, Sonar Quality Gate — all **success** |
+| Quality Gate | **PASSED** (`alert_status=OK`) — https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=main |
+| New Code reliability | **A** (1.0) |
+| New Code security | **A** (1.0) |
+| New Code maintainability | **A** (1.0) |
+| New Code coverage | **100%** |
+| New Code duplication | **0.1%** |
+| New Code hotspot review | **100%** |
+
+Gate thresholds were not weakened.
+
+### 36.3 Railway production
+
+| Item | Evidence |
+| --- | --- |
+| Auto-deploy | GitHub environment `Universal Athlete Platform / production` deployment **6560418370** for SHA `03fbdb1…` — **success** (status `2026-09-21T02:16:42Z`). No manual recovery deploy. |
+| `UAP_Server` | `https://uapserver-production.up.railway.app` **UP** after auto-deploy |
+| `UAP_Client_Web` | `https://uapclientweb-production.up.railway.app` HTTP **200**; bundle `index-BpWtmAn9.js` contains `COMMERCIAL_ENTITLEMENT` / `COMMERCIAL_ENTITLEMENT_REQUIRED` mapping; contains `OrganizationBilling`; no `sk_test_`, `rk_test_`, `whsec_`, `sk_live_`, or Price IDs; no `paywall` string |
+| `/actuator/health` | HTTP 200 `{"groups":["liveness","readiness"],"status":"UP"}` |
+| `/actuator/health/liveness` | HTTP 200 `{"status":"UP"}` |
+| `/actuator/health/readiness` | HTTP 200 `{"status":"UP"}` |
+
+Railway dashboard variable listing was **not** available (no Railway CLI / token in this environment). Enforcement-off and Stripe-off conclusions below do **not** claim a direct Railway variable dump. Repository default `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=false` and `UAP_BILLING_STRIPE_ENABLED=false` apply unless a production variable was set `true`. Runtime behavior is consistent with both remaining **false**: healthy boot without Stripe credentials; Stripe webhook controller not registered (dummy `Stripe-Signature` → **401** `/error`); no product-edge **402** while unauthenticated/CSRF-denied.
+
+### 36.4 V36
+
+No Slice C Flyway migration. Latest repository migration remains `V36__create_billing_stripe_org_foundation.sql`.
+
+Production Hibernate `ddl-auto=validate` plus existing billing JPA entities would fail startup if V36 tables were missing. The server stayed healthy after the `03fbdb1` auto-deploy. Direct `flyway_schema_history` evidence was not available.
+
+### 36.5 Production entitlement enforcement remained OFF
+
+| Check | Result |
+| --- | --- |
+| Repository default | `uap.billing.entitlement-enforcement.enabled: ${UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED:false}` |
+| `application-prod.yaml` | Does **not** override the flag |
+| This promotion | Railway variables were **not** mutated. The flag was **not** set `true` for smoke testing |
+| Runtime | No production **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` observed on unauthenticated protected GETs or CSRF-denied mutations of gated families (create team / archive / invitations, overview, assignments, Team Readiness) |
+| Guard | Loaded safely: enforcement default-off is a no-op; no Stripe credentials required for boot |
+| Commercial launch | **Not declared.** No production Organization is newly paywalled by this deployment |
+
+### 36.6 Production Stripe remained disabled; live Stripe untouched
+
+| Check | Result |
+| --- | --- |
+| Repository default | `uap.billing.stripe.enabled: ${UAP_BILLING_STRIPE_ENABLED:false}` |
+| This promotion | No sandbox `sk_test_` / `rk_test_` / `whsec_` / Price IDs / localhost Checkout URLs were written to Railway production |
+| Webhook | `POST /api/v1/billing/webhooks/stripe` with a dummy `Stripe-Signature` → HTTP **401** `/error` (controller not registered). Enabled Stripe would return **400** for an invalid signature |
+| Live Stripe | **Untouched** (no live Products/Prices/Customers/Checkout/Subscriptions/webhooks/keys/Tax) |
+
+### 36.7 V1–V3 regression (enforcement off)
+
+| Check | Result |
+| --- | --- |
+| Unauthenticated protected GETs | identity `/me`, organizations, athletes, consents, transparency, assignments, readiness, billing GET, Team Readiness, coach overview, invitations, roster, memberships → **401** `UNAUTHENTICATED` — **never 402** |
+| CSRF intact | `POST` logout, create Organization, create team, archive team, org/team invitations without CSRF → **403** `CSRF_INVALID` — **never 402** |
+| Login CSRF exemption intact | `POST /api/v1/identity/login` invalid credentials → **401** `INVALID_CREDENTIALS` |
+| Foreign UUID resources | Unauthenticated still **401** (non-oracle: unpaid/paid not distinguishable before AuthN). Authenticated inaccessible **404** remains the V3 contract; this promotion did not invent production identities to re-probe IDOR |
+| Free/control surfaces | Auth/account, invitations, leave/remove, consent, transparency, athlete-owned history/state/readiness, billing recovery remain commercially ungated in code; production smoke showed no **402** while enforcement is off |
+| Athlete Intelligence / Team Readiness | No calculator/consent/membership contamination in the promotion range. GET Team Readiness remains stored-read, min cohort 5, complementary suppression, no mega-score, no hidden writes. Commercial enforcement inactive |
+
+Authenticated mutation of live production data was **not** performed.
+
+### 36.8 Security residual note (preserved)
+
+Independent Security / Code Quality review: **PASS-WITH-NOTES**.
+
+When commercial enforcement is **enabled**, an authorized unpaid owner of an **archived** Team may receive **402** rather than existing `TEAM_ARCHIVED` **409** on update/archive, because those use cases check archived status after entitlement. This is **not** an inaccessible-resource oracle.
+
+Because production enforcement is **OFF**, this is **not** a Slice C production-promotion blocker. It is tracked for a later hardening / before-enforcement-activation gate. Runtime behavior was **not** changed in this promotion.
+
+### 36.9 Web
+
+Production Web HTTP **200**. Slice C machine-code mapping is present in the deployed bundle. No secret values in the bundle. No premature paywall UX string. `ORG_OWNER`-only billing authority is unchanged in server code; this promotion did not add ORG_ADMIN/coach financial controls.
+
+### 36.10 Docs-evidence tip
+
+The documentation commit that records this section is pushed on `develop` and fast-forwarded to `main` after its Verify succeeds. Runtime promotion Verify remains **35553576380**. The docs-tip Verify is recorded separately below when complete.
+
+V4 is **not** complete. Slice D is **not** started. Production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true` remains a later explicit commercial-launch gate.
 
