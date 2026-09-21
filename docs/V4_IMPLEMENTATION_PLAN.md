@@ -13,7 +13,7 @@
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. V4 is **not** complete. Slice D is **not** started.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** see **§37** (docs only; Slice D runtime **not** authorized). V4 is **not** complete. Slice D / E are **not** started.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -552,7 +552,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | **A** | Commercial foundation — `billing` module, ports, entitlement model, catalog keys (no live Stripe mutation unless separately authorized) |
 | **B** | Stripe Organization subscription — sandbox catalog from §31 lock, Checkout, customer mapping, lifecycle sync |
 | **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
-| **D** | Bands & usage — active-athlete band enforcement |
+| **D** | Bands & usage — active-athlete band enforcement. Semantics locked in **§37**. Runtime **not** authorized by this lock. Dedicated flag `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags) |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
 | **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery |
 | **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
@@ -1523,4 +1523,311 @@ Production Web HTTP **200**. Slice C machine-code mapping is present in the depl
 The documentation commit that records this section is pushed on `develop` and fast-forwarded to `main` after its Verify succeeds. Runtime promotion Verify remains **35553576380**. The docs-tip Verify is recorded separately below when complete.
 
 V4 is **not** complete. Slice D is **not** started. Production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true` remains a later explicit commercial-launch gate.
+
+---
+
+## 37. Pre-Slice-D — Organization Active-Athlete Band & Capacity Lock
+
+**Status:** **PRODUCT OWNER LOCK** (docs / ADR clarification only).  
+**Does not authorize Slice D runtime.** Does not authorize Slice E, Customer Portal, plan changes, Individual Premium, Flyway, Stripe mutation, Railway mutation, `main` merge, or commercial launch.
+
+**Baseline:** `main` = `develop` = `0349424d1a05b543370ed9b75d25b58644d53a03` (Slice C **PRODUCTION VERIFIED**). Schema **V36**. Production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` **false**. Production `UAP_BILLING_STRIPE_ENABLED` **false**.
+
+### 37.1 Membership source of truth (runtime inventory)
+
+Athlete commercial usage is **not** an `organization_memberships` count. Org-scoped rows are **ORG_OWNER** (create Organization) and **ORG_ADMIN** (org invitation accept). Athletes exist on **team_memberships**.
+
+| Concept | Runtime |
+| --- | --- |
+| Organization | `organizations` (`ACTIVE` / `ARCHIVED`); PK lock target for Slice D serialization |
+| Team | `teams.organization_id` FK; `ACTIVE` / `ARCHIVED`; unique `(organization_id, name)` |
+| OrganizationMembership | `organization_memberships`: roles `ORG_OWNER` / `ORG_ADMIN` in practice; statuses `ACTIVE` / `REMOVED` / `LEFT`; `athlete_id` nullable and constrained to role `ATHLETE` but **no current path creates an org-scoped ATHLETE row** |
+| TeamMembership | `team_memberships`: team roles `ATHLETE`, `COACH`, `HEAD_COACH`, `TEAM_ADMIN`; statuses `ACTIVE` / `REMOVED` / `LEFT`; **`athlete_id` set only when role is `ATHLETE`** via `AthleteContextPort.requireAthlete` at invitation accept |
+| Active uniqueness | Generated `active_account_id` unique per team (V31); rejoin allowed with a new row after LEFT/REMOVED |
+| Invitations | Org-scoped: `ORG_ADMIN` only. Team-scoped: `ATHLETE` / `COACH` / `HEAD_COACH` / `TEAM_ADMIN`. Statuses `PENDING` / `ACCEPTED` / `DECLINED` / `REVOKED` / `EXPIRED` |
+
+**Only runtime path that creates an ACTIVE athlete TeamMembership:** `AcceptInvitationUseCase.acceptTeamInvitation` after a **PENDING** team invitation with role `ATHLETE` (token or `/me` id). There is **no** direct athlete-add API, no org-invitation-as-athlete, and no bootstrap that inserts athlete memberships.
+
+Coach/admin team accepts also create TeamMembership but **`athlete_id` is null** — they are **not** billable athletes.
+
+`ArchiveTeamUseCase` / `ArchiveOrganizationUseCase` persist container status only. They **do not** rewrite membership rows.
+
+`LeaveTeamUseCase` → `LEFT`. `RemoveTeamMemberUseCase` → `REMOVED`. Invitation create does not insert membership.
+
+### 37.2 Canonical billable predicate
+
+An Athlete identity counts **once** for Organization **O** when that `athlete_id` has **at least one** `team_memberships` row such that:
+
+- `status = 'ACTIVE'`
+- `role = 'ATHLETE'`
+- `athlete_id IS NOT NULL`
+- the row’s `teams.organization_id = O`
+
+**Usage** = `COUNT(DISTINCT athlete_id)` under that predicate.
+
+Not: Account count, membership-row count, Team count, invitation count, org-membership count, coach/admin rows.
+
+Same athlete in Org X and Org Y: **independent** counts (1 each). Multiple ACTIVE teams in the same Organization: **1**.
+
+### 37.3 Archived Team / Organization (recommended lock)
+
+ADR-041 already lists non-billable as pending invitation, LEFT, REMOVED. It is **silent** on archive.
+
+**Lock:** ACTIVE athlete TeamMembership **continues to count** until that membership becomes **LEFT** or **REMOVED**. Archiving a Team or Organization **must not** become a hidden usage-deletion mechanism. Archive remains the existing V3 container lifecycle.
+
+Accept onto an archived Team/Organization remains existing **404** (`InvitationNotFoundException`) — not a capacity event.
+
+This is a **clarification of ADR-041**, not a silent change of billable unit.
+
+### 37.4 Transitions that change the distinct count
+
+| Id | Event | Current path | Δ usage |
+| --- | --- | --- | --- |
+| A | First ACTIVE athlete membership in Org | `AcceptInvitationUseCase` ATHLETE team invite | **+1** |
+| B | Already ACTIVE on another Team in same Org; accept another team | same | **+0** |
+| C | ACTIVE on A and B; leave A | `LeaveTeamUseCase` | **+0** |
+| D | ACTIVE only on A; leave A | `LeaveTeamUseCase` | **−1** |
+| E | ACTIVE on A and B; removed from B | `RemoveTeamMemberUseCase` | **+0** |
+| F | Final ACTIVE membership REMOVED | `RemoveTeamMemberUseCase` | **−1** |
+| G | Pending invitation | `CreateTeamInvitationUseCase` | **+0** |
+| H | Decline / revoke / expire | `DeclineInvitationUseCase` / `RevokeInvitationUseCase` / expire-on-accept | **+0** |
+| I | LEFT/REMOVED athlete rejoins with no other ACTIVE membership | new ATHLETE accept | **+1** |
+| J | Team/Org archive | `ArchiveTeamUseCase` / `ArchiveOrganizationUseCase` | **+0** (memberships unchanged) |
+| K | Coach/admin team accept | `AcceptInvitationUseCase` non-ATHLETE | **+0** |
+| L | Org-admin accept | `acceptOrgInvitation` | **+0** |
+
+Capacity is evaluated **only** on **+1** (count-increasing) transitions.
+
+### 37.5 Invitation create vs accept
+
+Pending invitations **do not reserve slots**. Creating an ATHLETE team invitation **must not** fail because the Organization is at band maximum (subject to existing Slice C `ORG_TEAM_MANAGEMENT` when that flag is on). Capacity may change between create and accept. **No ghost reserved seats.**
+
+### 37.6 Acceptance at capacity
+
+Invitation **accept remains Slice C commercially FREE**: never `ORG_TEAM_MANAGEMENT`, never HTTP **402** `COMMERCIAL_ENTITLEMENT_REQUIRED`, never billing authority for the athlete.
+
+When the accept would **increase** distinct ACTIVE athlete count and commercial capacity is unavailable:
+
+| Item | Lock |
+| --- | --- |
+| HTTP | **409 Conflict** (fits existing invitation/membership conflict handler) |
+| Code | `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` |
+| Message (invitee) | `This organization cannot add another active athlete at this time.` |
+| Body | Existing `{code,message,timestamp,path,details}` |
+| Forbidden in body | Stripe, Price IDs, plan keys, payment status, subscription ids, usage numbers, other Organizations, owner financial state |
+
+Denied accept is **atomic**: invitation remains **PENDING**; no TeamMembership; `acceptIfPending` not committed; no `acceptedAt`; no `invitationAccepted` / `membershipActivated` audit; no success email. Decline remains available. Athlete may retry later.
+
+**Do not use 402** for this case.
+
+### 37.7 Zero-delta existing athlete
+
+At 25/25 (or EXPIRED / no subscription): an Athlete **already counted** in that Organization accepting another Team invitation **succeeds** under existing V3 invitation rules. Distinct usage unchanged. Dedicated Slice D tests required.
+
+### 37.8 Subscription states that grant new-athlete capacity
+
+Reuse `Subscription.isCommerciallyEntitledAt` exclusive-end semantics. Do **not** re-code lifecycle at the membership edge. Do **not** inspect Stripe Price IDs.
+
+| State | New distinct athlete |
+| --- | --- |
+| No org subscription row | **deny** |
+| `PENDING` | **deny** |
+| `TRIALING` before `trialEndsAt` | **grant** current band |
+| `TRIALING` at/after `trialEndsAt` | **deny** |
+| `ACTIVE` | **grant** |
+| `PAST_DUE` | **deny** (until Slice F `GRACE_PERIOD`) |
+| `GRACE_PERIOD` before `graceEndsAt` | **grant** |
+| `GRACE_PERIOD` at/after `graceEndsAt` | **deny** |
+| `CANCEL_AT_PERIOD_END` before `currentPeriodEndsAt` | **grant** |
+| `CANCEL_AT_PERIOD_END` at/after `currentPeriodEndsAt` | **deny** |
+| `EXPIRED` | **deny** |
+
+Loss of capacity **never** auto-removes members. It only blocks **+1** activations.
+
+Existing counted athlete additional Team: **allow** even when commercial capacity would deny a new athlete.
+
+### 37.9 Multiple effective Organization subscriptions
+
+`uk_billing_subscriptions_provider_sub_ref` does **not** unique-constrain `(subject_type, subject_id)`. More than one row per Organization is possible. Slice C `EntitlementQueryService` **unions** capabilities — **Slice D must not union or sum bands** and must not pick the highest band.
+
+| Effective temporally entitled org subscriptions | Behavior |
+| --- | --- |
+| Exactly one | Use that band’s max |
+| Zero | No **+1** capacity |
+| Two or more | **Fail closed** for **+1** only. Invitee still sees generic **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE`. Operators see an internal invariant / log (no Stripe ids, no other-org data). |
+
+### 37.10 Hard band boundaries
+
+Allowed distinct ACTIVE athletes: `ORG_BAND_25` → **0..25**; `ORG_BAND_75` → **0..75**; `ORG_BAND_250` → **0..250**.
+
+24→25 success; 25→26 **409**. 74→75 success; 75→76 **409**. 249→250 success; 250→251 **409**. Inclusive max; no off-by-one.
+
+### 37.11 Provider-neutral capacity architecture / Modulith
+
+Billing already depends on `organization :: membership`. Organization must **not** depend on `billing.application` / `billing.domain` / Stripe.
+
+**Lock:** publish on the existing leaf module `entitlements` (same cycle-break as Slice C):
+
+Conceptual seam: `OrganizationCommercialCapacityPort.allowance(organizationId)` → provider-neutral snapshot:
+
+- whether **new** distinct-athlete capacity is granted **now**
+- effective band identity (`BAND_25` / `BAND_75` / `BAND_250`) when granted
+- integer `maxActiveAthletes` when granted
+
+No Stripe types, Price IDs, Customer IDs, JPA entities, or mutable seat counters.
+
+Billing **implements** the port using `Subscription.isCommerciallyEntitledAt` + existing `OrganizationAthleteBand` (keep band integers in billing; published view stays entitlements-neutral).
+
+Organization **consumes** the port **only** on ATHLETE team accept after V3 invitation validity, and **only** if the athlete is not already counted.
+
+Existing `CommercialEntitlementGuard` / Slice C capabilities are **orthogonal**. Invitation accept **never** calls the 402 guard.
+
+Optional helper (Slice E prep, not Stripe): `minimumRequiredBandFor(activeAthleteCount)` → `BAND_25` for 0..25, `BAND_75` for 26..75, `BAND_250` for 76..250; **>250** cannot be satisfied by initial self-service bands.
+
+### 37.12 Concurrency (T18)
+
+Do **not** `SELECT count` then insert without serialization. No JVM locks. No Redis. No cached `seatCount`. Optimistic retry alone can commit 26 rows.
+
+**Lock:** `SELECT … FROM organizations WHERE id = ? FOR UPDATE` (`LockModeType.PESSIMISTIC_WRITE`), matching existing invitation / athlete / billing-customer pessimistic patterns.
+
+**Transaction:** same `@Transactional` as `AcceptInvitationUseCase`.
+
+**Order (deadlock-safe):**
+
+1. Existing invitation `FOR UPDATE` (token hash or id) — already implemented
+2. Existing V3 invitation identity / email / PENDING / expiry / org-team graph / archived-container **404**s
+3. **Then** Organization `FOR UPDATE`
+4. Resolve `athleteId`; compute `alreadyCounted` + `COUNT(DISTINCT athlete_id)` under the org lock
+5. If **+1** needed, consult `OrganizationCommercialCapacityPort`
+6. `acceptIfPending` + insert TeamMembership + existing success audits
+
+Two **different** new athletes at 24/25: one commit to 25, one **409**, never 26.
+
+Same athlete two Teams at 24/25: both may succeed; distinct count **25**.
+
+Leave/remove **do not** take the Organization write lock (must never be trapped). Isolation may cause a conservative **409** if a concurrent leave has not committed; retry is allowed. They cannot produce 26.
+
+### 37.13 Canonical count query / indexes
+
+```sql
+SELECT COUNT(DISTINCT tm.athlete_id)
+FROM team_memberships tm
+INNER JOIN teams t ON t.id = tm.team_id
+WHERE t.organization_id = ?
+  AND tm.status = 'ACTIVE'
+  AND tm.role = 'ATHLETE'
+  AND tm.athlete_id IS NOT NULL
+```
+
+Drive from `idx_teams_organization_id` + `idx_team_memberships_team_id`. Scale is **≤250** active plus modest historical LEFT/REMOVED. **No V37 required** for correctness at this scale. If later `EXPLAIN` on production-like data shows a hot path, the minimal index is `(team_id, status, role, athlete_id)` — justify then; do not add a migration in this lock.
+
+**Derived count only.** Do not persist a billing `seatCount`.
+
+### 37.14 Over-capacity / legacy
+
+If distinct count already exceeds the effective band (legacy, downgrade race, import, bug): keep memberships; leave/remove/decline/revoke remain allowed; **no +1**; zero-delta additional Team **allowed**; owner usage read model reports over-capacity truthfully. **Never auto-remove**, auto-archive Teams, or pick victims.
+
+### 37.15 Authorization order (non-oracle)
+
+Invitation accept:
+
+1. Authentication
+2. Invitation validity / email match / PENDING / expiry (invalid → existing **404**, never capacity)
+3. Resolve Team + Organization from the **valid** invitation
+4. `alreadyCounted` for this `athleteId` in that Organization
+5. Capacity **only if** count would increase
+6. Atomic membership + accept
+
+Owner capacity GET: existing **ORG_OWNER** billing authority first, then snapshot. Non-owners: existing **404**, not usage numbers.
+
+### 37.16 Owner usage read model / visibility
+
+`GET /api/v1/billing/organizations/{organizationId}` is **Stripe-conditional** today (`@ConditionalOnProperty` Stripe enabled). Slice D owner usage **must not** require Stripe.
+
+**Lock:** Stripe-independent, **ORG_OWNER-only** read snapshot (same owner 404 rules as Slice B billing). Suggested fields: `activeAthleteCount`, `bandCapacity` (nullable if no effective band), `remainingCapacity`, `atCapacity`, `overCapacity`. **No athlete identity lists. No provider secrets. Not metered billing.**
+
+Do **not** grant this screen to ORG_ADMIN, TEAM_ADMIN, COACH, HEAD_COACH, or ATHLETE.
+
+Web Slice D: optional `"23 of 25 active athletes"` for owner. No Slice E portal/upgrade UX. No paywall. Invitee 409 maps as **conflict**, not unauthorized and not 402 commercial entitlement.
+
+### 37.17 Rollout flag (do not implement in this task)
+
+`UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` — server only; default **false**; not a client flag; not on request DTOs.
+
+| Value | Behavior |
+| --- | --- |
+| `false` / absent | No accept denied for band capacity. V1–V3 membership unchanged. Count/read may exist for tests |
+| `true` | **+1** ATHLETE accepts enforce the effective band |
+
+Independent of `UAP_BILLING_STRIPE_ENABLED` and `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`. First later Slice D **production** promotion: **false**. Launch `true` is a later explicit gate.
+
+| Entitlement | Capacity | Meaning |
+| --- | --- | --- |
+| false | false | Current production |
+| true | false | Paid surfaces 402; membership capacity not enforced (controlled test only — **not** commercial launch) |
+| false | true | Capacity testable; no product-edge 402 from this flag |
+| true | true | Intended Organization commercial launch after all V4 gates |
+
+Neither flag silently enables the other.
+
+### 37.18 Free / decrease operations
+
+Capacity **never** blocks: leave Team / leave Org (existing rules), remove member, revoke/decline invite, consent revoke, Team/Org archive, billing recovery, athlete-owned history/state/readiness.
+
+Team archive **must not** auto-REMOVED athletes, globally revoke consent, or decrement usage via hidden membership mutation.
+
+### 37.19 Athlete Intelligence / Stripe / audit
+
+Capacity touches **membership activation only**. Forbidden: State Engine, readiness/recovery/recommendation math, Team Readiness (min cohort 5, complementary suppression), consent scopes, athlete history, health-data or workout-volume meters.
+
+Stripe: **no** quantity, usage records, metered billing, catalog/live objects. One recurring Organization subscription; **fixed band ≠ Stripe seat quantity**.
+
+Audit: success remains existing `invitationAccepted` + `membershipActivated`. Do **not** duplicate a billing audit event. Denied **+1**: no success audit. Optional later `security_audit_events` for denial may include actor + organization + invitation ids **without** plan, Stripe, or usage numbers. Not required to start Slice D.
+
+### 37.20 Future Slice D test matrix (mandatory)
+
+Counting: 0; one athlete one Team; one athlete many Teams same Org = 1; same athlete two Orgs independent; LEFT; REMOVED; pending invite = 0.
+
+Boundaries: 24→25; 25 blocked; 74→75; 75 blocked; 249→250; 250 blocked.
+
+Zero-delta: 25/25 existing athlete second Team **success**; EXPIRED billing existing athlete second Team **success**.
+
+No capacity: new athlete **409**; existing athlete second Team **success**.
+
+Concurrency: 24/25 two distinct accepts → one success, one 409, final **25**; 24/25 same athlete two Teams → both valid, distinct **25**; never exceed band after retry.
+
+Lifecycle: TRIALING / ACTIVE grant; PAST_DUE / PENDING / EXPIRED deny +1; GRACE and CANCEL exclusive ends (fixed Clock).
+
+Atomic 409: invite PENDING; no membership; no success audit.
+
+Over-cap (26 on band 25): remove/leave allowed; no new distinct athlete; existing athlete extra Team allowed.
+
+Rollout: absent/false/true; independent of Stripe and entitlement flags; client header cannot override.
+
+AuthZ: invalid/foreign invitation existing 404, never capacity leakage.
+
+### 37.21 Performance
+
+Prefer the relational distinct count + Organization `FOR UPDATE`. Complexity O(memberships in org teams), expected tiny (≤250 active). Reject Redis counters, in-memory locks, event-sourced seat ledgers, Stripe Usage API.
+
+### 37.22 Agent reviews (this lock)
+
+| Role | Verdict |
+| --- | --- |
+| Lead / Architect | **PASS** — distinct TeamMembership athlete predicate; entitlements capacity port; org-row lock; no new ADR beyond ADR-041 clarification |
+| Backend | **PASS** — sole +1 path is ATHLETE team accept; archive does not mutate memberships; 409 already used for invitation conflicts; no V37 required at band scale |
+| QA / Test Automation | **PASS** — §37.20 is the Slice D mandatory matrix (duplicate-athlete, exclusive-end Clock, concurrent 24/25, atomic PENDING) |
+| Security / Code Quality | **PASS-WITH-NOTES** — capacity after invitation validity; invitee generic 409; leave/remove free; flag not client-controlled; concurrent org lock; note: do not leak band via 409 `details` |
+| DevOps / CI-CD | **PASS** — dedicated default-off flag; no coupling to Stripe/entitlement; first production Slice D deploy remains **false** |
+| Web | **PASS-WITH-NOTES** — owner-only usage line item; map accept 409 as conflict not 402; no Slice E portal |
+| Athlete Intelligence / Data | **PASS** — membership activation only; calculators/consent/Team Readiness commercially blind |
+| Documentation / Release | **PASS** — §37 + ADR-041 clarification; Slice D runtime still unauthorized |
+
+### 37.23 Open Product Owner decisions
+
+**None that block this lock.** Recommended answers are recorded above (archived containers still count; 409 not 402; dedicated capacity flag; owner-only usage GET; no-effective-subscription denies **+1** only).
+
+Slice D **runtime** still requires a **separate explicit authorization**.
+
+Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` is **not** authorized here.
 
