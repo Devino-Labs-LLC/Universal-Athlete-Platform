@@ -1922,7 +1922,7 @@ Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` is **not
 
 | Item | Evidence |
 | --- | --- |
-| Runtime commit | Recorded as the Slice D completion commit on `develop` (this section's accompanying commit) |
+| Runtime commit | `855ddf4ab32ba2474655b5df7f365fe234c2daa7` |
 | Architecture | Leaf `entitlements.OrganizationCommercialCapacityPort`; billing implements; organization consumes. No `organization → billing` |
 | Option B | `NoEffectiveBand` does not deny accept. No 402 on accept |
 | Numeric 409 | Exactly one effective band + ATHLETE +1 at/above max → `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` |
