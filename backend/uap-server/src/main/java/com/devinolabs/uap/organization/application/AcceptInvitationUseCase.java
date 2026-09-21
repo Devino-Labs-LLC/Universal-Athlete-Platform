@@ -8,11 +8,16 @@ import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.devinolabs.uap.athlete.api.AthleteContextPort;
 import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.athlete.api.AthleteRef;
+import com.devinolabs.uap.entitlements.OrganizationCommercialCapacity.Ambiguous;
+import com.devinolabs.uap.entitlements.OrganizationCommercialCapacity.EffectiveBand;
+import com.devinolabs.uap.entitlements.OrganizationCommercialCapacity.NoEffectiveBand;
+import com.devinolabs.uap.entitlements.OrganizationCommercialCapacityPort;
 import com.devinolabs.uap.identity.api.AccountDirectoryPort;
 import com.devinolabs.uap.identity.api.AccountDirectoryRef;
 import com.devinolabs.uap.identity.api.SecureTokenDigestPort;
@@ -42,6 +47,7 @@ public class AcceptInvitationUseCase {
 	private final SecureTokenDigestPort tokenDigestPort;
 	private final AthleteContextPort athleteContextPort;
 	private final OrganizationAuditPort auditPort;
+	private final OrganizationCommercialCapacityPort organizationCommercialCapacityPort;
 	private final Clock clock;
 
 	public AcceptInvitationUseCase(
@@ -54,6 +60,7 @@ public class AcceptInvitationUseCase {
 			SecureTokenDigestPort tokenDigestPort,
 			AthleteContextPort athleteContextPort,
 			OrganizationAuditPort auditPort,
+			OrganizationCommercialCapacityPort organizationCommercialCapacityPort,
 			Clock clock) {
 		this.invitationRepository = Objects.requireNonNull(invitationRepository);
 		this.organizationRepository = Objects.requireNonNull(organizationRepository);
@@ -64,10 +71,11 @@ public class AcceptInvitationUseCase {
 		this.tokenDigestPort = Objects.requireNonNull(tokenDigestPort);
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.auditPort = Objects.requireNonNull(auditPort);
+		this.organizationCommercialCapacityPort = Objects.requireNonNull(organizationCommercialCapacityPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MembershipAcceptResult executeByRawToken(AccountId acceptingAccountId, String rawToken) {
 		Objects.requireNonNull(acceptingAccountId, "acceptingAccountId must not be null");
 		if (rawToken == null || rawToken.isBlank()) {
@@ -79,7 +87,7 @@ public class AcceptInvitationUseCase {
 		return accept(acceptingAccountId, invitation);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MembershipAcceptResult executeByInvitationId(AccountId acceptingAccountId, InvitationId invitationId) {
 		Objects.requireNonNull(acceptingAccountId, "acceptingAccountId must not be null");
 		Objects.requireNonNull(invitationId, "invitationId must not be null");
@@ -191,6 +199,7 @@ public class AcceptInvitationUseCase {
 			Organization organization,
 			Team team) {
 		UUID athleteId = resolveAthleteId(acceptingAccountId, invitation.role());
+		enforceAthleteCapacityIfRequired(organization, invitation.role(), athleteId);
 		TeamMembershipId membershipId = TeamMembershipId.generate();
 		TeamMembership membership = TeamMembership.register(
 				membershipId,
@@ -223,6 +232,38 @@ public class AcceptInvitationUseCase {
 				membership.role(),
 				acceptingAccountId);
 		return MembershipAcceptResult.team(TeamMembershipResult.from(membership));
+	}
+
+	private void enforceAthleteCapacityIfRequired(
+			Organization organization,
+			OrganizationMembershipRole role,
+			UUID athleteId) {
+		if (role != OrganizationMembershipRole.ATHLETE || athleteId == null) {
+			return;
+		}
+		if (!organizationCommercialCapacityPort.isEnforcementEnabled()) {
+			return;
+		}
+		Organization locked = organizationRepository.findByIdForUpdate(organization.id())
+				.orElseThrow(InvitationNotFoundException::new);
+		if (locked.status() == OrganizationStatus.ARCHIVED) {
+			throw new InvitationNotFoundException();
+		}
+		if (teamMembershipRepository.existsActiveAthleteInOrganization(locked.id(), athleteId)) {
+			return;
+		}
+		switch (organizationCommercialCapacityPort.resolve(locked.id().value())) {
+			case NoEffectiveBand ignored -> {
+				return;
+			}
+			case Ambiguous ignored -> throw new OrganizationAthleteCapacityUnavailableException();
+			case EffectiveBand band -> {
+				long current = teamMembershipRepository.countDistinctActiveAthletes(locked.id());
+				if (current >= band.maxActiveAthletes()) {
+					throw new OrganizationAthleteCapacityUnavailableException();
+				}
+			}
+		}
 	}
 
 	private UUID resolveAthleteId(AccountId accountId, OrganizationMembershipRole role) {

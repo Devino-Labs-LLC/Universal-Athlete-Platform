@@ -3,11 +3,13 @@ package com.devinolabs.uap.organization.infrastructure.persistence;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.organization.application.TeamMembershipRepository;
 import com.devinolabs.uap.organization.domain.AccountId;
+import com.devinolabs.uap.organization.domain.OrganizationId;
 import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 import com.devinolabs.uap.organization.domain.OrganizationMembershipStatus;
 import com.devinolabs.uap.organization.domain.TeamId;
@@ -91,6 +93,16 @@ class JpaTeamMembershipRepository implements TeamMembershipRepository {
 				teamId.value(),
 				accountId.value(),
 				OrganizationMembershipStatus.ACTIVE);
+	}
+
+	@Override
+	public boolean existsActiveAthleteInOrganization(OrganizationId organizationId, UUID athleteId) {
+		return jpaRepository.existsActiveAthleteInOrganization(organizationId.value(), athleteId);
+	}
+
+	@Override
+	public long countDistinctActiveAthletes(OrganizationId organizationId) {
+		return jpaRepository.countDistinctActiveAthletes(organizationId.value());
 	}
 
 }

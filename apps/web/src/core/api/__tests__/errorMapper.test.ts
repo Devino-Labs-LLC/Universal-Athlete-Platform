@@ -81,6 +81,28 @@ describe('mapAxiosError', () => {
     expect(error.category).not.toBe('FORBIDDEN');
   });
 
+  it('maps organization athlete capacity as conflict not entitlement or auth', () => {
+    const error = mapAxiosError(
+      new axios.AxiosError('Conflict', undefined, undefined, undefined, {
+        status: 409,
+        statusText: 'Conflict',
+        headers: {},
+        config: { headers: new axios.AxiosHeaders() },
+        data: {
+          code: 'ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE',
+          message: 'This organization cannot add another active athlete at this time.',
+        },
+      }),
+    );
+
+    expect(error.category).toBe('CONFLICT');
+    expect(error.status).toBe(409);
+    expect(error.code).toBe('ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE');
+    expect(error.category).not.toBe('COMMERCIAL_ENTITLEMENT');
+    expect(error.category).not.toBe('UNAUTHORIZED');
+    expect(error.category).not.toBe('FORBIDDEN');
+  });
+
   it('maps conflict responses', () => {
     const error = mapAxiosError(
       new axios.AxiosError('Conflict', undefined, undefined, undefined, {

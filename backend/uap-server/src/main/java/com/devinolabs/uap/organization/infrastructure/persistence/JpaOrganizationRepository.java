@@ -44,6 +44,11 @@ class JpaOrganizationRepository implements OrganizationRepository {
 	}
 
 	@Override
+	public Optional<Organization> findByIdForUpdate(OrganizationId id) {
+		return jpaRepository.findByIdForUpdate(id.value()).map(OrganizationPersistenceMapper::toDomain);
+	}
+
+	@Override
 	public List<Organization> findAllById(Iterable<OrganizationId> ids) {
 		List<UUID> uuidIds = StreamSupport.stream(ids.spliterator(), false)
 				.map(OrganizationId::value)

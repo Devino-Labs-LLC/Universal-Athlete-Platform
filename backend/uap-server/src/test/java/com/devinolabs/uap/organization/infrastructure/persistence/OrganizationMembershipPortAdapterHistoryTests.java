@@ -164,6 +164,16 @@ class OrganizationMembershipPortAdapterHistoryTests {
 			public boolean existsActiveMembership(AccountId accountId, TeamId teamId) {
 				throw new UnsupportedOperationException();
 			}
+
+			@Override
+			public boolean existsActiveAthleteInOrganization(OrganizationId organizationId, UUID athleteId) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public long countDistinctActiveAthletes(OrganizationId organizationId) {
+				throw new UnsupportedOperationException();
+			}
 		};
 	}
 
@@ -204,6 +214,11 @@ class OrganizationMembershipPortAdapterHistoryTests {
 					return Optional.empty();
 				}
 				return Optional.of(organization);
+			}
+
+			@Override
+			public Optional<Organization> findByIdForUpdate(OrganizationId id) {
+				return findById(id);
 			}
 
 			@Override

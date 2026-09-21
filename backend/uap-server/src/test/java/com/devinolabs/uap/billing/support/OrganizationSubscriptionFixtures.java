@@ -30,11 +30,31 @@ public final class OrganizationSubscriptionFixtures {
 			Instant currentPeriodEndsAt,
 			Instant graceEndsAt,
 			Instant asOf) {
+		return saveOrganizationState(
+				repository,
+				organizationId,
+				CommercialPlanKey.ORG_BAND_25,
+				state,
+				trialEndsAt,
+				currentPeriodEndsAt,
+				graceEndsAt,
+				asOf);
+	}
+
+	public static Subscription saveOrganizationState(
+			SubscriptionRepository repository,
+			UUID organizationId,
+			CommercialPlanKey planKey,
+			SubscriptionLifecycleState state,
+			Instant trialEndsAt,
+			Instant currentPeriodEndsAt,
+			Instant graceEndsAt,
+			Instant asOf) {
 		Subscription subscription = Subscription.rehydrate(
 				SubscriptionId.generate(),
 				BillingSubject.organization(organizationId),
 				BillingProvider.APPLE_APP_STORE,
-				CommercialPlanKey.ORG_BAND_25,
+				planKey,
 				BillingCadence.MONTHLY,
 				state,
 				null,
@@ -50,12 +70,20 @@ public final class OrganizationSubscriptionFixtures {
 	}
 
 	public static Subscription saveActiveOrganization(SubscriptionRepository repository, UUID organizationId, Clock clock) {
+		return saveActiveOrganization(repository, organizationId, CommercialPlanKey.ORG_BAND_25, clock);
+	}
+
+	public static Subscription saveActiveOrganization(
+			SubscriptionRepository repository,
+			UUID organizationId,
+			CommercialPlanKey planKey,
+			Clock clock) {
 		Instant now = Instant.now(clock);
 		Subscription pending = Subscription.startPending(
 				SubscriptionId.generate(),
 				BillingSubject.organization(organizationId),
 				BillingProvider.APPLE_APP_STORE,
-				CommercialPlanKey.ORG_BAND_25,
+				planKey,
 				clock);
 		pending.activate(now.plus(Duration.ofDays(30)), clock);
 		return repository.save(pending);

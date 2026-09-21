@@ -3,7 +3,7 @@ package com.devinolabs.uap.billing.domain;
 import java.util.Objects;
 
 /**
- * Fixed active-athlete band capacities (ADR-041). Usage counting/enforcement is Slice D.
+ * Fixed active-athlete band capacities (ADR-041). Numeric enforcement is Slice D.
  */
 public enum OrganizationAthleteBand {
 

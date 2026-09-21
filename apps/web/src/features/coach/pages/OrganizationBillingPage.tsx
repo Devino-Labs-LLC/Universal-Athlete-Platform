@@ -1,14 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import { Button } from '@/core/components/Button';
 import { ErrorView } from '@/core/components/ErrorView';
 import { Page } from '@/core/components/Page';
-import { createOrganizationCheckoutSession } from '@/features/coach/api/billingApi';
+import {
+  createOrganizationCheckoutSession,
+  fetchOrganizationCapacity,
+} from '@/features/coach/api/billingApi';
+import {
+  organizationCatalog,
+  type OrganizationCapacitySnapshot,
+} from '@/features/coach/models/billingCatalog';
 import { coachErrorMessage } from '@/features/coach/models/errors';
-import { organizationCatalog } from '@/features/coach/models/billingCatalog';
 import styles from '@/features/coach/pages/CoachPages.module.scss';
+
+function ownerUsageCopy(snapshot: OrganizationCapacitySnapshot): string {
+  if (snapshot.bandCapacity == null) {
+    return `${snapshot.activeAthleteCount} active athletes. No current Organization plan band applies.`;
+  }
+  return `${snapshot.activeAthleteCount} of ${snapshot.bandCapacity} active athletes`;
+}
 
 export function OrganizationBillingPage() {
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -17,6 +30,28 @@ export function OrganizationBillingPage() {
   const [cadence, setCadence] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const [error, setError] = useState<unknown>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [capacity, setCapacity] = useState<OrganizationCapacitySnapshot | null>(null);
+
+  useEffect(() => {
+    if (!organizationId) {
+      return;
+    }
+    let cancelled = false;
+    void fetchOrganizationCapacity(apiClient, organizationId)
+      .then((snapshot) => {
+        if (!cancelled) {
+          setCapacity(snapshot);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCapacity(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiClient, organizationId]);
 
   const selected = organizationCatalog.find((tier) => tier.planKey === planKey) ?? organizationCatalog[0];
   const price = cadence === 'MONTHLY' ? selected.monthlyUsd : selected.annualUsd;
@@ -26,6 +61,7 @@ export function OrganizationBillingPage() {
       title="Organization billing"
       description="Start a 14-day Organization trial. Prices are shown before applicable taxes."
     >
+      {capacity ? <p className={styles.meta}>{ownerUsageCopy(capacity)}</p> : null}
       <form
         className={styles.pickerForm}
         onSubmit={(event) => {

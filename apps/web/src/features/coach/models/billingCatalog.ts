@@ -52,3 +52,13 @@ export const organizationBillingStatusSchema = z.object({
 });
 
 export type OrganizationBillingStatus = z.infer<typeof organizationBillingStatusSchema>;
+
+export const organizationCapacitySnapshotSchema = z.object({
+  activeAthleteCount: z.number().int().nonnegative(),
+  bandCapacity: z.number().int().positive().nullable().optional(),
+  remainingCapacity: z.number().int().nonnegative().nullable().optional(),
+  atCapacity: z.boolean(),
+  overCapacity: z.boolean(),
+});
+
+export type OrganizationCapacitySnapshot = z.infer<typeof organizationCapacitySnapshotSchema>;

@@ -20,6 +20,7 @@ import com.devinolabs.uap.billing.application.BillingProviderUnavailableExceptio
 
 @RestControllerAdvice(basePackageClasses = {
 		OrganizationBillingController.class,
+		OrganizationCapacityController.class,
 		StripeWebhookController.class
 })
 class BillingExceptionHandler {

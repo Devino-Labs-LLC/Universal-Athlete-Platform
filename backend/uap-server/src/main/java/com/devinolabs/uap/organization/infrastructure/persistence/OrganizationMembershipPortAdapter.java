@@ -200,6 +200,14 @@ class OrganizationMembershipPortAdapter implements OrganizationMembershipPort {
 				.toList();
 	}
 
+	@Override
+	public long countDistinctActiveAthletes(UUID organizationId) {
+		if (organizationId == null) {
+			return 0L;
+		}
+		return teamMembershipRepository.countDistinctActiveAthletes(OrganizationId.of(organizationId));
+	}
+
 	private Optional<AthleteMembershipHistory> toHistory(TeamMembership membership) {
 		Optional<Team> team = teamRepository.findById(membership.teamId());
 		if (team.isEmpty()) {

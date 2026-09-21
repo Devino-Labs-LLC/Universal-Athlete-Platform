@@ -7,6 +7,8 @@ const INVITATION_ERROR_MESSAGES: Record<string, string> = {
   EMAIL_UNVERIFIED: 'Verify your email address before accepting an invitation.',
   ATHLETE_PROFILE_REQUIRED: 'An athlete profile is required to accept this invitation.',
   MEMBERSHIP_ALREADY_ACTIVE: 'You already have an active membership for this organization or team.',
+  ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE:
+    'This organization cannot add another active athlete at this time.',
   ORGANIZATION_ARCHIVED: 'This organization is archived and cannot accept invitations.',
   TEAM_ARCHIVED: 'This team is archived and cannot accept invitations.',
   ORGANIZATION_NOT_FOUND: 'Organization was not found.',

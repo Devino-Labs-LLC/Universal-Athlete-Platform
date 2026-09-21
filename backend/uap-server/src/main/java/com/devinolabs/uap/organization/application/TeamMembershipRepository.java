@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.devinolabs.uap.organization.domain.AccountId;
+import com.devinolabs.uap.organization.domain.OrganizationId;
 import com.devinolabs.uap.organization.domain.TeamId;
 import com.devinolabs.uap.organization.domain.TeamMembership;
 import com.devinolabs.uap.organization.domain.TeamMembershipId;
@@ -26,5 +27,9 @@ public interface TeamMembershipRepository {
 	List<TeamMembership> findAllByAccountId(AccountId accountId);
 
 	boolean existsActiveMembership(AccountId accountId, TeamId teamId);
+
+	boolean existsActiveAthleteInOrganization(OrganizationId organizationId, UUID athleteId);
+
+	long countDistinctActiveAthletes(OrganizationId organizationId);
 
 }

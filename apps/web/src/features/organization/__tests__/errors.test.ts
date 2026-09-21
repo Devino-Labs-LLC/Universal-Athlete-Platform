@@ -19,10 +19,19 @@ describe('invitationErrorMessage', () => {
         new ApiError('backend', {
           category: 'CONFLICT',
           status: 409,
-          code: 'EMAIL_UNVERIFIED',
+          code: 'ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE',
         }),
       ),
-    ).toMatch(/verify your email/i);
+    ).toMatch(/cannot add another active athlete/i);
+    expect(
+      invitationErrorMessage(
+        new ApiError('backend', {
+          category: 'CONFLICT',
+          status: 409,
+          code: 'ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE',
+        }),
+      ),
+    ).not.toMatch(/upgrade|plan|payment/i);
   });
 
   it('detects invitation not-found errors', () => {

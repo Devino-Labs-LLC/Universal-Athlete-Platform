@@ -4,6 +4,7 @@ import type { ApiClient } from '@/core/api/apiClient';
 import {
   createOrganizationCheckoutSession,
   fetchOrganizationBillingStatus,
+  fetchOrganizationCapacity,
 } from '@/features/coach/api/billingApi';
 
 function clientWith(axios: { post?: unknown; get?: unknown }): ApiClient {
@@ -54,5 +55,23 @@ describe('billingApi', () => {
     expect(get).toHaveBeenCalledWith('/api/v1/billing/organizations/org-1');
     expect(status.lifecycleState).toBe('PENDING');
     expect(status.planKey).toBe('ORG_BAND_25');
+  });
+
+  it('fetches organization capacity snapshot', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        activeAthleteCount: 23,
+        bandCapacity: 25,
+        remainingCapacity: 2,
+        atCapacity: false,
+        overCapacity: false,
+      },
+    });
+
+    const snapshot = await fetchOrganizationCapacity(clientWith({ get }), 'org-1');
+
+    expect(get).toHaveBeenCalledWith('/api/v1/billing/organizations/org-1/capacity');
+    expect(snapshot.activeAthleteCount).toBe(23);
+    expect(snapshot.bandCapacity).toBe(25);
   });
 });

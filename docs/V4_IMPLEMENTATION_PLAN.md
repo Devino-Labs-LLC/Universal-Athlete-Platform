@@ -13,7 +13,7 @@
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). Slice D runtime **not** authorized. V4 is **not** complete. Slice D / E are **not** started.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **COMPLETE on develop** (see **§38**). Not **PRODUCTION VERIFIED**. Slice E is **not** authorized. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1909,5 +1909,42 @@ No unresolved Product Owner decision remains for Slice D semantics.
 Slice D **runtime** still requires a **separate explicit authorization**.
 
 Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` is **not** authorized here.
+
+---
+
+## 38. Slice D — Organization Active-Athlete Capacity (COMPLETE on develop)
+
+**Status:** **COMPLETE on develop**. Not **PRODUCTION VERIFIED**. Does not authorize Slice E, commercial launch, production capacity `true`, production entitlement `true`, Stripe on, Railway mutation, or `main` merge.
+
+**Baseline:** `main` = `0349424d1a05b543370ed9b75d25b58644d53a03` (unchanged). Schema remains Flyway **V36**.
+
+### 38.1 Implementation evidence
+
+| Item | Evidence |
+| --- | --- |
+| Runtime commit | Recorded as the Slice D completion commit on `develop` (this section's accompanying commit) |
+| Architecture | Leaf `entitlements.OrganizationCommercialCapacityPort`; billing implements; organization consumes. No `organization → billing` |
+| Option B | `NoEffectiveBand` does not deny accept. No 402 on accept |
+| Numeric 409 | Exactly one effective band + ATHLETE +1 at/above max → `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` |
+| Ambiguous effective subs | +1 generic 409; +0 succeeds |
+| Flag | `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` → `uap.billing.organization-capacity-enforcement.enabled` default **false**. Independent of Stripe and entitlement. Not in `application-prod.yaml` or clients |
+| Canonical count | `COUNT(DISTINCT athlete_id)` ACTIVE ATHLETE `team_memberships ⋈ teams` |
+| Serialization | Invitation `FOR UPDATE` then Organization `FOR UPDATE`; accept uses `READ_COMMITTED` so the post-lock count is a current read (T18) |
+| Owner snapshot | Always-on `GET /api/v1/billing/organizations/{id}/capacity` (not Stripe-conditional). ORG_OWNER via `canManageOrganization`; else 404 without usage |
+| Conflict contract | HTTP 409, empty `details`, no plan/Stripe/usage in body |
+| Tests | Band boundaries 25/75/250; Option B no-band cells; dual accept APIs; PENDING after denial; replay; staff at cap; LEFT/REMOVED rejoin; invite create at max; concurrent distinct 24/25; concurrent same-athlete two teams; both flags 409≠402; owner GET |
+| Migration | None (V36 remains latest) |
+| Stripe | No Checkout/quantity/usage/catalog mutation |
+| Independent reviews | Lead **PASS-WITH-NOTES**; Backend **PASS-WITH-NOTES**; QA **PASS-WITH-NOTES** after REMOVED + both-flags HTTP pins; Security **PASS-WITH-NOTES**; DevOps **PASS-WITH-NOTES**; Web **PASS-WITH-NOTES**; Athlete Intelligence **PASS**; Documentation **PASS-WITH-NOTES** |
+| Local verification | Focused Slice D + Modulith + invitation concurrency green. Web typecheck/lint/test/production build green. Mobile typecheck/lint/test green. Full local `./gradlew test` hit Testcontainers connection pressure (unrelated terminal-lifecycle tests); GitHub Verify is the full-suite gate |
+| Production flags | Capacity remains default-off / unauthorized. Entitlement production remains false. Stripe production remains off |
+
+Owner snapshot for **ambiguous** effective subscriptions returns actual `activeAthleteCount` and **null** band fields (does not fabricate a numeric band). That is intentional.
+
+Slice E undersized-plan purchase constraint remains docs-only.
+
+V4 is **not** complete.
+
+
 
 

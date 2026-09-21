@@ -12,6 +12,8 @@ public interface OrganizationRepository {
 
 	Optional<Organization> findById(OrganizationId id);
 
+	Optional<Organization> findByIdForUpdate(OrganizationId id);
+
 	List<Organization> findAllById(Iterable<OrganizationId> ids);
 
 }

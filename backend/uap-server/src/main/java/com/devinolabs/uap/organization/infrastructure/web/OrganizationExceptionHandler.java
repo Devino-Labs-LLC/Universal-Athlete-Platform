@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.devinolabs.uap.entitlements.CommercialEntitlementRequiredException;
 import com.devinolabs.uap.organization.application.InvalidOrganizationStatusException;
+import com.devinolabs.uap.organization.application.OrganizationAthleteCapacityUnavailableException;
 import com.devinolabs.uap.organization.application.InvitationConflictException;
 import com.devinolabs.uap.organization.application.InvitationNotFoundException;
 import com.devinolabs.uap.organization.application.MembershipConflictException;
@@ -89,6 +90,13 @@ class OrganizationExceptionHandler {
 			HttpServletRequest request) {
 		String message = ex.getMessage() == null ? "Invalid organization status" : ex.getMessage();
 		return conflict(request, "ORGANIZATION_ARCHIVED", message);
+	}
+
+	@ExceptionHandler(OrganizationAthleteCapacityUnavailableException.class)
+	ResponseEntity<ApiErrorResponse> handleAthleteCapacityUnavailable(
+			OrganizationAthleteCapacityUnavailableException ex,
+			HttpServletRequest request) {
+		return conflict(request, OrganizationAthleteCapacityUnavailableException.CODE, ex.getMessage());
 	}
 
 	@ExceptionHandler(InvitationConflictException.class)

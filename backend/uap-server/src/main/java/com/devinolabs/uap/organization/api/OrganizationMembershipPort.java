@@ -86,6 +86,14 @@ public interface OrganizationMembershipPort {
 	 */
 	List<AthleteMembershipHistory> listAthleteMembershipHistory(UUID accountId);
 
+	/**
+	 * Distinct ACTIVE ATHLETE identities across teams in the organization.
+	 * Not an authorization check.
+	 */
+	default long countDistinctActiveAthletes(UUID organizationId) {
+		throw new UnsupportedOperationException("countDistinctActiveAthletes");
+	}
+
 	record AthleteMembershipHistory(
 			UUID teamId,
 			String teamName,

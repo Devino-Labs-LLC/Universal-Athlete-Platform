@@ -5,9 +5,11 @@ import { BillingCheckoutCancelPage, BillingCheckoutSuccessPage } from '@/feature
 import { renderWithProviders, screen, userEvent } from '@/test/utils';
 
 const createCheckout = vi.fn();
+const fetchCapacity = vi.fn();
 
 vi.mock('@/features/coach/api/billingApi', () => ({
   createOrganizationCheckoutSession: (...args: unknown[]) => createCheckout(...args),
+  fetchOrganizationCapacity: (...args: unknown[]) => fetchCapacity(...args),
 }));
 
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
@@ -30,11 +32,20 @@ describe('Organization billing acquisition', () => {
   beforeEach(() => {
     createCheckout.mockReset();
     createCheckout.mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.test/cs_test' });
+    fetchCapacity.mockReset();
+    fetchCapacity.mockResolvedValue({
+      activeAthleteCount: 23,
+      bandCapacity: 25,
+      remainingCapacity: 2,
+      atCapacity: false,
+      overCapacity: false,
+    });
   });
 
   it('shows locked prices, trial copy, and tax-exclusive posture', async () => {
     renderWithProviders(<OrganizationBillingPage />);
 
+    expect(await screen.findByText('23 of 25 active athletes')).toBeInTheDocument();
     expect(screen.getAllByText(/14-day/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/plus applicable taxes/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Start Checkout' })).toBeEnabled();

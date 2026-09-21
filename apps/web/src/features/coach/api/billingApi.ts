@@ -2,7 +2,9 @@ import type { ApiClient } from '@/core/api/apiClient';
 import {
   checkoutSessionResponseSchema,
   organizationBillingStatusSchema,
+  organizationCapacitySnapshotSchema,
   type OrganizationBillingStatus,
+  type OrganizationCapacitySnapshot,
 } from '@/features/coach/models/billingCatalog';
 
 export async function createOrganizationCheckoutSession(
@@ -27,4 +29,12 @@ export async function fetchOrganizationBillingStatus(
 ): Promise<OrganizationBillingStatus> {
   const response = await client.axios.get(`/api/v1/billing/organizations/${organizationId}`);
   return organizationBillingStatusSchema.parse(response.data);
+}
+
+export async function fetchOrganizationCapacity(
+  client: ApiClient,
+  organizationId: string,
+): Promise<OrganizationCapacitySnapshot> {
+  const response = await client.axios.get(`/api/v1/billing/organizations/${organizationId}/capacity`);
+  return organizationCapacitySnapshotSchema.parse(response.data);
 }
