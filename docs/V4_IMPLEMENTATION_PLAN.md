@@ -5,15 +5,15 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main`):** Slice C **PRODUCTION VERIFIED** at promotion SHA `03fbdb1a827539bf66557750bf009ebb89e2f7e7` (see §36). Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** tracks `main` after Slice C promotion (docs-evidence tip follows in §36). Matrix lock `c64ba79…`; clarification `cedf1049a1fdf2c023114cc3de609963380f2da1`.  
-**Production schema:** Flyway **V36** (inferred — see §33)  
+**Production baseline (`main`):** Slice D **PRODUCTION VERIFIED** at promotion SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c` (see §39). Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
+**`develop`:** tracks `main` after Slice D promotion (docs-evidence tip follows in §39).  
+**Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **COMPLETE on develop** (see **§38**). Not **PRODUCTION VERIFIED**. Slice E is **not** authorized. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. Slice E is **not** authorized. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -1942,6 +1942,136 @@ Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` is **not
 Owner snapshot for **ambiguous** effective subscriptions returns actual `activeAthleteCount` and **null** band fields (does not fabricate a numeric band). That is intentional.
 
 Slice E undersized-plan purchase constraint remains docs-only.
+
+V4 is **not** complete.
+
+---
+
+## 39. Slice D — PRODUCTION VERIFIED
+
+**Status:** **V4 Slice D — PRODUCTION VERIFIED**  
+**Does not mark V4 complete.** **Does not authorize Slice E.** **Does not activate capacity enforcement, entitlement enforcement, or Stripe.** Live Stripe remains **untouched**. Commercial launch is **not** declared.
+
+Deployment of Slice D code ≠ activation of Organization active-athlete band enforcement. Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` remains **false / unset** (repository default).
+
+### 39.1 Pre-promotion refs and topology
+
+| Item | Value |
+| --- | --- |
+| Pre-promotion `develop` / `origin/develop` | `1563b684b81e698aaaeaa2abb835f5f141f6201c` |
+| Pre-promotion `main` / `origin/main` | `0349424d1a05b543370ed9b75d25b58644d53a03` |
+| Topology | `develop` **5** commits ahead of `main`, **0** behind; merge-base = `main` |
+| Range | `c1b4cd1` … `1563b68` (capacity lock, review amendments, Option B lock, runtime `855ddf4`, §38 evidence) |
+| Method | Solo-maintainer `git merge --ff-only develop` on `main` (no PR, rebase, squash, or force push) |
+| Code promotion SHA | `1563b684b81e698aaaeaa2abb835f5f141f6201c` |
+| Runtime implementation SHA | `855ddf4ab32ba2474655b5df7f365fe234c2daa7` |
+| Authoritative develop Verify | [35623777521](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35623777521) **SUCCESS** |
+
+Promotion range contains the provider-neutral capacity port, billing capacity service, default-off flag, `COUNT(DISTINCT athlete_id)` queries, Organization `FOR UPDATE`, invitation-accept 409 contract, Option B, owner `GET /capacity`, minimal Web mapping, concurrency tests, and §38. It does **not** contain Slice E Portal/upgrade/downgrade, Stripe quantity/metered usage, Individual Premium, Flyway `V37+`, or production flag activation.
+
+### 39.2 Runtime main Verify / Sonar
+
+| Item | Value |
+| --- | --- |
+| Main Verify (promotion SHA `1563b68`) | [35632195827](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35632195827) **SUCCESS** |
+| Jobs | Backend core, Backend training-app, Backend training-http, Backend aggregate, Web, Mobile, Sonar Quality Gate — all **success** |
+| Quality Gate | **PASSED** (`alert_status=OK`) — https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=main |
+| New Code reliability | **A** (1.0) |
+| New Code security | **A** (1.0) |
+| New Code maintainability | **A** (1.0) |
+| New Code coverage | **88.5%** |
+| New Code duplication | **0.0%** |
+| New Code hotspot review | **100%** |
+
+Gate thresholds were not weakened.
+
+### 39.3 Railway production
+
+| Item | Evidence |
+| --- | --- |
+| Auto-deploy | GitHub environment `Universal Athlete Platform / production` deployment **6574191471** for SHA `1563b68…` — **success** (`2026-09-21T17:30:34Z`). No manual recovery deploy |
+| `UAP_Server` | `https://uapserver-production.up.railway.app` **UP** after auto-deploy |
+| `UAP_Client_Web` | `https://uapclientweb-production.up.railway.app` HTTP **200**; entry `index-DwAHCcB2.js`; lazy `OrganizationBillingPage-BMQrpzIp.js` contains owner usage / `/capacity`; lazy `errors-DZPGJGSa.js` maps `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` to the generic invitee copy. No `sk_test_`, `rk_test_`, `whsec_`, `sk_live_`, Price IDs, `paywall`, or upgrade CTA in those chunks |
+| `/actuator/health` | HTTP 200 `{"groups":["liveness","readiness"],"status":"UP"}` |
+| `/actuator/health/liveness` | HTTP 200 `{"status":"UP"}` |
+| `/actuator/health/readiness` | HTTP 200 `{"status":"UP"}` |
+
+Railway dashboard variable listing was **not** available (no Railway CLI / token in this environment). Capacity-off, entitlement-off, and Stripe-off conclusions below do **not** claim a direct Railway variable dump. Repository defaults `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=false`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=false`, and `UAP_BILLING_STRIPE_ENABLED=false` apply unless a production variable was set `true`. Runtime behavior is consistent with all remaining **false**: healthy boot without Stripe credentials; Stripe webhook controller not registered; owner capacity GET registered; no **402** or `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` on unauthenticated or CSRF-denied requests.
+
+### 39.4 V36
+
+No Slice D Flyway migration. Latest repository migration remains `V36__create_billing_stripe_org_foundation.sql`.
+
+Production Hibernate `ddl-auto=validate` plus existing billing/organization JPA entities would fail startup if V36 tables were missing. The server stayed healthy after the `1563b68` auto-deploy. Direct `flyway_schema_history` evidence was not available.
+
+### 39.5 Production capacity enforcement remained OFF
+
+| Check | Result |
+| --- | --- |
+| Repository default | `uap.billing.organization-capacity-enforcement.enabled: ${UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED:false}` |
+| `application-prod.yaml` | Does **not** override the flag |
+| This promotion | Railway variables were **not** mutated. The flag was **not** set `true` for smoke testing |
+| Runtime | Unauthenticated / CSRF-denied requests never returned **409** `ORGANIZATION_ATHLETE_CAPACITY_UNAVAILABLE` or **402**. Capacity GET is authenticated **401** `UNAUTHENTICATED` (controller registered), not missing-controller `/error` |
+| Certified 409 behavior | Remains on develop/CI (`OrganizationAthleteCapacityHttpIntegrationTests`, concurrency class). **Not activated** in production |
+| Commercial launch | **Not declared.** Production is **not** commercially enforcing 25/75/250 bands |
+
+### 39.6 Production entitlement enforcement remained OFF; Stripe remained disabled
+
+| Check | Result |
+| --- | --- |
+| Entitlement default | `uap.billing.entitlement-enforcement.enabled: ${UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED:false}` |
+| Stripe default | `uap.billing.stripe.enabled: ${UAP_BILLING_STRIPE_ENABLED:false}` |
+| This promotion | No Railway mutation. No sandbox/live `sk_test_` / `rk_test_` / `whsec_` / Price IDs / Checkout URLs written |
+| Stripe webhook | `POST /api/v1/billing/webhooks/stripe` with dummy `Stripe-Signature` → HTTP **401** `/error` (controller not registered). Enabled Stripe would return **400** for an invalid signature |
+| Live / sandbox Stripe | **Untouched** (no Products/Prices/Customers/Checkout/Subscriptions/quantity/usage/webhooks/Tax) |
+
+### 39.7 Owner capacity endpoint vs Stripe-conditional billing
+
+`GET /api/v1/billing/organizations/{organizationId}/capacity` is always registered (`OrganizationCapacityController` is **not** `@ConditionalOnProperty` Stripe). Unauthenticated production request → **401** `UNAUTHENTICATED` with that path — not 404-from-missing-controller, not 402, not capacity 409.
+
+Authenticated owner snapshot semantics (ORG_OWNER via `canManageOrganization`; foreign 404 without usage) remain covered by develop integration tests. No production ORG_OWNER identity was invented for this promotion.
+
+Slice B `OrganizationBillingController` / Stripe webhook remain Stripe-conditional and absent while Stripe is off.
+
+### 39.8 Auth / CSRF / Option B / invitation safety
+
+| Check | Result |
+| --- | --- |
+| Unauthenticated protected GETs | identity `/me`, organizations, athletes, assignments, billing GET, capacity GET → **401** `UNAUTHENTICATED` — **never 402** / never capacity **409** |
+| CSRF intact | `POST` logout, create Organization, org invitations without CSRF → **403** `CSRF_INVALID` — **never 402** / never capacity **409** |
+| Login CSRF exemption intact | `POST /api/v1/identity/login` invalid credentials → **401** `INVALID_CREDENTIALS` |
+| Option B in deployed source | `AcceptInvitationUseCase` admits `NoEffectiveBand` (not a zero-seat band). Flag off skips the gate entirely |
+| Production invitation mutation | **Not performed.** With the flag off, accept cannot be denied for band capacity |
+
+### 39.9 Concurrency evidence (certified, not reproduced in production)
+
+Do **not** manufacture production 24/25 roster load.
+
+| Case | Evidence |
+| --- | --- |
+| Two distinct athletes at 24/25 | `OrganizationAthleteCapacityConcurrencyIntegrationTests` — one success, one 409, final distinct **25**. Certified on develop Verify **35623777521** and main Verify **35632195827** |
+| Same athlete, two Teams at 24/25 | Same class — both may succeed, final distinct **25** |
+
+### 39.10 Athlete Intelligence boundary
+
+Promotion range contains **no** State Engine, readiness, recovery, recommendation, Team Readiness, consent, training-load, or athlete-history files. Capacity remains membership/commercial infrastructure only. Min cohort 5 and complementary suppression are unchanged.
+
+### 39.11 Independent reviews (preserved)
+
+| Role | Verdict |
+| --- | --- |
+| QA / Test Automation | **PASS-WITH-NOTES** after REMOVED rejoin and both-flags 409≠402 HTTP pins were added. Those notes are not promotion blockers after final implementation and Verify |
+| Security / Code Quality | **PASS-WITH-NOTES**. Notes (ambiguous owner snapshot honesty, additional oracle-matrix cells) are not promotion blockers with production capacity **OFF** |
+
+### 39.12 Undersized-plan requirement (deferred)
+
+`activeAthleteCount` must constrain a future initial purchase / downgrade / plan change (example: 40 athletes → `BAND_25` must not become effective; 100 → 25 and 75 insufficient; >250 → no current self-service band). **Not implemented** in this promotion. Remains Slice E / launch hardening.
+
+### 39.13 Docs-evidence tip
+
+The documentation commit that records this section is pushed on `develop` and fast-forwarded to `main` after its Verify succeeds. Runtime promotion Verify remains **35632195827**. Develop and main docs-tip Verify run IDs are distinct from that runtime promotion Verify.
+
+Slice E is **not** started. Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` remains a later explicit commercial-launch gate.
 
 V4 is **not** complete.
 
