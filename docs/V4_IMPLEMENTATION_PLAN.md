@@ -1336,7 +1336,16 @@ This flag must **not**: alter membership, consent, readiness math, or Team Readi
 
 ## 35. V4 Slice C — COMPLETE on develop (not PRODUCTION VERIFIED)
 
-**Status:** **COMPLETE on `develop`.** Not production-verified. Production enforcement remains **disabled / unmodified**. Slice D is **not** authorized by this section.
+**Status:** **COMPLETE on `develop`.** Not **PRODUCTION VERIFIED**. V4 is **not** complete. Production enforcement remains **disabled / unmodified**. Slice D is **not** authorized by this section. Slice C deployment ≠ commercial enforcement activation.
+
+### SHAs
+
+| Item | SHA / meaning |
+| --- | --- |
+| Runtime implementation | `50572362d10ae220958b252c3846dc648cdecce0` — provider-neutral Organization entitlement enforcement behind default-off `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` |
+| Final Slice C QA-hardening | `8a8c52b1a644f9162227f99d5a671a2f3099ba73` — HTTP pins for remaining §34.7 cells (especially 8e). **This is the independently reviewed develop tip for certification, not a second runtime implementation.** |
+
+Do not treat the runtime SHA as the final certification tip. Do not treat the QA-hardening SHA as a change to product-edge behavior.
 
 ### Implementation
 
@@ -1375,15 +1384,31 @@ Create/get/list/rename/archive Organization; get/list/GET Team; invitation list/
 - HTTP enforcement=`true` + Stripe disabled: 401/CSRF 403/404 never 402; authorized unpaid 402 side-effect free; ACTIVE success; lifecycle HTTP on create-team; individual premium ≠ org capability; foreign paid org remains 404; consent-before-entitlement on assignments; **§34.7 8e** unpaid overview + missing section consent → 402 (not `notShared`); entitled+no section consent → 200 `NOT_SHARED`; unauthenticated GET overview/readiness/assignments → 401 never 402; insufficient role (`ORG_ADMIN` team create, `TEAM_ADMIN` assignment, athlete Team Readiness) + ACTIVE org → existing 404; coach assignment GET/LIST unpaid → 402; consent revoke/re-grant after lapse stays free; team readiness entitled+small cohort → existing `INSUFFICIENT_DATA`; unpaid → 402 read-only; free/control surfaces after lapse
 - Web: 402 maps to `COMMERCIAL_ENTITLEMENT`, not UNAUTHORIZED/FORBIDDEN
 
+### Independent reviews
+
+| Role | Verdict | Notes |
+| --- | --- | --- |
+| QA / Test Automation | **FAIL** then **PASS** | First independent review **FAILED**: §34.7 cell **8e** was not explicitly pinned by HTTP coverage. Production behavior in `GetCoachAthleteOverviewUseCase` was already correct (membership/lifecycle → entitlement → section-consent projection). The gap was the test: the suite expired entitlement **after** granting `READINESS_CATEGORY`, so unpaid + missing section consent could still regress to 200 `notShared`. **Fix** on `8a8c52b`: HTTP coverage for unpaid overview with no section consent → **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` (never `notShared`); unauthenticated GET overview/readiness/assignments → **401** `UNAUTHENTICATED` (never 402); insufficient role + ACTIVE Organization → existing V3 **404** (never 402); coach assignment GET/LIST after lapse → **402**; consent revoke/re-grant after billing lapse remains commercially free. **Final QA:** **PASS** after `8a8c52b` and Verify **35501112746**. |
+| Security / Code Quality | **PASS-WITH-NOTES** | No additional product change required. AuthZ remains before entitlement. Paid state is not an existence oracle. 402 only after V3 authorization. Free control/exit surfaces remain free. Gated 402 mutations are side-effect free. Rollout flag is server-owned and defaults **false**. Residual notes were coverage nits (addressed by the QA-hardening commit) and an authorized-only 402-vs-409 archived-team ordering inconsistency — not a promotion blocker while production enforcement stays off. |
+| Athlete Intelligence / Data | **PASS** | No product change required. Billing gates only the allowed product-surface use cases. State Engine, readiness/recovery/recommendation calculators, `TeamReadinessSuppressionPolicy`, Team Readiness aggregation math, `ConsentEffectiveAccessService`, and `OrganizationMembershipPort` membership predicates remain commercially blind. One `READINESS_V1` formula. GET team readiness remains stored-read. |
+
 ### GitHub Verify and Sonar
 
-- GitHub Verify run **35500008730**: all jobs **success** (Backend core / training-app / training-http / Backend aggregate / Web / Mobile / Sonar)
-- Sonar Quality Gate **PASSED** on `develop`: [dashboard](https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=develop)
-- New Code: Reliability A (1.0), Security A (1.0), Maintainability A (1.0), Coverage **100%**, Duplication **0.1%**, Security Hotspots reviewed **100%**; 0 new bugs / vulnerabilities / code smells
+**Final authoritative certification run** (QA-hardened tip `8a8c52b`):
+
+- GitHub Verify **[35501112746](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35501112746)** — **SUCCESS** (Backend core / training-app / training-http / Backend aggregate / Web / Mobile / Sonar)
+
+Historical implementation-era Verify (runtime SHA `5057236` / early docs evidence). These are **not** the final certification run:
+
+- [35500008730](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35500008730) — success (implementation SHA evidence)
+- [35500463011](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35500463011) — success (docs SHA evidence)
+
+Sonar Quality Gate **PASSED** on `develop`: [dashboard](https://sonarcloud.io/dashboard?id=Devino-Labs-LLC_Universal-Athlete-Platform&branch=develop). New Code (measured after the implementation-era scan; QG still PASS on 35501112746): Reliability A (1.0), Security A (1.0), Maintainability A (1.0), Coverage **100%**, Duplication **0.1%**, Security Hotspots reviewed **100%**; 0 new bugs / vulnerabilities / code smells.
 
 ### Production / next
 
-Do **not** set production `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED=true`. Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
-
-**Implementation SHA:** `50572362d10ae220958b252c3846dc648cdecce0` on `develop`.
+- `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` repository default remains **`false`**.
+- Production enforcement has **not** been activated. Production Stripe remains **disabled / unmodified**. Railway variables were **not** changed.
+- Slice C code on `develop` ≠ commercial enforcement activation.
+- Do **not** merge `main`. Do **not** deploy. Do **not** start Slice D.
 
