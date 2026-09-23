@@ -36,6 +36,8 @@ Entitlement derives from internal state + paid-through timestamps. Adapters map 
 
 Organization `planKey` and `billingCadence` are commercial attributes of the **same** Subscription aggregate (one Stripe subscription id). Slice B persistence currently treats them as immutable. Slice E management, when separately authorized, mutates them only from an authoritative allow-listed provider Price (`docs/V4_IMPLEMENTATION_PLAN.md` **§40**). That is domain/JPA mutability. It does not require a new subscription row or a Flyway migration by itself.
 
+Organization cancel and reactivate use that same aggregate. There is no Portal lifecycle. `CANCEL_AT_PERIOD_END` is stored only when an authoritative provider snapshot says `cancel_at_period_end` for an `ACTIVE` or `TRIALING` relationship. `PAST_DUE` and `GRACE_PERIOD` do not enter that entitled state through cancel.
+
 ## Consequences
 
 - Stable product checks across providers  
