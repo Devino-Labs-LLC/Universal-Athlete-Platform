@@ -2208,7 +2208,7 @@ Example: count 20, owner starts `ORG_BAND_25`, row is PENDING (not an effective 
 
 **Trial (`TRIALING`):** band and cadence changes are allowed when the target band fits and the original `trialEndsAt` is preserved. The provider call must not set `trial_end` and must not set `trial_from_plan=true` (Stripe would otherwise apply the Price’s `trial_period_days` and reset the trial). Cancel schedules non-renewal at the trial/period end (`CANCEL_AT_PERIOD_END`). Reactivate clears that schedule. No extra trial.
 
-Stripe’s own `payment_behavior=error_if_incomplete` can return provider HTTP 402 when collection fails and the Price is left unchanged. Athlete Readiness must map that to **409** `BILLING_PAYMENT_NOT_APPLIED`. It is not `COMMERCIAL_ENTITLEMENT_REQUIRED` and must not be forwarded as product-edge 402.
+Stripe’s own `payment_behavior=error_if_incomplete` can return provider HTTP 402 when collection fails and the Price is left unchanged. Athlete Readiness must map that to **409** `BILLING_PAYMENT_NOT_APPLIED`. It is not `BILLING_PROVIDER_UNAVAILABLE`, not `COMMERCIAL_ENTITLEMENT_REQUIRED`, and must not be forwarded as product-edge 402.
 
 ### 40.8 Concurrency with athlete accept
 
@@ -2266,11 +2266,13 @@ Out of Slice E: grace jobs, dunning mail, retry queues beyond safe retry of the 
 | PAST_DUE / GRACE / cancel-scheduled plan change | `BILLING_LIFECYCLE_CONFLICT` | 409 |
 | Same `requestId`, different target | `BILLING_REQUEST_CONFLICT` | 409 |
 | Optimistic version conflict | `BILLING_CONCURRENT_MODIFICATION` | 409 |
-| Stripe outage | `BILLING_PROVIDER_UNAVAILABLE` | 503 (existing) |
+| Stripe/provider outage or transport failure | `BILLING_PROVIDER_UNAVAILABLE` | 502 Bad Gateway |
 | Unknown Price | do not apply; operational failure, no client-chosen tier | 409 `BILLING_PROVIDER_PRICE_REJECTED` |
 | Provider payment failed; Price unchanged (`error_if_incomplete`) | `BILLING_PAYMENT_NOT_APPLIED` | 409 (never product-edge 402) |
 
 Not 400 for these. Not 402.
+
+Slice E preserves the Slice B provider-unavailable contract: `BillingExceptionHandler` maps `BillingProviderUnavailableException` to **502** `BILLING_PROVIDER_UNAVAILABLE`. Changing that to 503 would be a separate public API change and is not part of Slice E. A failed Price collection that leaves the old Price in place stays **409** `BILLING_PAYMENT_NOT_APPLIED`.
 
 `requestId` on plan-change, cancel, and reactivate is idempotency only. It is **not** a new `SubscriptionId` (that pattern belongs to Checkout). Same id + same intent returns the current result and does not insert a row. Same id + a different target → **409** `BILLING_REQUEST_CONFLICT`. Already-canceled cancel and already-active reactivate are success, not a second provider mutation. Portal sessions are not keyed. A subscription id that belongs to another Organization is the existing **404** non-oracle, and it makes no provider call.
 
@@ -2315,7 +2317,7 @@ Using the existing Athlete Readiness **sandbox** Customer only. First read the *
 - Stripe disabled: all four management routes absent. Capacity GET still registered.
 - Portal session uses the persisted Customer ref and the server Portal Configuration. Client cannot set the return URL, Customer id, Configuration id, or Price id. The loaded configuration has payment method **on**, invoice history **on**, `subscription_update` **off**, `subscription_cancel` **off**, and `customer_update` **off**. The hosted session cannot expose cancel, a Price switch, or a quantity change. Portal is not an independent cancellation path; a provider snapshot from an external/admin change remains authoritative and still follows §40.8 / §40.9.
 - Checkout: count within band; count 40 → `ORG_BAND_25` **409**; count 100 → `ORG_BAND_75` **409**; count >250 **409**; replay; PENDING growth then webhook still applies and `overCapacity` is true; no member delete.
-- Upgrade 25→75 and 75→250 only after snapshot. `error_if_incomplete` leaves the old Price. Capacity stays on the old band until that snapshot commits. Webhook-before-commit and provider-success/local-fail still apply provider truth. No auto-remove and no auto-upgrade.
+- Upgrade 25→75 and 75→250 only after snapshot. `error_if_incomplete` leaves the old Price and returns **409** `BILLING_PAYMENT_NOT_APPLIED`. Provider outage or transport failure returns **502** `BILLING_PROVIDER_UNAVAILABLE`. Those codes stay distinct. Capacity stays on the old band until a successful snapshot commits. Webhook-before-commit and provider-success/local-fail still apply provider truth. No auto-remove and no auto-upgrade.
 - Downgrade at count == target succeeds. One athlete over fails **before** any provider call. A concurrent accept after the provider call and before persist restores the previous Price and returns **409**, with no member deletion.
 - Cadence-only monthly ↔ annual does not change capacity. Combined band+cadence uses the target band rule. All six eligible Prices.
 - Cancel from `ACTIVE` and `TRIALING` schedules `cancel_at_period_end` and does not immediately `EXPIRED`. Duplicate `requestId` is idempotent and does not call the provider twice. `PAST_DUE` and `GRACE_PERIOD`: Portal payment/invoice repair allowed; plan change **and** cancel **409** `BILLING_LIFECYCLE_CONFLICT`; the row does not become `CANCEL_AT_PERIOD_END`. Denied cancel/reactivate makes **no** provider call. `CANCEL_AT_PERIOD_END`: plan change blocked; cancel idempotent; reactivate allowed before `currentPeriodEndsAt`. `PENDING` and `EXPIRED`: plan change, cancel, and reactivate fail closed. After paid-through, reactivate is rejected (new Checkout later, not this operation).
