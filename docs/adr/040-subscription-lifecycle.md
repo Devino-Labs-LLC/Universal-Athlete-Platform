@@ -34,6 +34,8 @@ ACTIVE → PAST_DUE / GRACE_PERIOD → ACTIVE | EXPIRED
 
 Entitlement derives from internal state + paid-through timestamps. Adapters map provider statuses (ADR-044).
 
+Organization `planKey` and `billingCadence` are commercial attributes of the **same** Subscription aggregate (one Stripe subscription id). Slice B persistence currently treats them as immutable. Slice E management, when separately authorized, mutates them only from an authoritative allow-listed provider Price (`docs/V4_IMPLEMENTATION_PLAN.md` **§40**). That is domain/JPA mutability. It does not require a new subscription row or a Flyway migration by itself.
+
 ## Consequences
 
 - Stable product checks across providers  

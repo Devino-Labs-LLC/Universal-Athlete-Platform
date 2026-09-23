@@ -10,7 +10,7 @@ Ordinary SaaS billing does not require Stripe Connect. Athlete Readiness is not 
 
 ## Decision
 
-- Organization billing: **Stripe Billing + Checkout Sessions + Customer Portal** on Web; **ORG_OWNER only** financial authority.  
+- Organization billing: **Stripe Billing + Checkout Sessions + Customer Portal** on Web; **ORG_OWNER only** financial authority. `docs/V4_IMPLEMENTATION_PLAN.md` **§40** keeps Portal `subscription_update` **off** (it cannot enforce active-athlete bands). Payment method and invoice history are Portal. Whether Portal `subscription_cancel` is off or limited to cancel-at-period-end is the open confirmation in §40.21.  
 - Organization trial: **14 days** with payment method required up front.  
 - Individual billing (Slice G): Stripe Web and/or Apple and/or Google with server-side validation; **no** individual trial in initial V4.  
 - Cadence: monthly + annual as Price variants of the same entitlement.  

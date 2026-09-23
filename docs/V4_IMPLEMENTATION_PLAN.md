@@ -13,7 +13,7 @@
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. Slice E is **not** authorized. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** contract in **§40** (runtime **not** authorized). Slice E is **not** started. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -2074,6 +2074,288 @@ The documentation commit that records this section is pushed on `develop` and fa
 Slice E is **not** started. Production `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED=true` remains a later explicit commercial-launch gate.
 
 V4 is **not** complete.
+
+---
+
+## 40. Pre-Slice-E — Organization Billing Management Lock
+
+**Status:** Pre-Slice-E billing-management contract is documented; Slice E runtime is **not** authorized. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live or sandbox Stripe mutation, Flyway, or commercial launch.
+
+**Baseline:** `main` = `develop` = `c3e6ffd4ebacdd44d723269d1b60637de90e8b49` (Slice D **PRODUCTION VERIFIED**). Schema **V36**. `stripe-java` **33.4.2**. Production flags remain false / unset.
+
+**Question:** How may an ORG_OWNER manage an existing Organization subscription without bypassing active-athlete capacity, creating a second subscription, leaking provider identity, or requiring a commercial entitlement merely to repair billing?
+
+**Split (unchanged):** authorization = who (`ORG_OWNER` via `canManageOrganization`, else **404**). Commercial validity = billing. Provider execution = Stripe adapter only.
+
+### 40.1 Runtime inventory (verified in code)
+
+| Fact | Evidence |
+| --- | --- |
+| Provider operations today | `OrganizationBillingProvider`: `createCustomer`, `createCheckoutSession`, `fetchCheckoutSubscription`, `verifyWebhook`, `fetchAuthoritativeSnapshot`. **No** Portal session, subscription update, cancel, or reactivate |
+| Stripe controller | `OrganizationBillingController` is `@ConditionalOnProperty` `uap.billing.stripe.enabled=true`. Checkout, sync, and current GET only |
+| Capacity GET | `OrganizationCapacityController` is **always** registered and Stripe-independent |
+| `Subscription.planKey` / `billingCadence` | `final`. No domain mutator |
+| JPA `plan_key` | `updatable = false` |
+| JPA `billing_cadence` | column exists (V36); **not** `updatable = false` |
+| `applyDomainState` | writes lifecycle, refs, period timestamps. **Does not** write plan or cadence |
+| `ProviderSubscriptionSnapshot` | status, `cancelAtPeriodEnd`, trial end, period end, `providerStateAsOf`. **No** plan key or cadence |
+| Checkout | `OrganizationCheckoutService.startCheckout` does **not** read `activeAthleteCount` |
+| Open-subscription rule | non-EXPIRED row blocks a new checkout (`BILLING_CHECKOUT_IN_PROGRESS` if PENDING, else `BILLING_SUBSCRIPTION_EXISTS`) |
+| Owner read | `currentStatus` picks the **newest** non-EXPIRED row. That is **not** fail-closed |
+| Catalog | six server Prices: `ORG_BAND_25` / `75` / `250` × `MONTHLY` / `ANNUAL`. `StripeBillingProperties.priceId` / `requireMatchingPrice` |
+| Schema | V35 `plan_key` VARCHAR + CHECK of the four catalog keys. No DB trigger forbidding UPDATE. Latest migration remains **V36** |
+
+### 40.2 Aggregate model
+
+**One Stripe subscription remains one Athlete Readiness `Subscription`.** `planKey` and `billingCadence` become mutable commercial attributes, changed only when an authoritative provider snapshot maps to an allow-listed Price.
+
+Rejected: ending the row and inserting a replacement subscription for every plan change (duplicates the open-subscription invariant, splits webhook identity, and fights `providerSubscriptionRef` continuity).
+
+**No Flyway V37** for this mutability. Slice E runtime, when authorized, drops domain `final` and JPA `updatable = false` on `plan_key`, and teaches `applyDomainState` / `synchronizeProviderSnapshot` to persist plan and cadence. Historical transitions stay in audit and the provider-event inbox, not in a second ACTIVE row.
+
+`currentStatus` and every management action **must stop newest-wins**. Two or more non-EXPIRED Organization subscriptions → **409** `BILLING_SUBSCRIPTION_STATE_CONFLICT`. Do not union, pick highest, or update both.
+
+### 40.3 Portal vs server
+
+Stripe Customer Portal (`billing_portal.configuration`, stripe-java 33.4.2 / current Billing Portal API) can enable payment-method update and invoice history **independently** of `subscription_update` and `subscription_cancel`. Portal subscription update **cannot** enforce `COUNT(DISTINCT athlete_id)`. It stays **off**.
+
+| Responsibility | Owner |
+| --- | --- |
+| Payment method | Portal |
+| Invoice / receipt history | Portal |
+| Customer email / tax id edits | **Off** (would diverge from Athlete Readiness identity) |
+| Band or cadence change | Server `plan-changes` |
+| Cancel at period end | Server `cancel` is the **recommended** owner. Whether Portal `subscription_cancel` may also be on is the open confirmation in §40.21 |
+| Reactivate before period end | Server `reactivate` (`cancel_at_period_end=false`) |
+| Portal `subscription_update` | **Off.** Portal cannot enforce active-athlete counts. This is not an open product choice |
+| Portal `subscription_cancel` | **Open.** Recommended **off** so `mode=immediately` cannot violate §22. Portal can also be configured `at_period_end` only. §22 locks when cancel takes effect, not which UI starts it |
+
+Future sandbox configuration is **not** executed in this lock. Required regardless of the open cancel choice: a **server-selected** Portal Configuration id (not “whatever the Dashboard default is”), `payment_method_update` on, `invoice_history` on, `subscription_update` off, `customer_update` off, no login page. The session Customer is the Organization’s persisted `providerCustomerRef` only. The client cannot send a Customer, Subscription, Configuration, or Price id. Fail closed if the selected configuration would allow a subscription Price change. Return URL is the server allow-listed coach billing URL. Do not persist or log the Portal URL.
+
+`POST /api/v1/billing/organizations/{organizationId}/portal-sessions` lives on the Stripe-conditional controller. ORG_OWNER only. Response: hosted URL. Client cannot supply an arbitrary return URL. Unavailable when Stripe is disabled (controller absent). Creating a short-lived session is not request-id idempotent; a double click may open two sessions. Do not store them.
+
+### 40.4 Management APIs (design only)
+
+All on the existing Stripe-conditional organization billing controller. Body uses internal keys only: `targetPlanKey`, `targetCadence`, `requestId`. No Price id, amount, Product id, or Customer id.
+
+Checkout uses `requestId` as the new `SubscriptionId`. Plan-change, cancel, and reactivate **must not**. Their `requestId` is an idempotency key for that mutation. The path `subscriptions/{id}` is the existing aggregate. A replay never inserts a second row.
+
+| Action | Shape |
+| --- | --- |
+| Portal | `POST …/portal-sessions` |
+| Plan or cadence | `POST …/subscriptions/{id}/plan-changes` |
+| Cancel renewal | `POST …/subscriptions/{id}/cancel` |
+| Reactivate | `POST …/subscriptions/{id}/reactivate` |
+
+Authorization for every call: active `ORG_OWNER` or **404** `ORGANIZATION_NOT_FOUND` (existing non-oracle). ORG_ADMIN, TEAM_ADMIN, COACH, HEAD_COACH, ATHLETE, and foreign owners are 404. Unauthenticated **401**. Missing CSRF **403**. Never 402 for these conflicts. Never 403 to reveal billing authority.
+
+### 40.5 Band eligibility
+
+`activeAthleteCount` = Slice D `COUNT(DISTINCT athlete_id)`.
+
+| Count | Allowed targets |
+| --- | --- |
+| 0–25 | `ORG_BAND_25`, `ORG_BAND_75`, `ORG_BAND_250` |
+| 26–75 | `ORG_BAND_75`, `ORG_BAND_250` |
+| 76–250 | `ORG_BAND_250` |
+| >250 | none |
+
+Same rule for initial Checkout, upgrade, downgrade, and any change whose **target band** is smaller than or equal to the current band. A cadence-only change (same band) does not change capacity and is allowed when a manageable subscription exists. Combined band+cadence is one Price swap: the target band must be eligible.
+
+Denial: HTTP **409** `ORGANIZATION_PLAN_CAPACITY_CONFLICT`. Message does not include Stripe ids. Owner Web may compose “40 active athletes… reduce to 25 before selecting Starter” from the owner capacity snapshot. Invitees never see it.
+
+### 40.6 Checkout race (resolved by existing locks)
+
+Preflight at Checkout start is necessary and **not sufficient**.
+
+Example: count 20, owner starts `ORG_BAND_25`, row is PENDING (not an effective band). Option B still lets valid athletes accept. Count becomes 26. Stripe then completes `ORG_BAND_25`.
+
+| Option | Result |
+| --- | --- |
+| A. Apply the provider snapshot; keep members; owner sees `overCapacity` | Satisfies Option B, “do not reject a legitimate webhook”, “do not auto-remove”, “do not auto-upgrade” |
+| B. Refuse the webhook or auto-void / auto-upgrade | Violates those locks |
+| C. Freeze invitation accept while PENDING | Turns PENDING into a synthetic band and violates Option B |
+
+**Locked recommendation:** A. Request-time 409 stops an already-oversized Checkout. Activation-time growth is an over-capacity Organization under §37, not a rejected payment and not a silent higher charge. Say this explicitly in Slice E tests. Do not claim preflight closes the race.
+
+### 40.7 Upgrade, downgrade, cadence
+
+**Upgrade** (`ORG_BAND_25` → `75` → `250`): **immediate** Price replacement. `proration_behavior=always_invoice`. `payment_behavior=error_if_incomplete` so a failed collection does **not** leave the Subscription on the higher Price. Higher capacity applies only after the authoritative snapshot is stored. Trial `trial_end` is sent unchanged. No second 14-day trial and no trial-clock reset.
+
+**Downgrade:** **immediate**, and only when count ≤ target at the pre-call check **and** again before the smaller band is persisted. No Subscription Schedule and no Portal `schedule_at_period_end` in this contract. A period-end downgrade would need pending-plan state and would either constrain +1 below the still-purchased band (conflicts with the current effective band) or allow count to grow past the target before effect. The race after the provider call is closed by restoring the previous Price (§40.8), not by holding a database lock during Stripe I/O.
+
+**Cadence:** monthly ↔ annual is the same immediate Price swap, including with a band change, for all six allow-listed Prices. Same proration and payment behavior. Not deferred. Coupons stay deferred.
+
+**Trial (`TRIALING`):** band and cadence changes are allowed when the target band fits and the original `trialEndsAt` is preserved. The provider call must not set `trial_end` and must not set `trial_from_plan=true` (Stripe would otherwise apply the Price’s `trial_period_days` and reset the trial). Cancel schedules non-renewal at the trial/period end (`CANCEL_AT_PERIOD_END`). Reactivate clears that schedule. No extra trial.
+
+Stripe’s own `payment_behavior=error_if_incomplete` can return provider HTTP 402 when collection fails and the Price is left unchanged. Athlete Readiness must map that to **409** `BILLING_PAYMENT_NOT_APPLIED`. It is not `COMMERCIAL_ENTITLEMENT_REQUIRED` and must not be forwarded as product-edge 402.
+
+### 40.8 Concurrency with athlete accept
+
+Accept locks Invitation `FOR UPDATE`, then Organization `FOR UPDATE`. Management locks **Organization only**, and only around local reads and writes. It must **not** hold that lock across the Stripe call: an accept that already holds the invitation lock would sit on the organization lock for the whole provider RTT, and taking the invitation lock after the organization lock would deadlock. Athlete Intelligence paths do not take this organization lock and must not be called inside it.
+
+Downgrade (target maximum **below** the current band):
+
+1. Authorize.
+2. Short transaction: Organization `FOR UPDATE`, re-read distinct active athletes. If count > target, **409** `ORGANIZATION_PLAN_CAPACITY_CONFLICT` and do not call Stripe. Commit and release.
+3. Stripe Price swap with the rules in §40.7. The lock is **not** held here.
+4. Short transaction again: Organization `FOR UPDATE`, re-read count.
+5. If count is still ≤ target, persist the authoritative snapshot and commit. The smaller band becomes effective only in this commit.
+6. If count is now > target, **compensate**: Stripe update back to the previous allow-listed Price (not a new higher tier, not a member deletion). Persist that restored snapshot. Return **409** `ORGANIZATION_PLAN_CAPACITY_CONFLICT`.
+
+A webhook for the rejected downgrade is still applied as provider truth, then compensation writes the restored Price. The undersized band must not remain the effective plan. Members stay. There is a short over-capacity window until compensation lands; that window is not permission to drop the webhook or to auto-remove athletes. If compensation fails, retry compensation. Do not leave the local `planKey` on the undersized band once the restored snapshot is known.
+
+Upgrade and same-band cadence changes do not compensate when count rises: a larger or equal band still fits. They still persist only from the authoritative snapshot after the provider call returns.
+
+### 40.9 Lifecycle policy
+
+| State | Portal (payment/invoices) | Plan/cadence change | Cancel | Reactivate |
+| --- | --- | --- | --- | --- |
+| `PENDING` | Allowed if a Customer exists | **No** — `BILLING_CHECKOUT_IN_PROGRESS` / not manageable | **No** (abandon is not cancel-at-period-end) | **No** |
+| `TRIALING` / `ACTIVE` | Yes | Yes if band eligible | Yes | No (not scheduled) |
+| `CANCEL_AT_PERIOD_END` before `currentPeriodEndsAt` | Yes | **No** until reactivated (avoid changing a subscription that is ending) | Idempotent success | Yes |
+| After period end / `EXPIRED` | Payment history only if Customer exists | **No** — new Checkout, not reactivate | **No** | **No** |
+| `PAST_DUE` / `GRACE_PERIOD` | **Yes** (repair must not require entitlement) | **No** — `BILLING_LIFECYCLE_CONFLICT` | **No** — `BILLING_LIFECYCLE_CONFLICT` | **No** |
+| Two or more non-EXPIRED | **No** provider mutation | **No** | **No** | **No** — `BILLING_SUBSCRIPTION_STATE_CONFLICT` |
+
+Cancel from `ACTIVE` or `TRIALING` sets provider `cancel_at_period_end=true`, then stores `CANCEL_AT_PERIOD_END` only from the snapshot. It does not expire immediately and does not delete membership, consent, athlete data, readiness, or history.
+
+Cancel from `PAST_DUE` or `GRACE_PERIOD` is **rejected**. ADR-040 allows `CANCEL_AT_PERIOD_END` only from `ACTIVE` or `TRIALING`, and that state is commercially entitled. Mapping an unpaid `past_due` cancel into `CANCEL_AT_PERIOD_END` would re-entitle the Organization. A provider snapshot that is `past_due` with `cancel_at_period_end` stays `PAST_DUE` (or `GRACE_PERIOD` when grace rules say so). It does not become `CANCEL_AT_PERIOD_END`. Payment repair stays on the Portal. Slice F still owns dunning.
+
+Reactivate sets `cancel_at_period_end=false` only while paid-through is still in the future. After that, the owner starts a **new** Checkout. No silent new trial.
+
+Slice F still owns dunning, the grace scheduler, and broad reconciliation. Slice E only needs webhook snapshots to carry plan, cadence, and cancel-at-period-end so a management change cannot diverge.
+
+### 40.10 Provider snapshot and webhook minimum
+
+Extend `ProviderSubscriptionSnapshot` with the provider Price id mapped through `StripeBillingProperties` to `CommercialPlanKey` + `BillingCadence`. The subscription **item Price** is the source of truth. Stripe metadata may still name the previous plan after a Price swap. Slice E must not keep today’s adapter rule that rejects a snapshot when metadata and Price disagree. Unknown Price: **fail closed** — do not invent a tier; **409** `BILLING_PROVIDER_PRICE_REJECTED`; leave `planKey` unchanged. Stale `providerStateAsOf` remains a no-op.
+
+`synchronizeProviderSnapshot` writes the Price-mapped plan and cadence when the snapshot is accepted. When Athlete Readiness performs the update, it should also refresh metadata, but metadata is never the trust root. An undersized Price that arrives from outside the app (Portal or Dashboard) is still provider truth: apply it only together with the §40.8 compensation rule so it does not remain the effective band while count exceeds it. Do not drop the webhook.
+
+Out of Slice E: grace jobs, dunning mail, retry queues beyond safe retry of the management call itself.
+
+### 40.11 Errors, idempotency, failure window
+
+| Condition | Code | HTTP |
+| --- | --- | --- |
+| Not owner / foreign org | existing not-found | 404 |
+| No manageable subscription | `BILLING_SUBSCRIPTION_NOT_MANAGEABLE` | 409 |
+| Second checkout / plan change while PENDING | `BILLING_CHECKOUT_IN_PROGRESS` | 409 |
+| Ambiguous non-EXPIRED rows | `BILLING_SUBSCRIPTION_STATE_CONFLICT` | 409 |
+| Target band too small | `ORGANIZATION_PLAN_CAPACITY_CONFLICT` | 409 |
+| PAST_DUE / GRACE / cancel-scheduled plan change | `BILLING_LIFECYCLE_CONFLICT` | 409 |
+| Same `requestId`, different target | `BILLING_REQUEST_CONFLICT` | 409 |
+| Optimistic version conflict | `BILLING_CONCURRENT_MODIFICATION` | 409 |
+| Stripe outage | `BILLING_PROVIDER_UNAVAILABLE` | 503 (existing) |
+| Unknown Price | do not apply; operational failure, no client-chosen tier | 409 `BILLING_PROVIDER_PRICE_REJECTED` |
+| Provider payment failed; Price unchanged (`error_if_incomplete`) | `BILLING_PAYMENT_NOT_APPLIED` | 409 (never product-edge 402) |
+
+Not 400 for these. Not 402.
+
+`requestId` on plan-change, cancel, and reactivate is idempotency only. It is **not** a new `SubscriptionId` (that pattern belongs to Checkout). Same id + same intent returns the current result and does not insert a row. Same id + a different target → **409** `BILLING_REQUEST_CONFLICT`. Already-canceled cancel and already-active reactivate are success, not a second provider mutation. Portal sessions are not keyed. A subscription id that belongs to another Organization is the existing **404** non-oracle, and it makes no provider call.
+
+Order for every mutating action: authorize → short organization-row transaction for preconditions → release → provider mutation → refetch snapshot → short transaction to persist. A timed-out client retries with the same `requestId`. A webhook that arrives first is the snapshot the HTTP retry observes. Local state is never treated as more authoritative than Stripe. Downgrade compensation is §40.8.
+
+### 40.12 Audit
+
+On authoritative apply, not merely on click:
+
+- `BILLING_PLAN_CHANGED` (from plan, to plan, cadence; no Price id)
+- `BILLING_CANCEL_REQUESTED`
+- `BILLING_SUBSCRIPTION_REACTIVATED`
+- existing `BILLING_SUBSCRIPTION_ENDED` when the period actually ends (webhook)
+
+Do not audit Portal URLs, card data, or raw provider payloads. Opening Portal is not a security-audit event.
+
+### 40.13 Owner read model
+
+Keep two reads until a later UX slice: Stripe-conditional subscription GET (plan, cadence, lifecycle, trial end, period end — no provider ids) and Stripe-independent capacity GET (count, band capacity, remaining, at/over capacity). Web may call both. Do not put usage on the Stripe-conditional controller in a way that disappears when Stripe is off. Non-owners still 404 with no usage body.
+
+Ambiguous commercial state: capacity GET keeps Slice D behavior (count, null band). Management and the Stripe subscription GET return `BILLING_SUBSCRIPTION_STATE_CONFLICT` instead of newest-wins.
+
+### 40.14 Rollout
+
+**No new Slice E flag.** Provider-mutating routes stay on `UAP_BILLING_STRIPE_ENABLED`. Production remains false, so deploying a future Slice E build does not open Portal or plan changes. Capacity GET stays independent. Entitlement and capacity flags stay false. This lock does not authorize setting any of them true. Live Products/Prices and Stripe Tax remain later gates.
+
+### 40.15 Web (future)
+
+Owner billing page may show current plan, cadence, status, usage, “Manage payment method and invoices”, “Change plan”, “Cancel renewal”, and “Reactivate”. Marketing names (Starter / Team / Organization) are labels only. Tax display stays tax-exclusive. No coupons, no enterprise invoicing, no provider ids, no invitee paywall. The coach route is not authorization: render management only after the owner status/capacity calls succeed; a 404 is a generic unavailable state with no portal or checkout flash. Hide “Start Checkout” when a non-PENDING manageable subscription already exists. `ORGANIZATION_PLAN_CAPACITY_CONFLICT` maps as conflict, not 402 or unauthorized. The server remains the band check even if the client disables an undersized option.
+
+### 40.16 Athlete boundary
+
+No membership, consent, State Engine, readiness, recovery, recommendation, Team Readiness, or history changes. The organization row lock does not rewrite `team_memberships`. Cancel and downgrade never delete athletes.
+
+### 40.17 Future sandbox certification (do not run now)
+
+Using the existing Athlete Readiness **sandbox** Customer only: Portal opens for that Customer; non-owner makes **no** provider call; return URL is the allow-listed app URL; upgrade; eligible downgrade; ineligible downgrade; cadence swap; cancel at period end; reactivate; duplicate `requestId`; webhook shows the new Price and cancel flag; stale event ignored; unknown Price does not change `planKey`; no second Customer; no second Subscription; no live-mode object; Portal cannot change Price because `subscription_update` is off.
+
+### 40.18 Mandatory QA matrix (implementation later)
+
+- AuthZ on **each** of portal, plan-change, cancel, and reactivate: owner success; `ORG_ADMIN`, `TEAM_ADMIN`, `COACH`, `HEAD_COACH`, `ATHLETE`, and foreign owner **404** with **no** Stripe call; **401**; CSRF **403**.
+- Stripe disabled: all four management routes absent. Capacity GET still registered.
+- Portal session uses the persisted Customer ref and the server Portal Configuration. Client cannot set the return URL. Configuration keeps `subscription_update` off.
+- Checkout: count within band; count 40 → `ORG_BAND_25` **409**; count 100 → `ORG_BAND_75` **409**; count >250 **409**; replay; PENDING growth then webhook still applies and `overCapacity` is true; no member delete.
+- Upgrade 25→75 and 75→250 only after snapshot. `error_if_incomplete` leaves the old Price. Capacity stays on the old band until that snapshot commits. Webhook-before-commit and provider-success/local-fail still apply provider truth. No auto-remove and no auto-upgrade.
+- Downgrade at count == target succeeds. One athlete over fails **before** any provider call. A concurrent accept after the provider call and before persist restores the previous Price and returns **409**, with no member deletion.
+- Cadence-only monthly ↔ annual does not change capacity. Combined band+cadence uses the target band rule. All six eligible Prices.
+- Cancel from `ACTIVE` and `TRIALING` only; not immediately `EXPIRED`. Duplicate cancel does not call the provider twice. `PAST_DUE` and `GRACE_PERIOD`: portal and no plan change; cancel **409** `BILLING_LIFECYCLE_CONFLICT` and the row does not become `CANCEL_AT_PERIOD_END`. `CANCEL_AT_PERIOD_END`: plan change blocked; cancel idempotent; reactivate allowed. `PENDING` and `EXPIRED`: plan change, cancel, and reactivate fail closed. After period end, reactivate is rejected.
+- Reactivate before end; duplicate reactivate; after end rejected. No second trial.
+- `requestId` replay vs different-target **409**. Portal is not request-id keyed. Foreign subscription id on this Organization → **404**, no provider call. Plan-change `requestId` does not create a Subscription row.
+- Unknown Price does not change `planKey`. Stale `providerStateAsOf` is a no-op. Metadata lag after a real Price change does not fail the webhook.
+- Two non-EXPIRED rows: management and the Stripe subscription GET return `BILLING_SUBSCRIPTION_STATE_CONFLICT`. Capacity GET still returns the count and a null band.
+- Entitlement enforcement on does not turn these denials into **402**.
+
+### 40.19 Reviews
+
+Independent review of this contract (no runtime edits). Verdicts:
+
+| Role | Verdict |
+| --- | --- |
+| Lead / Architect | **FAIL** on the first draft, **addressed:** no cancel from `PAST_DUE`/`GRACE` into entitled `CANCEL_AT_PERIOD_END`; Price not metadata is the plan source; plan-change `requestId` is not a new Subscription id. No new ADR |
+| Backend | **FAIL** on holding Organization `FOR UPDATE` across Stripe I/O. **Addressed in §40.8.** Flyway V37 **not** required |
+| External Integration | **PASS.** `trial_from_plan=true` stays unset. Portal cannot enforce athlete counts |
+| QA / Test Automation | **PASS-WITH-NOTES.** Missing cells are now in §40.18 |
+| Security / Code Quality | **PASS.** Notes folded in: server-selected Portal Configuration, persisted Customer ref only, unknown Price fail-closed |
+| DevOps / CI-CD | **PASS.** No fourth billing flag. No V37. No Railway or Stripe mutation in this lock |
+| Web | **PASS-WITH-NOTES.** Notes folded into §40.15 |
+| Athlete Intelligence / Data | **PASS.** Organization-row lock does not rewrite intelligence or membership data |
+| Documentation / Release | **PASS-WITH-NOTES.** Portal cancel on vs off remains an open Product Owner confirmation (§40.21). Checkout-race tolerance and immediate downgrade are derived from existing locks |
+
+### 40.20 Product Owner resolutions (recommended; acceptance of this section is the lock)
+
+These are not silent inventions. Each is the only option that keeps §16, §22, Option B, and “do not reject a legitimate webhook” together.
+
+| ID | Topic | Resolution |
+| --- | --- | --- |
+| A | Portal features that are closed | Payment method + invoices on. `subscription_update` **off** (cannot enforce athlete counts). `customer_update` off |
+| B | Upgrade timing | Immediate |
+| C | Upgrade proration | `always_invoice`, and `error_if_incomplete` so a failed payment does not change the Price |
+| D | Downgrade timing | Immediate. No period-end schedule in this contract |
+| E | Downgrade race | Organization `FOR UPDATE` only around local read and persist. If count exceeds the target after the provider call, restore the previous allow-listed Price. Do not hold the lock across Stripe. Do not lock Invitation |
+| F | Cadence | Immediate Price swap, alone or with a band change, all six Prices, same proration rules |
+| G | Trial changes | Allowed when the target band fits. Original trial end preserved. No second trial |
+| H | PAST_DUE / GRACE | Portal payment repair allowed. Plan change **and** cancel blocked. Do not enter entitled `CANCEL_AT_PERIOD_END` from an unpaid state |
+| I | Aggregate | Mutable plan/cadence on the same Subscription. No replacement rows. No Flyway for that |
+| J | Checkout race | Preflight 409 plus apply-webhook and keep over-capacity. Do not freeze Option B during PENDING |
+| K | Where cancel starts | **Open.** Recommended: app-owned `cancel_at_period_end` and Portal `subscription_cancel` **off**. Alternative: Portal cancel **on** with `mode=at_period_end` only, plus the same server reconciliation. §22 does not choose the UI |
+| L | New flag | **No.** Stripe-enabled controller is the gate |
+
+Rows B–J and L follow from §16, §22, Option B, ADR-040 entitlement, and “do not reject a legitimate webhook.” They are not separate product forks.
+
+### 40.21 Open Product Owner confirmation
+
+**Portal cancel.** Either:
+
+1. **Recommended:** Portal `subscription_cancel` **off**. ORG_OWNER cancels and reactivates only through the server APIs. Portal is payment method and invoices.
+2. Portal `subscription_cancel` **on** with `mode=at_period_end` only (never `immediately`), and webhooks still reconcile `CANCEL_AT_PERIOD_END`. Reactivation remains the server API unless the same Portal screen can clear `cancel_at_period_end` without resetting the trial.
+
+`subscription_update` stays **off** in both choices.
+
+Slice E **runtime** is **not** authorized by this section. Production flags stay off.
+
+V4 is **not** complete.
+
+V4 Pre-Slice-E billing management: PRODUCT OWNER DECISIONS REQUIRED
 
 
 
