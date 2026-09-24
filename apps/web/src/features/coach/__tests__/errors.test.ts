@@ -35,5 +35,34 @@ describe('coach errors', () => {
     ).not.toContain('session expired');
     expect(isCoachNotFoundError(new ApiError('x', { category: 'NOT_FOUND' }))).toBe(true);
     expect(isCoachUnauthorizedError(new ApiError('x', { category: 'UNAUTHORIZED' }))).toBe(true);
+    expect(
+      coachErrorMessage(
+        new ApiError('not applied', {
+          category: 'CONFLICT',
+          status: 409,
+          code: 'BILLING_PAYMENT_NOT_APPLIED',
+        }),
+      ),
+    ).toBe(
+      'The plan change was not applied because payment could not be collected. Your current plan is unchanged.',
+    );
+    expect(
+      coachErrorMessage(
+        new ApiError('down', {
+          category: 'SERVER',
+          status: 502,
+          code: 'BILLING_PROVIDER_UNAVAILABLE',
+        }),
+      ),
+    ).toBe('Billing is temporarily unavailable. Try again.');
+    expect(
+      coachErrorMessage(
+        new ApiError('capacity', {
+          category: 'CONFLICT',
+          status: 409,
+          code: 'ORGANIZATION_PLAN_CAPACITY_CONFLICT',
+        }),
+      ),
+    ).not.toContain('access to this capability');
   });
 });

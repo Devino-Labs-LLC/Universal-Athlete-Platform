@@ -229,6 +229,8 @@ class SubscriptionDomainTests {
 						false,
 						trialEnd,
 						T0.plusSeconds(30 * 24 * 60 * 60),
+						CommercialPlanKey.ORG_BAND_75,
+						BillingCadence.ANNUAL,
 						providerAsOf),
 				CLOCK);
 
@@ -238,6 +240,44 @@ class SubscriptionDomainTests {
 		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
 		assertThat(subscription.providerStateAsOf()).isEqualTo(providerAsOf);
 		assertThat(subscription.isCommerciallyEntitledAt(T0)).isTrue();
+	}
+
+	@Test
+	void authoritativePriceReplacesPlanAndStaleSnapshotDoesNotRollItBack() {
+		Subscription subscription = pendingCheckout();
+		Instant trialEnd = T0.plusSeconds(14 * 24 * 60 * 60);
+		Instant firstAsOf = T0.plusSeconds(10);
+		assertThat(subscription.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_active",
+						"sub_active",
+						ProviderCommercialStatus.TRIALING,
+						false,
+						trialEnd,
+						T0.plusSeconds(30 * 24 * 60 * 60),
+						CommercialPlanKey.ORG_BAND_75,
+						BillingCadence.ANNUAL,
+						firstAsOf),
+				CLOCK)).isTrue();
+		assertThat(subscription.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
+		assertThat(subscription.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
+
+		assertThat(subscription.synchronizeProviderSnapshot(
+				new ProviderSubscriptionSnapshot(
+						"cus_active",
+						"sub_active",
+						ProviderCommercialStatus.TRIALING,
+						false,
+						trialEnd,
+						T0.plusSeconds(30 * 24 * 60 * 60),
+						CommercialPlanKey.ORG_BAND_25,
+						BillingCadence.MONTHLY,
+						firstAsOf),
+				CLOCK)).isFalse();
+		assertThat(subscription.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
+		assertThat(subscription.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
 	}
 
 	@Test
@@ -265,6 +305,8 @@ class SubscriptionDomainTests {
 						false,
 						null,
 						T0.plusSeconds(1_000),
+						CommercialPlanKey.ORG_BAND_25,
+						BillingCadence.MONTHLY,
 						T0.plusSeconds(21)),
 				CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -279,6 +321,8 @@ class SubscriptionDomainTests {
 						false,
 						null,
 						null,
+						CommercialPlanKey.ORG_BAND_25,
+						BillingCadence.MONTHLY,
 						T0.plusSeconds(30)),
 				CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -289,10 +333,12 @@ class SubscriptionDomainTests {
 	@Test
 	void providerSnapshotRequiresSubscriptionReferenceAndStateTimestamp() {
 		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
-				"cus_test", " ", ProviderCommercialStatus.PENDING, false, null, null, T0))
+				"cus_test", " ", ProviderCommercialStatus.PENDING, false, null, null,
+				CommercialPlanKey.ORG_BAND_25, BillingCadence.MONTHLY, T0))
 				.isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
-				"cus_test", "sub_test", ProviderCommercialStatus.PENDING, false, null, null, null))
+				"cus_test", "sub_test", ProviderCommercialStatus.PENDING, false, null, null,
+				CommercialPlanKey.ORG_BAND_25, BillingCadence.MONTHLY, null))
 				.isInstanceOf(NullPointerException.class);
 	}
 
@@ -313,6 +359,8 @@ class SubscriptionDomainTests {
 				false,
 				null,
 				T0.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
 				providerAsOf);
 	}
 

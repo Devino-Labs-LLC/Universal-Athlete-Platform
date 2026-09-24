@@ -63,6 +63,53 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"{\"lifecycleState\":\"" + lifecycleState.name() + "\"}");
 	}
 
+	@Override
+	public void planChanged(
+			UUID subscriptionId,
+			UUID organizationId,
+			UUID actorAccountId,
+			CommercialPlanKey fromPlan,
+			CommercialPlanKey toPlan,
+			BillingCadence cadence) {
+		append(
+				"BILLING_PLAN_CHANGED",
+				subscriptionId,
+				organizationId,
+				actorAccountId,
+				"{\"fromPlan\":\"" + fromPlan.name() + "\",\"toPlan\":\"" + toPlan.name()
+						+ "\",\"cadence\":\"" + cadence.name() + "\"}");
+	}
+
+	@Override
+	public void cancelRequested(UUID subscriptionId, UUID organizationId, UUID actorAccountId) {
+		append(
+				"BILLING_CANCEL_REQUESTED",
+				subscriptionId,
+				organizationId,
+				actorAccountId,
+				"{}");
+	}
+
+	@Override
+	public void subscriptionReactivated(UUID subscriptionId, UUID organizationId, UUID actorAccountId) {
+		append(
+				"BILLING_SUBSCRIPTION_REACTIVATED",
+				subscriptionId,
+				organizationId,
+				actorAccountId,
+				"{}");
+	}
+
+	@Override
+	public void subscriptionEnded(UUID subscriptionId, UUID organizationId) {
+		append(
+				"BILLING_SUBSCRIPTION_ENDED",
+				subscriptionId,
+				organizationId,
+				null,
+				"{}");
+	}
+
 	private void append(
 			String eventType,
 			UUID subscriptionId,

@@ -20,8 +20,8 @@ public class Subscription {
 	private final SubscriptionId id;
 	private final BillingSubject subject;
 	private final BillingProvider provider;
-	private final CommercialPlanKey planKey;
-	private final BillingCadence billingCadence;
+	private CommercialPlanKey planKey;
+	private BillingCadence billingCadence;
 	private SubscriptionLifecycleState lifecycleState;
 	private String providerCustomerRef;
 	private String providerSubscriptionRef;
@@ -184,8 +184,11 @@ public class Subscription {
 		SubscriptionLifecycleState target = lifecycleFor(snapshot);
 		SubscriptionLifecycleTransitions.requireAllowed(lifecycleState, target);
 		validateProviderSnapshotInvariants(target, snapshot);
+		CommercialCatalog.validatePlanForSubject(snapshot.planKey(), subject.type());
 		Instant now = Instant.now(clock);
 		this.lifecycleState = target;
+		this.planKey = snapshot.planKey();
+		this.billingCadence = snapshot.billingCadence();
 		this.providerCustomerRef = snapshot.providerCustomerRef();
 		this.providerSubscriptionRef = snapshot.providerSubscriptionRef();
 		this.trialEndsAt = snapshot.trialEndsAt();

@@ -26,4 +26,26 @@ public interface BillingAuditPort {
 			UUID organizationId,
 			SubscriptionLifecycleState lifecycleState);
 
+	void planChanged(
+			UUID subscriptionId,
+			UUID organizationId,
+			UUID actorAccountId,
+			CommercialPlanKey fromPlan,
+			CommercialPlanKey toPlan,
+			BillingCadence cadence);
+
+	void cancelRequested(
+			UUID subscriptionId,
+			UUID organizationId,
+			UUID actorAccountId);
+
+	void subscriptionReactivated(
+			UUID subscriptionId,
+			UUID organizationId,
+			UUID actorAccountId);
+
+	void subscriptionEnded(
+			UUID subscriptionId,
+			UUID organizationId);
+
 }

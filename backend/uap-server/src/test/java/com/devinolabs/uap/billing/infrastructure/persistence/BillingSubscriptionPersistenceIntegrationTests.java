@@ -173,6 +173,8 @@ class BillingSubscriptionPersistenceIntegrationTests {
 						false,
 						T0.plusSeconds(14 * 24 * 60 * 60),
 						T0.plusSeconds(30 * 24 * 60 * 60),
+						CommercialPlanKey.ORG_BAND_250,
+						BillingCadence.MONTHLY,
 						providerAsOf),
 				Clock.fixed(T0, ZoneOffset.UTC));
 		customerRepository.save(OrganizationBillingCustomer.stripe(organizationId, "cus_org_250", T0));

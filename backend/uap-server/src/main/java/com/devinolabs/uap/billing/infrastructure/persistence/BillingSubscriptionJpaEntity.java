@@ -50,7 +50,7 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 	private BillingProvider provider;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "plan_key", nullable = false, updatable = false, length = 40)
+	@Column(name = "plan_key", nullable = false, length = 40)
 	private CommercialPlanKey planKey;
 
 	@Enumerated(EnumType.STRING)
@@ -209,6 +209,8 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 	}
 
 	void applyDomainState(
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
 			SubscriptionLifecycleState lifecycleState,
 			String providerCustomerRef,
 			String providerSubscriptionRef,
@@ -217,6 +219,8 @@ class BillingSubscriptionJpaEntity implements Persistable<UUID> {
 			Instant graceEndsAt,
 			Instant providerStateAsOf,
 			Instant updatedAt) {
+		this.planKey = planKey;
+		this.billingCadence = billingCadence;
 		this.lifecycleState = lifecycleState;
 		this.providerCustomerRef = providerCustomerRef;
 		this.providerSubscriptionRef = providerSubscriptionRef;

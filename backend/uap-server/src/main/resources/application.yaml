@@ -61,6 +61,8 @@ uap:
       webhook-secret: ${UAP_BILLING_STRIPE_WEBHOOK_SECRET:}
       success-url: ${UAP_BILLING_STRIPE_SUCCESS_URL:}
       cancel-url: ${UAP_BILLING_STRIPE_CANCEL_URL:}
+      portal-configuration-id: ${UAP_BILLING_STRIPE_PORTAL_CONFIGURATION_ID:}
+      portal-return-url: ${UAP_BILLING_STRIPE_PORTAL_RETURN_URL:}
       prices:
         org-band-25-monthly: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_25_MONTHLY:}
         org-band-25-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_25_ANNUAL:}

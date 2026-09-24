@@ -94,6 +94,14 @@ public interface OrganizationMembershipPort {
 		throw new UnsupportedOperationException("countDistinctActiveAthletes");
 	}
 
+	/**
+	 * Locks the organization row and returns the distinct active athlete count.
+	 * Caller must already be inside a transaction. Empty when the organization is absent.
+	 */
+	default Optional<Long> lockAndCountDistinctActiveAthletes(UUID organizationId) {
+		throw new UnsupportedOperationException("lockAndCountDistinctActiveAthletes");
+	}
+
 	record AthleteMembershipHistory(
 			UUID teamId,
 			String teamName,

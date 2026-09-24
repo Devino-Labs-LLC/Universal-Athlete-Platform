@@ -68,6 +68,8 @@ class OrganizationWebhookServiceTests {
 				eventInbox,
 				subscriptionRepository,
 				auditPort,
+				mock(com.devinolabs.uap.organization.api.OrganizationMembershipPort.class),
+				mock(OrganizationSubscriptionManagementService.class),
 				CLOCK,
 				transactions);
 	}
@@ -226,6 +228,8 @@ class OrganizationWebhookServiceTests {
 				false,
 				status == ProviderCommercialStatus.TRIALING ? NOW.plusSeconds(14 * 24 * 60 * 60) : null,
 				NOW.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
 				asOf);
 	}
 

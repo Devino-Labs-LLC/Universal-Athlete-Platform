@@ -14,6 +14,7 @@ import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.OrganizationAthleteBand;
 import com.devinolabs.uap.billing.domain.OrganizationBillingCustomer;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
@@ -57,6 +58,7 @@ public class OrganizationCheckoutService {
 		requireOrganizationPlan(planKey);
 		Objects.requireNonNull(requestId, "requestId must not be null");
 		Objects.requireNonNull(cadence, "cadence must not be null");
+		requireTargetBandFits(organizationId, planKey);
 
 		OrganizationBillingCustomer customer = lockOrCreateCustomer(organizationId);
 		SubscriptionId subscriptionId = SubscriptionId.of(requestId);
@@ -127,11 +129,18 @@ public class OrganizationCheckoutService {
 	@Transactional(readOnly = true)
 	public SubscriptionResult currentStatus(UUID actorAccountId, UUID organizationId) {
 		requireOwner(actorAccountId, organizationId);
-		return subscriptionRepository.findBySubject(BillingSubjectType.ORGANIZATION, organizationId).stream()
+		var open = subscriptionRepository.findBySubject(BillingSubjectType.ORGANIZATION, organizationId).stream()
 				.filter(subscription -> subscription.lifecycleState() != SubscriptionLifecycleState.EXPIRED)
-				.reduce((left, right) -> left.createdAt().isAfter(right.createdAt()) ? left : right)
-				.map(SubscriptionResult::from)
-				.orElseThrow(BillingOrganizationNotFoundException::new);
+				.toList();
+		if (open.size() > 1) {
+			throw new BillingConflictException(
+					"BILLING_SUBSCRIPTION_STATE_CONFLICT",
+					"Organization billing state is ambiguous");
+		}
+		if (open.isEmpty()) {
+			throw new BillingOrganizationNotFoundException();
+		}
+		return SubscriptionResult.from(open.getFirst());
 	}
 
 	private OrganizationBillingCustomer lockOrCreateCustomer(UUID organizationId) {
@@ -194,6 +203,15 @@ public class OrganizationCheckoutService {
 	private static void requireOrganizationPlan(CommercialPlanKey planKey) {
 		if (planKey == null || !planKey.isOrganizationPlan()) {
 			throw new IllegalArgumentException("planKey must be an Organization commercial plan");
+		}
+	}
+
+	private void requireTargetBandFits(UUID organizationId, CommercialPlanKey planKey) {
+		long activeAthletes = membershipPort.countDistinctActiveAthletes(organizationId);
+		if (activeAthletes > OrganizationAthleteBand.forPlan(planKey).maxActiveAthletes()) {
+			throw new BillingConflictException(
+					"ORGANIZATION_PLAN_CAPACITY_CONFLICT",
+					"The selected Organization plan does not cover the current active athletes");
 		}
 	}
 

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.devinolabs.uap.billing.application.OrganizationCheckoutService;
 import com.devinolabs.uap.billing.application.OrganizationCheckoutService.CheckoutResult;
 import com.devinolabs.uap.billing.application.OrganizationCheckoutService.SubscriptionResult;
+import com.devinolabs.uap.billing.application.OrganizationSubscriptionManagementService;
+import com.devinolabs.uap.billing.application.OrganizationSubscriptionManagementService.PortalSessionResult;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 
 @RestController
@@ -26,9 +28,13 @@ import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 class OrganizationBillingController {
 
 	private final OrganizationCheckoutService checkoutService;
+	private final OrganizationSubscriptionManagementService managementService;
 
-	OrganizationBillingController(OrganizationCheckoutService checkoutService) {
+	OrganizationBillingController(
+			OrganizationCheckoutService checkoutService,
+			OrganizationSubscriptionManagementService managementService) {
 		this.checkoutService = checkoutService;
+		this.managementService = managementService;
 	}
 
 	@PostMapping("/checkout-sessions")
@@ -63,6 +69,54 @@ class OrganizationBillingController {
 			@PathVariable UUID organizationId,
 			Authentication authentication) {
 		return checkoutService.currentStatus(accountId(authentication), organizationId);
+	}
+
+	@PostMapping("/portal-sessions")
+	PortalSessionResult openPortal(
+			@PathVariable UUID organizationId,
+			Authentication authentication) {
+		return managementService.openPortal(accountId(authentication), organizationId);
+	}
+
+	@PostMapping("/subscriptions/{subscriptionId}/plan-changes")
+	SubscriptionResult changePlan(
+			@PathVariable UUID organizationId,
+			@PathVariable UUID subscriptionId,
+			@Valid @RequestBody ChangeOrganizationPlanRequest request,
+			Authentication authentication) {
+		return managementService.changePlan(
+				accountId(authentication),
+				organizationId,
+				subscriptionId,
+				request.requestId(),
+				request.targetPlanKey(),
+				request.targetCadence());
+	}
+
+	@PostMapping("/subscriptions/{subscriptionId}/cancel")
+	SubscriptionResult cancel(
+			@PathVariable UUID organizationId,
+			@PathVariable UUID subscriptionId,
+			@Valid @RequestBody BillingMutationRequest request,
+			Authentication authentication) {
+		return managementService.cancel(
+				accountId(authentication),
+				organizationId,
+				subscriptionId,
+				request.requestId());
+	}
+
+	@PostMapping("/subscriptions/{subscriptionId}/reactivate")
+	SubscriptionResult reactivate(
+			@PathVariable UUID organizationId,
+			@PathVariable UUID subscriptionId,
+			@Valid @RequestBody BillingMutationRequest request,
+			Authentication authentication) {
+		return managementService.reactivate(
+				accountId(authentication),
+				organizationId,
+				subscriptionId,
+				request.requestId());
 	}
 
 	private static UUID accountId(Authentication authentication) {

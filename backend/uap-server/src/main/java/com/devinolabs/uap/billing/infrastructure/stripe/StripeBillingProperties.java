@@ -20,6 +20,8 @@ public class StripeBillingProperties {
 	private String webhookSecret;
 	private String successUrl;
 	private String cancelUrl;
+	private String portalConfigurationId;
+	private String portalReturnUrl;
 	private Prices prices = new Prices();
 
 	public boolean isEnabled() {
@@ -62,6 +64,22 @@ public class StripeBillingProperties {
 		this.cancelUrl = cancelUrl;
 	}
 
+	public String getPortalConfigurationId() {
+		return portalConfigurationId;
+	}
+
+	public void setPortalConfigurationId(String portalConfigurationId) {
+		this.portalConfigurationId = portalConfigurationId;
+	}
+
+	public String getPortalReturnUrl() {
+		return portalReturnUrl;
+	}
+
+	public void setPortalReturnUrl(String portalReturnUrl) {
+		this.portalReturnUrl = portalReturnUrl;
+	}
+
 	public Prices getPrices() {
 		return prices;
 	}
@@ -88,6 +106,14 @@ public class StripeBillingProperties {
 		cancelUrl = requireText(cancelUrl, "uap.billing.stripe.cancel-url");
 		validateUrl(successUrl, "uap.billing.stripe.success-url");
 		validateUrl(cancelUrl, "uap.billing.stripe.cancel-url");
+		portalConfigurationId = requireText(
+				portalConfigurationId, "uap.billing.stripe.portal-configuration-id");
+		if (!portalConfigurationId.startsWith("bpc_")) {
+			throw new IllegalStateException(
+					"uap.billing.stripe.portal-configuration-id must be a Stripe Billing Portal configuration id");
+		}
+		portalReturnUrl = requireText(portalReturnUrl, "uap.billing.stripe.portal-return-url");
+		validateUrl(portalReturnUrl, "uap.billing.stripe.portal-return-url");
 		if (!successUrl.contains("{CHECKOUT_SESSION_ID}")) {
 			throw new IllegalStateException(
 					"uap.billing.stripe.success-url must include {CHECKOUT_SESSION_ID}");
@@ -102,10 +128,11 @@ public class StripeBillingProperties {
 		return prices.priceId(planKey, cadence);
 	}
 
-	void requireMatchingPrice(String providerPriceRef, CommercialPlanKey planKey, BillingCadence cadence) {
-		if (!priceId(planKey, cadence).equals(providerPriceRef)) {
-			throw new IllegalArgumentException("Provider Price does not match the requested plan and cadence");
-		}
+	public PricedPlan requirePlanForPrice(String providerPriceRef) {
+		return prices.requirePlanForPrice(providerPriceRef);
+	}
+
+	public record PricedPlan(CommercialPlanKey planKey, BillingCadence cadence) {
 	}
 
 	private static void validateUrl(String value, String propertyName) {
@@ -206,6 +233,19 @@ public class StripeBillingProperties {
 				throw new IllegalArgumentException("Stripe Organization catalog does not contain " + planKey);
 			}
 			return value;
+		}
+
+		private PricedPlan requirePlanForPrice(String providerPriceRef) {
+			if (providerPriceRef == null || providerPriceRef.isBlank()) {
+				throw new IllegalArgumentException("Provider Price is not an allow-listed Organization price");
+			}
+			String normalized = providerPriceRef.trim();
+			for (Map.Entry<CatalogSlot, String> entry : catalog().entrySet()) {
+				if (entry.getValue().equals(normalized)) {
+					return new PricedPlan(entry.getKey().planKey(), entry.getKey().cadence());
+				}
+			}
+			throw new IllegalArgumentException("Provider Price is not an allow-listed Organization price");
 		}
 
 		private Map<CatalogSlot, String> catalog() {

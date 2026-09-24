@@ -102,6 +102,45 @@ class OrganizationAthleteCapacityHttpIntegrationTests {
 	}
 
 	@Test
+	void stripeDisabledOmitsManagementRoutesAndKeepsCapacity() throws Exception {
+		VerifiedAccount owner = accounts.registerVerified("stripe-off-billing");
+		String organizationId = createOrg(owner, "Stripe Off Billing");
+		UUID subscriptionId = UUID.randomUUID();
+		String request = "{\"requestId\":\"" + UUID.randomUUID() + "\"}";
+		String plan = "{\"requestId\":\"" + UUID.randomUUID()
+				+ "\",\"targetPlanKey\":\"ORG_BAND_75\",\"targetCadence\":\"MONTHLY\"}";
+
+		mockMvc.perform(post("/api/v1/billing/organizations/" + organizationId + "/portal-sessions")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf()))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/api/v1/billing/organizations/" + organizationId
+						+ "/subscriptions/" + subscriptionId + "/plan-changes")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(plan))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/api/v1/billing/organizations/" + organizationId
+						+ "/subscriptions/" + subscriptionId + "/cancel")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/api/v1/billing/organizations/" + organizationId
+						+ "/subscriptions/" + subscriptionId + "/reactivate")
+						.with(accountAuth(owner.accountId()))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/billing/organizations/" + organizationId + "/capacity")
+						.with(accountAuth(owner.accountId())))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void noSubscriptionRowFirstDistinctAthleteSucceeds() throws Exception {
 		assertFirstDistinctSucceedsWithoutBand(org -> {
 		});

@@ -51,6 +51,8 @@ import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 		"uap.billing.stripe.webhook-secret=whsec_placeholder_for_http_tests",
 		"uap.billing.stripe.success-url=https://app.example.com/billing/success?session_id={CHECKOUT_SESSION_ID}",
 		"uap.billing.stripe.cancel-url=https://app.example.com/billing/cancel",
+		"uap.billing.stripe.portal-configuration-id=bpc_test_http",
+		"uap.billing.stripe.portal-return-url=https://app.example.com/coach/billing",
 		"uap.billing.stripe.prices.org-band-25-monthly=price_http_25_monthly",
 		"uap.billing.stripe.prices.org-band-25-annual=price_http_25_annual",
 		"uap.billing.stripe.prices.org-band-75-monthly=price_http_75_monthly",
@@ -379,6 +381,52 @@ class OrganizationBillingHttpIntegrationTests {
 			return snapshot("cus_test_" + event.organizationId(), event.subscriptionId(), event.createdAt());
 		}
 
+		@Override
+		public PortalSession createPortalSession(UUID organizationId, String providerCustomerRef) {
+			return new PortalSession("https://billing.stripe.test/portal/" + organizationId);
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot changeSubscriptionPlan(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				CommercialPlanKey targetPlanKey,
+				BillingCadence targetCadence,
+				UUID requestId) {
+			throw new UnsupportedOperationException("changeSubscriptionPlan");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot restoreSubscriptionPlan(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				CommercialPlanKey planKey,
+				BillingCadence cadence,
+				String operationToken) {
+			throw new UnsupportedOperationException("restoreSubscriptionPlan");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot scheduleCancelAtPeriodEnd(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				UUID requestId) {
+			throw new UnsupportedOperationException("scheduleCancelAtPeriodEnd");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot reactivateSubscription(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				UUID requestId) {
+			throw new UnsupportedOperationException("reactivateSubscription");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot fetchSubscription(String providerSubscriptionRef) {
+			throw new UnsupportedOperationException("fetchSubscription");
+		}
+
 		private static ProviderSubscriptionSnapshot snapshot(
 				String customerRef,
 				UUID subscriptionId,
@@ -390,6 +438,8 @@ class OrganizationBillingHttpIntegrationTests {
 					false,
 					Instant.now().plusSeconds(14 * 24 * 60 * 60),
 					Instant.now().plusSeconds(30 * 24 * 60 * 60),
+					CommercialPlanKey.ORG_BAND_25,
+					BillingCadence.MONTHLY,
 					providerAsOf);
 		}
 

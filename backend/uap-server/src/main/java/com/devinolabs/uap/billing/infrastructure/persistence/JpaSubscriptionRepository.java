@@ -32,6 +32,8 @@ class JpaSubscriptionRepository implements SubscriptionRepository {
 		else {
 			BillingSubscriptionJpaEntity entity = existing.get();
 			entity.applyDomainState(
+					subscription.planKey(),
+					subscription.billingCadence(),
 					subscription.lifecycleState(),
 					subscription.providerCustomerRef(),
 					subscription.providerSubscriptionRef(),

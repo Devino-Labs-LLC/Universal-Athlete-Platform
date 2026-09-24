@@ -79,6 +79,36 @@ class StripeBillingPropertiesTests {
 	}
 
 	@Test
+	void enabledConfigurationRequiresPortalConfigurationAndHttpsReturnUrl() {
+		StripeBillingProperties properties = validProperties();
+		properties.setPortalConfigurationId("price_not_a_portal_config");
+		assertThatThrownBy(properties::validateSandbox)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("portal-configuration-id");
+
+		properties = validProperties();
+		properties.setPortalReturnUrl("http://billing.example.com/return");
+		assertThatThrownBy(properties::validateSandbox)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("HTTPS or local HTTP");
+	}
+
+	@Test
+	void reversePriceLookupAcceptsOnlyExactAllowListedIds() {
+		StripeBillingProperties properties = validProperties();
+		properties.validateSandbox();
+
+		StripeBillingProperties.PricedPlan priced = properties.requirePlanForPrice("price_75_monthly");
+		assertThat(priced.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
+		assertThat(priced.cadence()).isEqualTo(BillingCadence.MONTHLY);
+		assertThatThrownBy(() -> properties.requirePlanForPrice("price_75_monthly_extra"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageNotContaining("price_75_monthly_extra");
+		assertThatThrownBy(() -> properties.requirePlanForPrice("price_unknown"))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
 	void productionProfileRejectsSandboxSlice() {
 		StripeBillingProperties properties = validProperties();
 		MockEnvironment environment = new MockEnvironment();
@@ -96,6 +126,8 @@ class StripeBillingPropertiesTests {
 		properties.setWebhookSecret("whsec_placeholder_not_a_real_secret");
 		properties.setSuccessUrl("https://app.example.com/billing/success?session_id={CHECKOUT_SESSION_ID}");
 		properties.setCancelUrl("https://app.example.com/billing/cancel");
+		properties.setPortalConfigurationId("bpc_test_configuration");
+		properties.setPortalReturnUrl("https://app.example.com/coach/billing");
 		StripeBillingProperties.Prices prices = properties.getPrices();
 		prices.setOrgBand25Monthly("price_25_monthly");
 		prices.setOrgBand25Annual("price_25_annual");

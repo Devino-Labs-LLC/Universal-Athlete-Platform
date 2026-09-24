@@ -3,6 +3,9 @@ package com.devinolabs.uap.billing.infrastructure.stripe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -15,20 +18,27 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.stripe.StripeClient;
+import com.stripe.exception.ApiException;
+import com.stripe.exception.IdempotencyException;
 import com.stripe.model.Customer;
 import com.stripe.model.Price;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.SubscriptionItemCollection;
+import com.stripe.model.billingportal.Configuration;
 import com.stripe.model.checkout.Session;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
+import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
 import com.devinolabs.uap.billing.application.InvalidWebhookSignatureException;
 import com.devinolabs.uap.billing.application.OrganizationBillingProvider;
@@ -236,6 +246,176 @@ class StripeOrganizationBillingAdapterClientTests {
 				.isInstanceOf(BillingProviderUnavailableException.class);
 	}
 
+	@Test
+	void priceWinsWhenMetadataNamesADifferentPlan() throws Exception {
+		Subscription subscription = subscription("active");
+		subscription.setMetadata(Map.of(
+				"uap_organization_id", organizationId.toString(),
+				"uap_subscription_id", subscriptionId.toString(),
+				"uap_plan_key", CommercialPlanKey.ORG_BAND_25.name(),
+				"uap_billing_cadence", BillingCadence.MONTHLY.name()));
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription);
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_price",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(10),
+				null,
+				"sub_test_1",
+				organizationId,
+				subscriptionId);
+
+		assertThat(adapter.fetchAuthoritativeSnapshot(event)).satisfies(snapshot -> {
+			assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
+			assertThat(snapshot.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		});
+	}
+
+	@Test
+	void unknownPriceFailsClosedWithoutEchoingThePrice() throws Exception {
+		Subscription subscription = subscription("active");
+		subscription.getItems().getData().getFirst().getPrice().setId("price_unknown");
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription);
+
+		assertThatThrownBy(() -> adapter.fetchSubscription("sub_test_1"))
+				.isInstanceOf(BillingConflictException.class)
+				.hasMessageNotContaining("price_unknown")
+				.extracting(ex -> ((BillingConflictException) ex).code())
+				.isEqualTo("BILLING_PROVIDER_PRICE_REJECTED");
+	}
+
+	@Test
+	void planChangeUpdatesTheExistingItemWithoutResettingTrial() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("trialing"));
+		ArgumentCaptor<SubscriptionUpdateParams> params = ArgumentCaptor.forClass(SubscriptionUpdateParams.class);
+		ArgumentCaptor<RequestOptions> options = ArgumentCaptor.forClass(RequestOptions.class);
+		when(stripeClient.v1().subscriptions().update(eq("sub_test_1"), params.capture(), options.capture()))
+				.thenReturn(subscription("trialing"));
+		UUID requestId = UUID.randomUUID();
+
+		adapter.changeSubscriptionPlan(
+				subscriptionId,
+				"sub_test_1",
+				CommercialPlanKey.ORG_BAND_250,
+				BillingCadence.MONTHLY,
+				requestId);
+
+		assertThat(params.getValue().getProrationBehavior())
+				.isEqualTo(SubscriptionUpdateParams.ProrationBehavior.ALWAYS_INVOICE);
+		assertThat(params.getValue().getPaymentBehavior())
+				.isEqualTo(SubscriptionUpdateParams.PaymentBehavior.ERROR_IF_INCOMPLETE);
+		assertThat(params.getValue().getTrialFromPlan()).isNull();
+		assertThat(params.getValue().getTrialEnd()).isNull();
+		assertThat(params.getValue().getItems()).singleElement().satisfies(item -> {
+			assertThat(item.getId()).isEqualTo("si_test_1");
+			assertThat(item.getPrice()).isEqualTo("price_250_monthly");
+			assertThat(item.getQuantity()).isNull();
+		});
+		assertThat(options.getValue().getIdempotencyKey())
+				.isEqualTo("athlete-readiness:plan-change:" + subscriptionId + ":" + requestId);
+	}
+
+	@Test
+	void paymentFailureThatLeavesThePriceUnchangedIsNotAProviderOutage() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		when(stripeClient.v1().subscriptions().update(eq("sub_test_1"), any(SubscriptionUpdateParams.class), any()))
+				.thenThrow(new ApiException("card", "req", "card_declined", 402, null));
+
+		assertThatThrownBy(() -> adapter.changeSubscriptionPlan(
+				subscriptionId,
+				"sub_test_1",
+				CommercialPlanKey.ORG_BAND_250,
+				BillingCadence.MONTHLY,
+				UUID.randomUUID()))
+				.isInstanceOf(BillingConflictException.class)
+				.extracting(ex -> ((BillingConflictException) ex).code())
+				.isEqualTo("BILLING_PAYMENT_NOT_APPLIED");
+	}
+
+	@Test
+	void idempotencyMismatchIsARequestConflict() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		when(stripeClient.v1().subscriptions().update(eq("sub_test_1"), any(SubscriptionUpdateParams.class), any()))
+				.thenThrow(new IdempotencyException("mismatch", "req", null, 400));
+
+		assertThatThrownBy(() -> adapter.changeSubscriptionPlan(
+				subscriptionId,
+				"sub_test_1",
+				CommercialPlanKey.ORG_BAND_250,
+				BillingCadence.ANNUAL,
+				UUID.randomUUID()))
+				.isInstanceOf(BillingConflictException.class)
+				.extracting(ex -> ((BillingConflictException) ex).code())
+				.isEqualTo("BILLING_REQUEST_CONFLICT");
+	}
+
+	@Test
+	void cancelAndReactivateSetOnlyThePeriodEndFlag() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		ArgumentCaptor<SubscriptionUpdateParams> params = ArgumentCaptor.forClass(SubscriptionUpdateParams.class);
+		when(stripeClient.v1().subscriptions().update(eq("sub_test_1"), params.capture(), any()))
+				.thenReturn(subscription("active"));
+		UUID requestId = UUID.randomUUID();
+
+		adapter.scheduleCancelAtPeriodEnd(subscriptionId, "sub_test_1", requestId);
+		assertThat(params.getValue().getCancelAtPeriodEnd()).isTrue();
+		assertThat(params.getValue().getItems()).isNullOrEmpty();
+
+		adapter.reactivateSubscription(subscriptionId, "sub_test_1", requestId);
+		assertThat(params.getAllValues().get(1).getCancelAtPeriodEnd()).isFalse();
+	}
+
+	@Test
+	void portalSessionUsesStoredCustomerAndRejectsSubscriptionMutation() throws Exception {
+		when(stripeClient.v1().billingPortal().configurations().retrieve("bpc_test_configuration"))
+				.thenReturn(portalConfiguration(false));
+		com.stripe.model.billingportal.Session session = new com.stripe.model.billingportal.Session();
+		session.setLivemode(false);
+		session.setUrl("https://billing.stripe.test/session/secret");
+		ArgumentCaptor<com.stripe.param.billingportal.SessionCreateParams> params =
+				ArgumentCaptor.forClass(com.stripe.param.billingportal.SessionCreateParams.class);
+		when(stripeClient.v1().billingPortal().sessions().create(params.capture())).thenReturn(session);
+
+		assertThat(adapter.createPortalSession(organizationId, "cus_sandbox").hostedUrl())
+				.isEqualTo("https://billing.stripe.test/session/secret");
+		assertThat(params.getValue().getCustomer()).isEqualTo("cus_sandbox");
+		assertThat(params.getValue().getConfiguration()).isEqualTo("bpc_test_configuration");
+		assertThat(params.getValue().getReturnUrl()).isEqualTo("https://app.example.com/coach/billing");
+
+		when(stripeClient.v1().billingPortal().configurations().retrieve("bpc_test_configuration"))
+				.thenReturn(portalConfiguration(true));
+		assertThatThrownBy(() -> adapter.createPortalSession(organizationId, "cus_sandbox"))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+		verify(stripeClient.v1().billingPortal().sessions(), times(1))
+				.create(any(com.stripe.param.billingportal.SessionCreateParams.class));
+	}
+
+	private Configuration portalConfiguration(boolean subscriptionUpdateEnabled) {
+		Configuration.Features.PaymentMethodUpdate payment = new Configuration.Features.PaymentMethodUpdate();
+		payment.setEnabled(true);
+		Configuration.Features.InvoiceHistory invoices = new Configuration.Features.InvoiceHistory();
+		invoices.setEnabled(true);
+		Configuration.Features.SubscriptionUpdate subscriptionUpdate = new Configuration.Features.SubscriptionUpdate();
+		subscriptionUpdate.setEnabled(subscriptionUpdateEnabled);
+		Configuration.Features.SubscriptionCancel subscriptionCancel = new Configuration.Features.SubscriptionCancel();
+		subscriptionCancel.setEnabled(false);
+		Configuration.Features.CustomerUpdate customerUpdate = new Configuration.Features.CustomerUpdate();
+		customerUpdate.setEnabled(false);
+		Configuration.Features features = new Configuration.Features();
+		features.setPaymentMethodUpdate(payment);
+		features.setInvoiceHistory(invoices);
+		features.setSubscriptionUpdate(subscriptionUpdate);
+		features.setSubscriptionCancel(subscriptionCancel);
+		features.setCustomerUpdate(customerUpdate);
+		Configuration.LoginPage loginPage = new Configuration.LoginPage();
+		loginPage.setEnabled(false);
+		Configuration configuration = new Configuration();
+		configuration.setLivemode(false);
+		configuration.setFeatures(features);
+		configuration.setLoginPage(loginPage);
+		return configuration;
+	}
+
 	private Session checkoutSession() {
 		Session session = new Session();
 		session.setId("cs_test_1");
@@ -251,6 +431,7 @@ class StripeOrganizationBillingAdapterClientTests {
 		Price price = new Price();
 		price.setId("price_75_annual");
 		SubscriptionItem item = new SubscriptionItem();
+		item.setId("si_test_1");
 		item.setPrice(price);
 		item.setQuantity(1L);
 		item.setCurrentPeriodEnd(NOW.plusSeconds(30L * 24 * 60 * 60).getEpochSecond());

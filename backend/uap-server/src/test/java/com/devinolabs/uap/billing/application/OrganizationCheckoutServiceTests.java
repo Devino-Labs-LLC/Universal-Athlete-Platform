@@ -184,6 +184,8 @@ class OrganizationCheckoutServiceTests {
 				false,
 				NOW.plusSeconds(14 * 24 * 60 * 60),
 				NOW.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.ORG_BAND_75,
+				BillingCadence.ANNUAL,
 				NOW.plusSeconds(1));
 		when(membershipPort.canManageOrganization(actorId, organizationId)).thenReturn(true);
 		when(customerRepository.findByOrganizationIdForUpdate(organizationId)).thenReturn(Optional.of(customer));

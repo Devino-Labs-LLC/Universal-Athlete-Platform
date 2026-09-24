@@ -14,10 +14,14 @@ public record ProviderSubscriptionSnapshot(
 		boolean cancelAtPeriodEnd,
 		Instant trialEndsAt,
 		Instant currentPeriodEndsAt,
+		CommercialPlanKey planKey,
+		BillingCadence billingCadence,
 		Instant providerStateAsOf) {
 
 	public ProviderSubscriptionSnapshot {
 		Objects.requireNonNull(status, "status must not be null");
+		Objects.requireNonNull(planKey, "planKey must not be null");
+		Objects.requireNonNull(billingCadence, "billingCadence must not be null");
 		Objects.requireNonNull(providerStateAsOf, "providerStateAsOf must not be null");
 		providerCustomerRef = normalize(providerCustomerRef);
 		providerSubscriptionRef = normalize(providerSubscriptionRef);

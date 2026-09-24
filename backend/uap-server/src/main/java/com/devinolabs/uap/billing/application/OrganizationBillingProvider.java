@@ -31,6 +31,45 @@ public interface OrganizationBillingProvider {
 
 	ProviderSubscriptionSnapshot fetchAuthoritativeSnapshot(VerifiedProviderEvent event);
 
+	PortalSession createPortalSession(UUID organizationId, String providerCustomerRef);
+
+	ProviderSubscriptionSnapshot changeSubscriptionPlan(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			CommercialPlanKey targetPlanKey,
+			BillingCadence targetCadence,
+			UUID requestId);
+
+	ProviderSubscriptionSnapshot restoreSubscriptionPlan(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			CommercialPlanKey planKey,
+			BillingCadence cadence,
+			String operationToken);
+
+	ProviderSubscriptionSnapshot scheduleCancelAtPeriodEnd(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId);
+
+	ProviderSubscriptionSnapshot reactivateSubscription(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId);
+
+	ProviderSubscriptionSnapshot fetchSubscription(String providerSubscriptionRef);
+
+	record PortalSession(String hostedUrl) {
+
+		public PortalSession {
+			Objects.requireNonNull(hostedUrl, "hostedUrl must not be null");
+			hostedUrl = hostedUrl.trim();
+			if (hostedUrl.isEmpty()) {
+				throw new IllegalArgumentException("hostedUrl must not be blank");
+			}
+		}
+	}
+
 	record CheckoutSession(String sessionId, String checkoutUrl) {
 
 		public CheckoutSession {

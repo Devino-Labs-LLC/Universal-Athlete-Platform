@@ -38,6 +38,8 @@ final class SubscriptionLifecycleTransitions {
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.CANCEL_AT_PERIOD_END, EnumSet.of(
 				SubscriptionLifecycleState.ACTIVE,
+				SubscriptionLifecycleState.TRIALING,
+				SubscriptionLifecycleState.PAST_DUE,
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.EXPIRED, EnumSet.noneOf(SubscriptionLifecycleState.class));
 	}
