@@ -21,6 +21,8 @@ For each provider event:
 
 Fulfillment is webhook/sync driven — not success-URL driven. Grace recovery and cancel-at-period-end follow ADR-040.
 
+The provider subscription snapshot remains the source of truth for plan, cadence, period end, cancel-at-period-end, and ended. A qualifying failure event supplies the grace anchor when that snapshot is payment attention and no earlier anchor exists. A newer successful snapshot clears grace. A stale failure event must not re-enter grace or regress `ACTIVE`. Reconciliation refetches the same provider subscription. It does not invent a grace window, override a newer `providerStateAsOf`, or store raw payloads. `FAILED` receipts stay retryable by event id; recovery of missed provider truth is a refetch, not a stored body. The Slice F event and worker contract is `docs/V4_IMPLEMENTATION_PLAN.md` **§44** and does not authorize runtime.
+
 ## Consequences
 
 - Replay-safe commercial state  

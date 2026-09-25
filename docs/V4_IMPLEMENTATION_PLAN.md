@@ -6,7 +6,7 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice E **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`; see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. V4 is **not** complete.  
+**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. Pre-Slice-F recovery contract is **§44**. Slice F runtime is **not** started. V4 is **not** complete.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
@@ -351,7 +351,7 @@ Do not mirror every provider status into product code.
 | `PENDING` | Checkout/purchase started; not yet entitled |
 | `TRIALING` | Organization 14-day trial (payment method on file); entitled |
 | `ACTIVE` | Paid entitled |
-| `PAST_DUE` | Payment failed; within or entering grace accounting |
+| `PAST_DUE` | Exceptional payment attention when a safe 7-day grace cannot be established. Not entitled. Ordinary renewal failure does not stop here (§44) |
 | `GRACE_PERIOD` | Explicit **7 calendar day** failed-payment grace; entitled capabilities remain; billing-owner messaging |
 | `CANCEL_AT_PERIOD_END` | Cancel scheduled; entitled until paid-through / period end |
 | `EXPIRED` | Period ended without renewal / after grace without recovery |
@@ -363,7 +363,8 @@ Do not mirror every provider status into product code.
 PENDING → TRIALING → ACTIVE → …
 PENDING → ACTIVE → …          (no trial / individual)
 ACTIVE | TRIALING → CANCEL_AT_PERIOD_END → EXPIRED
-ACTIVE → PAST_DUE / GRACE_PERIOD → ACTIVE | EXPIRED
+ACTIVE → GRACE_PERIOD → ACTIVE | EXPIRED
+TRIALING → GRACE_PERIOD → ACTIVE | EXPIRED   (conversion charge failed; trial end is not extended)
 ```
 
 Provider-status mapping tables live in adapters (ADR-044).
@@ -554,7 +555,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
 | **D** | Bands & usage — active-athlete band enforcement. Semantics locked in **§37**. Runtime **not** authorized by this lock. Dedicated flag `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags) |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
-| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery |
+| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44**. Runtime is **not** authorized by §44 |
 | **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
 | **H** | Commercial UX completion — pricing/billing cohesion |
 | **I** | Hardening / RC — T12–T22, entitlement matrix, tax/config, production certification |
@@ -2712,6 +2713,313 @@ Live Stripe was not queried or mutated. No production membership, Checkout, Port
 ### 43.6 Boundaries
 
 Sandbox certification in **§42** stays the provider evidence. This section is the dormant production deployment. Commercial billing is **off**. Slice F is **not** started. Slice G is **not** started. V4 is **not** complete.
+
+---
+
+## 44. Pre-Slice-F — Payment Recovery, Grace & Reconciliation Contract
+
+**Status:** **PRODUCT OWNER DECISIONS REQUIRED**. Slice F runtime is **not** started and is **not** authorized by this section.
+
+This contract interprets the locked 7-day grace in §§15–16 and §22.1 #8–9. It does not change grace length, data retention, voluntary cancel-at-period-end, downgrade athlete removal, free surfaces, provider-neutral entitlement, or terminal `EXPIRED`. Production flags stay false. No migration is authorized here.
+
+### 44.1 Current runtime inventory
+
+Recorded against `5cddf39a2e591b2dd478533f6557d40fbb312aa6`.
+
+| Fact | Current behavior |
+| --- | --- |
+| States | `PENDING`, `TRIALING`, `ACTIVE`, `PAST_DUE`, `GRACE_PERIOD`, `CANCEL_AT_PERIOD_END`, `EXPIRED`. `CANCELLED` is not used |
+| Entitlement | `PENDING`, `PAST_DUE`, and `EXPIRED` are not entitled. `ACTIVE` is entitled. `TRIALING` is entitled only while `asOf < trialEndsAt`. `GRACE_PERIOD` is entitled only while `asOf < graceEndsAt`. `CANCEL_AT_PERIOD_END` is entitled only while `asOf < currentPeriodEndsAt` |
+| Terminal rule | `EXPIRED` has no outward transition. `expire` is a no-op when already `EXPIRED` |
+| Grace helper | `enterGracePeriod` accepts only `ACTIVE` or `PAST_DUE`, then sets `graceEndsAt` to **local now + 7 days** and replaces any previous deadline |
+| Trial conversion | `TRIALING` may go to `ACTIVE`, `CANCEL_AT_PERIOD_END`, or `EXPIRED`. It may not go to `GRACE_PERIOD` |
+| Stripe status map | `past_due`, `unpaid`, and `paused` all become `PAYMENT_ATTENTION_REQUIRED`. `canceled` and `incomplete_expired` become `ENDED` |
+| Snapshot sync | `synchronizeProviderSnapshot` maps payment attention to `PAST_DUE` and **sets `graceEndsAt` to null** |
+| Webhooks handled | `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Each verified event is claimed, refetches the subscription, and applies that generic snapshot |
+| Grace automation | None. `invoice.payment_failed` does not start grace |
+| Checkout block | Any non-`EXPIRED` Organization subscription blocks a new Checkout (`PENDING` → `BILLING_CHECKOUT_IN_PROGRESS`; every other open state → `BILLING_SUBSCRIPTION_EXISTS`) |
+| Management | `PAST_DUE` and `GRACE_PERIOD` cannot plan-change, cancel, or reactivate. Portal is offered for any non-`PENDING` lifecycle |
+| Owner read model | `SubscriptionResult` returns subscription id, plan, cadence, lifecycle, trial end, and period end. It does not return `graceEndsAt` |
+| Customer create | Stripe Customer is created with an Organization id in metadata and **no email** |
+| Notifications | Identity verification uses an in-memory notifier. There is no billing email sender |
+| Scheduler | None. No `@Scheduled` worker |
+| Schema | `grace_ends_at` and `provider_state_as_of` exist on `billing_subscriptions`. `billing_provider_events` stores id, type, timestamps, and `RECEIVED` / `PROCESSED` / `IGNORED` / `FAILED`. Raw payloads are not stored. `PROCESSED` and `IGNORED` are not replayed. `RECEIVED` and `FAILED` are retryable by event id |
+| Web | The owner page shows the raw lifecycle enum. Portal is “Manage payment method and invoices”. Plan change is enabled for `ACTIVE` and `TRIALING` |
+
+### 44.2 Conflict this contract closes
+
+A failed renewal currently becomes non-entitled `PAST_DUE` and clears grace. That removes commercial access before the locked 7-day grace exists. Webhook order can make the hole last until some later write. Slice F must not ship that mapping for a grace-eligible failure.
+
+### 44.3 Failed-payment transition
+
+A qualifying failure on an entitled renewable Organization relationship moves that relationship to `GRACE_PERIOD` in the same logical handling. It does not stop in non-entitled `PAST_DUE`.
+
+Grace-eligible sources:
+
+| From | Qualifying failure |
+| --- | --- |
+| `ACTIVE` | Recurring invoice payment failed, or the invoice needs customer action and is not paid |
+| `TRIALING` | The trial-conversion charge failed or needs action. This is payment recovery. It does not extend `trialEndsAt` and does not start a second trial |
+
+`TRIALING` → `GRACE_PERIOD` is a required domain transition. The current table does not allow it. Adding it implements §22.1 #8. It does not change the 7-day length or terminal `EXPIRED`.
+
+Not grace-eligible:
+
+| Signal | Result |
+| --- | --- |
+| `paused` | Trial ended without a payment method. Stripe does not generate invoices for `paused`. Do not grant 7 days. Non-entitled `PAST_DUE` |
+| `unpaid` with no open grace | Retries are already exhausted and further invoices are not attempted. Do not start a new 7-day clock. Non-entitled `PAST_DUE`, then provider termination under §44.7 |
+| `unpaid` or `past_due` while grace is already open | Keep the existing `graceEndsAt`. Do not move it later |
+| `CANCEL_AT_PERIOD_END` | Voluntary cancel stays on that path. A failed renewal does not become grace and does not become entitled cancel from `PAST_DUE` or `GRACE_PERIOD` |
+| Unknown or rejected Price | Fail closed. Do not invent grace |
+
+`PAST_DUE` remains the exceptional, non-entitled attention state. Owner copy must not promise a grace date for it.
+
+Grace is not decided from the collapsed `PAYMENT_ATTENTION_REQUIRED` enum. Slice F must read the Stripe status. Only `past_due` on a grace-eligible relationship, plus the invoice signals above, may start grace. `unpaid` and `paused` must not. The current adapter maps all three to one enum. That mapping is not sufficient for this slice.
+
+Stripe Revenue Recovery must not cancel the subscription before `graceEndsAt`. A Dashboard action that cancels inside the 7 days would otherwise end the provider relationship early. If that happens anyway, §44.7 keeps `GRACE_PERIOD` until the deadline. Preferred account end actions, when one is chosen later, are leave `past_due` or mark `unpaid`, with Athlete Readiness canceling at the deadline. This task does not change that setting.
+
+### 44.4 What starts grace
+
+1. `invoice.payment_failed` is the primary signal.
+2. `invoice.payment_action_required` is a payment-attention signal when that invoice is not successfully paid.
+3. `customer.subscription.updated` to `past_due` is the fallback so an earlier subscription event cannot leave an entitlement hole before the invoice event arrives.
+
+The anchor instant is the provider event `created` time in UTC, not local receipt time. `graceEndsAt = anchor + 7 days`, using `Period.ofDays(7)` from that UTC instant. The boundary is exclusive: `asOf < graceEndsAt` is entitled; `asOf >= graceEndsAt` is not. There is no Organization timezone and no DST window.
+
+The first qualifying failure establishes the deadline. A later failure, Stripe retry, replay, restart, or reconciliation poll does not move it later. An older qualifying failure that arrives afterward may move `graceEndsAt` **earlier** to that older anchor plus 7 days. It must not move it later.
+
+Current `enterGracePeriod` always uses local now and replaces the deadline. Slice F must not call it that way.
+
+### 44.5 Recovery before the deadline
+
+An authoritative provider snapshot that is `active` for the same subscription, with `providerStateAsOf` newer than the failure, and before the provider relationship is terminal:
+
+`GRACE_PERIOD` → `ACTIVE`, clear `graceEndsAt`, keep the same Subscription, Customer, plan, and cadence. Provider `currentPeriodEndsAt` is authoritative. No new Checkout, trial, or second subscription.
+
+Audit `BILLING_PAYMENT_RECOVERED` once for that effective change. A replay does not audit again.
+
+### 44.6 Entitlement at the deadline
+
+`Subscription.isCommerciallyEntitledAt` is the only grace check. At `graceEndsAt`, commercial access is already false even if the row is still `GRACE_PERIOD`. A late worker does not extend access. No endpoint-specific grace check.
+
+When entitlement enforcement is later turned on, commercial-gated calls that otherwise pass authorization return **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` at and after the deadline. During open grace they stay available. Production enforcement stays off until a separate launch decision.
+
+Capacity counting does not change. The band stays the subscription’s band. Athletes are not removed. Billing failure is not capacity remediation.
+
+### 44.7 Provider termination and terminal EXPIRED
+
+Stripe Billing owns charge retries. Athlete Readiness does not confirm PaymentIntents or add “Retry charge now”.
+
+At `graceEndsAt` the Stripe-conditional worker, for each due `GRACE_PERIOD`:
+
+1. Refetch the provider subscription outside any database lock.
+2. If it is recovered (`active`): synchronize `ACTIVE` and clear grace.
+3. If it is already terminal (`canceled` or `incomplete_expired`) and `graceEndsAt` has been reached: persist `EXPIRED`. If the provider became terminal before `graceEndsAt`, leave `GRACE_PERIOD` until that instant, then persist `EXPIRED` without a second cancel. Entitlement still lasts until `graceEndsAt`.
+4. If it is still `past_due`, `unpaid`, or otherwise unpaid: cancel that same provider subscription for nonpayment. The idempotency key is `athlete-readiness:grace-expire:{subscriptionId}:{graceEndsAtEpochMilli}`. Use the UTC epoch milli of `graceEndsAt`. If an older failure moves `graceEndsAt` earlier before cancel, the key changes with it. A cancel that already succeeded is observed on refetch and is not repeated as a new subscription.
+5. Refetch.
+6. Persist `EXPIRED` only after that refetch is terminal.
+
+If cancel or refetch fails: do not persist `EXPIRED`. Leave `GRACE_PERIOD` with the elapsed `graceEndsAt`. Entitlement is already false. New Checkout stays blocked because the row is not `EXPIRED`. Retry later with the same idempotency key.
+
+`EXPIRED` is not written while Stripe can still collect or recover that subscription. There is no `EXPIRED` → `ACTIVE` transition. After terminal `EXPIRED`, a later Checkout is a new Subscription aggregate. A payment that succeeds before termination commits may still recover on the refetch in step 2. A payment after local `EXPIRED` does not resurrect the row.
+
+`BILLING_SUBSCRIPTION_ENDED` is the end audit, once, with safe metadata `reason=NONPAYMENT` when the end is delinquency. No invoice id, PaymentIntent id, or decline code.
+
+Voluntary cancel remains `cancel_at_period_end` and `CANCEL_AT_PERIOD_END`. It is not this path.
+
+### 44.8 Checkout, Portal, and management
+
+| State | Checkout | Portal | Plan change | Cancel | Reactivate |
+| --- | --- | --- | --- | --- | --- |
+| Open grace | Blocked (`BILLING_SUBSCRIPTION_EXISTS`) | Payment method and invoices | Blocked | Blocked | Blocked |
+| Elapsed grace, provider not yet terminal | Blocked | Payment method and invoices | Blocked | Blocked | Blocked |
+| Exceptional `PAST_DUE` | Blocked | Payment method and invoices | Blocked | Blocked | Blocked |
+| `EXPIRED` | Allowed as a new Checkout | Not a recovery of the old row | n/a | n/a | n/a |
+
+Portal stays the Slice E configuration: payment method and invoice history only. No Portal cancel and no Portal price change.
+
+### 44.9 Stripe retry settings
+
+Current Stripe Billing behavior used for this contract (docs reviewed 2026-09-25; no account setting was changed):
+
+- A recurring failure moves the subscription to `past_due`. The first-invoice failure of a brand-new subscription is `incomplete`, then `incomplete_expired` after 23 hours. That first-invoice path is Checkout `PENDING`, not grace.
+- `invoice.payment_failed` reports the failure and later retry attempts (`attempt_count`, `next_payment_attempt`). A hard decline schedules retries but does not charge until a new payment method exists.
+- `invoice.payment_action_required` means the customer must authenticate.
+- After the Dashboard retry window, the subscription becomes `canceled`, `unpaid`, or stays `past_due`, according to the Revenue Recovery setting. `unpaid` stops payment attempts. `canceled` is terminal. Paying the latest invoice can return `past_due` to `active` even after the invoice due date.
+- `paused` means a trial ended with no payment method. It is not the same as pausing collection.
+- Smart Retries and custom schedules are account settings. They are not the product access clock.
+
+Athlete Readiness remains authoritative for the 7-day access deadline and for terminating the provider subscription when grace elapses unpaid. Dashboard settings must not be the access control. They also must not be left able to collect on a subscription this product has already ended: the worker cancel is what stops later retries.
+
+The exact Dashboard choice is still a Product Owner / operations decision in §44.18. This task does not change it.
+
+### 44.10 Webhook matrix
+
+Slice F handles these events, in addition to the Slice B/E set:
+
+| Event | Role |
+| --- | --- |
+| `invoice.payment_failed` | Primary grace start, or earlier-deadline correction. Not a deadline extension |
+| `invoice.payment_action_required` | Same grace policy when the invoice is unpaid |
+| `invoice.paid` | Authoritative refetch. A newer paid/active snapshot recovers grace. A stale paid event does not |
+| `customer.subscription.updated` | Refetch. `past_due` fallback may start grace. `active` may recover. `canceled` may expire only when terminal |
+| `customer.subscription.deleted` | Refetch and persist `EXPIRED` when the provider subscription is gone |
+| `customer.subscription.created` | Existing fulfillment. Does not start grace |
+| `checkout.session.completed` | Existing fulfillment. Does not start grace |
+| `checkout.session.expired` | If the internal row is still `PENDING` and no provider subscription became entitled, persist `EXPIRED` so Checkout is not blocked forever. Do not expire a row that already has an active provider subscription |
+
+Ordering:
+
+- `subscription.updated(past_due)` before `invoice.payment_failed` still establishes one grace from the earlier provider timestamp.
+- The invoice event after that does not restart it.
+- `invoice.paid` then a stale `payment_failed` does not re-enter grace when `providerStateAsOf` is older than the recovered snapshot.
+- `customer.subscription.deleted` then an older invoice event does not revive the row.
+- Generic snapshot fields do not carry the grace anchor. The failure event’s provider timestamp does. Plan, cadence, and ended still come from the refetched subscription item and status.
+
+`FAILED` and `RECEIVED` receipts are retried when Stripe redelivers that event id. That redelivery is what commits grace if the first write rolled back. The 15-minute worker does not scan `ACTIVE` or `TRIALING` and does not start grace. If no payment-attention event ever arrives, the row stays entitled. That residual gap is webhook delivery, not a poll of every healthy subscription. Do not store raw payloads to make retries possible.
+
+### 44.11 Worker and reconciliation
+
+One Stripe-conditional worker. It runs only when `uap.billing.stripe.enabled=true`. No new Slice F flag. It does not run in production while Stripe is false.
+
+Cadence: every 15 minutes. That cadence bounds provider cleanup. It does not grant access. Entitlement is the timestamp check.
+
+Each tick, outside row locks, pages at most 50 subscriptions in this order:
+
+| Set | Action |
+| --- | --- |
+| `GRACE_PERIOD` with `graceEndsAt <= now` | §44.7 |
+| `PAST_DUE` | Refetch. Recover if `active`. If still `unpaid` or `paused` and no open grace, cancel with idempotency key `athlete-readiness:past-due-terminate:{subscriptionId}`, then persist `EXPIRED` only after the refetch is terminal. Do not start a 7-day window. Do not use this path for an ordinary `past_due` renewal; that renewal is grace |
+| `PENDING` older than the Checkout session lifetime with no entitled provider subscription | Expire the internal row when the session is expired or gone |
+| `CANCEL_AT_PERIOD_END` whose period end has passed | Refetch. Persist `EXPIRED` only when the provider subscription is terminal |
+
+Do not call Stripe for every healthy `ACTIVE` or `TRIALING` subscription on this cadence.
+
+Provider I/O stays outside the short persistence transaction. Optimistic version on the subscription row. Duplicate replicas use the same grace-expire idempotency key, and the same `past-due-terminate` key, and cannot extend grace or double-audit. A second cancel of an already terminal subscription is a no-op. Every replica may refetch the same due page, so Stripe read volume grows with replica count. That read is safe. It does not grant extra access or start a second subscription.
+
+### 44.12 Failure windows
+
+| Window | Convergence |
+| --- | --- |
+| A. Failure event received, local write fails | The transaction rolls back. The row stays `ACTIVE` or `TRIALING` and stays entitled. There is no `PAST_DUE` gap. Stripe redelivery of that event id commits grace once. The 15-minute worker does not scan that row to invent grace |
+| B. Grace saved, audit fails | The lifecycle write and the audit commit in the same transaction. A failed audit rolls the grace write back. Retry audits once |
+| C. Payment succeeds, webhook delayed | Access follows the last committed state until refetch. Reconciliation of `GRACE_PERIOD` sees `active` and recovers. It does not wait for the webhook |
+| D. Deadline refetch succeeds, local write fails | Row stays `GRACE_PERIOD` with elapsed grace. Entitlement is false. Next tick retries |
+| E. Provider cancel succeeds, local write fails | Next tick refetches the terminal subscription and then persists `EXPIRED`. Checkout stays blocked until that write |
+| F. Provider unavailable at the deadline | No false `EXPIRED`. Entitlement is false. Checkout stays blocked. **502** is not returned to a product user; the worker retries |
+| G. Webhook and worker together | Optimistic lock. One writer commits. The loser retries against the new version. Grace does not extend |
+| H. Payment succeeds while the worker is checking | The worker’s refetch sees `active` and recovers. It does not cancel a recovered subscription |
+| I. Restart during recovery | Idempotency key and versioned row. No second subscription and no second grace |
+| J. Webhook never arrives | Open `GRACE_PERIOD`, `PAST_DUE`, stale `PENDING`, and elapsed `CANCEL_AT_PERIOD_END` are still refetched. A healthy `ACTIVE` or `TRIALING` row is not. It stays entitled until a payment-attention event arrives. Losing every webhook is an operations failure, not a reason to poll every paid subscription every 15 minutes |
+
+### 44.13 Owner experience and privacy
+
+There is no billing email channel, and the Stripe Customer is created without an email. Stripe’s own failed-payment email is not a reliable ORG_OWNER message. Slice F’s §16 messaging minimum is in-app, on the owner billing page.
+
+`SubscriptionResult` gains `graceEndsAt`. The web status schema `organizationBillingStatusSchema` gains the same nullable instant. No provider ids, invoice ids, amounts, or decline reasons.
+
+The current owner page shows the raw lifecycle enum and does not render a grace date. `organizationBillingStatusSchema` has no `graceEndsAt` today. Slice F runtime adds both. This contract does not change the page.
+
+| State | Owner copy Slice F must show |
+| --- | --- |
+| `GRACE_PERIOD` | Payment needs attention. Access continues until the grace date. Action: Manage payment method and invoices |
+| `PAST_DUE` | Billing needs attention. Manage payment method and invoices. No grace date |
+
+During grace and during exceptional `PAST_DUE`, the page does not offer plan change, cancel, or reactivate. That gate already exists for those states because management is limited to `ACTIVE` and `TRIALING`. After recovery to `ACTIVE`, Slice E management returns.
+
+Anyone who is not `ORG_OWNER`, including athletes, coaches, and `ORG_ADMIN`, does not see decline reasons, card details, amounts, invoice ids, payment methods, Customer ids, or Price ids. Billing authority stays `ORG_OWNER` only (§22.1 #5). After grace, commercial-gated product calls use the existing 402. Free surfaces stay available: authentication, account access, leave, invitation accept/decline, consent grant/revoke/re-grant, transparency, retained athlete history, and the owner billing page. Nothing in this slice deletes Organization, Team, membership, consent, athlete, readiness, recommendation, training, or audit data.
+
+Payment recovery is not athletic recovery. This slice does not write State Engine, check-in, recommendation, training, Team Readiness, consent, or membership state.
+
+### 44.14 Audit
+
+| Event | When |
+| --- | --- |
+| `BILLING_GRACE_STARTED` | First effective transition into `GRACE_PERIOD` |
+| `BILLING_PAYMENT_RECOVERED` | Effective recovery to `ACTIVE` |
+| `BILLING_SUBSCRIPTION_ENDED` | Effective terminal end. Delinquency adds `reason=NONPAYMENT` |
+
+Not audited: each retry attempt, each poll, Portal open, decline text, card data, raw webhook bodies, or raw invoices. Audit metadata does not include Customer ids, Subscription ids, invoice ids, PaymentIntent ids, Price ids, or Portal URLs. Application logs do not contain Portal URLs or Stripe secrets. Metadata that is allowed stays plan, cadence, lifecycle, and `reason=NONPAYMENT`.
+
+### 44.15 Schema, rollout, and later sandbox proof
+
+No V37 is required. `grace_ends_at`, `provider_state_as_of`, the event inbox, and the subscription version are enough. A scheduler lease table is not required while cancel idempotency and optimistic locking hold.
+
+Code may later deploy with Stripe, entitlement enforcement, and capacity enforcement false. Deploy is not activation. The worker stays off while Stripe is false.
+
+Future sandbox proof uses a **new** test-mode Customer created with `test_clock` set at creation, plus its own Subscription. It does not use `cus_VIAgQcdqprYAbs` or `sub_1UHaOKD418eILvNQ2evsoO9Z`. Stripe can attach an existing Customer when a test clock is created, and that attachment cannot be removed; deleting the clock deletes the Customer and its subscriptions. That must not happen to the Slice E certification relationship. Advance the clock to trial end and through the grace boundary. Do not wait seven real days. Do not create those objects in this task.
+
+### 44.16 Future test matrix
+
+| Case | Expected |
+| --- | --- |
+| `ACTIVE` + `invoice.payment_failed` | `GRACE_PERIOD`, entitled, deadline = event time + 7 days |
+| Trial-conversion failure | `GRACE_PERIOD`, same `trialEndsAt`, no second trial |
+| `past_due` subscription event first | Grace established, no non-entitled gap |
+| Later failure or replay | Deadline unchanged |
+| Older failure after a newer one | Deadline moves earlier only |
+| `invoice.paid` before the deadline | `ACTIVE`, grace cleared, one recovery audit |
+| Stale `invoice.paid` or active refetch older than the failure | Grace stays. Deadline is not cleared |
+| `customer.subscription.deleted`, then an older invoice or failure | Row stays terminal. Grace does not restart |
+| Just before / at / after `graceEndsAt` | Entitled / not entitled / not entitled |
+| Provider outage at the deadline | No `EXPIRED`, not entitled, Checkout blocked |
+| Still unpaid after refetch | Same subscription canceled, `EXPIRED` only after terminal refetch, one end audit |
+| After `EXPIRED` | No resurrection |
+| Checkout during open or settling grace | `BILLING_SUBSCRIPTION_EXISTS` |
+| Checkout after terminal `EXPIRED` | New Checkout allowed |
+| Voluntary cancel | Unchanged `CANCEL_AT_PERIOD_END` |
+| `PAST_DUE` / `GRACE_PERIOD` management | Plan, cancel, and reactivate blocked; Portal allowed |
+| `paused` or `unpaid` with no open grace | No new 7 days |
+| Free surfaces | Still available |
+| Commercial endpoint | Allowed during grace; 402 at and after the deadline when enforcement is on |
+| Two workers, or webhook plus worker | One grace, one cancel, one audit |
+| Payment arrives during the expiry check | Provider `active` wins; no cancel |
+| Stale failure after recovery | Stays `ACTIVE` |
+| `checkout.session.expired` on `PENDING` | Internal `EXPIRED` when no entitled provider subscription exists |
+| `checkout.session.expired` when an entitled provider subscription already exists | Do not persist `EXPIRED` |
+| Grace-start redelivery or `FAILED` receipt replay | One transition. One `BILLING_GRACE_STARTED`. Deadline unchanged |
+| Any failure path | No athlete, member, consent, training, or audit delete |
+
+### 44.17 Reviews
+
+These reviews are of this contract only. They do not start Slice F.
+
+| Review | Verdict |
+| --- | --- |
+| Lead / Architect | **PASS-WITH-NOTES**. Ordinary failure enters `GRACE_PERIOD`. `EXPIRED` stays terminal. The §15 and ADR-040 diagrams now match that path |
+| Backend | **PASS-WITH-NOTES**. A rolled-back grace write stays entitled until event redelivery. The worker does not invent grace on healthy rows |
+| External Integration / Stripe | **PASS-WITH-NOTES**. No 7-day grant for `paused` or for `unpaid` without an open grace. No second retry engine. The Slice E certification Customer is not attached to a test clock |
+| QA / Test Automation | **PASS-WITH-NOTES**. The ordering, stale-paid, expired-Checkout, and grace-replay cells are in §44.16 |
+| Security / Code Quality | **PASS-WITH-NOTES**. Non-owners do not see financial details. Audit and logs exclude provider ids and Portal URLs |
+| DevOps / CI-CD | **PASS-WITH-NOTES**. The worker runs only when Stripe is enabled. A late tick does not extend access |
+| Web | **PASS**. Owner copy and `graceEndsAt` are specified as Slice F runtime. This contract does not change the page |
+| Athlete Intelligence | **PASS**. Payment recovery does not write athletic domain state |
+| Documentation / Release | **PASS-WITH-NOTES**. Slice F is not started. The webhook section says Slice F handles the events |
+
+### 44.18 Product Owner decisions required
+
+These are not settled by §§15–16 or §22.
+
+**1. Stripe retry schedule, while Athlete Readiness still ends access and cancels the provider subscription at `graceEndsAt`.**
+
+| Option | Consequence |
+| --- | --- |
+| A. Leave Smart Retries in place. Recommended | Customers get Stripe’s retry attempts until this application cancels the subscription at the grace deadline. Access does not follow the Dashboard window. No settings change in this task |
+| B. Custom retry schedule that finishes inside 7 days | More predictable attempt times. Requires a later operations change. Still not the access clock |
+| C. No automatic Stripe retries | Recovery depends on the customer opening Portal. Fewer recovered payments |
+
+**2. Custom Athlete Readiness recovery email.**
+
+| Option | Consequence |
+| --- | --- |
+| A. In-app owner warning and Portal only. Recommended for Slice F | Matches the missing email channel and the Customer record, which has no email. Satisfies billing-owner messaging without a new mailer |
+| B. Add a recovery email on a new or existing mail channel | Needs a real sender and a deterministic ORG_OWNER address. Not available now. Do not copy Account email onto the Stripe Customer in this slice |
+| C. Depend on Stripe failed-payment email | Unsafe. The Organization Customer is created without an email, so Stripe has no guaranteed ORG_OWNER recipient |
+
+Provider termination at grace expiry and terminal `EXPIRED` are locked in §44.7. They are not open product questions.
+
+V4 Pre-Slice-F recovery: PRODUCT OWNER DECISIONS REQUIRED
 
 
 
