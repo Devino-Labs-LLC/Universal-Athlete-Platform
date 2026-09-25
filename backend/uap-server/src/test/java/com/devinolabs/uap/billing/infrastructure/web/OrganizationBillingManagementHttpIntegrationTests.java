@@ -1259,7 +1259,7 @@ class OrganizationBillingManagementHttpIntegrationTests {
 					false,
 					Instant.now().plusSeconds(30),
 					"cs_test",
-					"sub_test_" + uuidField(body, "subscriptionId"),
+					"sub_" + uuidField(body, "subscriptionId"),
 					uuidField(body, "organizationId"),
 					uuidField(body, "subscriptionId"));
 		}
