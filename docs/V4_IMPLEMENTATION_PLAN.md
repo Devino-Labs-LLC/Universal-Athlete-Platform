@@ -5,15 +5,15 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main`):** Slice D **PRODUCTION VERIFIED** at promotion SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c` (see §39). Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice E **COMPLETE on develop** and **SANDBOX CERTIFIED** (see **§41** / **§42**). Not a `main` promotion. Not **PRODUCTION VERIFIED**.  
+**Production baseline (`main`):** Slice E **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`; see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
+**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. V4 is **not** complete.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **COMPLETE on develop** and **SANDBOX CERTIFIED** (see **§41** and **§42**). Not **PRODUCTION VERIFIED**. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -2483,7 +2483,7 @@ V4 is **not** complete. Slice F is **not** started. Slice G is **not** started.
 
 ## 42. V4 Slice E — Stripe Sandbox Certification
 
-**Status:** **SANDBOX CERTIFIED**. Not **PRODUCTION VERIFIED**.
+**Status:** **SANDBOX CERTIFIED**. Production deployment of this code with commercial controls off is **§43**. This section is not live billing activation.
 
 Certification date: **2026-09-25**. Code SHA at the green gate: `792afc5294f6e64706ca28f7ba871e2fca227d96`. Pre-cert `develop` tip: `de6bbc918c9552e54a551816448040d6ff0b592d`. Production `main` remains `c3e6ffd4ebacdd44d723269d1b60637de90e8b49`. Schema stays Flyway **V36**. No **V37**.
 
@@ -2629,6 +2629,89 @@ No `NOSONAR`, exclusion, or threshold change. Runtime code changes for this cert
 | Documentation / Release | **PASS-WITH-NOTES**. This section classifies sandbox, local, and CI evidence separately and does not say **PRODUCTION VERIFIED** |
 
 Slice F is **not** started. Slice G is **not** started. V4 is **not** complete.
+
+---
+
+## 43. V4 Slice E — Production Verification
+
+**Status:** **PRODUCTION VERIFIED**
+
+**PRODUCTION VERIFIED** means the certified Slice E code is deployed to production while commercial controls stay off. It does not mean Stripe live is enabled, customers can purchase, billing enforcement is active, or commercial launch occurred.
+
+Slice E code is deployed to production, and provider-mutating Organization billing remains dormant because `UAP_BILLING_STRIPE_ENABLED` is false. Entitlement enforcement and capacity enforcement stay false. Sandbox certification remains **§42**. Slice F is **not** started. Slice G is **not** started. V4 is **not** complete.
+
+### 43.1 Promotion
+
+| Item | Value |
+| --- | --- |
+| Pre-promotion `develop` / `origin/develop` | `bf50e0158b74d215e318d290b16ccad06a8c6cfe` |
+| Pre-promotion `main` / `origin/main` | `c3e6ffd4ebacdd44d723269d1b60637de90e8b49` |
+| Topology | `develop` **12** commits ahead of `main`, **0** behind; merge-base = `main` |
+| Method | Solo-maintainer `git merge --ff-only develop` on `main`. No PR, merge commit, rebase, tag, or force push |
+| Runtime `main` SHA | `bf50e0158b74d215e318d290b16ccad06a8c6cfe` |
+| Code change during promotion | None |
+
+### 43.2 Main Verify and Sonar
+
+| Item | Value |
+| --- | --- |
+| Main Verify | [36176538176](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36176538176) **SUCCESS** on `bf50e0158b74d215e318d290b16ccad06a8c6cfe` |
+| Jobs | Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, Sonar quality gate — all **success** |
+| Quality Gate | **OK** on `main` |
+| New Code reliability / security / maintainability | **A** (1) |
+| New Code coverage | **80.8%** |
+| New Code duplication | **0.0%** |
+| New Code hotspot review | **100%** |
+
+Thresholds were not weakened.
+
+### 43.3 Railway runtime deployment
+
+GitHub environment `Universal Athlete Platform / production`, deployment **6667972283**, SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`. Created `2026-09-25T18:56:02Z`. Success `2026-09-25T18:59:56Z`. No manual redeploy. Railway variables and secrets were not changed.
+
+Public services, unchanged from prior promotions: `UAP_Server` at `https://uapserver-production.up.railway.app` and `UAP_Client_Web` at `https://uapclientweb-production.up.railway.app`. Railway project `95a263a8-6dda-493d-b7fb-bfb25054f5a6`, production environment `118d7639-c3e3-4d70-a082-b2611c8029b8`. No Railway CLI or token was available, so this record does not include a variable dump or raw runtime logs.
+
+| Check | Result |
+| --- | --- |
+| `/actuator/health` | HTTP 200 `{"groups":["liveness","readiness"],"status":"UP"}` |
+| `/actuator/health/liveness` | HTTP 200 `{"status":"UP"}` |
+| `/actuator/health/readiness` | HTTP 200 `{"status":"UP"}` |
+| Web root | HTTP 200. Entry `index-DIIGu4U3.js` and `index-CWGepKIF.css` HTTP 200. Sign-in screen rendered |
+| Billing chunks | `OrganizationBillingPage-BDSXF4dl.js` and `BillingCheckoutReturnPages-DX7GXvyY.js` HTTP 200. No `sk_test_`, `sk_live_`, `rk_test_`, `rk_live_`, `whsec_`, or `price_` ids in the entry bundle or those chunks |
+
+The web bundle contains the Slice E owner billing UI, including portal, plan-change, cancel, and reactivate paths. That client code cannot authorize a provider call. The server remains the gate.
+
+### 43.4 Schema
+
+Latest repository migration remains `V36__create_billing_stripe_org_foundation.sql`. No Slice E `V37`. Hibernate `ddl-auto` is `validate`. Flyway is enabled. Readiness stayed **UP** after the `bf50e01` deploy, which fails closed if validation or migration startup fails. The production database was not queried or altered. Mutable `plan_key` / cadence columns are already in V36. No destructive schema operation was run.
+
+### 43.5 Commercial controls remained off
+
+Repository defaults, unchanged by this promotion:
+
+| Flag | Default |
+| --- | --- |
+| `UAP_BILLING_STRIPE_ENABLED` | `uap.billing.stripe.enabled` defaults **false** |
+| `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED` | defaults **false** |
+| `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` | defaults **false** |
+
+`application-prod.yaml` does not turn any of them on. There is no Slice E feature flag. This promotion did not set any of them true.
+
+`StripeBillingConfiguration` still refuses enabled Stripe Organization billing under `prod` / `production`. The server reached readiness, so that guard did not fire.
+
+`POST /api/v1/billing/webhooks/stripe` is permit-all. A dummy `Stripe-Signature` returned HTTP **401** with path `/error`. An enabled webhook controller returns **400** for an invalid signature. The `/error` result is the missing-handler outcome: the Stripe-conditional webhook controller is not registered.
+
+`OrganizationBillingController` is the same Stripe conditional. Portal, plan-change, cancel, and reactivate were not called with production credentials. An unauthenticated 401 on those paths would only show the security chain, so it was not used as proof of registration.
+
+`GET /api/v1/billing/organizations/{organizationId}/capacity` is not Stripe-conditional. An unauthenticated request returned HTTP **401** `UNAUTHENTICATED` on that path. That shows the security chain is active. It does not by itself prove commercial entitlement or capacity state. No production Organization or user was created.
+
+`GET /api/v1/identity/me` without a session returned HTTP **401** `UNAUTHENTICATED`.
+
+Live Stripe was not queried or mutated. No production membership, Checkout, Portal session, cancel, or reactivate was performed. No Railway variable was changed.
+
+### 43.6 Boundaries
+
+Sandbox certification in **§42** stays the provider evidence. This section is the dormant production deployment. Commercial billing is **off**. Slice F is **not** started. Slice G is **not** started. V4 is **not** complete.
 
 
 
