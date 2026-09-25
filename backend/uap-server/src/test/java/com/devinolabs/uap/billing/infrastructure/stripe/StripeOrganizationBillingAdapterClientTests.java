@@ -272,6 +272,52 @@ class StripeOrganizationBillingAdapterClientTests {
 	}
 
 	@Test
+	void missingIdentityMetadataStillFollowsTheItemPrice() throws Exception {
+		Subscription subscription = subscription("active");
+		subscription.setMetadata(Map.of(
+				"plan_key", CommercialPlanKey.ORG_BAND_25.name(),
+				"uap_plan_key", CommercialPlanKey.ORG_BAND_25.name(),
+				"uap_billing_cadence", BillingCadence.MONTHLY.name()));
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription);
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_no_identity",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(10),
+				null,
+				"sub_test_1",
+				organizationId,
+				subscriptionId);
+
+		assertThat(adapter.fetchAuthoritativeSnapshot(event)).satisfies(snapshot -> {
+			assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
+			assertThat(snapshot.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		});
+	}
+
+	@Test
+	void conflictingIdentityMetadataIsRejected() throws Exception {
+		Subscription subscription = subscription("active");
+		subscription.setMetadata(Map.of(
+				"uap_organization_id", UUID.randomUUID().toString(),
+				"uap_subscription_id", subscriptionId.toString()));
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription);
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_conflict_identity",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(10),
+				null,
+				"sub_test_1",
+				organizationId,
+				subscriptionId);
+
+		assertThatThrownBy(() -> adapter.fetchAuthoritativeSnapshot(event))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Organization metadata");
+	}
+
+	@Test
 	void unknownPriceFailsClosedWithoutEchoingThePrice() throws Exception {
 		Subscription subscription = subscription("active");
 		subscription.getItems().getData().getFirst().getPrice().setId("price_unknown");

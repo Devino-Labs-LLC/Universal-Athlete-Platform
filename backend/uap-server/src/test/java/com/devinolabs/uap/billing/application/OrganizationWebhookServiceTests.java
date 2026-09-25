@@ -173,6 +173,48 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void subscriptionUpdatedWithoutIdentityMetadataAppliesByProviderReference() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.organization(organizationId),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_meta",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_meta",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(30),
+				null,
+				"sub_test",
+				null,
+				null));
+		when(eventInbox.tryBegin(any(), eq("evt_meta"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(BillingProvider.STRIPE, "sub_test"))
+				.thenReturn(Optional.of(pending));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(billingProvider.fetchAuthoritativeSnapshot(any())).thenReturn(snapshot(
+				ProviderCommercialStatus.TRIALING, NOW.plusSeconds(30)));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.TRIALING);
+		assertThat(pending.providerSubscriptionRef()).isEqualTo("sub_test");
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+	}
+
+	@Test
 	void liveModeAndUnknownTypesAreDurablyIgnored() {
 		UUID organizationId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();
@@ -215,7 +257,7 @@ class OrganizationWebhookServiceTests {
 				false,
 				createdAt,
 				"cs_" + eventId,
-				"sub_" + eventId,
+				"sub_test",
 				organizationId,
 				subscriptionId);
 	}

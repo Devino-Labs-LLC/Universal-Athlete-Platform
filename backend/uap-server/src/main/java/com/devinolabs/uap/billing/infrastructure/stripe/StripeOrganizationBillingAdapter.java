@@ -200,7 +200,7 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 			UUID subscriptionId = event.subscriptionId() != null
 					? event.subscriptionId()
 					: parseUuid(metadata.get(SUBSCRIPTION_ID));
-			requireIdentity(metadata, organizationId, subscriptionId);
+			requireMetadataAgreesWhenPresent(metadata, organizationId, subscriptionId);
 			SubscriptionItem item = requireSingleItem(subscription.getItems());
 			return snapshotFrom(subscription, item, event.createdAt());
 		}
@@ -568,6 +568,26 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		Map<String, String> values = metadata == null ? Map.of() : metadata;
 		requireMatch(organizationId.toString(), values.get(ORGANIZATION_ID), "Organization metadata");
 		requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");
+	}
+
+	/**
+	 * Webhook application follows the subscription item Price. Identity metadata is authoritative
+	 * when present and is not required for subscriptions created before those keys existed.
+	 */
+	private static void requireMetadataAgreesWhenPresent(
+			Map<String, String> metadata,
+			UUID organizationId,
+			UUID subscriptionId) {
+		if (organizationId == null || subscriptionId == null) {
+			throw new IllegalArgumentException("Organization billing identity is missing");
+		}
+		Map<String, String> values = metadata == null ? Map.of() : metadata;
+		if (values.get(ORGANIZATION_ID) != null) {
+			requireMatch(organizationId.toString(), values.get(ORGANIZATION_ID), "Organization metadata");
+		}
+		if (values.get(SUBSCRIPTION_ID) != null) {
+			requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");
+		}
 	}
 
 	private static void requireMatch(String expected, String actual, String label) {

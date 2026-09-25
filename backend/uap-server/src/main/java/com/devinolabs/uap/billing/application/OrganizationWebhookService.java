@@ -110,23 +110,28 @@ public class OrganizationWebhookService {
 	}
 
 	private WebhookApply apply(OrganizationBillingProvider.VerifiedProviderEvent event, UUID receiptId) {
-		if (event.liveMode() || !HANDLED_EVENT_TYPES.contains(event.eventType())
-				|| event.subscriptionId() == null || event.organizationId() == null) {
+		if (event.liveMode() || !HANDLED_EVENT_TYPES.contains(event.eventType())) {
 			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
 			return WebhookApply.done();
 		}
-		Subscription subscription = subscriptionRepository.findById(SubscriptionId.of(event.subscriptionId()))
+		OrganizationBillingProvider.VerifiedProviderEvent identified = identify(event);
+		if (identified.subscriptionId() == null || identified.organizationId() == null) {
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
+			return WebhookApply.done();
+		}
+		Subscription subscription = subscriptionRepository.findById(SubscriptionId.of(identified.subscriptionId()))
 				.orElse(null);
 		if (subscription == null
 				|| subscription.subject().subjectId() == null
-				|| !event.organizationId().equals(subscription.subject().subjectId())
-				|| subscription.provider() != BillingProvider.STRIPE) {
+				|| !identified.organizationId().equals(subscription.subject().subjectId())
+				|| subscription.provider() != BillingProvider.STRIPE
+				|| providerRefConflicts(subscription, identified)) {
 			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
 			return WebhookApply.done();
 		}
 		ProviderSubscriptionSnapshot snapshot;
 		try {
-			snapshot = billingProvider.fetchAuthoritativeSnapshot(event);
+			snapshot = billingProvider.fetchAuthoritativeSnapshot(identified);
 		}
 		catch (BillingConflictException ex) {
 			if ("BILLING_PROVIDER_PRICE_REJECTED".equals(ex.code())) {
@@ -138,15 +143,15 @@ public class OrganizationWebhookService {
 		CommercialPlanKey previousPlan = subscription.planKey();
 		BillingCadence previousCadence = subscription.billingCadence();
 		SubscriptionLifecycleState previousState = subscription.lifecycleState();
-		boolean compensate = compensationRequired(subscription, snapshot, event.organizationId());
+		boolean compensate = compensationRequired(subscription, snapshot, identified.organizationId());
 		if (compensate) {
 			if (subscription.providerSubscriptionRef() == null || previousCadence == null) {
 				eventInbox.complete(receiptId, ProviderEventProcessingStatus.FAILED, Instant.now(clock));
 				return WebhookApply.done();
 			}
 			return WebhookApply.compensate(new ExternalCompensation(
-					event.organizationId(),
-					event.subscriptionId(),
+					identified.organizationId(),
+					identified.subscriptionId(),
 					previousPlan,
 					previousCadence,
 					subscription.providerSubscriptionRef()));
@@ -156,19 +161,19 @@ public class OrganizationWebhookService {
 			Subscription saved = subscriptionRepository.save(subscription);
 			if (saved.lifecycleState() == SubscriptionLifecycleState.TRIALING
 					|| saved.lifecycleState() == SubscriptionLifecycleState.ACTIVE) {
-				auditPort.subscriptionActivated(saved.id().value(), event.organizationId(), saved.lifecycleState());
+				auditPort.subscriptionActivated(saved.id().value(), identified.organizationId(), saved.lifecycleState());
 			}
 			else {
 				auditPort.subscriptionSynchronized(
 						saved.id().value(),
-						event.organizationId(),
+						identified.organizationId(),
 						null,
 						saved.lifecycleState());
 			}
 			BillingSnapshotAudit.record(
 					auditPort,
 					saved.id().value(),
-					event.organizationId(),
+					identified.organizationId(),
 					null,
 					previousPlan,
 					previousCadence,
@@ -177,6 +182,39 @@ public class OrganizationWebhookService {
 		}
 		eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
 		return WebhookApply.done();
+	}
+
+	private OrganizationBillingProvider.VerifiedProviderEvent identify(
+			OrganizationBillingProvider.VerifiedProviderEvent event) {
+		if (event.subscriptionId() != null && event.organizationId() != null) {
+			return event;
+		}
+		if (event.providerSubscriptionRef() == null) {
+			return event;
+		}
+		Subscription match = subscriptionRepository
+				.findByProviderAndProviderSubscriptionRef(BillingProvider.STRIPE, event.providerSubscriptionRef())
+				.orElse(null);
+		if (match == null || match.subject().subjectId() == null || match.provider() != BillingProvider.STRIPE) {
+			return event;
+		}
+		return new OrganizationBillingProvider.VerifiedProviderEvent(
+				event.eventId(),
+				event.eventType(),
+				event.liveMode(),
+				event.createdAt(),
+				event.checkoutSessionId(),
+				event.providerSubscriptionRef(),
+				match.subject().subjectId(),
+				match.id().value());
+	}
+
+	private static boolean providerRefConflicts(
+			Subscription subscription,
+			OrganizationBillingProvider.VerifiedProviderEvent event) {
+		return event.providerSubscriptionRef() != null
+				&& subscription.providerSubscriptionRef() != null
+				&& !event.providerSubscriptionRef().equals(subscription.providerSubscriptionRef());
 	}
 
 	private boolean compensationRequired(
