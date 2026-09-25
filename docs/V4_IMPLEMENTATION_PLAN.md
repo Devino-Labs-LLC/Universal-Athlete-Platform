@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice D **PRODUCTION VERIFIED** at promotion SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c` (see §39). Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice E **COMPLETE on develop** (see **§41**). Not a `main` promotion.  
+**`develop`:** Slice E **COMPLETE on develop** and **SANDBOX CERTIFIED** (see **§41** / **§42**). Not a `main` promotion. Not **PRODUCTION VERIFIED**.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **COMPLETE on develop** (see **§41**). Not **PRODUCTION VERIFIED**. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **COMPLETE on develop** and **SANDBOX CERTIFIED** (see **§41** and **§42**). Not **PRODUCTION VERIFIED**. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -2382,7 +2382,7 @@ V4 Pre-Slice-E billing management: PRODUCT OWNER LOCKED
 
 ## 41. V4 Slice E — Organization Billing Management (COMPLETE on develop)
 
-**Status:** **COMPLETE on develop**. Not **PRODUCTION VERIFIED**. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live or sandbox Stripe mutation, a `main` merge, or commercial launch. V4 is **not** complete.
+**Status:** **COMPLETE on develop**. Not **PRODUCTION VERIFIED**. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live Stripe, a `main` merge, or commercial launch. The bounded sandbox certification is **§42**. V4 is **not** complete.
 
 §40 remains the Product Owner contract. This section records what shipped and supersedes only the §40 status sentences that said runtime was not authorized and not started. §40.1 stays the lock-time inventory.
 
@@ -2459,7 +2459,7 @@ A non-owner who receives 404 on both capacity and status can still see Start Che
 
 Athlete Intelligence is unchanged. The new membership port method is `lockAndCountDistinctActiveAthletes` (organization `FOR UPDATE` plus the distinct active-athlete count). Downgrade does not remove athletes. No State Engine, readiness, recovery, recommendation, Team Readiness, consent, or athlete-history change.
 
-Stripe was not mutated. Sandbox certification was **not** run. Live Stripe was not touched. Railway was not modified. Nothing was deployed. Production flags remain false.
+This runtime section did not itself mutate Stripe. Real sandbox certification is **§42**. Live Stripe was not touched. Railway was not modified. Nothing was deployed. Production flags remain false.
 
 Local web on the Sonar-fix tree: `pnpm web:typecheck`, `pnpm web:lint` (0 errors, 12 pre-existing warnings), `pnpm web:test` (202 files, 864 tests), and a production build (`VITE_UAP_ENV=production`, `VITE_UAP_API_BASE_URL=https://api.example.com`) succeeded. Mobile on the final SHA is the green Mobile job in [36104212217](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36104212217). Focused Slice E backend tests, including Modulith and `trialingCancelAndReactivatePreserveTheTrial`, were **BUILD SUCCESSFUL** (124 tests, then the management class again after the trial-cancel assertion). A local `./gradlew check` was started and ended without a captured **BUILD SUCCESSFUL**. GitHub Verify is the full-suite gate.
 
@@ -2478,6 +2478,157 @@ Local web on the Sonar-fix tree: `pnpm web:typecheck`, `pnpm web:lint` (0 errors
 No blocking review remained on the final tree.
 
 V4 is **not** complete. Slice F is **not** started. Slice G is **not** started.
+
+---
+
+## 42. V4 Slice E — Stripe Sandbox Certification
+
+**Status:** **SANDBOX CERTIFIED**. Not **PRODUCTION VERIFIED**.
+
+Certification date: **2026-09-25**. Code SHA at the green gate: `792afc5294f6e64706ca28f7ba871e2fca227d96`. Pre-cert `develop` tip: `de6bbc918c9552e54a551816448040d6ff0b592d`. Production `main` remains `c3e6ffd4ebacdd44d723269d1b60637de90e8b49`. Schema stays Flyway **V36**. No **V37**.
+
+This section does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live Stripe, a `main` merge, deployment, or commercial launch. V4 is **not** complete.
+
+Evidence is classified in three tiers. A sandbox row is a real test-mode Stripe result. A local row is application or database evidence. A CI row was not forced against the sandbox subscription.
+
+### 42.1 Account boundary
+
+| Item | Value |
+| --- | --- |
+| Authorized account | Athlete Readiness sandbox `acct_1UHZjZD418eILvNQ` |
+| `livemode` | **false** on the account, Customer, Subscription, Portal Configuration, and Portal session |
+| Live Stripe | **Untouched** |
+| Railway | **Untouched** |
+| Production flags | `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` remain **false** |
+| Catalog | The six locked sandbox Prices only. No new Product. No new Price. Stripe Tax was not enabled |
+
+### 42.2 Starting inventory (read before mutation)
+
+| Item | Value |
+| --- | --- |
+| Customer | `cus_VIAgQcdqprYAbs` (reused; not deleted) |
+| Non-ended subscriptions on that Customer | **1** |
+| Subscription | `sub_1UHaOKD418eILvNQ2evsoO9Z` |
+| Item | `si_VIAjY0KrZaVo57`, quantity **1** |
+| Price | `price_1UHa1BD418eILvNQY5et2YSU` (Starter monthly, `ORG_BAND_25` / `MONTHLY`) |
+| Status | `trialing` |
+| `cancel_at_period_end` | **false** |
+| `ORIGINAL_TRIAL_END` | Unix `1791080526` = **2026-10-04T02:22:06Z** (read from Stripe; not a documented timestamp) |
+| Item `current_period_end` | Same instant as `trial_end`. Subscription-level `current_period_end` was null |
+| Active Portal Configurations | **0** |
+| Other Customers on the account | Pre-existing Slice B Customer `cus_VIBXbn5nIM56Lq` was present and was **not** used or modified |
+
+Local MySQL was aligned to this Customer and Subscription on the existing Organization `299f9ca5-f02f-47ca-ac11-11613b8b5c61` and internal Subscription `4ba8f1c1-9088-4fe7-b32a-409bb83938f4`. No second Stripe Customer or Subscription was created to make that alignment possible.
+
+### 42.3 Portal Configuration
+
+One dedicated configuration was created. It was not a retry duplicate. The Dashboard default was not edited.
+
+| Item | Retrieved Stripe value |
+| --- | --- |
+| Id | `bpc_1UJYXED418eILvNQxS8y1RPA` |
+| Name | Athlete Readiness Slice E Sandbox |
+| `livemode` / active | false / true |
+| `payment_method_update` | **true** |
+| `invoice_history` | **true** |
+| `subscription_update` | **false** |
+| `subscription_cancel` | **false** |
+| `customer_update` | **false** |
+| `login_page` | **false** |
+
+`is_default` is **true** only because this is the sole configuration on the sandbox account. The API cannot unset that flag. Sessions still pass this configuration id. Features do not allow Price changes, quantity changes, cancellation, or customer identity edits. Leaving this configuration active for later sandbox checks is intentional. It is not a production configuration and was not written into `application-prod.yaml`.
+
+### 42.4 Portal session (real API, local owner)
+
+`POST /api/v1/billing/organizations/{organizationId}/portal-sessions` as the local `ORG_OWNER` returned **200**. The response body contained only `url`. The hosted URL was not stored, logged, or audited, and is not recorded here.
+
+Stripe event `billing_portal.session.created` `evt_1UJYkQD418eILvNQJgNqHsAV` shows Customer `cus_VIAgQcdqprYAbs`, configuration `bpc_1UJYXED418eILvNQxS8y1RPA`, and the server-owned return URL `http://localhost:3000/coach/organizations/299f9ca5-f02f-47ca-ac11-11613b8b5c61/billing`. A client body that sent a fake Customer, configuration, and return URL was ignored.
+
+### 42.5 Management matrix (same Subscription and Customer)
+
+Every mutation below kept `sub_1UHaOKD418eILvNQ2evsoO9Z`, `cus_VIAgQcdqprYAbs`, item `si_VIAjY0KrZaVo57`, quantity **1**, and `trial_end` **2026-10-04T02:22:06Z**. The trial was not reset or extended.
+
+| Step | Evidence tier | Result |
+| --- | --- | --- |
+| Starter monthly → Team monthly | Sandbox + local API | **200**. Local `ORG_BAND_75` / `MONTHLY`. Stripe Price `price_1UHa1FD418eILvNQSHnLU9uW` |
+| Same `requestId`, same target | Sandbox | **200**. Price unchanged. No second effective change |
+| Same `requestId`, different target (`ORG_BAND_250` annual) | Sandbox | **409** `BILLING_REQUEST_CONFLICT`. Price unchanged. No provider plan mutation |
+| Team monthly → Team annual | Sandbox + local API | **200**. Local `ORG_BAND_75` / `ANNUAL`. Stripe Price `price_1UHa1HD418eILvNQNpJaOC8k` |
+| Same cadence `requestId` replay, then a conflicting target | Sandbox | Replay **200**. Conflict **409** `BILLING_REQUEST_CONFLICT`. Price stayed Team annual |
+| 26 local active athletes, target `ORG_BAND_25` | Local roster; Stripe inspected | **409** `ORGANIZATION_PLAN_CAPACITY_CONFLICT`. Stripe Price stayed Team annual. No athlete removal. Local roster rows were deleted afterward |
+| Eligible downgrade Team annual → Starter monthly | Sandbox + local API | **200**. Stripe Price `price_1UHa1BD418eILvNQY5et2YSU`. Trial end unchanged |
+| Cancel at period end | Sandbox + local API | **200**. Local `CANCEL_AT_PERIOD_END`. Stripe `cancel_at_period_end=true`. Status stayed `trialing`. Subscription was not deleted |
+| Cancel replay | Sandbox | **200**. No second effective mutation |
+| Reactivate | Sandbox + local API | **200**. Local `TRIALING`. Stripe `cancel_at_period_end=false`. No second trial, Checkout, or Subscription |
+| Reactivate replay | Sandbox | **200**. No second effective mutation |
+
+Price authority: while the item Price was Team annual, legacy metadata `plan_key` was still `ORG_BAND_25`. Local plan and cadence followed the item Price (`ORG_BAND_75` / `ANNUAL`), not the metadata. After restore, both metadata keys and the item Price are Starter monthly.
+
+Post-fix audit window (events at or after 2026-09-25 13:12:00Z): one `BILLING_PLAN_CHANGED` per effective plan change, one `BILLING_CANCEL_REQUESTED`, one `BILLING_SUBSCRIPTION_REACTIVATED`. Audit metadata is plan and cadence only. An earlier overlapping pass before the webhook fix is not that window.
+
+### 42.6 Webhooks
+
+Stripe CLI forwarded signed sandbox events to the local webhook route. No production webhook endpoint was added. The signing secret stayed in the local process environment and is not recorded here.
+
+Before the fix, `customer.subscription.updated` for this Subscription was stored **IGNORED** because the object has no `uap_organization_id` or `uap_subscription_id`. The synchronous API still applied plan, cancel, and reactivate. That was a real runtime defect. `c9721a4` correlates a test-mode event to the stored Stripe Subscription reference when those identity keys are absent, and rejects them when they are present and disagree. Checkout still requires the identity keys. `e2f1182` aligned the fake webhook fixture with the stored reference. `792afc5` covers the unknown-reference, mismatched-reference, and conflicting-metadata paths.
+
+After the fix, five `customer.subscription.updated` events were **PROCESSED** (Team monthly, Team annual, Starter monthly restore, cancel, reactivate). Replay of already-processed `evt_1UJYyRD418eILvNQCyYcP5hA` left one inbox row, one `BILLING_SUBSCRIPTION_REACTIVATED`, and local state `ORG_BAND_25` / `MONTHLY` / `TRIALING`.
+
+### 42.7 Intentionally CI-certified (not sandbox-forced)
+
+| Case | Where it is certified |
+| --- | --- |
+| Unknown Price fail-closed | `StripeOrganizationBillingAdapterClientTests.unknownPriceFailsClosedWithoutEchoingThePrice` |
+| `BILLING_PAYMENT_NOT_APPLIED` | `paymentFailureThatLeavesThePriceUnchangedIsNotAProviderOutage` and `OrganizationBillingManagementHttpIntegrationTests.paymentFailureAndProviderOutageDoNotChangeThePlan` |
+| **502** `BILLING_PROVIDER_UNAVAILABLE` | `OrganizationBillingHttpIntegrationTests.providerFailureReturnsSafeErrorAndRollsBackPendingSubscription` and the management outage/restore-failure paths |
+| Stale `providerStateAsOf` | `SubscriptionDomainTests.staleAndEqualProviderSnapshotsAreIgnored` |
+| Post-provider downgrade compensation race | `OrganizationBillingManagementHttpIntegrationTests.externalUndersizedPriceIsRestoredAndCheckoutRaceIsNot` |
+| Checkout above 250 | `undersizedCheckoutDoesNotCallTheProvider`: 40 athletes vs `ORG_BAND_25`, then 100 vs `ORG_BAND_75`, then 251 vs `ORG_BAND_250`, each **409** with zero Customer and Checkout calls |
+
+The adapter plan update uses `proration_behavior=always_invoice` and `payment_behavior=error_if_incomplete`. Those negative provider outcomes were not manufactured on the certification Subscription.
+
+### 42.8 Final sandbox snapshot
+
+| Item | Value |
+| --- | --- |
+| Account / `livemode` | `acct_1UHZjZD418eILvNQ` / **false** |
+| Customer | `cus_VIAgQcdqprYAbs` |
+| Customers created by this certification | **0** (account still also has untouched `cus_VIBXbn5nIM56Lq`) |
+| Subscription | `sub_1UHaOKD418eILvNQ2evsoO9Z` only |
+| Subscriptions created by this certification | **0** |
+| Price | `price_1UHa1BD418eILvNQY5et2YSU` |
+| Status | `trialing` |
+| `trial_end` | **2026-10-04T02:22:06Z** (`ORIGINAL_TRIAL_END`) |
+| `cancel_at_period_end` | **false** |
+| Items / quantity | **1** / **1** |
+| Portal Configuration left active | `bpc_1UJYXED418eILvNQxS8y1RPA` |
+
+Local state matched: `ORG_BAND_25`, `MONTHLY`, `TRIALING`, the same trial end, and the same provider refs. The certification roster memberships were removed.
+
+### 42.9 Security observations during the run
+
+Non-owner portal and plan-change calls returned **404** `ORGANIZATION_NOT_FOUND` and did not change the Stripe Price. A foreign Organization portal call returned **404**. An unauthenticated portal POST without the CSRF cookie returned **403** `CSRF_INVALID` (CSRF runs before authentication). **401** with CSRF and no session remains the integration-test cell. The client cannot supply a Price, Customer, Portal Configuration, or return URL. The local server log did not contain the portal hosted URL, a Stripe secret, or a Price id.
+
+### 42.10 Defect path and gates
+
+| Run | SHA | Result |
+| --- | --- | --- |
+| [36140053826](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36140053826) | `c9721a4c60e4301d3d57712fa81785b90675f4cc` | Backend core **failure**: the new provider-reference check ignored the fake webhook (`sub_test_` vs stored `sub_`). Sonar skipped |
+| [36141319319](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36141319319) | `e2f11821527fee9dcec08b4eda261125418124ff` | Web, Mobile, Backend shards, and Backend aggregate **success**. Sonar **failure**: New Code coverage **79.9%** (required ≥ 80%). Other New Code ratings **A**, duplication **0.0%**, hotspots **100%** |
+| [36142912936](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36142912936) | `792afc5294f6e64706ca28f7ba871e2fca227d96` | **SUCCESS**, including Sonar. New Code coverage **80.8%**. Reliability, security, and maintainability **A**. Duplication **0.0%**. Hotspots **100%**. Quality Gate **OK** |
+
+No `NOSONAR`, exclusion, or threshold change. Runtime code changes for this certification are the webhook identity fix, the fixture alignment, and the coverage tests. No Slice F or Slice G behavior was added.
+
+### 42.11 Post-cert reviews
+
+| Review | Verdict |
+| --- | --- |
+| External Integration / Stripe | **PASS-WITH-NOTES**. Sandbox behavior matched §40/§41. Notes: the CI-only cells in §42.7, and `is_default` on the sole Portal Configuration |
+| QA / Test Automation | **PASS**. Real-provider matrix accepted. No missing sandbox-required cell |
+| Security / Code Quality | **PASS**. Account and `livemode` isolation held. No secret or provider-id leakage in the inspected responses, audits, or stated log check. Coverage gate is green |
+| Documentation / Release | **PASS-WITH-NOTES**. This section classifies sandbox, local, and CI evidence separately and does not say **PRODUCTION VERIFIED** |
+
+Slice F is **not** started. Slice G is **not** started. V4 is **not** complete.
 
 
 
