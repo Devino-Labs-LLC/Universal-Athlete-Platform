@@ -215,6 +215,74 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void unknownProviderReferenceWithoutIdentityIsIgnored() {
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_unknown_ref",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_unknown_ref",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(5),
+				null,
+				"sub_missing",
+				null,
+				null));
+		when(eventInbox.tryBegin(any(), eq("evt_unknown_ref"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(BillingProvider.STRIPE, "sub_missing"))
+				.thenReturn(Optional.empty());
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+	}
+
+	@Test
+	void providerReferenceMismatchIsIgnored() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription bound = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.organization(organizationId),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		assertThat(bound.synchronizeProviderSnapshot(
+				snapshot(ProviderCommercialStatus.ACTIVE, NOW.plusSeconds(5)), CLOCK)).isTrue();
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_mismatch",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_mismatch",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(20),
+				null,
+				"sub_other",
+				organizationId,
+				subscriptionId));
+		when(eventInbox.tryBegin(any(), eq("evt_mismatch"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(bound));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(bound.providerSubscriptionRef()).isEqualTo("sub_test");
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+	}
+
+	@Test
 	void liveModeAndUnknownTypesAreDurablyIgnored() {
 		UUID organizationId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();

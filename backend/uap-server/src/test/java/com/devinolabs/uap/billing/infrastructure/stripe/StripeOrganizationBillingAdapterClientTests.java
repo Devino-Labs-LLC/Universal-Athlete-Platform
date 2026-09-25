@@ -318,6 +318,28 @@ class StripeOrganizationBillingAdapterClientTests {
 	}
 
 	@Test
+	void conflictingSubscriptionMetadataIsRejected() throws Exception {
+		Subscription subscription = subscription("active");
+		subscription.setMetadata(Map.of(
+				"uap_organization_id", organizationId.toString(),
+				"uap_subscription_id", UUID.randomUUID().toString()));
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription);
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_conflict_subscription",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(10),
+				null,
+				"sub_test_1",
+				organizationId,
+				subscriptionId);
+
+		assertThatThrownBy(() -> adapter.fetchAuthoritativeSnapshot(event))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Subscription metadata");
+	}
+
+	@Test
 	void unknownPriceFailsClosedWithoutEchoingThePrice() throws Exception {
 		Subscription subscription = subscription("active");
 		subscription.getItems().getData().getFirst().getPrice().setId("price_unknown");
