@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice D **PRODUCTION VERIFIED** at promotion SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c` (see §39). Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** tracks `main` after Slice D promotion (docs-evidence tip follows in §39).  
+**`develop`:** Slice E **COMPLETE on develop** (see **§41**). Not a `main` promotion.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). Slice E runtime is **not** authorized. Slice E is **not** started. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **COMPLETE on develop** (see **§41**). Not **PRODUCTION VERIFIED**. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -2079,7 +2079,7 @@ V4 is **not** complete.
 
 ## 40. Pre-Slice-E — Organization Billing Management Lock
 
-**Status:** **PRODUCT OWNER LOCKED.** Slice E runtime is **not** authorized. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live or sandbox Stripe mutation, Flyway, or commercial launch.
+**Status:** **PRODUCT OWNER LOCKED.** Runtime completion is **§41** (**COMPLETE on develop**, not **PRODUCTION VERIFIED**). This section remains the contract. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live or sandbox Stripe mutation, Flyway, or commercial launch.
 
 **Baseline:** `main` = `develop` = `c3e6ffd4ebacdd44d723269d1b60637de90e8b49` (Slice D **PRODUCTION VERIFIED**). Schema **V36**. `stripe-java` **33.4.2**. Production flags remain false / unset.
 
@@ -2372,11 +2372,112 @@ Stripe can cancel at period end in the Customer Portal and can let the customer 
 
 No unresolved Product Owner decision remains for Slice E semantics.
 
-Slice E **runtime** still requires a **separate explicit authorization**. Production `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` stay false. No commercial launch.
+Slice E runtime completion is **§41**. This lock body is unchanged. Production `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` stay false. No commercial launch.
 
 V4 is **not** complete.
 
 V4 Pre-Slice-E billing management: PRODUCT OWNER LOCKED
+
+---
+
+## 41. V4 Slice E — Organization Billing Management (COMPLETE on develop)
+
+**Status:** **COMPLETE on develop**. Not **PRODUCTION VERIFIED**. Does not authorize Slice F, Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live or sandbox Stripe mutation, a `main` merge, or commercial launch. V4 is **not** complete.
+
+§40 remains the Product Owner contract. This section records what shipped and supersedes only the §40 status sentences that said runtime was not authorized and not started. §40.1 stays the lock-time inventory.
+
+### 41.1 Baseline and commits
+
+| Item | Value |
+| --- | --- |
+| Pre-Slice-E baseline | `2e2d0adabd798b849407bc3be5c6331e08dd137c` |
+| Production `main` | `c3e6ffd4ebacdd44d723269d1b60637de90e8b49` (unchanged) |
+| Original runtime commit | `77dc59995654e1822c84775e32b8886447d8329e` |
+| Timestamp precision fix | `cb26b46787269655b885225244d6ca1446321f14` |
+| Sonar reliability and coverage fix | `5c65241721cbd816a3d2e4a2a7c0381ff8538e29` |
+| Trial-cancel test fix | `2b9c9446e7cc0035a5b2094ab06b1c564930d7df` |
+| Final runtime SHA | `2b9c9446e7cc0035a5b2094ab06b1c564930d7df` |
+| Schema | Flyway **V36**. No **V37**. No request-idempotency table |
+
+### 41.2 CI history
+
+Failed runs stay in the record. They were corrected before this certification.
+
+| Run | SHA | Result |
+| --- | --- | --- |
+| [35996445973](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/35996445973) | `77dc59995654e1822c84775e32b8886447d8329e` | Web, Mobile, Backend training-http, and Backend training-app **success**. Backend core **failure** (`trialingCancelAndReactivatePreserveTheTrial`: Linux `Instant` nanoseconds vs MySQL `DATETIME(6)` microseconds). Backend aggregate **failure**. Sonar **skipped** |
+| [36095939652](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36095939652) | `cb26b46787269655b885225244d6ca1446321f14` | Web, Mobile, all Backend shards, and Backend aggregate **success**. Sonar **failure**: New Code reliability **3** (`java:S2583`, `lockedAthleteCount` null check that cannot be true) and coverage **79.6%** (required ≥ 80%) |
+| [36097363386](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36097363386) | `5c65241721cbd816a3d2e4a2a7c0381ff8538e29` | **SUCCESS**, including Sonar. Dead null check removed. Billing client tests added |
+| [36104212217](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36104212217) | `2b9c9446e7cc0035a5b2094ab06b1c564930d7df` | **SUCCESS**. Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, and Sonar quality gate |
+
+Final New Code on `develop` after that run: reliability **A** (1), security **A** (1), maintainability **A** (1), coverage **80.5%**, duplication **0.0%**, hotspots reviewed **100%**. Quality Gate **OK**. Thresholds were not weakened. No `NOSONAR`, exclusions, or baseline change.
+
+The precision fix normalizes fixture timestamps to microseconds and makes fake provider snapshots strictly newer. `5c65241` returns the athlete count directly. `2b9c944` keeps the trial end on a trialing cancel and asserts it before reactivate.
+
+### 41.3 What shipped
+
+Management routes stay on the Stripe-conditional `OrganizationBillingController`. There is no new Slice E flag. `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` still default **false**.
+
+ORG_OWNER is `canManageOrganization`. Anyone else, including ORG_ADMIN, receives **404** `ORGANIZATION_NOT_FOUND`, not 403. Unauthenticated is **401**. Missing CSRF is **403** `CSRF_INVALID`. Authorization runs before plan-key validation and before any provider call.
+
+| API | Body |
+| --- | --- |
+| `POST …/portal-sessions` | empty |
+| `POST …/subscriptions/{id}/plan-changes` | `requestId`, `targetPlanKey`, `targetCadence` |
+| `POST …/cancel` | `requestId` |
+| `POST …/reactivate` | `requestId` |
+
+Checkout `requestId` is still the `SubscriptionId`. Management `requestId` is idempotency only. Same id and same intent replays. Same id and a different intent is **409** `BILLING_REQUEST_CONFLICT`. Keys are `athlete-readiness:plan-change:{subscriptionId}:{requestId}`, `athlete-readiness:plan-restore:…`, `athlete-readiness:cancel:…`, and `athlete-readiness:reactivate:…`. No migration was added for idempotency.
+
+One Stripe subscription remains one `Subscription` row. `planKey` and `billingCadence` change only through `synchronizeProviderSnapshot`. JPA `plan_key` is no longer `updatable = false`. `applyDomainState` persists plan and cadence. Two or more non-EXPIRED Organization subscriptions yield **409** `BILLING_SUBSCRIPTION_STATE_CONFLICT` on current read and on every management action. Capacity GET still returns the count and a null band when the effective subscription is ambiguous.
+
+The subscription item Price is the source of truth, via the reverse allow-list of the six Organization Prices. Metadata does not win. An unknown or ambiguous Price is **409** `BILLING_PROVIDER_PRICE_REJECTED` and does not change the local plan. A stale `providerStateAsOf` is a no-op.
+
+Portal is payment method and invoice history only. The server loads the configured Portal Configuration (`UAP_BILLING_STRIPE_PORTAL_CONFIGURATION_ID`) and return URL (`UAP_BILLING_STRIPE_PORTAL_RETURN_URL`). The client cannot send a Customer, Subscription, Configuration, Price, or return URL. `subscription_update`, `subscription_cancel`, `customer_update`, and the login page fail closed. The Portal URL is returned once to the owner and is not stored, logged, or audited. Opening Portal is not audited.
+
+Plan change is immediate: `proration_behavior=always_invoice`, `payment_behavior=error_if_incomplete`, no `trial_from_plan`, and no trial-clock reset. A failed collection that leaves the old Price is **409** `BILLING_PAYMENT_NOT_APPLIED`. Provider outage is **502** `BILLING_PROVIDER_UNAVAILABLE`. Product edges do not use 402 for these billing failures.
+
+Checkout rejects an undersized target with **409** `ORGANIZATION_PLAN_CAPACITY_CONFLICT` before any Stripe or Customer create. If the roster grows during PENDING and Stripe then completes an undersized band, the snapshot is applied, members stay, and `overCapacity` may be true. That race is not compensated. An external or Dashboard undersized Price on an already non-pending subscription is compensated back to the previous allow-listed Price. The undersized snapshot is not persisted unless restore succeeds. Restore failure leaves the previous plan, logs without secrets or provider refs, and returns **502**. The webhook stays **FAILED** and retryable until restore succeeds. Athletes are not removed.
+
+A cadence-only change (same `planKey`, different cadence) is not capacity-gated, including when usage already exceeds the current band. A band change, including a combined band and cadence change, uses the target band. Downgrade preflight checks capacity, does not hold the Organization row lock across Stripe, re-checks after the provider call, and restores the previous Price if the roster no longer fits. The Organization lock is a short transaction around the count and the persist. `startCheckout` remains transactional across its existing Stripe checkout call; that is the checkout path, not the management lock rule.
+
+Cancel is app-owned: `cancel_at_period_end=true` for ACTIVE or TRIALING only, then the authoritative snapshot. It does not delete or immediately expire the subscription. PAST_DUE and GRACE are **409** `BILLING_LIFECYCLE_CONFLICT` and must not become entitled `CANCEL_AT_PERIOD_END`. Reactivate is `cancel_at_period_end=false` only while `CANCEL_AT_PERIOD_END` and the period end is still in the future. Same subscription. No new Checkout and no second trial. A trialing cancel keeps the original trial end.
+
+Authoritative apply audits `BILLING_PLAN_CHANGED`, `BILLING_CANCEL_REQUESTED`, `BILLING_SUBSCRIPTION_REACTIVATED`, and `BILLING_SUBSCRIPTION_ENDED` when the period actually ends. Metadata is plan and cadence only. No audit for failed payment, outage, denied lifecycle, capacity conflict, stale snapshot, idempotent replay, or Portal opening.
+
+Other conflict codes used by this slice: `BILLING_SUBSCRIPTION_NOT_MANAGEABLE`, `BILLING_CHECKOUT_IN_PROGRESS`.
+
+### 41.4 Web
+
+The owner billing page shows plan, cadence, lifecycle, trial or period end, and usage. The payment action is **Manage payment method and invoices**. Change plan, Cancel renewal, and Reactivate follow the lifecycle rules above. Marketing labels are Starter, Team, and Organization. Display prices are tax-exclusive. The client sends internal keys only. Undersized choices are disabled for UX. The server still validates.
+
+An earlier Web review **FAIL**ed because the form was not seeded from the loaded subscription and an undersized target could still be submitted. Both were fixed before certification. On the final tree, `ORG_BAND_75` MONTHLY seeds Team and Monthly; an undersized change-plan target cannot be submitted; a new checkout selects the smallest fitting band (0–25 Starter, 26–75 Team, 76–250 Organization, above 250 checkout disabled). A same-band cadence change stays available when usage already exceeds the band. Portal navigation is `location.assign` only.
+
+A non-owner who receives 404 on both capacity and status can still see Start Checkout in the client. The server rejects that checkout. Route visibility is not authorization.
+
+### 41.5 Boundaries, verification, and reviews
+
+Athlete Intelligence is unchanged. The new membership port method is `lockAndCountDistinctActiveAthletes` (organization `FOR UPDATE` plus the distinct active-athlete count). Downgrade does not remove athletes. No State Engine, readiness, recovery, recommendation, Team Readiness, consent, or athlete-history change.
+
+Stripe was not mutated. Sandbox certification was **not** run. Live Stripe was not touched. Railway was not modified. Nothing was deployed. Production flags remain false.
+
+Local web on the Sonar-fix tree: `pnpm web:typecheck`, `pnpm web:lint` (0 errors, 12 pre-existing warnings), `pnpm web:test` (202 files, 864 tests), and a production build (`VITE_UAP_ENV=production`, `VITE_UAP_API_BASE_URL=https://api.example.com`) succeeded. Mobile on the final SHA is the green Mobile job in [36104212217](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36104212217). Focused Slice E backend tests, including Modulith and `trialingCancelAndReactivatePreserveTheTrial`, were **BUILD SUCCESSFUL** (124 tests, then the management class again after the trial-cancel assertion). A local `./gradlew check` was started and ended without a captured **BUILD SUCCESSFUL**. GitHub Verify is the full-suite gate.
+
+| Review | Final verdict |
+| --- | --- |
+| Lead / Architect | **PASS-WITH-NOTES**. An earlier **FAIL** (cadence-only change still capacity-gated) was fixed before the final review. Notes: checkout remains transactional across its Stripe call; portal unit coverage toggles `subscription_update` only |
+| Backend | **PASS**. The same cadence-gate **FAIL** was fixed and re-reviewed |
+| External Integration / Stripe | **PASS-WITH-NOTES**. Sandbox rejection text still says “V4 Slice B”. Behavior still rejects enabled Stripe under prod/production |
+| QA / Test Automation | Earlier **FAIL**s (missing matrix cells, then a cancel double that dropped the trial end) were fixed. The trial-cancel cell on `2b9c944` is **PASS**. Remaining notes are non-blocking |
+| Security / Code Quality | **PASS-WITH-NOTES**. `java:S2583` was removed, not suppressed. Non-owner checkout flash is UX only |
+| DevOps / CI-CD | **PASS** |
+| Web | Initial **FAIL** (unseeded form, undersized submit) was fixed. Final **PASS-WITH-NOTES**. Checklist A–D confirmed |
+| Athlete Intelligence | **PASS** |
+| Documentation / Release | **PASS-WITH-NOTES** before this section existed: supersede status sentences only |
+
+No blocking review remained on the final tree.
+
+V4 is **not** complete. Slice F is **not** started. Slice G is **not** started.
 
 
 
