@@ -338,9 +338,8 @@ public class OrganizationSubscriptionManagementService {
 	}
 
 	private long lockedAthleteCount(UUID organizationId) {
-		Long count = billingTransactions.execute(status -> membershipPort.lockAndCountDistinctActiveAthletes(organizationId)
+		return billingTransactions.execute(status -> membershipPort.lockAndCountDistinctActiveAthletes(organizationId)
 				.orElseThrow(BillingOrganizationNotFoundException::new));
-		return count == null ? 0L : count;
 	}
 
 	private Subscription authorize(UUID actorAccountId, UUID organizationId, UUID subscriptionId) {
