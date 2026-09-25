@@ -642,7 +642,11 @@ class OrganizationBillingManagementHttpIntegrationTests {
 						.content(requestBody(UUID.randomUUID())))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.lifecycleState").value("CANCEL_AT_PERIOD_END"))
-				.andExpect(jsonPath("$.planKey").value("ORG_BAND_25"));
+				.andExpect(jsonPath("$.planKey").value("ORG_BAND_25"))
+				.andExpect(jsonPath("$.trialEndsAt").value(subscription.trialEndsAt().toString()));
+		assertThat(reloaded(subscription).lifecycleState())
+				.isEqualTo(SubscriptionLifecycleState.CANCEL_AT_PERIOD_END);
+		assertThat(reloaded(subscription).trialEndsAt()).isEqualTo(subscription.trialEndsAt());
 		mockMvc.perform(post(reactivatePath(organizationId, subscription.id().value()))
 						.with(authentication(authFor(ownerId)))
 						.with(csrf())
@@ -1352,13 +1356,29 @@ class OrganizationBillingManagementHttpIntegrationTests {
 			cancelCalls++;
 			CommercialPlanKey plan = echoedPlan == null ? CommercialPlanKey.ORG_BAND_75 : echoedPlan;
 			BillingCadence cadence = echoedCadence == null ? BillingCadence.ANNUAL : echoedCadence;
-			return snapshot(
+			ProviderCommercialStatus status = preservedTrialEnd == null
+					? ProviderCommercialStatus.ACTIVE
+					: ProviderCommercialStatus.TRIALING;
+			ProviderSubscriptionSnapshot cancelled = snapshot(
 					customerFrom(providerSubscriptionRef),
 					subscriptionId,
 					plan,
 					cadence,
 					true,
-					ProviderCommercialStatus.ACTIVE);
+					status);
+			if (preservedTrialEnd == null) {
+				return cancelled;
+			}
+			return new ProviderSubscriptionSnapshot(
+					cancelled.providerCustomerRef(),
+					cancelled.providerSubscriptionRef(),
+					status,
+					true,
+					preservedTrialEnd,
+					cancelled.currentPeriodEndsAt(),
+					plan,
+					cadence,
+					cancelled.providerStateAsOf());
 		}
 
 		@Override
