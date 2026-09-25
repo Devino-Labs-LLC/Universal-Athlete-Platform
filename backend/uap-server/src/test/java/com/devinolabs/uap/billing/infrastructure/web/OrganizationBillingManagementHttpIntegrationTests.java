@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -19,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1095,16 +1097,17 @@ class OrganizationBillingManagementHttpIntegrationTests {
 				planKey,
 				cadence,
 				clock);
+		Instant trialEnd = trialEndsAt == null ? null : trialEndsAt.truncatedTo(ChronoUnit.MICROS);
 		subscription.synchronizeProviderSnapshot(new ProviderSubscriptionSnapshot(
 				"cus_from_sub_" + subscriptionId,
 				"sub_" + subscriptionId,
 				status,
 				cancelAtPeriodEnd,
-				trialEndsAt,
-				Instant.now(clock).plusSeconds(30 * 24 * 60 * 60),
+				trialEnd,
+				Instant.now(clock).truncatedTo(ChronoUnit.MICROS).plusSeconds(30 * 24 * 60 * 60),
 				planKey,
 				cadence,
-				Instant.now(clock).plusSeconds(1)), clock);
+				Instant.now(clock).truncatedTo(ChronoUnit.MICROS).plusSeconds(1)), clock);
 		return subscriptionRepository.save(subscription);
 	}
 
@@ -1184,8 +1187,10 @@ class OrganizationBillingManagementHttpIntegrationTests {
 		static ProviderCommercialStatus reactivateStatus;
 		static CountDownLatch mutationStarted;
 		static CountDownLatch releaseMutation;
+		static final AtomicLong stateOffsetSeconds = new AtomicLong(4);
 
 		static void reset() {
+			stateOffsetSeconds.set(4);
 			portalCalls = 0;
 			checkoutCalls = 0;
 			customerCalls = 0;
@@ -1418,18 +1423,19 @@ class OrganizationBillingManagementHttpIntegrationTests {
 				boolean cancelAtPeriodEnd,
 				ProviderCommercialStatus status) {
 			Instant trialEnd = status == ProviderCommercialStatus.TRIALING
-					? Instant.now().plusSeconds(10 * 24 * 60 * 60)
+					? Instant.now().truncatedTo(ChronoUnit.MICROS).plusSeconds(10 * 24 * 60 * 60)
 					: null;
+			long asOfOffset = stateOffsetSeconds.incrementAndGet();
 			return new ProviderSubscriptionSnapshot(
 					customerRef,
 					"sub_" + subscriptionId,
 					status,
 					cancelAtPeriodEnd,
 					trialEnd,
-					Instant.now().plusSeconds(30 * 24 * 60 * 60),
+					Instant.now().truncatedTo(ChronoUnit.MICROS).plusSeconds(30 * 24 * 60 * 60),
 					planKey,
 					cadence,
-					Instant.now().plusSeconds(5));
+					Instant.now().truncatedTo(ChronoUnit.MICROS).plusSeconds(asOfOffset));
 		}
 
 		private static String customerFrom(String providerSubscriptionRef) {
