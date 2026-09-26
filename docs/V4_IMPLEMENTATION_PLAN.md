@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice E **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`; see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. Pre-Slice-F recovery contract is **§44**. Slice F runtime is **not** started. V4 is **not** complete.  
+**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. Pre-Slice-F recovery is **PRODUCT OWNER LOCKED** (**§44**). Slice F runtime is **not** started. V4 is **not** complete.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). Slice F runtime is **not** started. Slice G is **not** started. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -555,7 +555,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
 | **D** | Bands & usage — active-athlete band enforcement. Semantics locked in **§37**. Runtime **not** authorized by this lock. Dedicated flag `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags) |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
-| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44**. Runtime is **not** authorized by §44 |
+| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44** (**PRODUCT OWNER LOCKED**). Runtime is **not** authorized by §44 |
 | **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
 | **H** | Commercial UX completion — pricing/billing cohesion |
 | **I** | Hardening / RC — T12–T22, entitlement matrix, tax/config, production certification |
@@ -2718,7 +2718,7 @@ Sandbox certification in **§42** stays the provider evidence. This section is t
 
 ## 44. Pre-Slice-F — Payment Recovery, Grace & Reconciliation Contract
 
-**Status:** **PRODUCT OWNER DECISIONS REQUIRED**. Slice F runtime is **not** started and is **not** authorized by this section.
+**Status:** **PRODUCT OWNER LOCKED**. Slice F runtime is **not** started and is **not** authorized by this section.
 
 This contract interprets the locked 7-day grace in §§15–16 and §22.1 #8–9. It does not change grace length, data retention, voluntary cancel-at-period-end, downgrade athlete removal, free surfaces, provider-neutral entitlement, or terminal `EXPIRED`. Production flags stay false. No migration is authorized here.
 
@@ -2768,7 +2768,7 @@ Not grace-eligible:
 | Signal | Result |
 | --- | --- |
 | `paused` | Trial ended without a payment method. Stripe does not generate invoices for `paused`. Do not grant 7 days. Non-entitled `PAST_DUE` |
-| `unpaid` with no open grace | Retries are already exhausted and further invoices are not attempted. Do not start a new 7-day clock. Non-entitled `PAST_DUE`, then provider termination under §44.7 |
+| `unpaid` with no open grace | Retries are already exhausted and further invoices are not attempted. Do not start a new 7-day clock. Non-entitled `PAST_DUE`, then provider termination under §44.11 |
 | `unpaid` or `past_due` while grace is already open | Keep the existing `graceEndsAt`. Do not move it later |
 | `CANCEL_AT_PERIOD_END` | Voluntary cancel stays on that path. A failed renewal does not become grace and does not become entitled cancel from `PAST_DUE` or `GRACE_PERIOD` |
 | Unknown or rejected Price | Fail closed. Do not invent grace |
@@ -2777,7 +2777,7 @@ Not grace-eligible:
 
 Grace is not decided from the collapsed `PAYMENT_ATTENTION_REQUIRED` enum. Slice F must read the Stripe status. Only `past_due` on a grace-eligible relationship, plus the invoice signals above, may start grace. `unpaid` and `paused` must not. The current adapter maps all three to one enum. That mapping is not sufficient for this slice.
 
-Stripe Revenue Recovery must not cancel the subscription before `graceEndsAt`. A Dashboard action that cancels inside the 7 days would otherwise end the provider relationship early. If that happens anyway, §44.7 keeps `GRACE_PERIOD` until the deadline. Preferred account end actions, when one is chosen later, are leave `past_due` or mark `unpaid`, with Athlete Readiness canceling at the deadline. This task does not change that setting.
+Stripe Revenue Recovery must not cancel the subscription before `graceEndsAt`. A Dashboard action that cancels inside the 7 days would otherwise end the provider relationship early. If that happens anyway, §44.7 keeps `GRACE_PERIOD` until the deadline. After Stripe retries are exhausted, the locked provider end behavior is leave `past_due` or mark `unpaid`. Athlete Readiness cancels at the deadline. This lock does not change that Stripe setting.
 
 ### 44.4 What starts grace
 
@@ -2852,7 +2852,7 @@ Current Stripe Billing behavior used for this contract (docs reviewed 2026-09-25
 
 Athlete Readiness remains authoritative for the 7-day access deadline and for terminating the provider subscription when grace elapses unpaid. Dashboard settings must not be the access control. They also must not be left able to collect on a subscription this product has already ended: the worker cancel is what stops later retries.
 
-The exact Dashboard choice is still a Product Owner / operations decision in §44.18. This task does not change it.
+The retry engine is locked in §44.18 as Stripe Billing Smart Retries. Stripe retry timing does not control entitlement. This lock does not change any Stripe setting.
 
 ### 44.10 Webhook matrix
 
@@ -2863,8 +2863,8 @@ Slice F handles these events, in addition to the Slice B/E set:
 | `invoice.payment_failed` | Primary grace start, or earlier-deadline correction. Not a deadline extension |
 | `invoice.payment_action_required` | Same grace policy when the invoice is unpaid |
 | `invoice.paid` | Authoritative refetch. A newer paid/active snapshot recovers grace. A stale paid event does not |
-| `customer.subscription.updated` | Refetch. `past_due` fallback may start grace. `active` may recover. `canceled` may expire only when terminal |
-| `customer.subscription.deleted` | Refetch and persist `EXPIRED` when the provider subscription is gone |
+| `customer.subscription.updated` | Refetch. `past_due` fallback may start grace. `active` may recover. `canceled` follows the same early-terminal rule as deletion |
+| `customer.subscription.deleted` | Refetch. If grace is open and `now < graceEndsAt`, stay `GRACE_PERIOD` and entitled until `graceEndsAt`, then persist `EXPIRED` with no second cancel. If grace has already elapsed, or there was no open grace, persist `EXPIRED` when the provider subscription is gone |
 | `customer.subscription.created` | Existing fulfillment. Does not start grace |
 | `checkout.session.completed` | Existing fulfillment. Does not start grace |
 | `checkout.session.expired` | If the internal row is still `PENDING` and no provider subscription became entitled, persist `EXPIRED` so Checkout is not blocked forever. Do not expire a row that already has an active provider subscription |
@@ -2915,9 +2915,9 @@ Provider I/O stays outside the short persistence transaction. Optimistic version
 
 ### 44.13 Owner experience and privacy
 
-There is no billing email channel, and the Stripe Customer is created without an email. Stripe’s own failed-payment email is not a reliable ORG_OWNER message. Slice F’s §16 messaging minimum is in-app, on the owner billing page.
+There is no billing email channel, and the Stripe Customer is created without an email. Stripe’s own failed-payment email is not the canonical ORG_OWNER message. Slice F recovery messaging is locked to the in-app owner billing warning and the existing Customer Portal path. Slice F does not add a custom recovery email, copy Account email onto the Stripe Customer, or add an email queue.
 
-`SubscriptionResult` gains `graceEndsAt`. The web status schema `organizationBillingStatusSchema` gains the same nullable instant. No provider ids, invoice ids, amounts, or decline reasons.
+`SubscriptionResult` gains `graceEndsAt`. The web status schema `organizationBillingStatusSchema` gains the same nullable instant. The owner read model does not include a decline reason, card details, invoice amount, PaymentIntent, Customer id, Subscription id, or Price id.
 
 The current owner page shows the raw lifecycle enum and does not render a grace date. `organizationBillingStatusSchema` has no `graceEndsAt` today. Slice F runtime adds both. This contract does not change the page.
 
@@ -2928,7 +2928,7 @@ The current owner page shows the raw lifecycle enum and does not render a grace 
 
 During grace and during exceptional `PAST_DUE`, the page does not offer plan change, cancel, or reactivate. That gate already exists for those states because management is limited to `ACTIVE` and `TRIALING`. After recovery to `ACTIVE`, Slice E management returns.
 
-Anyone who is not `ORG_OWNER`, including athletes, coaches, and `ORG_ADMIN`, does not see decline reasons, card details, amounts, invoice ids, payment methods, Customer ids, or Price ids. Billing authority stays `ORG_OWNER` only (§22.1 #5). After grace, commercial-gated product calls use the existing 402. Free surfaces stay available: authentication, account access, leave, invitation accept/decline, consent grant/revoke/re-grant, transparency, retained athlete history, and the owner billing page. Nothing in this slice deletes Organization, Team, membership, consent, athlete, readiness, recommendation, training, or audit data.
+Anyone who is not `ORG_OWNER`, including athletes, coaches, and `ORG_ADMIN`, does not see decline reasons, card details, amounts, invoice ids, PaymentIntents, payment methods, Customer ids, Subscription ids, or Price ids. Billing authority stays `ORG_OWNER` only (§22.1 #5). After grace, commercial-gated product calls use the existing 402. Free surfaces stay available: authentication, account access, leave, invitation accept/decline, consent grant/revoke/re-grant, transparency, retained athlete history, and the owner billing page. Nothing in this slice deletes Organization, Team, membership, consent, athlete, readiness, recommendation, training, or audit data.
 
 Payment recovery is not athletic recovery. This slice does not write State Engine, check-in, recommendation, training, Team Readiness, consent, or membership state.
 
@@ -2997,29 +2997,45 @@ These reviews are of this contract only. They do not start Slice F.
 | Athlete Intelligence | **PASS**. Payment recovery does not write athletic domain state |
 | Documentation / Release | **PASS-WITH-NOTES**. Slice F is not started. The webhook section says Slice F handles the events |
 
-### 44.18 Product Owner decisions required
+Lock review of §44.18. These verdicts do not start Slice F.
 
-These are not settled by §§15–16 or §22.
-
-**1. Stripe retry schedule, while Athlete Readiness still ends access and cancels the provider subscription at `graceEndsAt`.**
-
-| Option | Consequence |
+| Review | Verdict |
 | --- | --- |
-| A. Leave Smart Retries in place. Recommended | Customers get Stripe’s retry attempts until this application cancels the subscription at the grace deadline. Access does not follow the Dashboard window. No settings change in this task |
-| B. Custom retry schedule that finishes inside 7 days | More predictable attempt times. Requires a later operations change. Still not the access clock |
-| C. No automatic Stripe retries | Recovery depends on the customer opening Portal. Fewer recovered payments |
+| Lead / Architect | **PASS**. Open grace stays entitled until `graceEndsAt` even when the provider subscription is already gone |
+| Backend | **PASS**. The webhook matrix uses the same early-terminal gate as §44.7. Exceptional `unpaid` termination stays on §44.11 |
+| External Integration / Stripe | **PASS**. Smart Retries stay the retry engine. An early provider cancel does not shorten the 7-day grace |
+| QA / Test Automation | **PASS**. The §44.16 matrix still matches the locked transitions |
+| Security / Code Quality | **PASS**. Owner and non-owner surfaces exclude card, amount, PaymentIntent, and provider ids |
+| DevOps / CI-CD | **PASS-WITH-NOTES**. The worker stays off while Stripe is false. This lock does not authorize Railway or a production flag change |
+| Web | **PASS**. Owner copy and Portal action are locked. This contract does not change the page |
+| Athlete Intelligence | **PASS**. Payment recovery still does not write athletic domain state |
+| Documentation / Release | **PASS**. Status is **PRODUCT OWNER LOCKED**. ADR-040 and ADR-044 already defer to §44 |
 
-**2. Custom Athlete Readiness recovery email.**
+### 44.18 Product Owner decisions
 
-| Option | Consequence |
-| --- | --- |
-| A. In-app owner warning and Portal only. Recommended for Slice F | Matches the missing email channel and the Customer record, which has no email. Satisfies billing-owner messaging without a new mailer |
-| B. Add a recovery email on a new or existing mail channel | Needs a real sender and a deterministic ORG_OWNER address. Not available now. Do not copy Account email onto the Stripe Customer in this slice |
-| C. Depend on Stripe failed-payment email | Unsafe. The Organization Customer is created without an email, so Stripe has no guaranteed ORG_OWNER recipient |
+Both decisions that §44 previously left open are now locked. This section does not start Slice F and does not authorize runtime.
 
-Provider termination at grace expiry and terminal `EXPIRED` are locked in §44.7. They are not open product questions.
+**1. Stripe retry strategy. LOCKED — Option A.**
 
-V4 Pre-Slice-F recovery: PRODUCT OWNER DECISIONS REQUIRED
+Stripe Billing Smart Retries remains the payment-retry engine. Athlete Readiness does not build a PaymentIntent or card retry engine. Athlete Readiness owns the exact 7-calendar-day commercial grace deadline, entitlement during that window, recovery synchronization, provider terminalization at grace expiry when still unpaid, and owner-facing product messaging.
+
+Stripe retry timing does not control product entitlement. The deadline remains the first qualifying failure timestamp plus 7 calendar days. `asOf < graceEndsAt` is commercially entitled. `asOf >= graceEndsAt` is not, even when Stripe still has a retry scheduled.
+
+Revenue Recovery must not cancel the subscription before that deadline. After Stripe retries are exhausted, the preferred provider behavior is leave `past_due` or mark `unpaid`. Athlete Readiness owns final nonpayment termination. This lock does not change any Stripe setting.
+
+Option B, a custom retry schedule, and Option C, no automatic Stripe retries, are not selected.
+
+**2. Recovery messaging. LOCKED — Option A.**
+
+Slice F recovery messaging is the in-app `ORG_OWNER` billing warning and the existing server-created Customer Portal session for payment method and invoices. There is no custom Athlete Readiness recovery email in Slice F. Stripe failed-payment email is not the canonical owner notification. The Organization Stripe Customer is not guaranteed to have an email, so that channel is not a reliable `ORG_OWNER` identity.
+
+Slice F does not copy Account email onto the Stripe Customer, introduce a billing email identity, build a notification subsystem, or add email queue storage. A custom recovery email can be a later communications decision. It is outside this lock.
+
+Option B, a new mail channel, and Option C, depending on Stripe customer email, are not selected.
+
+Provider termination at grace expiry and terminal `EXPIRED` remain locked in §44.7. They were not reopened.
+
+V4 Pre-Slice-F recovery: PRODUCT OWNER LOCKED
 
 
 
