@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice E **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`; see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice E **PRODUCTION VERIFIED** with commercial billing **off** (see **§43**). Sandbox certification remains **§42**. Pre-Slice-F recovery is **PRODUCT OWNER LOCKED** (**§44**). Slice F runtime is **not** started. V4 is **not** complete.  
+**`develop`:** Slice F **COMPLETE on develop** with commercial billing **off** (see **§45**). Not sandbox certified. Not production verified. Pre-Slice-F recovery remains **PRODUCT OWNER LOCKED** (**§44**). Slice G is **not** started. V4 is **not** complete.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). Slice F runtime is **not** started. Slice G is **not** started. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). **Slice F:** **COMPLETE on develop** (see **§45**). Not sandbox certified. Not production verified. Not commercially active. Slice G is **not** started. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -555,7 +555,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
 | **D** | Bands & usage — active-athlete band enforcement. Semantics locked in **§37**. Runtime **not** authorized by this lock. Dedicated flag `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags) |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
-| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44** (**PRODUCT OWNER LOCKED**). Runtime is **not** authorized by §44 |
+| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44** (**PRODUCT OWNER LOCKED**). Runtime is **§45** (**COMPLETE on develop**; not sandbox certified; not production verified) |
 | **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
 | **H** | Commercial UX completion — pricing/billing cohesion |
 | **I** | Hardening / RC — T12–T22, entitlement matrix, tax/config, production certification |
@@ -2718,7 +2718,7 @@ Sandbox certification in **§42** stays the provider evidence. This section is t
 
 ## 44. Pre-Slice-F — Payment Recovery, Grace & Reconciliation Contract
 
-**Status:** **PRODUCT OWNER LOCKED**. Slice F runtime is **not** started and is **not** authorized by this section.
+**Status:** **PRODUCT OWNER LOCKED**. Runtime completion is **§45** (**COMPLETE on develop**, not sandbox certified, not production verified, not commercially active). This section remains the contract.
 
 This contract interprets the locked 7-day grace in §§15–16 and §22.1 #8–9. It does not change grace length, data retention, voluntary cancel-at-period-end, downgrade athlete removal, free surfaces, provider-neutral entitlement, or terminal `EXPIRED`. Production flags stay false. No migration is authorized here.
 
@@ -3036,6 +3036,122 @@ Option B, a new mail channel, and Option C, depending on Stripe customer email, 
 Provider termination at grace expiry and terminal `EXPIRED` remain locked in §44.7. They were not reopened.
 
 V4 Pre-Slice-F recovery: PRODUCT OWNER LOCKED
+
+---
+
+## 45. V4 Slice F — Payment Recovery, Grace & Reconciliation
+
+**Status:** **COMPLETE on develop**. Not **SANDBOX CERTIFIED**. Not **PRODUCTION VERIFIED**. Not **COMMERCIALLY ACTIVE**.
+
+This section records the runtime that implements the locked contract in **§44** and ADR-040 / ADR-044. It does not rewrite those product decisions. It does not authorize Slice G, Stripe Test Clock certification, production Stripe, entitlement enforcement, capacity enforcement, a `main` merge, deployment, or commercial launch. V4 is **not** complete.
+
+### 45.1 Baseline and green runtime
+
+| Item | Value |
+| --- | --- |
+| Starting `main` / `origin/main` | `5cddf39a2e591b2dd478533f6557d40fbb312aa6` |
+| Starting `develop` | `4a188a93685f85971a124bf771fcd6d6eb3c9758` (lock Verify [36247786552](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36247786552)) |
+| Implementation commit | `8b4f7a4871516a5aa164f4120e558fca444a0c30` |
+| First Verify | [36296753959](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36296753959) — Web, Mobile, and all backend jobs **success**; Sonar **failure** (New Code coverage **78.6%**) |
+| Authoritative runtime SHA | `ee666bcbb8673ef556104cad2a885cbbc5ff9e59` |
+| Green Verify | [36297599461](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36297599461) — Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, and Sonar **success** |
+| Schema | Flyway **V36**. No **V37** |
+| Production flags | `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` remain **false**. No new recovery flag |
+
+`main` was not moved. No Stripe object was created or mutated. No Railway configuration was changed. No deployment ran. Slice F Stripe sandbox certification was **not** run.
+
+### 45.2 Sonar New Code
+
+Quality Gate **OK** on `develop` after `ee666bc`.
+
+| New Code metric | Result |
+| --- | --- |
+| Reliability | **A** (1) |
+| Security | **A** (1) |
+| Maintainability | **A** (1) |
+| Coverage | **84.1%** |
+| Duplication | **0.0%** |
+| Security hotspots reviewed | **100%** |
+
+No `NOSONAR`, exclusion, or threshold change. The coverage commit added tests for audit persistence, worker outage and missing-customer paths, checkout expiry when the provider subscription is not entitled, Stripe pagination and nonpayment guards, and the owner grace date fallback.
+
+### 45.3 Domain and provider status
+
+`ProviderCollectionState` is `NONE`, `PAST_DUE`, `UNPAID`, or `PAUSED`. Domain code does not read raw Stripe status strings. `ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED` remains the coarse status and requires a non-`NONE` collection state.
+
+Stripe mapping in the adapter:
+
+| Stripe status | Commercial status | Collection |
+| --- | --- | --- |
+| `active` | `ACTIVE` | `NONE` |
+| `trialing` | `TRIALING` | `NONE` |
+| `incomplete` | `PENDING` | `NONE` |
+| `past_due` | `PAYMENT_ATTENTION_REQUIRED` | `PAST_DUE` |
+| `unpaid` | `PAYMENT_ATTENTION_REQUIRED` | `UNPAID` |
+| `paused` | `PAYMENT_ATTENTION_REQUIRED` | `PAUSED` |
+| `canceled`, `incomplete_expired` | `ENDED` | `NONE` |
+| unknown / null | `UNKNOWN` (fail closed) | `NONE` |
+
+`enterGracePeriod(Clock)` is gone. Grace is `establishGrace(snapshot, qualifyingFailureAt, clock)`. The deadline is `qualifyingFailureAt` at UTC plus `Period.ofDays(7)` (`BillingPolicies.graceDeadline`). `tightenGraceDeadline` moves an open deadline earlier only. `recordExceptionalPaymentAttention` records `UNPAID` or `PAUSED` as non-entitled `PAST_DUE` and does not grant grace. `synchronizeProviderSnapshot` never starts grace. An open grace stays `GRACE_PERIOD` until a newer non-cancel `ACTIVE` snapshot recovers it, or until `graceEndsAt` has passed and the provider snapshot is `ENDED`.
+
+Lifecycle edges used by this slice: `ACTIVE → GRACE_PERIOD`, `TRIALING → GRACE_PERIOD`, `TRIALING → PAST_DUE`, `GRACE_PERIOD → ACTIVE`, `GRACE_PERIOD → EXPIRED`, `PAST_DUE → ACTIVE`, `PAST_DUE → EXPIRED`. There is no `PAST_DUE → GRACE_PERIOD` and no `EXPIRED → ACTIVE`.
+
+Ordinary `ACTIVE` failure and failed trial conversion both enter `GRACE_PERIOD` in the same handling. Neither is committed as `PAST_DUE` first. Trial conversion keeps the existing `trialEndsAt`. A later failure does not extend the deadline. The same failure replay does not change it. An older qualifying failure may move `graceEndsAt` earlier and does not emit another `BILLING_GRACE_STARTED`. A stale failure after recovery to `ACTIVE` does not re-enter grace. `unpaid` or `paused` with no open grace becomes `PAST_DUE` with a null deadline. An existing grace is not cleared or shortened by a later `unpaid` or `paused` snapshot.
+
+Entitlement stays on `Subscription.isCommerciallyEntitledAt`. `GRACE_PERIOD` is entitled only while `asOf` is strictly before `graceEndsAt`. The exact deadline and every later instant are not entitled. With enforcement enabled in test, a commercial create is allowed during grace and returns **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` at the exact deadline. An always-free surface stays available. Capacity counting is unchanged. No athlete, membership, consent, training, or State Engine row is written. Payment recovery is not athletic recovery.
+
+### 45.4 Webhooks, audits, and inbox
+
+Handled Stripe events: `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `invoice.payment_action_required`.
+
+`invoice.payment_failed` and `invoice.payment_action_required` start grace only from `ACTIVE` or `TRIALING` when the authoritative collection state is `PAST_DUE`. The anchor is the verified event `created` timestamp. `customer.subscription.updated` with authoritative `past_due` is the ordering fallback and uses that event timestamp, so a later invoice cannot restart the window and an older invoice can tighten it. `invoice.paid` recovers only from a newer `ACTIVE` snapshot. A stale paid event leaves grace in place. `customer.subscription.deleted` during open grace stays `GRACE_PERIOD` and entitled until `graceEndsAt`. `checkout.session.expired` expires a still-`PENDING` row that has no entitled provider subscription, does not expire `TRIALING` or `ACTIVE`, and does not duplicate the end audit on replay.
+
+`PROCESSED` and `IGNORED` receipts are not reapplied. `RECEIVED` and `FAILED` receipts are retryable. No webhook payload column was added.
+
+Audits, once per effective transition, in the same transaction as the lifecycle write:
+
+| Transition | Audit |
+| --- | --- |
+| First entry to `GRACE_PERIOD` | `BILLING_GRACE_STARTED` |
+| `PENDING → ACTIVE` or `PENDING → TRIALING` | `BILLING_SUBSCRIPTION_ACTIVATED` |
+| `GRACE_PERIOD` or `PAST_DUE → ACTIVE` | `BILLING_PAYMENT_RECOVERED` only |
+| `CANCEL_AT_PERIOD_END → ACTIVE` or `TRIALING` | `BILLING_SUBSCRIPTION_REACTIVATED` |
+| `GRACE_PERIOD` or `PAST_DUE → EXPIRED` | `BILLING_SUBSCRIPTION_ENDED` with metadata `{"reason":"NONPAYMENT"}` |
+| Abandoned checkout or voluntary period end | `BILLING_SUBSCRIPTION_ENDED` with `{}` |
+
+Recovery is not also recorded as activation. Audits carry no invoice, PaymentIntent, Customer, subscription, or Price identifiers.
+
+### 45.5 Worker and provider termination
+
+`OrganizationRecoveryWorker` is scheduled with a 15-minute fixed delay and exists only when `uap.billing.stripe.enabled=true`. `@EnableScheduling` is on `StripeBillingConfiguration`, which has the same condition, so the worker is absent while Stripe is false. There is no lease table. Each run takes at most 50 rows per bucket, in order: due `GRACE_PERIOD`, exceptional `PAST_DUE`, stale `PENDING`, elapsed `CANCEL_AT_PERIOD_END`. It does not scan healthy `ACTIVE` or `TRIALING` rows and does not invent a failure timestamp.
+
+Provider I/O is outside the database transaction. The mutation transaction reloads the current row before it writes. Optimistic `@Version` remains the concurrency control. Due grace refetches the same provider subscription. An `ACTIVE` refetch recovers and does not cancel. An already terminal refetch persists `EXPIRED` and does not cancel again. A still-delinquent refetch calls `terminateForNonpayment` with `athlete-readiness:grace-expire:{subscriptionId}:{graceEndsAtEpochMilli}`. Exceptional `PAST_DUE` that is `UNPAID` or `PAUSED` uses `athlete-readiness:past-due-terminate:{subscriptionId}`. A provider that is still `PAST_DUE` is left non-entitled and is not given a grace deadline. Provider failure does not write `EXPIRED`. A cancel that succeeds before a lost local write is persisted as `EXPIRED` on the next tick from terminal provider truth, without a second effective cancel. The adapter checks the current Stripe subscription immediately before cancel, returns `ACTIVE`, `TRIALING`, or `ENDED` without cancelling, and uses immediate `subscriptions().cancel` with an empty `SubscriptionCancelParams` rather than `cancel_at_period_end`. `requireSandbox` is unchanged.
+
+Stale `PENDING` lookup is scoped to the Organization's stored Stripe Customer, matches `client_reference_id` or metadata `uap_subscription_id`, and pages at most 3 times with 20 sessions. Age of 24 hours only decides when a lookup is worth attempting. `OPEN` and `NOT_FOUND` stay `PENDING`. `EXPIRED` with no entitled subscription becomes `EXPIRED` without `reason=NONPAYMENT`. `COMPLETE` synchronizes the provider subscription and does not expire the row. A failed lookup leaves `PENDING`. No `checkout_session_id` column was added.
+
+Elapsed `CANCEL_AT_PERIOD_END` expires only when the provider is terminal, and that end is not labeled nonpayment.
+
+### 45.6 Owner read model and Web
+
+`SubscriptionResult` includes `graceEndsAt`. It does not include provider customer, provider subscription, Price, invoice, PaymentIntent, amount, or card data. `GRACE_PERIOD` shows “Payment needs attention.” and “Access continues until {UTC date} UTC.” The only action is the existing Portal control, “Manage payment method and invoices.” Change plan, cancel, reactivate, and Checkout stay hidden. `PAST_DUE` shows “Billing needs attention. Manage payment method and invoices.” and does not show an access-until date. `ORG_OWNER` remains the billing authority. A non-owner GET stays **404**.
+
+### 45.7 Local verification and reviews
+
+Local `./gradlew check` from `backend/uap-server`, with `JAVA_TOOL_OPTIONS="-Dspring.test.context.cache.maxSize=4"`, finished **BUILD SUCCESSFUL** in 21m 15s on the implementation tree. The coverage-fix tests were run focused and passed. Web: typecheck, lint (0 errors, 12 pre-existing warnings), tests (866, then the billing page file), and a production-shaped build (`VITE_UAP_ENV=production`, `VITE_UAP_API_BASE_URL=https://api.example.com`). Mobile: typecheck, lint, and tests (417). Modulith boundary tests passed. GitHub Verify [36297599461](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36297599461) is the full-suite gate.
+
+| Review | Verdict |
+| --- | --- |
+| Lead / Architect | **PASS**. Grace-aware snapshot sync is the accepted design |
+| Backend | **PASS** |
+| External Integration / Stripe | **PASS**. No Smart Retries or Revenue Recovery changes. No live Stripe call |
+| QA / Test Automation | **PASS** |
+| Security / Code Quality | **PASS** |
+| DevOps / CI-CD | **PASS**. Worker dormant while Stripe is false. No Railway change |
+| Web | **PASS** |
+| Athlete Intelligence / Data | **PASS**. No athletic-domain writes |
+| Documentation / Release | **PASS** on the locked contract. This section is the runtime evidence |
+
+Slice G is **not** started. V4 is **not** complete.
 
 
 
