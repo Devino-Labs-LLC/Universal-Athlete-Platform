@@ -121,6 +121,9 @@ class OrganizationBillingManagementHttpIntegrationTests {
 	private SecurityAuditEventRepository auditRepository;
 
 	@Autowired
+	private com.devinolabs.uap.billing.application.BillingAuditPort billingAuditPort;
+
+	@Autowired
 	private RegisterAccountUseCase registerAccountUseCase;
 
 	@Autowired
@@ -998,6 +1001,24 @@ class OrganizationBillingManagementHttpIntegrationTests {
 						.content(requestBody(UUID.randomUUID())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("BILLING_SUBSCRIPTION_NOT_MANAGEABLE"));
+	}
+
+	@Test
+	void recoveryAuditsPersistOnlyBoundedMetadata() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		billingAuditPort.graceStarted(subscriptionId, organizationId);
+		billingAuditPort.paymentRecovered(subscriptionId, organizationId);
+		billingAuditPort.subscriptionEnded(subscriptionId, organizationId, com.devinolabs.uap.billing.domain.BillingEndReason.NONPAYMENT);
+		billingAuditPort.subscriptionEnded(subscriptionId, organizationId, com.devinolabs.uap.billing.domain.BillingEndReason.UNSPECIFIED);
+
+		assertThat(auditRepository.findLatestByOrganizationId(organizationId, 10))
+				.extracting(SecurityAuditRecord::eventType, SecurityAuditRecord::metadataJson)
+				.containsExactly(
+						org.assertj.core.groups.Tuple.tuple("BILLING_SUBSCRIPTION_ENDED", "{}"),
+						org.assertj.core.groups.Tuple.tuple("BILLING_SUBSCRIPTION_ENDED", "{\"reason\":\"NONPAYMENT\"}"),
+						org.assertj.core.groups.Tuple.tuple("BILLING_PAYMENT_RECOVERED", "{}"),
+						org.assertj.core.groups.Tuple.tuple("BILLING_GRACE_STARTED", "{}"));
 	}
 
 	private List<String> auditTypes(UUID organizationId) {

@@ -511,6 +511,26 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void expiredCheckoutExpiresWhenTheProviderSubscriptionIsNotEntitled() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.organization(organizationId),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		stub("evt_ended_checkout", "checkout.session.expired", organizationId, subscriptionId, NOW.plusSeconds(4), pending,
+				snapshot(ProviderCommercialStatus.ENDED, NOW.plusSeconds(4)));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+		verify(auditPort).subscriptionEnded(
+				subscriptionId, organizationId, com.devinolabs.uap.billing.domain.BillingEndReason.UNSPECIFIED);
+	}
+
+	@Test
 	void expiredCheckoutDoesNotExpireAnEntitledRelationship() {
 		UUID organizationId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();

@@ -519,6 +519,54 @@ class StripeOrganizationBillingAdapterClientTests {
 		assertThat(params.getValue().getCustomer()).isEqualTo("cus_sandbox");
 	}
 
+	@Test
+	void pendingCheckoutLookupFollowsABoundedSecondPage() throws Exception {
+		Session foreign = new Session();
+		foreign.setId("cs_page_1");
+		foreign.setLivemode(false);
+		foreign.setStatus("open");
+		foreign.setCustomer("cus_sandbox");
+		foreign.setClientReferenceId("other");
+		StripeCollection<Session> first = new StripeCollection<>();
+		first.setData(List.of(foreign));
+		first.setHasMore(true);
+		Session matched = new Session();
+		matched.setId("cs_page_2");
+		matched.setLivemode(false);
+		matched.setStatus("open");
+		matched.setCustomer("cus_sandbox");
+		matched.setClientReferenceId(subscriptionId.toString());
+		StripeCollection<Session> second = new StripeCollection<>();
+		second.setData(List.of(matched));
+		second.setHasMore(false);
+		when(stripeClient.v1().checkout().sessions().list(any(SessionListParams.class))).thenReturn(first, second);
+
+		assertThat(adapter.lookupPendingCheckout("cus_sandbox", subscriptionId).outcome())
+				.isEqualTo(OrganizationBillingProvider.PendingCheckoutInspection.Outcome.OPEN);
+		verify(stripeClient.v1().checkout().sessions(), times(2)).list(any(SessionListParams.class));
+	}
+
+	@Test
+	void nonpaymentTerminationRejectsABlankKeyAndSurfacesStripeFailure() throws Exception {
+		assertThatThrownBy(() -> adapter.terminateForNonpayment(subscriptionId, "sub_test_1", " "))
+				.isInstanceOf(IllegalArgumentException.class);
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
+				.thenThrow(new ApiException("down", "req", "code", 500, null));
+		assertThatThrownBy(() -> adapter.terminateForNonpayment(
+				subscriptionId, "sub_test_1", "athlete-readiness:grace-expire:" + subscriptionId + ":1"))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+		verify(stripeClient.v1().subscriptions(), never()).cancel(any(), any(), any());
+	}
+
+	@Test
+	void nonpaymentTerminationRefusesANonAttentionStatus() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("incomplete"));
+		assertThatThrownBy(() -> adapter.terminateForNonpayment(
+				subscriptionId, "sub_test_1", "athlete-readiness:grace-expire:" + subscriptionId + ":1"))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+		verify(stripeClient.v1().subscriptions(), never()).cancel(any(), any(), any());
+	}
+
 	private Configuration portalConfiguration(boolean subscriptionUpdateEnabled) {
 		Configuration.Features.PaymentMethodUpdate payment = new Configuration.Features.PaymentMethodUpdate();
 		payment.setEnabled(true);

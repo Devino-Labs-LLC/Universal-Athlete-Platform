@@ -333,6 +333,21 @@ class SubscriptionDomainTests {
 	}
 
 	@Test
+	void paymentAttentionSnapshotRejectsAMissingOrMisplacedCollectionState() {
+		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
+				"cus_test", "sub_test", ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED, false, null,
+				T0.plusSeconds(60), CommercialPlanKey.ORG_BAND_25, BillingCadence.MONTHLY, T0))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("collection state");
+		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
+				"cus_test", "sub_test", ProviderCommercialStatus.ACTIVE, false, null,
+				T0.plusSeconds(60), CommercialPlanKey.ORG_BAND_25, BillingCadence.MONTHLY, T0,
+				ProviderCollectionState.PAST_DUE))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("payment attention");
+	}
+
+	@Test
 	void providerSnapshotRequiresSubscriptionReferenceAndStateTimestamp() {
 		assertThatThrownBy(() -> new ProviderSubscriptionSnapshot(
 				"cus_test", " ", ProviderCommercialStatus.PENDING, false, null, null,

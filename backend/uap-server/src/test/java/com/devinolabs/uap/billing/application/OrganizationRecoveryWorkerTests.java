@@ -265,6 +265,46 @@ class OrganizationRecoveryWorkerTests {
 	}
 
 	@Test
+	void dueGraceWithoutAProviderSubscriptionIsNotTerminated() {
+		Subscription subscription = dueGrace();
+		subscription.attachProviderReferences("cus_grace", null, CLOCK);
+		subscriptions.save(subscription);
+
+		worker.reconcile();
+
+		assertThat(provider.cancelCalls).isZero();
+		assertThat(subscription(subscription).lifecycleState()).isEqualTo(SubscriptionLifecycleState.GRACE_PERIOD);
+	}
+
+	@Test
+	void pastDueAndElapsedCancelOutagesLeaveTheRows() {
+		Subscription unpaid = pastDue();
+		Subscription scheduled = cancelAtPeriodEnd();
+		provider.unavailable = true;
+
+		worker.reconcile();
+
+		assertThat(subscription(unpaid).lifecycleState()).isEqualTo(SubscriptionLifecycleState.PAST_DUE);
+		assertThat(subscription(scheduled).lifecycleState()).isEqualTo(SubscriptionLifecycleState.CANCEL_AT_PERIOD_END);
+		assertThat(audit.ended).isZero();
+	}
+
+	@Test
+	void pendingWithoutAStoredCustomerStaysPending() {
+		Subscription pending = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.organization(UUID.randomUUID()),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				Clock.fixed(NOW.minusSeconds(26 * 60 * 60), ZoneOffset.UTC));
+		subscriptions.save(pending);
+
+		worker.reconcile();
+
+		assertThat(subscription(pending).lifecycleState()).isEqualTo(SubscriptionLifecycleState.PENDING);
+	}
+
+	@Test
 	void unavailablePendingLookupLeavesTheRowPending() {
 		Subscription pending = pending();
 		provider.unavailable = true;

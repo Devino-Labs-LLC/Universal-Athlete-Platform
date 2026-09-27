@@ -254,6 +254,21 @@ describe('Organization billing acquisition', () => {
     expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
   });
 
+  it('shows an unparseable grace instant without inventing a date', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-1',
+      planKey: 'ORG_BAND_75',
+      cadence: 'MONTHLY',
+      lifecycleState: 'GRACE_PERIOD',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: 'not-a-date',
+    });
+    renderWithProviders(<OrganizationBillingPage />);
+
+    expect(await screen.findByText('Access continues until not-a-date UTC.')).toBeInTheDocument();
+  });
+
   it('shows past-due attention without a grace date', async () => {
     fetchStatus.mockResolvedValue({
       subscriptionId: 'sub-1',
