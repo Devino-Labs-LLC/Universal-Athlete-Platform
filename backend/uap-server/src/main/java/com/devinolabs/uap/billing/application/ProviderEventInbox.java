@@ -10,7 +10,8 @@ import com.devinolabs.uap.billing.domain.ProviderEventProcessingStatus;
 public interface ProviderEventInbox {
 
 	/**
-	 * Inserts a RECEIVED receipt. Empty when {@code (provider, providerEventId)} already exists.
+	 * Inserts a RECEIVED receipt, or returns an existing RECEIVED or FAILED receipt so Stripe
+	 * redelivery can retry it. PROCESSED and IGNORED receipts return empty.
 	 */
 	Optional<ProviderEventReceipt> tryBegin(
 			BillingProvider provider,

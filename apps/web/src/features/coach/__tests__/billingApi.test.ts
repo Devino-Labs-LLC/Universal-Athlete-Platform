@@ -51,6 +51,7 @@ describe('billingApi', () => {
         lifecycleState: 'PENDING',
         trialEndsAt: null,
         currentPeriodEndsAt: null,
+        graceEndsAt: null,
       },
     });
 
@@ -90,6 +91,7 @@ describe('billingApi', () => {
           lifecycleState: 'ACTIVE',
           trialEndsAt: null,
           currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+          graceEndsAt: null,
         },
       });
     const client = clientWith({ post });

@@ -510,6 +510,14 @@ class OrganizationBillingManagementHttpIntegrationTests {
 		Subscription pastDue = lifecycleSubscription(
 				organizationId, CommercialPlanKey.ORG_BAND_75, SubscriptionLifecycleState.PAST_DUE);
 		assertDeniedWithoutProvider(ownerId, organizationId, pastDue, "BILLING_LIFECYCLE_CONFLICT");
+		customerRepository.save(OrganizationBillingCustomer.stripe(organizationId, "cus_past_due", Instant.now(clock)));
+		mockMvc.perform(get("/api/v1/billing/organizations/" + organizationId)
+						.with(authentication(authFor(ownerId))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lifecycleState").value("PAST_DUE"))
+				.andExpect(jsonPath("$.graceEndsAt").value(nullValue()))
+				.andExpect(jsonPath("$.providerCustomerRef").doesNotExist())
+				.andExpect(jsonPath("$.providerSubscriptionRef").doesNotExist());
 	}
 
 	@Test
@@ -520,6 +528,23 @@ class OrganizationBillingManagementHttpIntegrationTests {
 				organizationId, CommercialPlanKey.ORG_BAND_75, SubscriptionLifecycleState.GRACE_PERIOD);
 		assertDeniedWithoutProvider(ownerId, organizationId, grace, "BILLING_LIFECYCLE_CONFLICT");
 		assertThat(reloaded(grace).lifecycleState()).isEqualTo(SubscriptionLifecycleState.GRACE_PERIOD);
+		customerRepository.save(OrganizationBillingCustomer.stripe(organizationId, "cus_grace", Instant.now(clock)));
+		mockMvc.perform(post(portalPath(organizationId))
+						.with(authentication(authFor(ownerId)))
+						.with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.url").value("https://billing.stripe.test/portal/" + organizationId));
+		mockMvc.perform(get("/api/v1/billing/organizations/" + organizationId)
+						.with(authentication(authFor(ownerId))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lifecycleState").value("GRACE_PERIOD"))
+				.andExpect(jsonPath("$.graceEndsAt").value(reloaded(grace).graceEndsAt().toString()))
+				.andExpect(jsonPath("$.providerCustomerRef").doesNotExist())
+				.andExpect(jsonPath("$.providerSubscriptionRef").doesNotExist())
+				.andExpect(jsonPath("$.priceId").doesNotExist());
+		mockMvc.perform(get("/api/v1/billing/organizations/" + organizationId)
+						.with(authentication(authFor(UUID.randomUUID()))))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -1079,12 +1104,32 @@ class OrganizationBillingManagementHttpIntegrationTests {
 			SubscriptionLifecycleState state) {
 		Subscription subscription = activeSubscription(organizationId, planKey, BillingCadence.MONTHLY);
 		if (state == SubscriptionLifecycleState.PAST_DUE) {
-			subscription.markPastDue(clock);
+			subscription.recordExceptionalPaymentAttention(
+					attention(subscription, com.devinolabs.uap.billing.domain.ProviderCollectionState.UNPAID), clock);
 		}
 		else if (state == SubscriptionLifecycleState.GRACE_PERIOD) {
-			subscription.enterGracePeriod(clock);
+			subscription.establishGrace(
+					attention(subscription, com.devinolabs.uap.billing.domain.ProviderCollectionState.PAST_DUE),
+					Instant.now(clock),
+					clock);
 		}
 		return subscriptionRepository.save(subscription);
+	}
+
+	private static ProviderSubscriptionSnapshot attention(
+			Subscription subscription,
+			com.devinolabs.uap.billing.domain.ProviderCollectionState collection) {
+		return new ProviderSubscriptionSnapshot(
+				subscription.providerCustomerRef(),
+				subscription.providerSubscriptionRef(),
+				ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED,
+				false,
+				subscription.trialEndsAt(),
+				subscription.currentPeriodEndsAt(),
+				subscription.planKey(),
+				subscription.billingCadence(),
+				subscription.providerStateAsOf().plusSeconds(1),
+				collection);
 	}
 
 	private Subscription saveSnapshot(
@@ -1417,6 +1462,19 @@ class OrganizationBillingManagementHttpIntegrationTests {
 		@Override
 		public ProviderSubscriptionSnapshot fetchSubscription(String providerSubscriptionRef) {
 			throw new UnsupportedOperationException("fetchSubscription");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot terminateForNonpayment(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				String idempotencyKey) {
+			throw new UnsupportedOperationException("terminateForNonpayment");
+		}
+
+		@Override
+		public PendingCheckoutInspection lookupPendingCheckout(String providerCustomerRef, UUID subscriptionId) {
+			throw new UnsupportedOperationException("lookupPendingCheckout");
 		}
 
 		private static void awaitMutationGate() {

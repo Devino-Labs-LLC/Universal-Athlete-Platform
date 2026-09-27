@@ -30,6 +30,18 @@ function ownerUsageCopy(snapshot: OrganizationCapacitySnapshot): string {
   return `${snapshot.activeAthleteCount} of ${snapshot.bandCapacity} active athletes`;
 }
 
+function formatUtc(instant: string): string {
+  const parsed = new Date(instant);
+  if (Number.isNaN(parsed.getTime())) {
+    return instant;
+  }
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'UTC',
+  }).format(parsed);
+}
+
 function planLabel(planKey: string): string {
   return organizationCatalog.find((tier) => tier.planKey === planKey)?.name ?? planKey;
 }
@@ -169,6 +181,15 @@ export function OrganizationBillingPage() {
           ) : null}
           {subscription.currentPeriodEndsAt ? (
             <p className={styles.meta}>Current period ends {subscription.currentPeriodEndsAt}</p>
+          ) : null}
+          {lifecycle === 'GRACE_PERIOD' && subscription.graceEndsAt ? (
+            <>
+              <p className={styles.meta}>Payment needs attention.</p>
+              <p className={styles.meta}>Access continues until {formatUtc(subscription.graceEndsAt)} UTC.</p>
+            </>
+          ) : null}
+          {lifecycle === 'PAST_DUE' ? (
+            <p className={styles.meta}>Billing needs attention. Manage payment method and invoices.</p>
           ) : null}
           {lifecycle === 'PENDING' ? <p className={styles.meta}>Checkout is already in progress.</p> : null}
           {showPortal ? (

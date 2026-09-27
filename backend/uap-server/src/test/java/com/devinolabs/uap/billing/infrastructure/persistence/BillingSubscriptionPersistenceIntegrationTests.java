@@ -219,6 +219,27 @@ class BillingSubscriptionPersistenceIntegrationTests {
 				.isEqualTo(ProviderEventProcessingStatus.PROCESSED);
 	}
 
+	@Test
+	void providerEventInboxRetriesReceivedAndFailedReceiptsOnly() {
+		Optional<ProviderEventReceipt> received = providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_received", "invoice.payment_failed", T0);
+		assertThat(providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_received", "invoice.payment_failed", T0.plusSeconds(1)))
+				.isPresent();
+
+		Optional<ProviderEventReceipt> failed = providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_failed", "invoice.payment_failed", T0);
+		providerEventInbox.complete(failed.orElseThrow().id(), ProviderEventProcessingStatus.FAILED, T0);
+		assertThat(providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_failed", "invoice.payment_failed", T0.plusSeconds(1)))
+				.isPresent();
+
+		providerEventInbox.complete(received.orElseThrow().id(), ProviderEventProcessingStatus.IGNORED, T0);
+		assertThat(providerEventInbox.tryBegin(
+				BillingProvider.STRIPE, "evt_received", "invoice.payment_failed", T0.plusSeconds(2)))
+				.isEmpty();
+	}
+
 	@TestConfiguration
 	static class FixedClockConfig {
 

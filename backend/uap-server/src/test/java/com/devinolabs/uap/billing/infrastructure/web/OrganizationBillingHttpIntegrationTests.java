@@ -13,6 +13,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -27,6 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.billing.application.InvalidWebhookSignatureException;
 import com.devinolabs.uap.billing.application.OrganizationBillingProvider;
+import com.devinolabs.uap.billing.application.OrganizationRecoveryWorker;
+import com.devinolabs.uap.billing.application.OrganizationRecoveryWorker;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
 import com.devinolabs.uap.billing.application.SubscriptionRepository;
 import com.devinolabs.uap.billing.domain.BillingCadence;
@@ -68,6 +72,9 @@ class OrganizationBillingHttpIntegrationTests {
 	private MockMvc mockMvc;
 
 	@Autowired
+	private ObjectProvider<OrganizationRecoveryWorker> recoveryWorker;
+
+	@Autowired
 	private CreateOrganizationUseCase createOrganizationUseCase;
 
 	@Autowired
@@ -75,6 +82,11 @@ class OrganizationBillingHttpIntegrationTests {
 
 	@Autowired
 	private OrganizationMembershipRepository membershipRepository;
+
+	@Test
+	void recoveryWorkerIsPresentWhenStripeIsEnabled() {
+		assertThat(recoveryWorker.getIfAvailable()).isNotNull();
+	}
 
 	@Test
 	void billingCheckoutRequiresAuthenticationAndCsrf() throws Exception {
@@ -425,6 +437,19 @@ class OrganizationBillingHttpIntegrationTests {
 		@Override
 		public ProviderSubscriptionSnapshot fetchSubscription(String providerSubscriptionRef) {
 			throw new UnsupportedOperationException("fetchSubscription");
+		}
+
+		@Override
+		public ProviderSubscriptionSnapshot terminateForNonpayment(
+				UUID subscriptionId,
+				String providerSubscriptionRef,
+				String idempotencyKey) {
+			throw new UnsupportedOperationException("terminateForNonpayment");
+		}
+
+		@Override
+		public PendingCheckoutInspection lookupPendingCheckout(String providerCustomerRef, UUID subscriptionId) {
+			throw new UnsupportedOperationException("lookupPendingCheckout");
 		}
 
 		private static ProviderSubscriptionSnapshot snapshot(

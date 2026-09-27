@@ -1,10 +1,12 @@
 package com.devinolabs.uap.billing.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.devinolabs.uap.entitlements.BillingSubjectType;
@@ -12,6 +14,7 @@ import com.devinolabs.uap.billing.application.SubscriptionRepository;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
+import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
 
 @Repository
 class JpaSubscriptionRepository implements SubscriptionRepository {
@@ -66,6 +69,35 @@ class JpaSubscriptionRepository implements SubscriptionRepository {
 			String providerSubscriptionRef) {
 		return jpaRepository.findByProviderAndProviderSubscriptionRef(provider, providerSubscriptionRef)
 				.map(BillingSubscriptionPersistenceMapper::toDomain);
+	}
+
+	@Override
+	public List<Subscription> findDueGrace(Instant now, int limit) {
+		return mapPage(jpaRepository.findDueGrace(now, page(limit)));
+	}
+
+	@Override
+	public List<Subscription> findPastDue(int limit) {
+		return mapPage(jpaRepository.findByLifecycleStateOrderByCreatedAtAscIdAsc(
+				SubscriptionLifecycleState.PAST_DUE, page(limit)));
+	}
+
+	@Override
+	public List<Subscription> findStalePending(Instant createdAtOrBefore, int limit) {
+		return mapPage(jpaRepository.findStalePending(createdAtOrBefore, page(limit)));
+	}
+
+	@Override
+	public List<Subscription> findElapsedCancelAtPeriodEnd(Instant now, int limit) {
+		return mapPage(jpaRepository.findElapsedCancelAtPeriodEnd(now, page(limit)));
+	}
+
+	private static PageRequest page(int limit) {
+		return PageRequest.of(0, limit);
+	}
+
+	private static List<Subscription> mapPage(List<BillingSubscriptionJpaEntity> entities) {
+		return entities.stream().map(BillingSubscriptionPersistenceMapper::toDomain).toList();
 	}
 
 }

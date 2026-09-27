@@ -26,8 +26,10 @@ import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.SubscriptionCancelParams;
 import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.param.checkout.SessionListParams;
 
 import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
@@ -35,6 +37,7 @@ import com.devinolabs.uap.billing.application.InvalidWebhookSignatureException;
 import com.devinolabs.uap.billing.application.OrganizationBillingProvider;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.ProviderCollectionState;
 import com.devinolabs.uap.billing.domain.ProviderCommercialStatus;
 import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 
@@ -290,6 +293,73 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		}
 	}
 
+	@Override
+	public ProviderSubscriptionSnapshot terminateForNonpayment(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			String idempotencyKey) {
+		Objects.requireNonNull(subscriptionId, "subscriptionId must not be null");
+		if (idempotencyKey == null || idempotencyKey.isBlank()) {
+			throw new IllegalArgumentException("idempotencyKey must not be blank");
+		}
+		try {
+			Subscription current = retrieveManagedSubscription(providerSubscriptionRef);
+			ProviderCommercialStatus status = mapStatus(current.getStatus());
+			if (status == ProviderCommercialStatus.ACTIVE
+					|| status == ProviderCommercialStatus.TRIALING
+					|| status == ProviderCommercialStatus.ENDED) {
+				return snapshotFrom(current, requireSingleItem(current.getItems()), Instant.now(clock));
+			}
+			if (status != ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED) {
+				throw new BillingProviderUnavailableException(
+						new IllegalStateException("Provider subscription is not eligible for nonpayment termination"));
+			}
+			stripeClient.v1().subscriptions().cancel(
+					current.getId(),
+					SubscriptionCancelParams.builder().build(),
+					idempotencyOptions(idempotencyKey));
+			return fetchSubscription(current.getId());
+		}
+		catch (StripeException ex) {
+			throw new BillingProviderUnavailableException(ex);
+		}
+	}
+
+	@Override
+	public PendingCheckoutInspection lookupPendingCheckout(String providerCustomerRef, UUID subscriptionId) {
+		Objects.requireNonNull(subscriptionId, "subscriptionId must not be null");
+		String customerRef = requireText(providerCustomerRef, "providerCustomerRef");
+		String identity = subscriptionId.toString();
+		try {
+			String startingAfter = null;
+			for (int page = 0; page < 3; page++) {
+				SessionListParams.Builder builder = SessionListParams.builder()
+						.setCustomer(customerRef)
+						.setLimit(20L);
+				if (startingAfter != null) {
+					builder.setStartingAfter(startingAfter);
+				}
+				var listed = stripeClient.v1().checkout().sessions().list(builder.build());
+				List<Session> sessions = listed.getData() == null ? List.of() : listed.getData();
+				for (Session session : sessions) {
+					if (!sessionMatchesSubscription(session, identity)) {
+						continue;
+					}
+					requireSandbox(session.getLivemode());
+					return inspectionFrom(session);
+				}
+				if (!Boolean.TRUE.equals(listed.getHasMore()) || sessions.isEmpty()) {
+					return PendingCheckoutInspection.of(PendingCheckoutInspection.Outcome.NOT_FOUND);
+				}
+				startingAfter = sessions.getLast().getId();
+			}
+			return PendingCheckoutInspection.of(PendingCheckoutInspection.Outcome.NOT_FOUND);
+		}
+		catch (StripeException ex) {
+			throw new BillingProviderUnavailableException(ex);
+		}
+	}
+
 	private ProviderSubscriptionSnapshot updatePrice(
 			UUID subscriptionId,
 			String providerSubscriptionRef,
@@ -528,6 +598,18 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		};
 	}
 
+	static ProviderCollectionState mapCollection(String status) {
+		if (status == null) {
+			return ProviderCollectionState.NONE;
+		}
+		return switch (status) {
+			case "past_due" -> ProviderCollectionState.PAST_DUE;
+			case "unpaid" -> ProviderCollectionState.UNPAID;
+			case "paused" -> ProviderCollectionState.PAUSED;
+			default -> ProviderCollectionState.NONE;
+		};
+	}
+
 	private static SubscriptionItem requireSingleItem(com.stripe.model.SubscriptionItemCollection items) {
 		List<SubscriptionItem> data = items == null ? List.of() : items.getData();
 		if (data == null || data.size() != 1 || data.getFirst().getPrice() == null
@@ -558,7 +640,49 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 				instant(item.getCurrentPeriodEnd()),
 				priced.planKey(),
 				priced.cadence(),
-				asOf);
+				asOf,
+				mapCollection(subscription.getStatus()));
+	}
+
+	private PendingCheckoutInspection inspectionFrom(Session session) throws StripeException {
+		String status = session.getStatus();
+		if ("open".equals(status)) {
+			return PendingCheckoutInspection.of(PendingCheckoutInspection.Outcome.OPEN);
+		}
+		if ("complete".equals(status)) {
+			return new PendingCheckoutInspection(
+					PendingCheckoutInspection.Outcome.COMPLETE,
+					snapshotFromRetrievedSubscription(session.getSubscription()));
+		}
+		if ("expired".equals(status)) {
+			if (session.getSubscription() == null || session.getSubscription().isBlank()) {
+				return PendingCheckoutInspection.of(PendingCheckoutInspection.Outcome.EXPIRED);
+			}
+			ProviderSubscriptionSnapshot snapshot = snapshotFromRetrievedSubscription(session.getSubscription());
+			if (snapshot.status() == ProviderCommercialStatus.ACTIVE
+					|| snapshot.status() == ProviderCommercialStatus.TRIALING) {
+				return new PendingCheckoutInspection(PendingCheckoutInspection.Outcome.COMPLETE, snapshot);
+			}
+			return PendingCheckoutInspection.of(PendingCheckoutInspection.Outcome.EXPIRED);
+		}
+		throw new BillingProviderUnavailableException(
+				new IllegalStateException("Checkout session status could not be classified"));
+	}
+
+	private ProviderSubscriptionSnapshot snapshotFromRetrievedSubscription(String providerSubscriptionRef)
+			throws StripeException {
+		Subscription subscription = stripeClient.v1().subscriptions().retrieve(
+				requireText(providerSubscriptionRef, "Stripe subscription id"));
+		requireSandbox(subscription.getLivemode());
+		return snapshotFrom(subscription, requireSingleItem(subscription.getItems()), Instant.now(clock));
+	}
+
+	private static boolean sessionMatchesSubscription(Session session, String subscriptionId) {
+		if (subscriptionId.equals(session.getClientReferenceId())) {
+			return true;
+		}
+		Map<String, String> metadata = session.getMetadata();
+		return metadata != null && subscriptionId.equals(metadata.get(SUBSCRIPTION_ID));
 	}
 
 	private static void requireIdentity(Map<String, String> metadata, UUID organizationId, UUID subscriptionId) {

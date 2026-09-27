@@ -59,6 +59,41 @@ public interface OrganizationBillingProvider {
 
 	ProviderSubscriptionSnapshot fetchSubscription(String providerSubscriptionRef);
 
+	/**
+	 * Cancels the same provider subscription immediately when it is still delinquent.
+	 * Returns the current snapshot without cancelling when the provider is active, trialing, or already terminal.
+	 */
+	ProviderSubscriptionSnapshot terminateForNonpayment(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			String idempotencyKey);
+
+	PendingCheckoutInspection lookupPendingCheckout(String providerCustomerRef, UUID subscriptionId);
+
+	record PendingCheckoutInspection(Outcome outcome, ProviderSubscriptionSnapshot fulfilledSnapshot) {
+
+		public enum Outcome {
+			OPEN,
+			EXPIRED,
+			COMPLETE,
+			NOT_FOUND
+		}
+
+		public PendingCheckoutInspection {
+			Objects.requireNonNull(outcome, "outcome must not be null");
+			if (outcome == Outcome.COMPLETE) {
+				Objects.requireNonNull(fulfilledSnapshot, "fulfilledSnapshot must not be null");
+			}
+			else if (fulfilledSnapshot != null) {
+				throw new IllegalArgumentException("fulfilledSnapshot is only present for COMPLETE");
+			}
+		}
+
+		public static PendingCheckoutInspection of(Outcome outcome) {
+			return new PendingCheckoutInspection(outcome, null);
+		}
+	}
+
 	record PortalSession(String hostedUrl) {
 
 		public PortalSession {

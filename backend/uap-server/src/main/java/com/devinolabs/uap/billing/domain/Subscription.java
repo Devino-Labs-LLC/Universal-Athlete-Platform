@@ -166,8 +166,10 @@ public class Subscription {
 	}
 
 	/**
-	 * Applies a verified, authoritative provider snapshot and ignores stale replays.
-	 * Provider-native status mapping remains outside this aggregate.
+	 * Applies a newer authoritative provider snapshot. Stale snapshots are ignored.
+	 * This method never starts grace and never clears an open grace except when a newer
+	 * active snapshot recovers the relationship, or when grace has elapsed and the provider
+	 * is already terminal.
 	 */
 	public boolean synchronizeProviderSnapshot(ProviderSubscriptionSnapshot snapshot, Clock clock) {
 		Objects.requireNonNull(snapshot, "snapshot must not be null");
@@ -175,32 +177,127 @@ public class Subscription {
 		if (snapshot.status() == ProviderCommercialStatus.UNKNOWN) {
 			throw new IllegalArgumentException("Unknown provider status cannot update commercial state");
 		}
+		if (lifecycleState == SubscriptionLifecycleState.EXPIRED) {
+			return false;
+		}
 		if (providerStateAsOf != null && !snapshot.providerStateAsOf().isAfter(providerStateAsOf)) {
 			return false;
 		}
 		requireMatchingReference(providerCustomerRef, snapshot.providerCustomerRef(), "provider customer");
 		requireMatchingReference(providerSubscriptionRef, snapshot.providerSubscriptionRef(), "provider subscription");
 
-		SubscriptionLifecycleState target = lifecycleFor(snapshot);
-		SubscriptionLifecycleTransitions.requireAllowed(lifecycleState, target);
+		Instant now = Instant.now(clock);
+		SubscriptionLifecycleState target = targetFor(snapshot, now);
+		if (target != lifecycleState) {
+			SubscriptionLifecycleTransitions.requireAllowed(lifecycleState, target);
+		}
 		validateProviderSnapshotInvariants(target, snapshot);
 		CommercialCatalog.validatePlanForSubject(snapshot.planKey(), subject.type());
-		Instant now = Instant.now(clock);
-		this.lifecycleState = target;
-		this.planKey = snapshot.planKey();
-		this.billingCadence = snapshot.billingCadence();
-		this.providerCustomerRef = snapshot.providerCustomerRef();
-		this.providerSubscriptionRef = snapshot.providerSubscriptionRef();
-		this.trialEndsAt = snapshot.trialEndsAt();
-		this.currentPeriodEndsAt = snapshot.currentPeriodEndsAt();
-		this.graceEndsAt = null;
-		this.providerStateAsOf = snapshot.providerStateAsOf();
-		this.updatedAt = now;
-		validateStateInvariants();
+		applySnapshot(snapshot, target, now);
 		return true;
 	}
 
-	private static SubscriptionLifecycleState lifecycleFor(ProviderSubscriptionSnapshot snapshot) {
+	/**
+	 * First qualifying failure on an entitled renewable relationship. The deadline is the
+	 * provider failure instant plus 7 calendar days, not local receipt time.
+	 */
+	public boolean establishGrace(ProviderSubscriptionSnapshot snapshot, Instant qualifyingFailureAt, Clock clock) {
+		Objects.requireNonNull(snapshot, "snapshot must not be null");
+		Objects.requireNonNull(qualifyingFailureAt, "qualifyingFailureAt must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (lifecycleState != SubscriptionLifecycleState.ACTIVE
+				&& lifecycleState != SubscriptionLifecycleState.TRIALING) {
+			throw new IllegalSubscriptionTransitionException(lifecycleState, SubscriptionLifecycleState.GRACE_PERIOD);
+		}
+		if (snapshot.collectionState() != ProviderCollectionState.PAST_DUE) {
+			throw new IllegalArgumentException("Grace requires provider collection state PAST_DUE");
+		}
+		Instant now = Instant.now(clock);
+		Instant preservedTrial = trialEndsAt;
+		if (providerStateAsOf == null || snapshot.providerStateAsOf().isAfter(providerStateAsOf)) {
+			requireMatchingReference(providerCustomerRef, snapshot.providerCustomerRef(), "provider customer");
+			requireMatchingReference(providerSubscriptionRef, snapshot.providerSubscriptionRef(), "provider subscription");
+			CommercialCatalog.validatePlanForSubject(snapshot.planKey(), subject.type());
+			this.planKey = snapshot.planKey();
+			this.billingCadence = snapshot.billingCadence();
+			this.providerCustomerRef = snapshot.providerCustomerRef();
+			this.providerSubscriptionRef = snapshot.providerSubscriptionRef();
+			this.currentPeriodEndsAt = snapshot.currentPeriodEndsAt();
+			this.providerStateAsOf = snapshot.providerStateAsOf();
+		}
+		this.trialEndsAt = preservedTrial;
+		this.graceEndsAt = BillingPolicies.graceDeadline(qualifyingFailureAt);
+		transitionTo(SubscriptionLifecycleState.GRACE_PERIOD, now);
+		return true;
+	}
+
+	/**
+	 * Moves an open grace deadline earlier when an older qualifying failure arrives.
+	 * Returns false when the relationship is not in grace or the deadline would not move earlier.
+	 */
+	public boolean tightenGraceDeadline(Instant olderQualifyingFailureAt, Clock clock) {
+		Objects.requireNonNull(olderQualifyingFailureAt, "olderQualifyingFailureAt must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (lifecycleState != SubscriptionLifecycleState.GRACE_PERIOD || graceEndsAt == null) {
+			return false;
+		}
+		Instant candidate = BillingPolicies.graceDeadline(olderQualifyingFailureAt);
+		if (!candidate.isBefore(graceEndsAt)) {
+			return false;
+		}
+		this.graceEndsAt = candidate;
+		this.updatedAt = Instant.now(clock);
+		return true;
+	}
+
+	/**
+	 * Exceptional non-entitled attention. Does not grant grace and does not disturb an open grace.
+	 */
+	public boolean recordExceptionalPaymentAttention(ProviderSubscriptionSnapshot snapshot, Clock clock) {
+		Objects.requireNonNull(snapshot, "snapshot must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (lifecycleState == SubscriptionLifecycleState.GRACE_PERIOD) {
+			return false;
+		}
+		if (snapshot.collectionState() != ProviderCollectionState.UNPAID
+				&& snapshot.collectionState() != ProviderCollectionState.PAUSED) {
+			throw new IllegalArgumentException("Exceptional payment attention requires UNPAID or PAUSED");
+		}
+		if (lifecycleState != SubscriptionLifecycleState.ACTIVE
+				&& lifecycleState != SubscriptionLifecycleState.TRIALING
+				&& lifecycleState != SubscriptionLifecycleState.PAST_DUE) {
+			throw new IllegalSubscriptionTransitionException(lifecycleState, SubscriptionLifecycleState.PAST_DUE);
+		}
+		if (providerStateAsOf != null && snapshot.providerStateAsOf().isBefore(providerStateAsOf)) {
+			return false;
+		}
+		if (lifecycleState == SubscriptionLifecycleState.PAST_DUE
+				&& providerStateAsOf != null
+				&& !snapshot.providerStateAsOf().isAfter(providerStateAsOf)) {
+			return false;
+		}
+		requireMatchingReference(providerCustomerRef, snapshot.providerCustomerRef(), "provider customer");
+		requireMatchingReference(providerSubscriptionRef, snapshot.providerSubscriptionRef(), "provider subscription");
+		CommercialCatalog.validatePlanForSubject(snapshot.planKey(), subject.type());
+		Instant now = Instant.now(clock);
+		SubscriptionLifecycleState target = SubscriptionLifecycleState.PAST_DUE;
+		if (target != lifecycleState) {
+			SubscriptionLifecycleTransitions.requireAllowed(lifecycleState, target);
+		}
+		applySnapshot(snapshot, target, now);
+		return true;
+	}
+
+	private SubscriptionLifecycleState targetFor(ProviderSubscriptionSnapshot snapshot, Instant now) {
+		if (lifecycleState == SubscriptionLifecycleState.GRACE_PERIOD) {
+			if (isRecoveredActive(snapshot)) {
+				return SubscriptionLifecycleState.ACTIVE;
+			}
+			if (graceEndsAt != null && !now.isBefore(graceEndsAt) && snapshot.status() == ProviderCommercialStatus.ENDED) {
+				return SubscriptionLifecycleState.EXPIRED;
+			}
+			return SubscriptionLifecycleState.GRACE_PERIOD;
+		}
 		if (snapshot.cancelAtPeriodEnd()
 				&& (snapshot.status() == ProviderCommercialStatus.ACTIVE
 						|| snapshot.status() == ProviderCommercialStatus.TRIALING)) {
@@ -210,16 +307,49 @@ public class Subscription {
 			case PENDING -> SubscriptionLifecycleState.PENDING;
 			case TRIALING -> SubscriptionLifecycleState.TRIALING;
 			case ACTIVE -> SubscriptionLifecycleState.ACTIVE;
-			case PAYMENT_ATTENTION_REQUIRED -> SubscriptionLifecycleState.PAST_DUE;
+			case PAYMENT_ATTENTION_REQUIRED -> lifecycleState;
 			case ENDED -> SubscriptionLifecycleState.EXPIRED;
 			case UNKNOWN -> throw new IllegalArgumentException("Unknown provider status cannot update commercial state");
 		};
 	}
 
+	private static boolean isRecoveredActive(ProviderSubscriptionSnapshot snapshot) {
+		return snapshot.status() == ProviderCommercialStatus.ACTIVE && !snapshot.cancelAtPeriodEnd();
+	}
+
+	private void applySnapshot(ProviderSubscriptionSnapshot snapshot, SubscriptionLifecycleState target, Instant now) {
+		Instant preservedTrial = trialEndsAt;
+		this.planKey = snapshot.planKey();
+		this.billingCadence = snapshot.billingCadence();
+		this.providerCustomerRef = snapshot.providerCustomerRef();
+		this.providerSubscriptionRef = snapshot.providerSubscriptionRef();
+		this.currentPeriodEndsAt = snapshot.currentPeriodEndsAt();
+		if (target == SubscriptionLifecycleState.GRACE_PERIOD || preservesExistingTrial(snapshot, target)) {
+			this.trialEndsAt = preservedTrial;
+		}
+		else {
+			this.trialEndsAt = snapshot.trialEndsAt();
+			this.graceEndsAt = null;
+		}
+		this.providerStateAsOf = snapshot.providerStateAsOf();
+		this.lifecycleState = target;
+		this.updatedAt = now;
+		validateStateInvariants();
+	}
+
+	private static boolean preservesExistingTrial(
+			ProviderSubscriptionSnapshot snapshot,
+			SubscriptionLifecycleState target) {
+		return target == SubscriptionLifecycleState.TRIALING
+				&& snapshot.status() == ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED;
+	}
+
 	private static void validateProviderSnapshotInvariants(
 			SubscriptionLifecycleState target,
 			ProviderSubscriptionSnapshot snapshot) {
-		if (target == SubscriptionLifecycleState.TRIALING && snapshot.trialEndsAt() == null) {
+		if (target == SubscriptionLifecycleState.TRIALING
+				&& snapshot.trialEndsAt() == null
+				&& snapshot.status() != ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED) {
 			throw new IllegalArgumentException("Provider TRIALING snapshot requires trialEndsAt");
 		}
 		if ((target == SubscriptionLifecycleState.ACTIVE
@@ -310,31 +440,6 @@ public class Subscription {
 		}
 		transitionTo(SubscriptionLifecycleState.ACTIVE, now);
 		this.graceEndsAt = null;
-	}
-
-	/** ACTIVE → PAST_DUE (no indefinite entitlement; access requires GRACE_PERIOD). */
-	public void markPastDue(Clock clock) {
-		Objects.requireNonNull(clock, "Clock must not be null");
-		requireState(SubscriptionLifecycleState.ACTIVE);
-		transitionTo(SubscriptionLifecycleState.PAST_DUE, Instant.now(clock));
-		this.graceEndsAt = null;
-	}
-
-	/**
-	 * ACTIVE or PAST_DUE → GRACE_PERIOD with an explicit 7-calendar-day grace deadline.
-	 */
-	public void enterGracePeriod(Clock clock) {
-		Objects.requireNonNull(clock, "Clock must not be null");
-		if (lifecycleState != SubscriptionLifecycleState.ACTIVE
-				&& lifecycleState != SubscriptionLifecycleState.PAST_DUE) {
-			throw new IllegalSubscriptionTransitionException(lifecycleState, SubscriptionLifecycleState.GRACE_PERIOD);
-		}
-		Instant now = Instant.now(clock);
-		Instant graceEnd = now.atZone(ZoneOffset.UTC)
-				.plus(BillingPolicies.FAILED_PAYMENT_GRACE_DURATION)
-				.toInstant();
-		this.graceEndsAt = graceEnd;
-		transitionTo(SubscriptionLifecycleState.GRACE_PERIOD, now);
 	}
 
 	/** Recovery from PAST_DUE or GRACE_PERIOD → ACTIVE. */

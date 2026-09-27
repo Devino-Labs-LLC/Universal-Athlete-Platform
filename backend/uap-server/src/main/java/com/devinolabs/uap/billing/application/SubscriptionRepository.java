@@ -1,5 +1,6 @@
 package com.devinolabs.uap.billing.application;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,5 +21,13 @@ public interface SubscriptionRepository {
 	Optional<Subscription> findByProviderAndProviderSubscriptionRef(
 			BillingProvider provider,
 			String providerSubscriptionRef);
+
+	List<Subscription> findDueGrace(Instant now, int limit);
+
+	List<Subscription> findPastDue(int limit);
+
+	List<Subscription> findStalePending(Instant createdAtOrBefore, int limit);
+
+	List<Subscription> findElapsedCancelAtPeriodEnd(Instant now, int limit);
 
 }

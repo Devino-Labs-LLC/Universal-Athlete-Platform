@@ -22,6 +22,8 @@ final class SubscriptionLifecycleTransitions {
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.TRIALING, EnumSet.of(
 				SubscriptionLifecycleState.ACTIVE,
+				SubscriptionLifecycleState.GRACE_PERIOD,
+				SubscriptionLifecycleState.PAST_DUE,
 				SubscriptionLifecycleState.CANCEL_AT_PERIOD_END,
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.ACTIVE, EnumSet.of(
@@ -30,7 +32,6 @@ final class SubscriptionLifecycleTransitions {
 				SubscriptionLifecycleState.CANCEL_AT_PERIOD_END,
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.PAST_DUE, EnumSet.of(
-				SubscriptionLifecycleState.GRACE_PERIOD,
 				SubscriptionLifecycleState.ACTIVE,
 				SubscriptionLifecycleState.EXPIRED));
 		ALLOWED.put(SubscriptionLifecycleState.GRACE_PERIOD, EnumSet.of(

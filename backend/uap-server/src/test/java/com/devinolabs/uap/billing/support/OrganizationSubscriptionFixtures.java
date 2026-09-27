@@ -106,7 +106,17 @@ public final class OrganizationSubscriptionFixtures {
 
 	public static Subscription savePastDueOrganization(SubscriptionRepository repository, UUID organizationId, Clock clock) {
 		Subscription subscription = saveActiveOrganization(repository, organizationId, clock);
-		subscription.markPastDue(clock);
+		subscription.recordExceptionalPaymentAttention(new com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot(
+				"cus_fixture",
+				"sub_fixture",
+				com.devinolabs.uap.billing.domain.ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED,
+				false,
+				null,
+				subscription.currentPeriodEndsAt(),
+				subscription.planKey(),
+				com.devinolabs.uap.billing.domain.BillingCadence.MONTHLY,
+				Instant.now(clock).plusSeconds(1),
+				com.devinolabs.uap.billing.domain.ProviderCollectionState.UNPAID), clock);
 		return repository.save(subscription);
 	}
 

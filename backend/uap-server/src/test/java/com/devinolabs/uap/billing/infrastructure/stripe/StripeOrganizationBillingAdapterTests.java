@@ -22,6 +22,7 @@ import com.stripe.param.checkout.SessionCreateParams;
 
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.ProviderCollectionState;
 import com.devinolabs.uap.billing.domain.ProviderCommercialStatus;
 
 class StripeOrganizationBillingAdapterTests {
@@ -73,6 +74,18 @@ class StripeOrganizationBillingAdapterTests {
 				.isEqualTo(ProviderCommercialStatus.ENDED);
 		assertThat(StripeOrganizationBillingAdapter.mapStatus("future_status"))
 				.isEqualTo(ProviderCommercialStatus.UNKNOWN);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection("past_due"))
+				.isEqualTo(ProviderCollectionState.PAST_DUE);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection("unpaid"))
+				.isEqualTo(ProviderCollectionState.UNPAID);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection("paused"))
+				.isEqualTo(ProviderCollectionState.PAUSED);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection("active"))
+				.isEqualTo(ProviderCollectionState.NONE);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection("canceled"))
+				.isEqualTo(ProviderCollectionState.NONE);
+		assertThat(StripeOrganizationBillingAdapter.mapCollection(null))
+				.isEqualTo(ProviderCollectionState.NONE);
 	}
 
 	@Test

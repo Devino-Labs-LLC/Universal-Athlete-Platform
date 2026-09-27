@@ -49,6 +49,7 @@ export const organizationBillingStatusSchema = z.object({
   lifecycleState: organizationSubscriptionStateSchema,
   trialEndsAt: z.string().nullable(),
   currentPeriodEndsAt: z.string().nullable(),
+  graceEndsAt: z.string().nullable(),
 });
 
 export type OrganizationBillingStatus = z.infer<typeof organizationBillingStatusSchema>;

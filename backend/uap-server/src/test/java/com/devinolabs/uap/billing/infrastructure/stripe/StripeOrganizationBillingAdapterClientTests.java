@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,8 +35,11 @@ import com.stripe.model.SubscriptionItemCollection;
 import com.stripe.model.billingportal.Configuration;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
+import com.stripe.model.StripeCollection;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.SubscriptionCancelParams;
 import com.stripe.param.SubscriptionUpdateParams;
+import com.stripe.param.checkout.SessionListParams;
 import com.stripe.param.checkout.SessionCreateParams;
 
 import com.devinolabs.uap.billing.application.BillingConflictException;
@@ -44,7 +48,9 @@ import com.devinolabs.uap.billing.application.InvalidWebhookSignatureException;
 import com.devinolabs.uap.billing.application.OrganizationBillingProvider;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.ProviderCollectionState;
 import com.devinolabs.uap.billing.domain.ProviderCommercialStatus;
+import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 
 @ExtendWith(MockitoExtension.class)
 class StripeOrganizationBillingAdapterClientTests {
@@ -456,6 +462,61 @@ class StripeOrganizationBillingAdapterClientTests {
 				.isInstanceOf(BillingProviderUnavailableException.class);
 		verify(stripeClient.v1().billingPortal().sessions(), times(1))
 				.create(any(com.stripe.param.billingportal.SessionCreateParams.class));
+	}
+
+	@Test
+	void nonpaymentTerminationCancelsOnlyADelinquentSandboxSubscription() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
+				.thenReturn(subscription("past_due"), subscription("canceled"));
+		when(stripeClient.v1().subscriptions().cancel(eq("sub_test_1"), any(SubscriptionCancelParams.class), any()))
+				.thenReturn(subscription("canceled"));
+
+		ProviderSubscriptionSnapshot snapshot = adapter.terminateForNonpayment(
+				subscriptionId,
+				"sub_test_1",
+				"athlete-readiness:grace-expire:" + subscriptionId + ":1");
+
+		ArgumentCaptor<RequestOptions> options = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(stripeClient.v1().subscriptions()).cancel(eq("sub_test_1"), any(SubscriptionCancelParams.class), options.capture());
+		assertThat(options.getValue().getIdempotencyKey()).contains("grace-expire");
+		assertThat(snapshot.status()).isEqualTo(ProviderCommercialStatus.ENDED);
+		assertThat(snapshot.collectionState()).isEqualTo(ProviderCollectionState.NONE);
+	}
+
+	@Test
+	void nonpaymentTerminationDoesNotCancelAnActiveOrTerminalSubscription() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		assertThat(adapter.terminateForNonpayment(subscriptionId, "sub_test_1", "athlete-readiness:past-due-terminate:" + subscriptionId)
+				.status()).isEqualTo(ProviderCommercialStatus.ACTIVE);
+		verify(stripeClient.v1().subscriptions(), never()).cancel(any(), any(), any());
+	}
+
+	@Test
+	void pendingCheckoutLookupStaysInsideTheCustomerAndIgnoresForeignSessions() throws Exception {
+		Session foreign = new Session();
+		foreign.setId("cs_foreign");
+		foreign.setLivemode(false);
+		foreign.setStatus("expired");
+		foreign.setCustomer("cus_sandbox");
+		foreign.setClientReferenceId("someone-else");
+		Session expired = new Session();
+		expired.setId("cs_match");
+		expired.setLivemode(false);
+		expired.setStatus("expired");
+		expired.setCustomer("cus_sandbox");
+		expired.setClientReferenceId(subscriptionId.toString());
+		StripeCollection<Session> page = new StripeCollection<>();
+		page.setData(List.of(foreign, expired));
+		page.setHasMore(false);
+		when(stripeClient.v1().checkout().sessions().list(any(SessionListParams.class))).thenReturn(page);
+
+		OrganizationBillingProvider.PendingCheckoutInspection inspection =
+				adapter.lookupPendingCheckout("cus_sandbox", subscriptionId);
+
+		assertThat(inspection.outcome()).isEqualTo(OrganizationBillingProvider.PendingCheckoutInspection.Outcome.EXPIRED);
+		ArgumentCaptor<SessionListParams> params = ArgumentCaptor.forClass(SessionListParams.class);
+		verify(stripeClient.v1().checkout().sessions()).list(params.capture());
+		assertThat(params.getValue().getCustomer()).isEqualTo("cus_sandbox");
 	}
 
 	private Configuration portalConfiguration(boolean subscriptionUpdateEnabled) {

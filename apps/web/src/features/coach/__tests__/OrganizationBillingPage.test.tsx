@@ -61,6 +61,7 @@ describe('Organization billing acquisition', () => {
       lifecycleState: 'ACTIVE',
       trialEndsAt: null,
       currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
     });
   });
 
@@ -127,6 +128,7 @@ describe('Organization billing acquisition', () => {
       lifecycleState: 'ACTIVE',
       trialEndsAt: null,
       currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
     });
     createPortal.mockResolvedValue({ url: 'https://billing.stripe.test/session' });
     renderWithProviders(<OrganizationBillingPage />);
@@ -159,6 +161,7 @@ describe('Organization billing acquisition', () => {
       lifecycleState: 'CANCEL_AT_PERIOD_END',
       trialEndsAt: null,
       currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
     });
     renderWithProviders(<OrganizationBillingPage />);
 
@@ -182,6 +185,7 @@ describe('Organization billing acquisition', () => {
       lifecycleState: 'ACTIVE',
       trialEndsAt: null,
       currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
     });
     renderWithProviders(<OrganizationBillingPage />);
 
@@ -227,5 +231,46 @@ describe('Organization billing acquisition', () => {
     renderWithProviders(<OrganizationBillingPage />);
 
     expect(await screen.findByRole('button', { name: 'Start Checkout' })).toBeDisabled();
+  });
+
+  it('shows grace copy and portal without management actions', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-1',
+      planKey: 'ORG_BAND_75',
+      cadence: 'MONTHLY',
+      lifecycleState: 'GRACE_PERIOD',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: '2026-09-17T12:00:00Z',
+    });
+    renderWithProviders(<OrganizationBillingPage />);
+
+    expect(await screen.findByText('Payment needs attention.')).toBeInTheDocument();
+    expect(screen.getByText(/Access continues until/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Manage payment method and invoices' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Change plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+  });
+
+  it('shows past-due attention without a grace date', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-1',
+      planKey: 'ORG_BAND_75',
+      cadence: 'MONTHLY',
+      lifecycleState: 'PAST_DUE',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
+    });
+    renderWithProviders(<OrganizationBillingPage />);
+
+    expect(await screen.findByText(/Billing needs attention/)).toBeInTheDocument();
+    expect(screen.queryByText(/Access continues until/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Manage payment method and invoices' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Change plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
   });
 });

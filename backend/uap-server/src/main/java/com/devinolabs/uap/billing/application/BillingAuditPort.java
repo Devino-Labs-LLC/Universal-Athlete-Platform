@@ -3,6 +3,7 @@ package com.devinolabs.uap.billing.application;
 import java.util.UUID;
 
 import com.devinolabs.uap.billing.domain.BillingCadence;
+import com.devinolabs.uap.billing.domain.BillingEndReason;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
 
@@ -44,8 +45,13 @@ public interface BillingAuditPort {
 			UUID organizationId,
 			UUID actorAccountId);
 
+	void graceStarted(UUID subscriptionId, UUID organizationId);
+
+	void paymentRecovered(UUID subscriptionId, UUID organizationId);
+
 	void subscriptionEnded(
 			UUID subscriptionId,
-			UUID organizationId);
+			UUID organizationId,
+			BillingEndReason reason);
 
 }

@@ -9,6 +9,7 @@ import com.devinolabs.uap.audit.api.SecurityAuditRecord;
 import com.devinolabs.uap.audit.api.SecurityAuditWriter;
 import com.devinolabs.uap.billing.application.BillingAuditPort;
 import com.devinolabs.uap.billing.domain.BillingCadence;
+import com.devinolabs.uap.billing.domain.BillingEndReason;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
 
@@ -101,13 +102,34 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 	}
 
 	@Override
-	public void subscriptionEnded(UUID subscriptionId, UUID organizationId) {
+	public void graceStarted(UUID subscriptionId, UUID organizationId) {
+		append(
+				"BILLING_GRACE_STARTED",
+				subscriptionId,
+				organizationId,
+				null,
+				"{}");
+	}
+
+	@Override
+	public void paymentRecovered(UUID subscriptionId, UUID organizationId) {
+		append(
+				"BILLING_PAYMENT_RECOVERED",
+				subscriptionId,
+				organizationId,
+				null,
+				"{}");
+	}
+
+	@Override
+	public void subscriptionEnded(UUID subscriptionId, UUID organizationId, BillingEndReason reason) {
+		String metadata = reason == BillingEndReason.NONPAYMENT ? "{\"reason\":\"NONPAYMENT\"}" : "{}";
 		append(
 				"BILLING_SUBSCRIPTION_ENDED",
 				subscriptionId,
 				organizationId,
 				null,
-				"{}");
+				metadata);
 	}
 
 	private void append(

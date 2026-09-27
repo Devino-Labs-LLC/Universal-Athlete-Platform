@@ -224,7 +224,8 @@ public class OrganizationCheckoutService {
 			BillingCadence cadence,
 			SubscriptionLifecycleState lifecycleState,
 			Instant trialEndsAt,
-			Instant currentPeriodEndsAt) {
+			Instant currentPeriodEndsAt,
+			Instant graceEndsAt) {
 
 		static SubscriptionResult from(Subscription subscription) {
 			return new SubscriptionResult(
@@ -233,7 +234,8 @@ public class OrganizationCheckoutService {
 					subscription.billingCadence(),
 					subscription.lifecycleState(),
 					subscription.trialEndsAt(),
-					subscription.currentPeriodEndsAt());
+					subscription.currentPeriodEndsAt(),
+					subscription.graceEndsAt());
 		}
 	}
 

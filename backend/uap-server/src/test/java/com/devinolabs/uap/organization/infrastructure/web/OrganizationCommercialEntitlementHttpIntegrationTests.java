@@ -16,6 +16,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -30,6 +32,8 @@ import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.athlete.application.CreateAthleteProfileUseCase;
 import com.devinolabs.uap.entitlements.CommercialEntitlementRequiredException;
 import com.devinolabs.uap.billing.application.EntitlementEnforcementProperties;
+import com.devinolabs.uap.billing.application.OrganizationRecoveryWorker;
+import com.devinolabs.uap.billing.application.OrganizationRecoveryWorker;
 import com.devinolabs.uap.billing.application.SubscriptionRepository;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
 import com.devinolabs.uap.billing.support.OrganizationSubscriptionFixtures;
@@ -60,6 +64,9 @@ class OrganizationCommercialEntitlementHttpIntegrationTests {
 
 	@Autowired
 	private SubscriptionRepository subscriptionRepository;
+
+	@Autowired
+	private ObjectProvider<OrganizationRecoveryWorker> recoveryWorker;
 
 	@Autowired
 	private Clock clock;
@@ -258,6 +265,11 @@ class OrganizationCommercialEntitlementHttpIntegrationTests {
 						.with(ConsentHttpFixtures.accountAuth(owner.accountId()))
 						.with(csrf()))
 				.andExpect(status().isNoContent());
+	}
+
+	@Test
+	void recoveryWorkerIsAbsentWhileStripeIsDisabled() {
+		assertThat(recoveryWorker.getIfAvailable()).isNull();
 	}
 
 	@Test

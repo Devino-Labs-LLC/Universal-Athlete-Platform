@@ -97,7 +97,7 @@ class SubscriptionDomainTests {
 	void pastDueIsNeverIndefinitelyEntitled() {
 		Subscription subscription = pendingOrg();
 		subscription.activate(Instant.parse("2026-10-10T12:00:00Z"), CLOCK);
-		subscription.markPastDue(CLOCK);
+		subscription.recordExceptionalPaymentAttention(attention(subscription, ProviderCollectionState.UNPAID, T0.plusSeconds(1)), CLOCK);
 
 		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.PAST_DUE);
 		assertThat(subscription.isCommerciallyEntitledAt(T0)).isFalse();
@@ -107,12 +107,14 @@ class SubscriptionDomainTests {
 	void gracePeriodEntitlesUntilExplicitDeadline() {
 		Subscription subscription = pendingOrg();
 		subscription.activate(Instant.parse("2026-10-10T12:00:00Z"), CLOCK);
-		subscription.enterGracePeriod(CLOCK);
+		Instant failure = T0;
+		subscription.establishGrace(attention(subscription, ProviderCollectionState.PAST_DUE, T0.plusSeconds(1)), failure, CLOCK);
 
 		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.GRACE_PERIOD);
 		assertThat(subscription.graceEndsAt()).isEqualTo(Instant.parse("2026-09-17T12:00:00Z"));
-		assertThat(subscription.isCommerciallyEntitledAt(T0)).isTrue();
-		assertThat(subscription.isCommerciallyEntitledAt(Instant.parse("2026-09-17T12:00:00Z"))).isFalse();
+		assertThat(subscription.isCommerciallyEntitledAt(subscription.graceEndsAt().minusNanos(1))).isTrue();
+		assertThat(subscription.isCommerciallyEntitledAt(subscription.graceEndsAt())).isFalse();
+		assertThat(subscription.isCommerciallyEntitledAt(subscription.graceEndsAt().plusNanos(1))).isFalse();
 	}
 
 	@Test
@@ -342,6 +344,142 @@ class SubscriptionDomainTests {
 				.isInstanceOf(NullPointerException.class);
 	}
 
+	@Test
+	void trialConversionFailureEntersGraceWithoutMovingTrialEnd() {
+		Subscription subscription = pendingOrg();
+		subscription.beginOrganizationTrial(CLOCK);
+		Instant trialEnd = subscription.trialEndsAt();
+		Instant failure = T0.plusSeconds(30);
+
+		subscription.establishGrace(
+				attention(subscription, ProviderCollectionState.PAST_DUE, failure),
+				failure,
+				CLOCK);
+
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.GRACE_PERIOD);
+		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
+		assertThat(subscription.graceEndsAt()).isEqualTo(BillingPolicies.graceDeadline(failure));
+	}
+
+	@Test
+	void paymentAttentionOnTrialPreservesTrialEndWithoutStartingGrace() {
+		Subscription subscription = pendingOrg();
+		subscription.beginOrganizationTrial(CLOCK);
+		subscription.attachProviderReferences("cus_active", "sub_active", CLOCK);
+		Instant trialEnd = subscription.trialEndsAt();
+		ProviderSubscriptionSnapshot attention = new ProviderSubscriptionSnapshot(
+				"cus_active",
+				"sub_active",
+				ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED,
+				false,
+				null,
+				T0.plusSeconds(30 * 24 * 60 * 60),
+				subscription.planKey(),
+				BillingCadence.MONTHLY,
+				T0.plusSeconds(1),
+				ProviderCollectionState.PAST_DUE);
+
+		assertThat(subscription.synchronizeProviderSnapshot(attention, CLOCK)).isTrue();
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.TRIALING);
+		assertThat(subscription.trialEndsAt()).isEqualTo(trialEnd);
+		assertThat(subscription.graceEndsAt()).isNull();
+	}
+
+	@Test
+	void laterFailureDoesNotExtendGraceAndOlderFailureTightensIt() {
+		Subscription subscription = activeOrg();
+		Instant first = T0.plusSeconds(10);
+		subscription.establishGrace(attention(subscription, ProviderCollectionState.PAST_DUE, first), first, CLOCK);
+		Instant original = subscription.graceEndsAt();
+
+		assertThat(subscription.tightenGraceDeadline(first.plusSeconds(60), CLOCK)).isFalse();
+		assertThat(subscription.tightenGraceDeadline(first, CLOCK)).isFalse();
+		Instant older = T0;
+		assertThat(subscription.tightenGraceDeadline(older, CLOCK)).isTrue();
+		assertThat(subscription.graceEndsAt()).isEqualTo(BillingPolicies.graceDeadline(older));
+		assertThat(subscription.graceEndsAt()).isBefore(original);
+	}
+
+	@Test
+	void pastDueCannotReceiveANewGraceWindow() {
+		Subscription subscription = activeOrg();
+		subscription.recordExceptionalPaymentAttention(
+				attention(subscription, ProviderCollectionState.PAUSED, T0.plusSeconds(1)), CLOCK);
+
+		assertThatThrownBy(() -> subscription.establishGrace(
+				attention(subscription, ProviderCollectionState.PAST_DUE, T0.plusSeconds(2)),
+				T0.plusSeconds(2),
+				CLOCK))
+				.isInstanceOf(IllegalSubscriptionTransitionException.class);
+		assertThat(subscription.graceEndsAt()).isNull();
+	}
+
+	@Test
+	void recoveryClearsGraceAndExpiredDoesNotResurrect() {
+		Subscription subscription = activeOrg();
+		subscription.establishGrace(attention(subscription, ProviderCollectionState.PAST_DUE, T0.plusSeconds(1)), T0, CLOCK);
+		ProviderSubscriptionSnapshot recovered = activeSnapshot(T0.plusSeconds(5));
+		assertThat(subscription.synchronizeProviderSnapshot(recovered, CLOCK)).isTrue();
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		assertThat(subscription.graceEndsAt()).isNull();
+
+		subscription.expire(CLOCK);
+		assertThat(subscription.synchronizeProviderSnapshot(activeSnapshot(T0.plusSeconds(9)), CLOCK)).isFalse();
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+	}
+
+	@Test
+	void earlyProviderTerminalStateDoesNotEndOpenGrace() {
+		Subscription subscription = activeOrg();
+		Instant failure = T0;
+		subscription.establishGrace(attention(subscription, ProviderCollectionState.PAST_DUE, T0.plusSeconds(1)), failure, CLOCK);
+		Instant deadline = subscription.graceEndsAt();
+		ProviderSubscriptionSnapshot ended = new ProviderSubscriptionSnapshot(
+				"cus_active",
+				"sub_active",
+				ProviderCommercialStatus.ENDED,
+				false,
+				null,
+				deadline,
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				T0.plusSeconds(3));
+
+		assertThat(subscription.synchronizeProviderSnapshot(ended, CLOCK)).isTrue();
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.GRACE_PERIOD);
+		assertThat(subscription.graceEndsAt()).isEqualTo(deadline);
+		assertThat(subscription.isCommerciallyEntitledAt(T0.plusSeconds(3))).isTrue();
+	}
+
+	@Test
+	void elapsedGraceExpiresWhenProviderIsAlreadyTerminal() {
+		Subscription subscription = activeOrg();
+		subscription.establishGrace(attention(subscription, ProviderCollectionState.PAST_DUE, T0.plusSeconds(1)), T0, CLOCK);
+		Instant deadline = subscription.graceEndsAt();
+		Clock later = Clock.fixed(deadline.plusSeconds(1), ZoneOffset.UTC);
+		ProviderSubscriptionSnapshot ended = new ProviderSubscriptionSnapshot(
+				subscription.providerCustomerRef(),
+				subscription.providerSubscriptionRef(),
+				ProviderCommercialStatus.ENDED,
+				false,
+				null,
+				deadline,
+				subscription.planKey(),
+				subscription.billingCadence(),
+				deadline.plusSeconds(1));
+
+		assertThat(subscription.synchronizeProviderSnapshot(ended, later)).isTrue();
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+		assertThat(subscription.graceEndsAt()).isNull();
+	}
+
+	private static Subscription activeOrg() {
+		Subscription subscription = pendingOrg();
+		subscription.activate(T0.plusSeconds(30 * 24 * 60 * 60), CLOCK);
+		subscription.attachProviderReferences("cus_active", "sub_active", CLOCK);
+		return subscription;
+	}
+
 	private static Subscription pendingCheckout() {
 		return Subscription.startPendingOrganizationCheckout(
 				SubscriptionId.generate(),
@@ -349,6 +487,25 @@ class SubscriptionDomainTests {
 				CommercialPlanKey.ORG_BAND_25,
 				BillingCadence.MONTHLY,
 				CLOCK);
+	}
+
+	private static ProviderSubscriptionSnapshot attention(
+			Subscription subscription,
+			ProviderCollectionState collection,
+			Instant providerAsOf) {
+		return new ProviderSubscriptionSnapshot(
+				subscription.providerCustomerRef() == null ? "cus_attention" : subscription.providerCustomerRef(),
+				subscription.providerSubscriptionRef() == null ? "sub_attention" : subscription.providerSubscriptionRef(),
+				ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED,
+				false,
+				subscription.trialEndsAt(),
+				subscription.currentPeriodEndsAt() == null
+						? T0.plusSeconds(30 * 24 * 60 * 60)
+						: subscription.currentPeriodEndsAt(),
+				subscription.planKey(),
+				subscription.billingCadence() == null ? BillingCadence.MONTHLY : subscription.billingCadence(),
+				providerAsOf,
+				collection);
 	}
 
 	private static ProviderSubscriptionSnapshot activeSnapshot(Instant providerAsOf) {

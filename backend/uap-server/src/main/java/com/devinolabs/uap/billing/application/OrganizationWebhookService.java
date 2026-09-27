@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.ProviderCommercialStatus;
 import com.devinolabs.uap.billing.domain.ProviderEventProcessingStatus;
 import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 import com.devinolabs.uap.billing.domain.Subscription;
@@ -27,11 +28,13 @@ public class OrganizationWebhookService {
 
 	static final Set<String> HANDLED_EVENT_TYPES = Set.of(
 			"checkout.session.completed",
+			"checkout.session.expired",
 			"customer.subscription.created",
 			"customer.subscription.updated",
 			"customer.subscription.deleted",
 			"invoice.paid",
-			"invoice.payment_failed");
+			"invoice.payment_failed",
+			"invoice.payment_action_required");
 
 	private static final int MAX_APPLY_ATTEMPTS = 3;
 
@@ -129,6 +132,11 @@ public class OrganizationWebhookService {
 			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
 			return WebhookApply.done();
 		}
+		if ("checkout.session.expired".equals(identified.eventType())
+				&& identified.providerSubscriptionRef() == null
+				&& subscription.providerSubscriptionRef() == null) {
+			return expireAbandonedCheckout(subscription, identified, receiptId);
+		}
 		ProviderSubscriptionSnapshot snapshot;
 		try {
 			snapshot = billingProvider.fetchAuthoritativeSnapshot(identified);
@@ -156,20 +164,17 @@ public class OrganizationWebhookService {
 					previousCadence,
 					subscription.providerSubscriptionRef()));
 		}
-		boolean changed = subscription.synchronizeProviderSnapshot(snapshot, clock);
+		boolean changed = "checkout.session.expired".equals(identified.eventType())
+				? applyExpiredCheckout(subscription, snapshot)
+				: PaymentRecoveryApplier.apply(
+						subscription, identified.eventType(), identified.createdAt(), snapshot, clock);
 		if (changed) {
 			Subscription saved = subscriptionRepository.save(subscription);
-			if (saved.lifecycleState() == SubscriptionLifecycleState.TRIALING
-					|| saved.lifecycleState() == SubscriptionLifecycleState.ACTIVE) {
-				auditPort.subscriptionActivated(saved.id().value(), identified.organizationId(), saved.lifecycleState());
-			}
-			else {
-				auditPort.subscriptionSynchronized(
-						saved.id().value(),
-						identified.organizationId(),
-						null,
-						saved.lifecycleState());
-			}
+			auditPort.subscriptionSynchronized(
+					saved.id().value(),
+					identified.organizationId(),
+					null,
+					saved.lifecycleState());
 			BillingSnapshotAudit.record(
 					auditPort,
 					saved.id().value(),
@@ -182,6 +187,44 @@ public class OrganizationWebhookService {
 		}
 		eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
 		return WebhookApply.done();
+	}
+
+	private WebhookApply expireAbandonedCheckout(
+			Subscription subscription,
+			OrganizationBillingProvider.VerifiedProviderEvent identified,
+			UUID receiptId) {
+		if (subscription.lifecycleState() != SubscriptionLifecycleState.PENDING) {
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+			return WebhookApply.done();
+		}
+		CommercialPlanKey previousPlan = subscription.planKey();
+		BillingCadence previousCadence = subscription.billingCadence();
+		SubscriptionLifecycleState previousState = subscription.lifecycleState();
+		subscription.expire(clock);
+		Subscription saved = subscriptionRepository.save(subscription);
+		BillingSnapshotAudit.record(
+				auditPort,
+				saved.id().value(),
+				identified.organizationId(),
+				null,
+				previousPlan,
+				previousCadence,
+				previousState,
+				saved);
+		eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+		return WebhookApply.done();
+	}
+
+	private boolean applyExpiredCheckout(Subscription subscription, ProviderSubscriptionSnapshot snapshot) {
+		if (subscription.lifecycleState() != SubscriptionLifecycleState.PENDING) {
+			return false;
+		}
+		if (snapshot.status() == ProviderCommercialStatus.ACTIVE
+				|| snapshot.status() == ProviderCommercialStatus.TRIALING) {
+			return subscription.synchronizeProviderSnapshot(snapshot, clock);
+		}
+		subscription.expire(clock);
+		return true;
 	}
 
 	private OrganizationBillingProvider.VerifiedProviderEvent identify(

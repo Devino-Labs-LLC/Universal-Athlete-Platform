@@ -165,5 +165,25 @@ class EntitlementQueryLifecycleTests {
 				String providerSubscriptionRef) {
 			return Optional.empty();
 		}
+
+		@Override
+		public List<Subscription> findDueGrace(java.time.Instant now, int limit) {
+			return List.of();
+		}
+
+		@Override
+		public List<Subscription> findPastDue(int limit) {
+			return List.of();
+		}
+
+		@Override
+		public List<Subscription> findStalePending(java.time.Instant createdAtOrBefore, int limit) {
+			return List.of();
+		}
+
+		@Override
+		public List<Subscription> findElapsedCancelAtPeriodEnd(java.time.Instant now, int limit) {
+			return List.of();
+		}
 	}
 }

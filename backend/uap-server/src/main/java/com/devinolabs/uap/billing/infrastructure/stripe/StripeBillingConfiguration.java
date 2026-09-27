@@ -4,6 +4,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.core.env.Environment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -13,6 +14,7 @@ import com.stripe.StripeClient;
 @Configuration
 @ConditionalOnProperty(prefix = "uap.billing.stripe", name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(StripeBillingProperties.class)
+@EnableScheduling
 class StripeBillingConfiguration {
 
 	@Bean
