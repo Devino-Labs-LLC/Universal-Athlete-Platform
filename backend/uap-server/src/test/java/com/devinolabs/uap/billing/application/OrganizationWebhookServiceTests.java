@@ -569,6 +569,40 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void expiredCheckoutWithoutASessionSubscriptionLeavesTheStoredProviderRelationship() {
+		UUID organizationId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription active = active(organizationId, subscriptionId);
+		OrganizationBillingProvider.VerifiedProviderEvent expired = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_active_expired",
+				"checkout.session.expired",
+				false,
+				NOW.plusSeconds(8),
+				"cs_unused",
+				null,
+				organizationId,
+				subscriptionId);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_active_expired",
+				"checkout.session.expired",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(expired);
+		when(eventInbox.tryBegin(any(), eq("evt_active_expired"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(active.id())).thenReturn(Optional.of(active));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(active.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+		verify(auditPort, never()).subscriptionEnded(any(), any(), any());
+	}
+
+	@Test
 	void expiredCheckoutWithoutProviderSubscriptionExpiresPending() {
 		UUID organizationId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();

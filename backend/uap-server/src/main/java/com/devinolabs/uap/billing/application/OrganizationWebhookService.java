@@ -133,9 +133,14 @@ public class OrganizationWebhookService {
 			return WebhookApply.done();
 		}
 		if ("checkout.session.expired".equals(identified.eventType())
-				&& identified.providerSubscriptionRef() == null
-				&& subscription.providerSubscriptionRef() == null) {
-			return expireAbandonedCheckout(subscription, identified, receiptId);
+				&& identified.providerSubscriptionRef() == null) {
+			if (subscription.providerSubscriptionRef() == null) {
+				return expireAbandonedCheckout(subscription, identified, receiptId);
+			}
+			// The session never created a subscription. Do not retrieve a blank id,
+			// and do not end the provider relationship already stored on the row.
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+			return WebhookApply.done();
 		}
 		ProviderSubscriptionSnapshot snapshot;
 		try {
