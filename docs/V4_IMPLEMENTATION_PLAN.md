@@ -6,14 +6,14 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice E **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe`; see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slice F **COMPLETE on develop** with commercial billing **off** (see **§45**). Not sandbox certified. Not production verified. Pre-Slice-F recovery remains **PRODUCT OWNER LOCKED** (**§44**). Slice G is **not** started. V4 is **not** complete.  
+**`develop`:** Slice F **STRIPE SANDBOX CERTIFIED** with commercial billing **off** (runtime **§45**, sandbox **§46**). Not production verified. Not commercially active. Pre-Slice-F recovery remains **PRODUCT OWNER LOCKED** (**§44**). Slice G is **not** started. V4 is **not** complete.  
 **Production schema:** Flyway **V36** (inferred — see §33 / §39) 
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). **Slice F:** **COMPLETE on develop** (see **§45**). Not sandbox certified. Not production verified. Not commercially active. Slice G is **not** started. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). **Slice F:** **STRIPE SANDBOX CERTIFIED** (runtime **§45**; sandbox **§46**). Not production verified. Not commercially active. Slice G is **not** started. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -555,7 +555,7 @@ Athlete Home must not become a billing dashboard. Mobile coach billing console r
 | **C** | Entitlements — server-side commercial capability enforcement using the §34 matrix. Code deploy ≠ activation (`UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, default `false`). Production `true` requires a later commercial-launch gate |
 | **D** | Bands & usage — active-athlete band enforcement. Semantics locked in **§37**. Runtime **not** authorized by this lock. Dedicated flag `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` (default **false**; independent of Stripe and Slice C entitlement flags) |
 | **E** | Billing management — Customer Portal, upgrade/downgrade/cancel/reactivate |
-| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44** (**PRODUCT OWNER LOCKED**). Runtime is **§45** (**COMPLETE on develop**; not sandbox certified; not production verified) |
+| **F** | Webhooks / dunning / reconciliation — events, 7-day grace, recovery. Contract is **§44** (**PRODUCT OWNER LOCKED**). Runtime is **§45** (**COMPLETE on develop**). Sandbox certification is **§46** (**STRIPE SANDBOX CERTIFIED**). Not production verified. Not commercially active |
 | **G** | Individual monetization — Stripe Web + Apple + Google → Premium |
 | **H** | Commercial UX completion — pricing/billing cohesion |
 | **I** | Hardening / RC — T12–T22, entitlement matrix, tax/config, production certification |
@@ -3041,7 +3041,7 @@ V4 Pre-Slice-F recovery: PRODUCT OWNER LOCKED
 
 ## 45. V4 Slice F — Payment Recovery, Grace & Reconciliation
 
-**Status:** **COMPLETE on develop**. Not **SANDBOX CERTIFIED**. Not **PRODUCTION VERIFIED**. Not **COMMERCIALLY ACTIVE**.
+**Status:** **COMPLETE on develop**. Sandbox certification is **§46**. Not **PRODUCTION VERIFIED**. Not **COMMERCIALLY ACTIVE**.
 
 This section records the runtime that implements the locked contract in **§44** and ADR-040 / ADR-044. It does not rewrite those product decisions. It does not authorize Slice G, Stripe Test Clock certification, production Stripe, entitlement enforcement, capacity enforcement, a `main` merge, deployment, or commercial launch. V4 is **not** complete.
 
@@ -3058,7 +3058,7 @@ This section records the runtime that implements the locked contract in **§44**
 | Schema | Flyway **V36**. No **V37** |
 | Production flags | `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` remain **false**. No new recovery flag |
 
-`main` was not moved. No Stripe object was created or mutated. No Railway configuration was changed. No deployment ran. Slice F Stripe sandbox certification was **not** run.
+`main` was not moved. No Stripe object was created or mutated by this runtime commit. No Railway configuration was changed. No deployment ran. Sandbox certification was not part of this section. It is recorded in **§46**. The checkout-expiry correction in `0de203a` is described there.
 
 ### 45.2 Sonar New Code
 
@@ -3104,7 +3104,7 @@ Entitlement stays on `Subscription.isCommerciallyEntitledAt`. `GRACE_PERIOD` is 
 
 Handled Stripe events: `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `invoice.payment_action_required`.
 
-`invoice.payment_failed` and `invoice.payment_action_required` start grace only from `ACTIVE` or `TRIALING` when the authoritative collection state is `PAST_DUE`. The anchor is the verified event `created` timestamp. `customer.subscription.updated` with authoritative `past_due` is the ordering fallback and uses that event timestamp, so a later invoice cannot restart the window and an older invoice can tighten it. `invoice.paid` recovers only from a newer `ACTIVE` snapshot. A stale paid event leaves grace in place. `customer.subscription.deleted` during open grace stays `GRACE_PERIOD` and entitled until `graceEndsAt`. `checkout.session.expired` expires a still-`PENDING` row that has no entitled provider subscription, does not expire `TRIALING` or `ACTIVE`, and does not duplicate the end audit on replay.
+`invoice.payment_failed` and `invoice.payment_action_required` start grace only from `ACTIVE` or `TRIALING` when the authoritative collection state is `PAST_DUE`. The anchor is the verified event `created` timestamp. `customer.subscription.updated` with authoritative `past_due` is the ordering fallback and uses that event timestamp, so a later invoice cannot restart the window and an older invoice can tighten it. `invoice.paid` recovers only from a newer `ACTIVE` snapshot. A stale paid event leaves grace in place. `customer.subscription.deleted` during open grace stays `GRACE_PERIOD` and entitled until `graceEndsAt`. `checkout.session.expired` expires a still-`PENDING` row that has no entitled provider subscription, does not expire `TRIALING` or `ACTIVE`, and does not duplicate the end audit on replay. When the expired session has no provider subscription id and the local row already stores a provider subscription, the receipt is completed `PROCESSED` and the stored relationship is left unchanged (`0de203a`).
 
 `PROCESSED` and `IGNORED` receipts are not reapplied. `RECEIVED` and `FAILED` receipts are retryable. No webhook payload column was added.
 
@@ -3152,6 +3152,210 @@ Local `./gradlew check` from `backend/uap-server`, with `JAVA_TOOL_OPTIONS="-Dsp
 | Documentation / Release | **PASS** on the locked contract. This section is the runtime evidence |
 
 Slice G is **not** started. V4 is **not** complete.
+
+---
+
+## 46. V4 Slice F — Stripe Sandbox / Test Clock Certification
+
+**Status:** **STRIPE SANDBOX CERTIFIED**. Not **PRODUCTION VERIFIED**. Not **COMMERCIALLY ACTIVE**. Not billing live.
+
+Certification date: **2026-09-27** (America/New_York). Provider event timestamps fall on **2026-09-28** UTC. Runtime certified: `ee666bcbb8673ef556104cad2a885cbbc5ff9e59`, plus the checkout-expiry correction `0de203a8b37c002200dee63365b2c981df04342c`. Pre-cert docs tip: `c469f1ee7c6731bde8e0b897ee2970ac135a245a`. `main` remains `5cddf39a2e591b2dd478533f6557d40fbb312aa6`. Schema stays Flyway **V36**. No **V37**. `billing_provider_events` still has no payload column.
+
+This section does not authorize Slice G, production Stripe, entitlement enforcement, capacity enforcement, Railway mutation, live Stripe, a `main` merge, deployment, or commercial launch. V4 is **not** complete.
+
+Stripe CLI **1.51.0**. API version **2026-08-26.dahlia**. Forwarding, with no `--live` and no `--latest`:
+
+`stripe listen --events checkout.session.completed,checkout.session.expired,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,invoice.payment_action_required --forward-to http://127.0.0.1:8080/api/v1/billing/webhooks/stripe`
+
+Signed deliveries reached `POST /api/v1/billing/webhooks/stripe`. The listener signing secret stayed process-local and was not committed. The listener was restarted once after its CLI OAuth token expired. `stripe whoami` still showed the same sandbox account. The replacement secret was not committed.
+
+### 46.1 Account boundary
+
+| Item | Value |
+| --- | --- |
+| Account | Athlete Readiness sandbox `acct_1UHZjZD418eILvNQ` |
+| Mode | test |
+| `livemode` | **false** on the account, both Test Clocks, every disposable Customer and Subscription, and every certification event |
+| Live Stripe | **Untouched** |
+| DEVINO LABS LLC live, DEVINO LABS LLC sandbox, and Athlete Readiness shared Test mode | **Untouched** |
+| Railway | **Untouched** |
+| Products, Prices, Portal, Stripe Tax, Revenue Recovery, Smart Retries, Dashboard webhook destinations | **Unchanged** |
+| Repository production flags | `UAP_BILLING_STRIPE_ENABLED`, `UAP_BILLING_ENTITLEMENT_ENFORCEMENT_ENABLED`, and `UAP_BILLING_ORGANIZATION_CAPACITY_ENFORCEMENT_ENABLED` remain default **false** |
+
+Local certification enabled Stripe and entitlement enforcement only in the server process. Capacity stayed false. The database was an isolated local schema, `uap_slice_f_cert`, on localhost. It was not the shared `uap` schema and not Railway. Flyway applied **V1–V36**. The schema was dropped after evidence was recorded.
+
+Disposable objects carried metadata `uap_certification=slice_f`, `uap_environment=sandbox`, `uap_disposable=true`, and a run id. Metadata was cleanup evidence only. Price authority stayed the Stripe Price.
+
+### 46.2 Preserved Slice E baseline
+
+Read before certification and again after cleanup. Unchanged both times. Re-read on **2026-09-28** after the clocks were already gone.
+
+| Item | Value |
+| --- | --- |
+| Customer | `cus_VIAgQcdqprYAbs` |
+| Subscription | `sub_1UHaOKD418eILvNQ2evsoO9Z` |
+| Status | `trialing` |
+| `cancel_at_period_end` | **false** |
+| Price | `price_1UHa1BD418eILvNQY5et2YSU` |
+| `trial_end` | `1791080526` |
+| `livemode` | **false** |
+
+This relationship was not attached to a Test Clock, updated, canceled, or used for Slice F.
+
+### 46.3 Recovery relationship
+
+New Test Clock **Athlete Readiness Slice F Certification** `clock_1UKSSFD418eILvNQ8fKabFeU`. Frozen start `1790555403`. `livemode=false`. New Customer `cus_VL8jBELPyK0eWI` was created on that clock. New Subscription `sub_1UKSTED418eILvNQlYI2hF4k`.
+
+| Item | Value |
+| --- | --- |
+| Run | `slice-f-20260927-recovery` |
+| Organization | `02b5c200-47c5-483b-b16e-d048b0135fd3` |
+| Internal Subscription | `3586062d-44a2-4a47-bcfa-0287f8de8efb` |
+| Price | `price_1UHa1BD418eILvNQY5et2YSU` — `ORG_BAND_25` / `MONTHLY`, 4900 USD, tax-exclusive, `automatic_tax.enabled=false` |
+| Quantity | 1 |
+| Trial end | `1791765003` = **2026-10-12T00:30:03Z** |
+| Checkout Session | `cs_test_a14pp8T6ctoLJAscGRI9F30jXbp7gKEPT1OLDXbdYXe8CC8M1hwQh7RTDV` (left incomplete, later expired) |
+
+The local row was created by the application checkout flow. The pre-created Test Clock Customer was bound in the isolated database so checkout used that Customer. The Subscription was then created on Stripe with the same organization, subscription, plan, and cadence metadata. Identity checks were not bypassed.
+
+A Stripe test payment method that fails recurring charges was attached. No real card was used. Card numbers and last4 are not recorded.
+
+Before the conversion charge, local lifecycle was `TRIALING`, `graceEndsAt` was null, `trialEndsAt` was **2026-10-12T00:30:03Z**, and there was one `BILLING_SUBSCRIPTION_ACTIVATED` for `PENDING → TRIALING`. Team create returned **201**. Identity `GET /api/v1/identity/me` returned **200**. The $0 trial invoice was not the failure.
+
+### 46.4 Trial conversion failure and grace
+
+Advancing the clock exactly to `trial_end` left the provider Subscription `active` with a draft conversion invoice `in_1UKSXVD418eILvNQ6lZJcDOu` (`amount_due` 4900, `billing_reason=subscription_cycle`, `automatically_finalizes_at` = trial end + 3600 seconds). Local followed that snapshot from `TRIALING` to `ACTIVE`. Advancing to the finalize instant produced provider `past_due` and `invoice.payment_failed`. Local then moved `ACTIVE → GRACE_PERIOD`. That order is the sandbox sequence. It is not a direct `TRIALING → GRACE_PERIOD` transition. The runtime applied the authoritative snapshot. Direct `TRIALING → GRACE_PERIOD` remains a CI cell.
+
+Qualifying events, both `created` **1790555813** (wall clock, not frozen time), `livemode=false`:
+
+| Event | Id |
+| --- | --- |
+| `customer.subscription.updated` (`past_due`) | `evt_1UKSYrD418eILvNQ6FuUTxPQ` |
+| `invoice.payment_failed` | `evt_1UKSYrD418eILvNQQC8OqVue` |
+
+Provider collection state was `past_due`, mapped to `PAST_DUE`. Local lifecycle stayed `GRACE_PERIOD`. Those states were not treated as the same.
+
+| Local field | Value |
+| --- | --- |
+| Lifecycle | `GRACE_PERIOD` |
+| `trialEndsAt` | **2026-10-12T00:30:03Z** (unchanged) |
+| `graceEndsAt` | **2026-10-05T00:36:53Z** = event `created` 1790555813 + 7 calendar days |
+| Plan / cadence | `ORG_BAND_25` / `MONTHLY` |
+| Entitlement during grace | Team create **201** |
+| `BILLING_GRACE_STARTED` | exactly one, metadata `{}` |
+| `BILLING_PAYMENT_RECOVERED` | none |
+| `BILLING_SUBSCRIPTION_ENDED` | none |
+
+Same provider Subscription, Customer, and Price throughout.
+
+Replay of `evt_1UKSYrD418eILvNQQC8OqVue` returned HTTP **200**. One inbox row for that event id, status `PROCESSED`. No second grace transition. No second `BILLING_GRACE_STARTED`. `graceEndsAt` unchanged.
+
+A later Test Clock advance produced a second `invoice.payment_failed` on the same invoice, `attempt_count` 2, provider still `past_due`: `evt_1UKSb2D418eILvNQ4DB11jer`, `created` **1790555948**. The listener missed the live push. Resend of that same event id returned HTTP **200**, one `PROCESSED` row. `graceEndsAt` stayed **2026-10-05T00:36:53Z**. Still one `BILLING_GRACE_STARTED`. A further retry was scheduled and was not waited out. Smart Retries were not changed.
+
+### 46.5 Same-subscription recovery
+
+Before `graceEndsAt`, a succeeding Stripe test payment method was attached and set as the Customer and Subscription default. `stripe invoices pay` on `in_1UKSXVD418eILvNQ6lZJcDOu` returned `paid`, `amount_paid` 4900, `attempt_count` 2, `automatic_tax.enabled=false`. No second Subscription was created.
+
+Provider Subscription `sub_1UKSTED418eILvNQlYI2hF4k` returned to `active`. Same Customer. Same Price. `trial_end` unchanged. Local moved `GRACE_PERIOD → ACTIVE`. `graceEndsAt` became null. `currentPeriodEndsAt` was **2026-11-12T00:30:03Z**. Plan stayed `ORG_BAND_25` / `MONTHLY`. Team create returned **201**.
+
+Recovery events, both `created` **1790557994**, `livemode=false`:
+
+| Event | Id |
+| --- | --- |
+| `invoice.paid` | `evt_1UKT83D418eILvNQGkHziy5p` |
+| `customer.subscription.updated` (`active`) | `evt_1UKT83D418eILvNQWrub68ku` |
+
+Exactly one `BILLING_PAYMENT_RECOVERED` with metadata `{}`. No second `BILLING_SUBSCRIPTION_ACTIVATED`. No new trial. No new Checkout. One local subscription row.
+
+Replay of `evt_1UKT83D418eILvNQGkHziy5p` returned HTTP **200**. Still one `PROCESSED` inbox row. Still one recovery audit. Lifecycle stayed `ACTIVE`.
+
+### 46.6 Expiry relationship
+
+A second disposable clock, Customer, and Subscription were used so recovery evidence was not destroyed.
+
+| Item | Value |
+| --- | --- |
+| Test Clock | `clock_1UKUZ6D418eILvNQxHd4VCIV` |
+| Customer | `cus_VLAuDOIGahzCHm` |
+| Stripe Subscription | `sub_1UKUZHD418eILvNQU2fuz3FG` |
+| Organization | `c484d464-ce46-4968-9ff9-065d51621690` |
+| Internal Subscription | `ce75b520-9bae-4249-ab7e-3e3466070e3e` |
+| Price | `price_1UHa1BD418eILvNQY5et2YSU` |
+| Trial end | `1791773114` = **2026-10-12T02:45:14Z** |
+| Checkout Session | `cs_test_a1SMoqCo2Mg3sIu5MOiT6jR2WrfKaMnENuRXv8vnnzT2ZIhiZJmCTi6vaL` |
+
+The payment method was not repaired. Provider status became `past_due`.
+
+| Event | Id | `created` |
+| --- | --- | --- |
+| `customer.subscription.updated` (`active`) | `evt_1UKUZUD418eILvNQrVFBih8s` | 1790563540 |
+| `invoice.payment_failed` | `evt_1UKUZbD418eILvNQ1QWyi7cu` | 1790563547 |
+| `customer.subscription.updated` (`past_due`) | `evt_1UKUZbD418eILvNQoCifZ4F0` | 1790563547 |
+
+Local: one activation to `TRIALING`, then synchronized `ACTIVE`, then `GRACE_PERIOD` with one `BILLING_GRACE_STARTED` `{}`. `graceEndsAt` **2026-10-05T02:45:47Z** = 1790563547 + 7 days. `trialEndsAt` stayed **2026-10-12T02:45:14Z**.
+
+Stripe event `created` is wall-clock time, not Test Clock `frozen_time`. The JVM clock was not automatically that instant. A process-only `Clock` bean, enabled by `UAP_CERTIFICATION_AS_OF`, evaluated the real grace deadline. That class was deleted before `0de203a` and is not in the tree. Team `createdAt` matched the pinned instant. Error-response timestamps stayed wall clock.
+
+| Evaluation instant | Worker | Team create | Identity `GET /me` |
+| --- | --- | --- | --- |
+| **2026-10-05T02:45:46Z** (one second before) | `dueGrace=0` | **201** | **200** |
+| **2026-10-05T02:45:47Z** (`graceEndsAt`) | `dueGrace=1` | **402** `COMMERCIAL_ENTITLEMENT_REQUIRED` | **200** |
+| **2026-10-05T02:45:48Z** (one second after) | `dueGrace=0` | **402** | **200** |
+
+At the deadline the worker refetched the still-delinquent Subscription and terminated that same Subscription. Idempotency key shape used by the runtime: `athlete-readiness:grace-expire:ce75b520-9bae-4249-ab7e-3e3466070e3e:1791168347000`. Provider status became `canceled`. Same Subscription id, Customer, and Price. One `customer.subscription.deleted` `evt_1UKUcZD418eILvNQy9sjXJpk`. Local lifecycle `EXPIRED`. One `BILLING_SUBSCRIPTION_ENDED` with metadata `{"reason":"NONPAYMENT"}`. `trial_ends_at` remained the original trial end. The following second did not cancel again. The recovery Subscription stayed `active`. Billing GET after `EXPIRED` returned **404** `ORGANIZATION_NOT_FOUND` because `currentStatus` hides `EXPIRED`. That is the locked owner read model.
+
+The provider did not become terminal before `graceEndsAt`. Revenue Recovery was not changed to force that. Early provider terminal remains **CI-only**. Exceptional `unpaid` or `paused` with no grace was not produced. It remains **CI-only**.
+
+### 46.7 Checkout session expiry
+
+Abandoned checkout, no entitled provider Subscription: Organization `1d6d6b68-c0eb-432c-a442-ce0c2e44aca6`, internal Subscription `5eab54bb-2da0-449e-93b2-9c6bbf956ea6`, session `cs_test_a1iNJzAWMNQjprro8Iq1jcMuBkNYNACexxZnTEMYoXrqbFPPWDqqEcYSZg`, `livemode=false`. Event `evt_1UKUUPD418eILvNQXew37xTZ` was `PROCESSED`. Local `PENDING → EXPIRED`. One `BILLING_SUBSCRIPTION_ENDED` with metadata `{}`. App-created Customer `cus_VLAqcGlM8MTLOZ` was deleted at cleanup. It was not on a Test Clock.
+
+The unused recovery Checkout Session expired while that row already had a provider Subscription. First delivery of `evt_1UKUULD418eILvNQfrf8TQhP` returned HTTP **400** because the adapter rejected a blank Stripe subscription id. That was a runtime defect. Certification stopped. `OrganizationWebhookService` now completes that receipt as `PROCESSED` and leaves the stored provider relationship unchanged. Focused `OrganizationWebhookServiceTests` passed. The fix is `0de203a`. GitHub Verify [36371428969](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36371428969) on that SHA: Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, and Sonar **success**. Redelivery of the same event returned HTTP **200**, `PROCESSED`. The recovery row stayed `ACTIVE` on `sub_1UKSTED418eILvNQlYI2hF4k`. No additional nonpayment audit.
+
+### 46.8 Inbox, price, and cells
+
+Each applied certification event has one `billing_provider_events` row for provider plus event id. Successful applications are `PROCESSED`. Replays did not reapply. No payload was stored.
+
+Price on both provider snapshots remained `price_1UHa1BD418eILvNQY5et2YSU`. Local plan stayed `ORG_BAND_25` / `MONTHLY`. Metadata was not intentionally corrupted.
+
+**SANDBOX VERIFIED**
+
+- Trial-conversion charge failure ends in `GRACE_PERIOD`, original `trialEndsAt`, not local `PAST_DUE`, while the provider is `past_due`
+- `ACTIVE` plus `invoice.payment_failed` establishes grace; `graceEndsAt` is the first qualifying event `created` plus 7 days
+- Same-event replay does not start a second grace
+- A later real `invoice.payment_failed` does not move `graceEndsAt`
+- Same-subscription recovery to `active` / `ACTIVE`, one `BILLING_PAYMENT_RECOVERED`, no second activation
+- Recovery event replay
+- Exclusive grace boundary: entitled one second before, not entitled at `graceEndsAt`, not entitled after; identity GET stays **200**
+- Worker terminal expiry of the same Subscription, one nonpayment end audit, no second cancel
+- Abandoned `checkout.session.expired`: `PENDING → EXPIRED`
+- Entitled-row `checkout.session.expired` with no session subscription: `PROCESSED` no-op after `0de203a`
+
+**CI-ONLY**
+
+- Direct `TRIALING → GRACE_PERIOD` without an intervening provider `active`. Sandbox order was `TRIALING → ACTIVE → GRACE_PERIOD`
+- Early provider terminal before `graceEndsAt`
+- Exceptional `unpaid` / `paused` → `PAST_DUE` with no grace
+- Older-failure deadline tighten, stale paid invoice, deleted-then-older-invoice, provider outage at the deadline, checkout during open grace, voluntary cancel, and concurrent worker races
+
+### 46.9 Cleanup and reviews
+
+Deleted Test Clocks `clock_1UKSSFD418eILvNQ8fKabFeU` and `clock_1UKUZ6D418eILvNQxHd4VCIV`. Later retrieve returns `resource_missing` for both. Deleted leftover Customer `cus_VLAqcGlM8MTLOZ`. Did not delete `cus_VIAgQcdqprYAbs`, `sub_1UHaOKD418eILvNQ2evsoO9Z`, or any Product or Price. Dropped local schema `uap_slice_f_cert`. Stopped the local server and `stripe listen`. No secrets, webhook secrets, card data, PaymentIntent client secrets, Portal URLs, or OAuth tokens are recorded here.
+
+| Review | Verdict |
+| --- | --- |
+| Lead / Architect | **PASS** |
+| Backend | **PASS** |
+| External Integration / Stripe | **PASS**. Sandbox account only. `livemode=false`. Same Subscription through failure, recovery, and termination. No Revenue Recovery change. Slice E unchanged. Clocks deleted |
+| QA / Test Automation | **PASS**. Cells classified in §46.8 |
+| Security / Code Quality | **PASS**. No secrets recorded. The checkout-expiry fix does not weaken identity checks. Production flags stay default-off |
+| DevOps / CI-CD | **PASS**. No Railway, deploy, or `main` merge. Worker ran only on the local process |
+| Web | **PASS**. No web change. **402** and free identity match the existing owner surfaces |
+| Athlete Intelligence / Data | **PASS**. No State Engine, check-in, recommendation, training, consent, or athletic membership write |
+| Documentation / Release | **PASS**. This section may say **STRIPE SANDBOX CERTIFIED** and must not say production verified, commercially active, or billing live |
+
+Slice G is **not** started. V4 is **not** complete.
+
 
 
 
