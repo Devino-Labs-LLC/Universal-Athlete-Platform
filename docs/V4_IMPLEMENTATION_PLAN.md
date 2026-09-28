@@ -3441,6 +3441,40 @@ Live Stripe was not queried or mutated. No `stripe --live` command was run. No p
 
 Sandbox certification in **§46** stays the provider evidence. This section is the dormant production deployment. Payment recovery is not live. Commercial billing is **off**. Entitlement enforcement is **off**. Capacity enforcement is **off**. Slice G is **not** started. V4 is **not** complete.
 
+---
+
+## 48. V4 remaining program — G → H → I execution ledger
+
+**Status:** **IN PROGRESS**. Authorized as one continuous program. Commercial controls stay **off**. This section is the running ledger. It does not activate billing.
+
+Starting refs: `main` = `develop` = `8ba443de247e62b3e985280e8f4a02632b399bfe`. Schema **V36**. Slices A–F are **PRODUCTION VERIFIED**. Individual product semantics stay **§7–§9** and **§22**. `INDIVIDUAL_PREMIUM` is the Account capability. Existing athlete product edges stay free. Premium does not add a new athlete paywall in this program. Organization gates stay **§34**.
+
+Provider Price and store product identifiers stay server configuration. Missing individual catalog ids fail fast only when that provider is enabled. Live catalog creation, live charging, Stripe Tax, App Store submission, and Play production publication are outside this program.
+
+### 48.1 Phase matrix
+
+| Phase | Purpose | Backend | Web | Mobile | Provider | Persistence | Security | Tests | External dependency | Done when |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **G1** | Account Stripe purchase | Individual checkout, no trial, server Price allowlist, webhook sync, cancel/manage, duplicate block | Athlete billing read/checkout when Stripe is on | None | Stripe sandbox adapter reuse | Account customer row if required. No new lifecycle enum | Actor is the authenticated Account. No client Price | Checkout, replay, duplicate, no trial, webhook identity | Stripe test Price ids only at certification | Focused billing tests green |
+| **G2** | Apple validation | Server verifier port, notification inbox, map to canonical lifecycle, ownership bind | Premium origin label only | Restore calls server | App Store Server API behind config. Default off | Reuse `billing_subscriptions.provider=APPLE_APP_STORE` and event inbox | Fake token and foreign Account fail closed | Validator unit tests with fixtures. No live call | Apple credentials for sandbox cert only | CI covers fake/foreign/replay. Sandbox marked blocked if credentials are absent |
+| **G3** | Google validation | Play Developer API port, RTDN, same lifecycle mapping | Same | Restore calls server | Default off | `provider=GOOGLE_PLAY` | Same as G2 | Same shape as G2 | Play credentials for sandbox cert only | Same classification rule as G2 |
+| **G4** | Switch and union | One entitled individual provider. Replacement only after paid-through. Org and Premium union | Management routes to origin | Store management route | No credential copy | No second open individual row | T19 | Switch, overlap rejection, union | None | ADR-045 tests green |
+| **H1** | Commercial UX | Read models already returned by G | Public pricing, athlete subscription, org billing labels | Premium, purchase, restore, manage | None new | None | No secrets in bundles | Web and mobile UX tests | None | State matrix covered |
+| **I1** | RC | T12–T22 evidence, config fail-fast, audit review | Regression | Regression | No live mutation | Migration review only | Threat matrix | Full `./gradlew check`, web, mobile | Sandbox cells already classified | Verify and Sonar green. Production promotion only while flags stay false |
+
+### 48.2 Ledger
+
+| Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| G1 | Not started | — | — | — | — | — | — | — | — |
+| G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Credentials unknown until the adapter config is exercised |
+| G3 | Not started | — | — | — | — | Google sandbox not claimed | — | — | Same |
+| G4 | Not started | — | — | — | — | — | — | — | — |
+| H1 | Not started | — | — | — | — | — | — | — | — |
+| I1 | Not started | — | — | — | — | — | V36 head | — | Commercial activation remains a later launch gate |
+
+Slice G is **not** complete. Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
+
 
 
 
