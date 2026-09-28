@@ -22,11 +22,13 @@ import com.devinolabs.uap.TestcontainersConfiguration;
 import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.entitlements.CommercialCapability;
 import com.devinolabs.uap.entitlements.EntitlementPort;
+import com.devinolabs.uap.billing.application.AccountBillingCustomerRepository;
 import com.devinolabs.uap.billing.application.EntitlementQueryService;
 import com.devinolabs.uap.billing.application.OrganizationBillingCustomerRepository;
 import com.devinolabs.uap.billing.application.ProviderEventInbox;
 import com.devinolabs.uap.billing.application.ProviderEventReceipt;
 import com.devinolabs.uap.billing.application.SubscriptionRepository;
+import com.devinolabs.uap.billing.domain.AccountBillingCustomer;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;
@@ -56,6 +58,9 @@ class BillingSubscriptionPersistenceIntegrationTests {
 
 	@Autowired
 	private OrganizationBillingCustomerRepository customerRepository;
+
+	@Autowired
+	private AccountBillingCustomerRepository accountCustomerRepository;
 
 	@Autowired
 	private ProviderEventInbox providerEventInbox;
@@ -200,6 +205,23 @@ class BillingSubscriptionPersistenceIntegrationTests {
 				.isInstanceOf(DataIntegrityViolationException.class);
 		assertThatThrownBy(() -> customerRepository.save(
 				OrganizationBillingCustomer.stripe(UUID.randomUUID(), "cus_unique_org", T0)))
+				.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	@Test
+	void accountCustomerMappingIsOnePerAccountAndProviderReference() {
+		UUID accountId = UUID.randomUUID();
+		accountCustomerRepository.save(AccountBillingCustomer.stripe(accountId, "cus_unique_account", T0));
+
+		assertThat(accountCustomerRepository.findByAccountId(accountId))
+				.get()
+				.extracting(AccountBillingCustomer::providerCustomerRef)
+				.isEqualTo("cus_unique_account");
+		assertThatThrownBy(() -> accountCustomerRepository.save(
+				AccountBillingCustomer.stripe(accountId, "cus_second_account", T0)))
+				.isInstanceOf(DataIntegrityViolationException.class);
+		assertThatThrownBy(() -> accountCustomerRepository.save(
+				AccountBillingCustomer.stripe(UUID.randomUUID(), "cus_unique_account", T0)))
 				.isInstanceOf(DataIntegrityViolationException.class);
 	}
 

@@ -245,6 +245,39 @@ class SubscriptionDomainTests {
 	}
 
 	@Test
+	void individualPendingCheckoutRejectsOrganizationSubjectAndHasNoTrial() {
+		assertThatThrownBy(() -> Subscription.startPendingIndividualCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.organization(UUID.randomUUID()),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Account subject");
+
+		assertThatThrownBy(() -> Subscription.startPendingIndividualCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.account(UUID.randomUUID()),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("individual plan");
+
+		Subscription subscription = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.generate(),
+				BillingSubject.account(UUID.randomUUID()),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.ANNUAL,
+				CLOCK);
+
+		assertThat(subscription.provider()).isEqualTo(BillingProvider.STRIPE);
+		assertThat(subscription.billingCadence()).isEqualTo(BillingCadence.ANNUAL);
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.PENDING);
+		assertThat(subscription.trialEndsAt()).isNull();
+	}
+
+	@Test
 	void authoritativePriceReplacesPlanAndStaleSnapshotDoesNotRollItBack() {
 		Subscription subscription = pendingCheckout();
 		Instant trialEnd = T0.plusSeconds(14 * 24 * 60 * 60);

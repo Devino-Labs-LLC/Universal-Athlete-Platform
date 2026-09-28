@@ -14,12 +14,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.devinolabs.uap.billing.application.BillingAccountNotFoundException;
 import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingOrganizationNotFoundException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
 
 @RestControllerAdvice(basePackageClasses = {
 		OrganizationBillingController.class,
+		IndividualBillingController.class,
 		OrganizationCapacityController.class,
 		StripeWebhookController.class
 })
@@ -37,11 +39,19 @@ class BillingExceptionHandler {
 	}
 
 	@ExceptionHandler(BillingOrganizationNotFoundException.class)
-	ResponseEntity<BillingApiErrorResponse> handleNotFound(
+	ResponseEntity<BillingApiErrorResponse> handleOrganizationNotFound(
 			BillingOrganizationNotFoundException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("ORGANIZATION_NOT_FOUND", "Organization was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(BillingAccountNotFoundException.class)
+	ResponseEntity<BillingApiErrorResponse> handleAccountNotFound(
+			BillingAccountNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("ACCOUNT_NOT_FOUND", "Account billing was not found", request, List.of()));
 	}
 
 	@ExceptionHandler(BillingConflictException.class)

@@ -139,7 +139,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				null,
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThat(adapter.fetchAuthoritativeSnapshot(event).status()).isEqualTo(ProviderCommercialStatus.ACTIVE);
 	}
@@ -212,7 +213,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				"cs_test_1",
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThat(adapter.fetchAuthoritativeSnapshot(event).providerSubscriptionRef()).isEqualTo("sub_test_1");
 	}
@@ -269,7 +271,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				null,
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThat(adapter.fetchAuthoritativeSnapshot(event)).satisfies(snapshot -> {
 			assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
@@ -293,7 +296,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				null,
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThat(adapter.fetchAuthoritativeSnapshot(event)).satisfies(snapshot -> {
 			assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.ORG_BAND_75);
@@ -316,7 +320,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				null,
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThatThrownBy(() -> adapter.fetchAuthoritativeSnapshot(event))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -338,7 +343,8 @@ class StripeOrganizationBillingAdapterClientTests {
 				null,
 				"sub_test_1",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 
 		assertThatThrownBy(() -> adapter.fetchAuthoritativeSnapshot(event))
 				.isInstanceOf(IllegalArgumentException.class)

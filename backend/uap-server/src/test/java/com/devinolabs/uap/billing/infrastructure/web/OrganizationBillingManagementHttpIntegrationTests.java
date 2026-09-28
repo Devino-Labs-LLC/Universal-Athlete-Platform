@@ -90,7 +90,9 @@ import com.jayway.jsonpath.JsonPath;
 		"uap.billing.stripe.prices.org-band-75-monthly=price_mgmt_75_monthly",
 		"uap.billing.stripe.prices.org-band-75-annual=price_mgmt_75_annual",
 		"uap.billing.stripe.prices.org-band-250-monthly=price_mgmt_250_monthly",
-		"uap.billing.stripe.prices.org-band-250-annual=price_mgmt_250_annual"
+		"uap.billing.stripe.prices.org-band-250-annual=price_mgmt_250_annual",
+		"uap.billing.stripe.prices.individual-premium-monthly=price_test_individual_monthly",
+		"uap.billing.stripe.prices.individual-premium-annual=price_test_individual_annual"
 })
 @AutoConfigureMockMvc
 @Import({ TestcontainersConfiguration.class, OrganizationBillingManagementHttpIntegrationTests.ProviderConfig.class })
@@ -1327,7 +1329,8 @@ class OrganizationBillingManagementHttpIntegrationTests {
 					"cs_test",
 					"sub_" + uuidField(body, "subscriptionId"),
 					uuidField(body, "organizationId"),
-					uuidField(body, "subscriptionId"));
+					uuidField(body, "subscriptionId"),
+					null);
 		}
 
 		@Override

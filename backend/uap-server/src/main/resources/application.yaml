@@ -70,3 +70,5 @@ uap:
         org-band-75-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_75_ANNUAL:}
         org-band-250-monthly: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_250_MONTHLY:}
         org-band-250-annual: ${UAP_BILLING_STRIPE_PRICE_ORG_BAND_250_ANNUAL:}
+        individual-premium-monthly: ${UAP_BILLING_STRIPE_PRICE_INDIVIDUAL_PREMIUM_MONTHLY:}
+        individual-premium-annual: ${UAP_BILLING_STRIPE_PRICE_INDIVIDUAL_PREMIUM_ANNUAL:}

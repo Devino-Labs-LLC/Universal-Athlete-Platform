@@ -55,6 +55,32 @@ class StripeOrganizationBillingAdapterTests {
 	}
 
 	@Test
+	void individualCheckoutUsesServerPriceWithoutTrial() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		SessionCreateParams params = StripeOrganizationBillingAdapter.individualCheckoutParams(
+				StripeBillingPropertiesTests.validProperties(),
+				accountId,
+				subscriptionId,
+				"cus_account",
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY);
+
+		assertThat(params.getMode()).isEqualTo(SessionCreateParams.Mode.SUBSCRIPTION);
+		assertThat(params.getCustomer()).isEqualTo("cus_account");
+		assertThat(params.getAutomaticTax()).isNull();
+		assertThat(params.getLineItems()).singleElement().satisfies(item -> {
+			assertThat(item.getPrice()).isEqualTo("price_test_individual_monthly");
+			assertThat(item.getQuantity()).isEqualTo(1L);
+		});
+		assertThat(params.getSubscriptionData().getTrialPeriodDays()).isNull();
+		assertThat(params.getMetadata())
+				.containsEntry("uap_account_id", accountId.toString())
+				.containsEntry("uap_plan_key", "INDIVIDUAL_PREMIUM")
+				.doesNotContainKey("uap_organization_id");
+	}
+
+	@Test
 	void nativeStripeStatusesMapToProviderNeutralSignals() {
 		assertThat(StripeOrganizationBillingAdapter.mapStatus("incomplete"))
 				.isEqualTo(ProviderCommercialStatus.PENDING);

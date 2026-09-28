@@ -16,9 +16,22 @@ public interface BillingAuditPort {
 			CommercialPlanKey planKey,
 			BillingCadence cadence);
 
+	void accountCheckoutInitiated(
+			UUID subscriptionId,
+			UUID accountId,
+			UUID actorAccountId,
+			CommercialPlanKey planKey,
+			BillingCadence cadence);
+
 	void subscriptionSynchronized(
 			UUID subscriptionId,
 			UUID organizationId,
+			UUID actorAccountId,
+			SubscriptionLifecycleState lifecycleState);
+
+	void accountSubscriptionSynchronized(
+			UUID subscriptionId,
+			UUID accountId,
 			UUID actorAccountId,
 			SubscriptionLifecycleState lifecycleState);
 

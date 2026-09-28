@@ -73,9 +73,10 @@ class StripeBillingPropertiesTests {
 				.isEqualTo("price_25_monthly");
 		assertThat(properties.priceId(CommercialPlanKey.ORG_BAND_250, BillingCadence.ANNUAL))
 				.isEqualTo("price_250_annual");
-		assertThatThrownBy(() -> properties.priceId(
-				CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY))
-				.isInstanceOf(IllegalArgumentException.class);
+		assertThat(properties.priceId(CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY))
+				.isEqualTo("price_test_individual_monthly");
+		assertThat(properties.priceId(CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.ANNUAL))
+				.isEqualTo("price_test_individual_annual");
 	}
 
 	@Test
@@ -135,6 +136,8 @@ class StripeBillingPropertiesTests {
 		prices.setOrgBand75Annual("price_75_annual");
 		prices.setOrgBand250Monthly("price_250_monthly");
 		prices.setOrgBand250Annual("price_250_annual");
+		prices.setIndividualPremiumMonthly("price_test_individual_monthly");
+		prices.setIndividualPremiumAnnual("price_test_individual_annual");
 		return properties;
 	}
 

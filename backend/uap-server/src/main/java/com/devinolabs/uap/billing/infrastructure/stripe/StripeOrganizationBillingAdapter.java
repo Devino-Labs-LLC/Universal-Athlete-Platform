@@ -33,6 +33,7 @@ import com.stripe.param.checkout.SessionListParams;
 
 import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
+import com.devinolabs.uap.billing.application.IndividualBillingProvider;
 import com.devinolabs.uap.billing.application.InvalidWebhookSignatureException;
 import com.devinolabs.uap.billing.application.OrganizationBillingProvider;
 import com.devinolabs.uap.billing.domain.BillingCadence;
@@ -43,9 +44,10 @@ import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 
 @Component
 @ConditionalOnProperty(prefix = "uap.billing.stripe", name = "enabled", havingValue = "true")
-class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
+class StripeOrganizationBillingAdapter implements OrganizationBillingProvider, IndividualBillingProvider {
 
 	private static final String ORGANIZATION_ID = "uap_organization_id";
+	private static final String ACCOUNT_ID = "uap_account_id";
 	private static final String SUBSCRIPTION_ID = "uap_subscription_id";
 	private static final String PLAN_KEY = "uap_plan_key";
 	private static final String CADENCE = "uap_billing_cadence";
@@ -84,7 +86,7 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 	}
 
 	@Override
-	public CheckoutSession createCheckoutSession(
+	public OrganizationBillingProvider.CheckoutSession createCheckoutSession(
 			UUID organizationId,
 			UUID subscriptionId,
 			String providerCustomerRef,
@@ -97,7 +99,7 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 					params,
 					idempotencyOptions("uap_org_checkout_" + subscriptionId));
 			requireSandbox(session.getLivemode());
-			return new CheckoutSession(session.getId(), session.getUrl());
+			return new OrganizationBillingProvider.CheckoutSession(session.getId(), session.getUrl());
 		}
 		catch (StripeException ex) {
 			throw new BillingProviderUnavailableException(ex);
@@ -137,6 +139,114 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 						.build())
 				.setSubscriptionData(subscriptionData)
 				.build();
+	}
+
+	@Override
+	public String createAccountCustomer(UUID accountId) {
+		Objects.requireNonNull(accountId, "accountId must not be null");
+		CustomerCreateParams params = CustomerCreateParams.builder()
+				.setDescription("Athlete Readiness account")
+				.putMetadata(ACCOUNT_ID, accountId.toString())
+				.build();
+		try {
+			Customer customer = stripeClient.v1().customers().create(
+					params,
+					idempotencyOptions("uap_account_customer_" + accountId));
+			requireSandbox(customer.getLivemode());
+			return requireText(customer.getId(), "Stripe customer id");
+		}
+		catch (StripeException ex) {
+			throw new BillingProviderUnavailableException(ex);
+		}
+	}
+
+	@Override
+	public IndividualBillingProvider.CheckoutSession createAccountCheckoutSession(
+			UUID accountId,
+			UUID subscriptionId,
+			String providerCustomerRef,
+			CommercialPlanKey planKey,
+			BillingCadence cadence) {
+		SessionCreateParams params = individualCheckoutParams(
+				properties, accountId, subscriptionId, providerCustomerRef, planKey, cadence);
+		try {
+			Session session = stripeClient.v1().checkout().sessions().create(
+					params,
+					idempotencyOptions("uap_account_checkout_" + subscriptionId));
+			requireSandbox(session.getLivemode());
+			return new IndividualBillingProvider.CheckoutSession(session.getId(), session.getUrl());
+		}
+		catch (StripeException ex) {
+			throw new BillingProviderUnavailableException(ex);
+		}
+	}
+
+	static SessionCreateParams individualCheckoutParams(
+			StripeBillingProperties properties,
+			UUID accountId,
+			UUID subscriptionId,
+			String providerCustomerRef,
+			CommercialPlanKey planKey,
+			BillingCadence cadence) {
+		if (planKey != CommercialPlanKey.INDIVIDUAL_PREMIUM) {
+			throw new IllegalArgumentException("Individual checkout supports INDIVIDUAL_PREMIUM only");
+		}
+		String priceId = properties.priceId(planKey, cadence);
+		SessionCreateParams.SubscriptionData subscriptionData = SessionCreateParams.SubscriptionData.builder()
+				.putMetadata(ACCOUNT_ID, accountId.toString())
+				.putMetadata(SUBSCRIPTION_ID, subscriptionId.toString())
+				.putMetadata(PLAN_KEY, planKey.name())
+				.putMetadata(CADENCE, cadence.name())
+				.build();
+		return SessionCreateParams.builder()
+				.setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+				.setCustomer(providerCustomerRef)
+				.setClientReferenceId(subscriptionId.toString())
+				.setSuccessUrl(properties.getSuccessUrl())
+				.setCancelUrl(properties.getCancelUrl())
+				.setPaymentMethodCollection(SessionCreateParams.PaymentMethodCollection.ALWAYS)
+				.setIntegrationIdentifier(integrationIdentifier(subscriptionId))
+				.putMetadata(ACCOUNT_ID, accountId.toString())
+				.putMetadata(SUBSCRIPTION_ID, subscriptionId.toString())
+				.putMetadata(PLAN_KEY, planKey.name())
+				.putMetadata(CADENCE, cadence.name())
+				.addLineItem(SessionCreateParams.LineItem.builder()
+						.setPrice(priceId)
+						.setQuantity(1L)
+						.build())
+				.setSubscriptionData(subscriptionData)
+				.build();
+	}
+
+	@Override
+	public ProviderSubscriptionSnapshot fetchAccountCheckoutSubscription(
+			UUID accountId,
+			UUID subscriptionId,
+			String checkoutSessionId,
+			String providerCustomerRef,
+			CommercialPlanKey planKey,
+			BillingCadence cadence) {
+		Objects.requireNonNull(planKey, "planKey must not be null");
+		Objects.requireNonNull(cadence, "cadence must not be null");
+		try {
+			Session session = stripeClient.v1().checkout().sessions().retrieve(requireText(
+					checkoutSessionId, "checkoutSessionId"));
+			requireSandbox(session.getLivemode());
+			requireMatch(subscriptionId.toString(), session.getClientReferenceId(), "Checkout subscription");
+			requireMatch(providerCustomerRef, session.getCustomer(), "Checkout customer");
+			requireAccountIdentity(session.getMetadata(), accountId, subscriptionId);
+
+			com.stripe.model.Subscription subscription = stripeClient.v1().subscriptions().retrieve(
+					requireText(session.getSubscription(), "Stripe subscription id"));
+			requireSandbox(subscription.getLivemode());
+			requireMatch(providerCustomerRef, subscription.getCustomer(), "Subscription customer");
+			requireAccountIdentity(subscription.getMetadata(), accountId, subscriptionId);
+			SubscriptionItem item = requireSingleItem(subscription.getItems());
+			return snapshotFrom(subscription, item, Instant.now(clock));
+		}
+		catch (StripeException ex) {
+			throw new BillingProviderUnavailableException(ex);
+		}
 	}
 
 	@Override
@@ -200,10 +310,18 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 			UUID organizationId = event.organizationId() != null
 					? event.organizationId()
 					: parseUuid(metadata.get(ORGANIZATION_ID));
+			UUID accountId = event.accountId() != null
+					? event.accountId()
+					: parseUuid(metadata.get(ACCOUNT_ID));
 			UUID subscriptionId = event.subscriptionId() != null
 					? event.subscriptionId()
 					: parseUuid(metadata.get(SUBSCRIPTION_ID));
-			requireMetadataAgreesWhenPresent(metadata, organizationId, subscriptionId);
+			if (accountId != null && organizationId == null) {
+				requireAccountMetadataAgreesWhenPresent(metadata, accountId, subscriptionId);
+			}
+			else {
+				requireMetadataAgreesWhenPresent(metadata, organizationId, subscriptionId);
+			}
 			SubscriptionItem item = requireSingleItem(subscription.getItems());
 			return snapshotFrom(subscription, item, event.createdAt());
 		}
@@ -536,7 +654,8 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 				checkoutSessionId,
 				providerSubscriptionRef,
 				parseUuid(metadata.get(ORGANIZATION_ID)),
-				parseUuid(metadata.get(SUBSCRIPTION_ID)));
+				parseUuid(metadata.get(SUBSCRIPTION_ID)),
+				parseUuid(metadata.get(ACCOUNT_ID)));
 	}
 
 	private static StripeObject requireEventObject(Event event) {
@@ -694,6 +813,15 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");
 	}
 
+	private static void requireAccountIdentity(Map<String, String> metadata, UUID accountId, UUID subscriptionId) {
+		if (accountId == null || subscriptionId == null) {
+			throw new IllegalArgumentException("Account billing identity is missing");
+		}
+		Map<String, String> values = metadata == null ? Map.of() : metadata;
+		requireMatch(accountId.toString(), values.get(ACCOUNT_ID), "Account metadata");
+		requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");
+	}
+
 	/**
 	 * Webhook application follows the subscription item Price. Identity metadata is authoritative
 	 * when present and is not required for subscriptions created before those keys existed.
@@ -708,6 +836,22 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider {
 		Map<String, String> values = metadata == null ? Map.of() : metadata;
 		if (values.get(ORGANIZATION_ID) != null) {
 			requireMatch(organizationId.toString(), values.get(ORGANIZATION_ID), "Organization metadata");
+		}
+		if (values.get(SUBSCRIPTION_ID) != null) {
+			requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");
+		}
+	}
+
+	private static void requireAccountMetadataAgreesWhenPresent(
+			Map<String, String> metadata,
+			UUID accountId,
+			UUID subscriptionId) {
+		if (accountId == null || subscriptionId == null) {
+			throw new IllegalArgumentException("Account billing identity is missing");
+		}
+		Map<String, String> values = metadata == null ? Map.of() : metadata;
+		if (values.get(ACCOUNT_ID) != null) {
+			requireMatch(accountId.toString(), values.get(ACCOUNT_ID), "Account metadata");
 		}
 		if (values.get(SUBSCRIPTION_ID) != null) {
 			requireMatch(subscriptionId.toString(), values.get(SUBSCRIPTION_ID), "Subscription metadata");

@@ -20,6 +20,7 @@ import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
+import com.devinolabs.uap.entitlements.BillingSubjectType;
 import com.devinolabs.uap.organization.api.OrganizationMembershipPort;
 
 @Service
@@ -118,6 +119,9 @@ public class OrganizationWebhookService {
 			return WebhookApply.done();
 		}
 		OrganizationBillingProvider.VerifiedProviderEvent identified = identify(event);
+		if (isIndividualEvent(identified)) {
+			return applyIndividual(identified, receiptId);
+		}
 		if (identified.subscriptionId() == null || identified.organizationId() == null) {
 			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
 			return WebhookApply.done();
@@ -125,6 +129,7 @@ public class OrganizationWebhookService {
 		Subscription subscription = subscriptionRepository.findById(SubscriptionId.of(identified.subscriptionId()))
 				.orElse(null);
 		if (subscription == null
+				|| subscription.subject().type() != BillingSubjectType.ORGANIZATION
 				|| subscription.subject().subjectId() == null
 				|| !identified.organizationId().equals(subscription.subject().subjectId())
 				|| subscription.provider() != BillingProvider.STRIPE
@@ -194,6 +199,59 @@ public class OrganizationWebhookService {
 		return WebhookApply.done();
 	}
 
+	/**
+	 * Individual Premium webhooks: apply the same provider snapshot without Organization
+	 * capacity/compensation assumptions. Requires ACCOUNT subject + INDIVIDUAL_PREMIUM.
+	 */
+	private WebhookApply applyIndividual(
+			OrganizationBillingProvider.VerifiedProviderEvent identified,
+			UUID receiptId) {
+		Subscription subscription = subscriptionRepository.findById(SubscriptionId.of(identified.subscriptionId()))
+				.orElse(null);
+		if (subscription == null
+				|| subscription.subject().type() != BillingSubjectType.ACCOUNT
+				|| !identified.accountId().equals(subscription.subject().subjectId())
+				|| subscription.provider() != BillingProvider.STRIPE
+				|| subscription.planKey() != CommercialPlanKey.INDIVIDUAL_PREMIUM
+				|| providerRefConflicts(subscription, identified)) {
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.IGNORED, Instant.now(clock));
+			return WebhookApply.done();
+		}
+		if ("checkout.session.expired".equals(identified.eventType())
+				&& identified.providerSubscriptionRef() == null) {
+			if (subscription.providerSubscriptionRef() == null) {
+				return expireAbandonedIndividualCheckout(subscription, identified, receiptId);
+			}
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+			return WebhookApply.done();
+		}
+		ProviderSubscriptionSnapshot snapshot;
+		try {
+			snapshot = billingProvider.fetchAuthoritativeSnapshot(identified);
+		}
+		catch (BillingConflictException ex) {
+			if ("BILLING_PROVIDER_PRICE_REJECTED".equals(ex.code())) {
+				eventInbox.complete(receiptId, ProviderEventProcessingStatus.FAILED, Instant.now(clock));
+				return WebhookApply.done();
+			}
+			throw ex;
+		}
+		boolean changed = "checkout.session.expired".equals(identified.eventType())
+				? applyExpiredCheckout(subscription, snapshot)
+				: PaymentRecoveryApplier.apply(
+						subscription, identified.eventType(), identified.createdAt(), snapshot, clock);
+		if (changed) {
+			Subscription saved = subscriptionRepository.save(subscription);
+			auditPort.accountSubscriptionSynchronized(
+					saved.id().value(),
+					identified.accountId(),
+					null,
+					saved.lifecycleState());
+		}
+		eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+		return WebhookApply.done();
+	}
+
 	private WebhookApply expireAbandonedCheckout(
 			Subscription subscription,
 			OrganizationBillingProvider.VerifiedProviderEvent identified,
@@ -220,6 +278,25 @@ public class OrganizationWebhookService {
 		return WebhookApply.done();
 	}
 
+	private WebhookApply expireAbandonedIndividualCheckout(
+			Subscription subscription,
+			OrganizationBillingProvider.VerifiedProviderEvent identified,
+			UUID receiptId) {
+		if (subscription.lifecycleState() != SubscriptionLifecycleState.PENDING) {
+			eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+			return WebhookApply.done();
+		}
+		subscription.expire(clock);
+		Subscription saved = subscriptionRepository.save(subscription);
+		auditPort.accountSubscriptionSynchronized(
+				saved.id().value(),
+				identified.accountId(),
+				null,
+				saved.lifecycleState());
+		eventInbox.complete(receiptId, ProviderEventProcessingStatus.PROCESSED, Instant.now(clock));
+		return WebhookApply.done();
+	}
+
 	private boolean applyExpiredCheckout(Subscription subscription, ProviderSubscriptionSnapshot snapshot) {
 		if (subscription.lifecycleState() != SubscriptionLifecycleState.PENDING) {
 			return false;
@@ -232,9 +309,16 @@ public class OrganizationWebhookService {
 		return true;
 	}
 
+	private static boolean isIndividualEvent(OrganizationBillingProvider.VerifiedProviderEvent event) {
+		return event.subscriptionId() != null
+				&& event.accountId() != null
+				&& event.organizationId() == null;
+	}
+
 	private OrganizationBillingProvider.VerifiedProviderEvent identify(
 			OrganizationBillingProvider.VerifiedProviderEvent event) {
-		if (event.subscriptionId() != null && event.organizationId() != null) {
+		if (event.subscriptionId() != null
+				&& (event.organizationId() != null || event.accountId() != null)) {
 			return event;
 		}
 		if (event.providerSubscriptionRef() == null) {
@@ -246,6 +330,18 @@ public class OrganizationWebhookService {
 		if (match == null || match.subject().subjectId() == null || match.provider() != BillingProvider.STRIPE) {
 			return event;
 		}
+		if (match.subject().type() == BillingSubjectType.ACCOUNT) {
+			return new OrganizationBillingProvider.VerifiedProviderEvent(
+					event.eventId(),
+					event.eventType(),
+					event.liveMode(),
+					event.createdAt(),
+					event.checkoutSessionId(),
+					event.providerSubscriptionRef(),
+					null,
+					match.id().value(),
+					match.subject().subjectId());
+		}
 		return new OrganizationBillingProvider.VerifiedProviderEvent(
 				event.eventId(),
 				event.eventType(),
@@ -254,7 +350,8 @@ public class OrganizationWebhookService {
 				event.checkoutSessionId(),
 				event.providerSubscriptionRef(),
 				match.subject().subjectId(),
-				match.id().value());
+				match.id().value(),
+				null);
 	}
 
 	private static boolean providerRefConflicts(

@@ -169,6 +169,8 @@ public class StripeBillingProperties {
 		private String orgBand75Annual;
 		private String orgBand250Monthly;
 		private String orgBand250Annual;
+		private String individualPremiumMonthly;
+		private String individualPremiumAnnual;
 
 		public String getOrgBand25Monthly() {
 			return orgBand25Monthly;
@@ -218,10 +220,26 @@ public class StripeBillingProperties {
 			this.orgBand250Annual = value;
 		}
 
+		public String getIndividualPremiumMonthly() {
+			return individualPremiumMonthly;
+		}
+
+		public void setIndividualPremiumMonthly(String value) {
+			this.individualPremiumMonthly = value;
+		}
+
+		public String getIndividualPremiumAnnual() {
+			return individualPremiumAnnual;
+		}
+
+		public void setIndividualPremiumAnnual(String value) {
+			this.individualPremiumAnnual = value;
+		}
+
 		private void validate() {
 			Set<String> distinct = new HashSet<>(catalog().values());
-			if (distinct.size() != 6) {
-				throw new IllegalStateException("All six Stripe Organization Price IDs must be distinct");
+			if (distinct.size() != 8) {
+				throw new IllegalStateException("All eight Stripe Price IDs must be distinct");
 			}
 		}
 
@@ -230,14 +248,14 @@ public class StripeBillingProperties {
 			Objects.requireNonNull(cadence, "cadence must not be null");
 			String value = catalog().get(new CatalogSlot(planKey, cadence));
 			if (value == null) {
-				throw new IllegalArgumentException("Stripe Organization catalog does not contain " + planKey);
+				throw new IllegalArgumentException("Stripe catalog does not contain " + planKey);
 			}
 			return value;
 		}
 
 		private PricedPlan requirePlanForPrice(String providerPriceRef) {
 			if (providerPriceRef == null || providerPriceRef.isBlank()) {
-				throw new IllegalArgumentException("Provider Price is not an allow-listed Organization price");
+				throw new IllegalArgumentException("Provider Price is not an allow-listed price");
 			}
 			String normalized = providerPriceRef.trim();
 			for (Map.Entry<CatalogSlot, String> entry : catalog().entrySet()) {
@@ -245,7 +263,7 @@ public class StripeBillingProperties {
 					return new PricedPlan(entry.getKey().planKey(), entry.getKey().cadence());
 				}
 			}
-			throw new IllegalArgumentException("Provider Price is not an allow-listed Organization price");
+			throw new IllegalArgumentException("Provider Price is not an allow-listed price");
 		}
 
 		private Map<CatalogSlot, String> catalog() {
@@ -262,6 +280,10 @@ public class StripeBillingProperties {
 					orgBand250Monthly, "org-band-250-monthly");
 			put(catalog, CommercialPlanKey.ORG_BAND_250, BillingCadence.ANNUAL,
 					orgBand250Annual, "org-band-250-annual");
+			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY,
+					individualPremiumMonthly, "individual-premium-monthly");
+			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.ANNUAL,
+					individualPremiumAnnual, "individual-premium-annual");
 			return Map.copyOf(catalog);
 		}
 

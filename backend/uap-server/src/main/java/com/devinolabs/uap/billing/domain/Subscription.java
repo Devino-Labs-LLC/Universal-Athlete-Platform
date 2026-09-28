@@ -131,6 +131,43 @@ public class Subscription {
 				0L);
 	}
 
+	/**
+	 * Starts an Account Individual Premium checkout with an explicit recurring cadence.
+	 * No trial is set — Individual Premium has no trial in initial V4.
+	 */
+	public static Subscription startPendingIndividualCheckout(
+			SubscriptionId id,
+			BillingSubject subject,
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
+			Clock clock) {
+		Objects.requireNonNull(billingCadence, "billingCadence must not be null");
+		Objects.requireNonNull(clock, "Clock must not be null");
+		if (subject.type() != BillingSubjectType.ACCOUNT || !planKey.isIndividualPlan()) {
+			throw new IllegalArgumentException("Individual checkout requires an Account subject and individual plan");
+		}
+		if (planKey != CommercialPlanKey.INDIVIDUAL_PREMIUM) {
+			throw new IllegalArgumentException("Individual checkout supports INDIVIDUAL_PREMIUM only");
+		}
+		Instant now = Instant.now(clock);
+		return new Subscription(
+				id,
+				subject,
+				BillingProvider.STRIPE,
+				planKey,
+				billingCadence,
+				SubscriptionLifecycleState.PENDING,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				now,
+				now,
+				0L);
+	}
+
 	public static Subscription rehydrate(
 			SubscriptionId id,
 			BillingSubject subject,

@@ -130,7 +130,8 @@ public interface OrganizationBillingProvider {
 			String checkoutSessionId,
 			String providerSubscriptionRef,
 			UUID organizationId,
-			UUID subscriptionId) {
+			UUID subscriptionId,
+			UUID accountId) {
 
 		public VerifiedProviderEvent {
 			eventId = requireText(eventId, "eventId");

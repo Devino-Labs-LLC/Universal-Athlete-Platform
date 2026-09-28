@@ -62,7 +62,9 @@ import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 		"uap.billing.stripe.prices.org-band-75-monthly=price_http_75_monthly",
 		"uap.billing.stripe.prices.org-band-75-annual=price_http_75_annual",
 		"uap.billing.stripe.prices.org-band-250-monthly=price_http_250_monthly",
-		"uap.billing.stripe.prices.org-band-250-annual=price_http_250_annual"
+		"uap.billing.stripe.prices.org-band-250-annual=price_http_250_annual",
+		"uap.billing.stripe.prices.individual-premium-monthly=price_test_individual_monthly",
+		"uap.billing.stripe.prices.individual-premium-annual=price_test_individual_annual"
 })
 @AutoConfigureMockMvc
 @Import({ TestcontainersConfiguration.class, OrganizationBillingHttpIntegrationTests.ProviderConfig.class })
@@ -384,7 +386,8 @@ class OrganizationBillingHttpIntegrationTests {
 					"cs_test_" + subscriptionId,
 					"sub_test_" + subscriptionId,
 					organizationId,
-					subscriptionId);
+					subscriptionId,
+					null);
 		}
 
 		@Override

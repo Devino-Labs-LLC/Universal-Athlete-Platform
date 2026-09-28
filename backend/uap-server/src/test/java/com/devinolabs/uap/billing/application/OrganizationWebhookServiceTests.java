@@ -77,6 +77,58 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void individualPremiumWebhookAppliesSnapshotWithoutOrganizationAssumptions() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_individual",
+				"checkout.session.completed",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(
+				new OrganizationBillingProvider.VerifiedProviderEvent(
+						"evt_individual",
+						"checkout.session.completed",
+						false,
+						NOW.plusSeconds(5),
+						"cs_individual",
+						"sub_individual",
+						null,
+						subscriptionId,
+						accountId));
+		when(eventInbox.tryBegin(any(), eq("evt_individual"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(billingProvider.fetchAuthoritativeSnapshot(any())).thenReturn(new ProviderSubscriptionSnapshot(
+				"cus_individual",
+				"sub_individual",
+				ProviderCommercialStatus.ACTIVE,
+				false,
+				null,
+				NOW.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				NOW.plusSeconds(5)));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		assertThat(pending.trialEndsAt()).isNull();
+		verify(auditPort).accountSubscriptionSynchronized(
+				subscriptionId, accountId, null, SubscriptionLifecycleState.ACTIVE);
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+	}
+
+	@Test
 	void invalidSignatureNeverTouchesInboxOrSubscriptions() {
 		when(billingProvider.verifyWebhook(any(), any())).thenThrow(new InvalidWebhookSignatureException());
 
@@ -200,6 +252,7 @@ class OrganizationWebhookServiceTests {
 				null,
 				"sub_test",
 				null,
+				null,
 				null));
 		when(eventInbox.tryBegin(any(), eq("evt_meta"), any(), any())).thenReturn(Optional.of(receipt));
 		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(BillingProvider.STRIPE, "sub_test"))
@@ -233,6 +286,7 @@ class OrganizationWebhookServiceTests {
 				NOW.plusSeconds(5),
 				null,
 				"sub_missing",
+				null,
 				null,
 				null));
 		when(eventInbox.tryBegin(any(), eq("evt_unknown_ref"), any(), any())).thenReturn(Optional.of(receipt));
@@ -273,7 +327,8 @@ class OrganizationWebhookServiceTests {
 				null,
 				"sub_other",
 				organizationId,
-				subscriptionId));
+				subscriptionId,
+				null));
 		when(eventInbox.tryBegin(any(), eq("evt_mismatch"), any(), any())).thenReturn(Optional.of(receipt));
 		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(bound));
 
@@ -304,7 +359,8 @@ class OrganizationWebhookServiceTests {
 				"cs_live",
 				"sub_live",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 		when(billingProvider.verifyWebhook(any(), any())).thenReturn(live);
 		when(eventInbox.tryBegin(any(), eq("evt_live"), any(), any())).thenReturn(Optional.of(receipt));
 
@@ -556,7 +612,8 @@ class OrganizationWebhookServiceTests {
 		trialing.beginOrganizationTrial(CLOCK);
 		OrganizationBillingProvider.VerifiedProviderEvent expired = new OrganizationBillingProvider.VerifiedProviderEvent(
 				"evt_trial_expired", "checkout.session.expired", false, NOW.plusSeconds(6), "cs_trial", null,
-				trialing.subject().subjectId(), trialing.id().value());
+				trialing.subject().subjectId(), trialing.id().value(),
+				null);
 		when(billingProvider.verifyWebhook(any(), any())).thenReturn(expired);
 		when(eventInbox.tryBegin(any(), eq("evt_trial_expired"), any(), any())).thenReturn(Optional.of(new ProviderEventReceipt(
 				UUID.randomUUID(), BillingProvider.STRIPE, "evt_trial_expired", "checkout.session.expired", NOW, null,
@@ -581,7 +638,8 @@ class OrganizationWebhookServiceTests {
 				"cs_unused",
 				null,
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 		ProviderEventReceipt receipt = new ProviderEventReceipt(
 				UUID.randomUUID(),
 				BillingProvider.STRIPE,
@@ -620,7 +678,8 @@ class OrganizationWebhookServiceTests {
 				"cs_expired",
 				null,
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 		when(billingProvider.verifyWebhook(any(), any())).thenReturn(expired);
 		when(eventInbox.tryBegin(any(), eq("evt_expired"), any(), any())).thenReturn(Optional.of(new ProviderEventReceipt(
 				UUID.randomUUID(), BillingProvider.STRIPE, "evt_expired", "checkout.session.expired", NOW, null,
@@ -695,7 +754,8 @@ class OrganizationWebhookServiceTests {
 				"cs_" + eventId,
 				"sub_test",
 				organizationId,
-				subscriptionId);
+				subscriptionId,
+				null);
 	}
 
 	private static ProviderSubscriptionSnapshot snapshot(ProviderCommercialStatus status, Instant asOf) {

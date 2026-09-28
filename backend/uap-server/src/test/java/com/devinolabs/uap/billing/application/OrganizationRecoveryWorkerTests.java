@@ -640,5 +640,22 @@ class OrganizationRecoveryWorkerTests {
 		@Override
 		public void graceStarted(UUID subscriptionId, UUID organizationId) {
 		}
+
+		@Override
+		public void accountCheckoutInitiated(
+				UUID subscriptionId,
+				UUID accountId,
+				UUID actorAccountId,
+				CommercialPlanKey planKey,
+				BillingCadence cadence) {
+		}
+
+		@Override
+		public void accountSubscriptionSynchronized(
+				UUID subscriptionId,
+				UUID accountId,
+				UUID actorAccountId,
+				SubscriptionLifecycleState lifecycleState) {
+		}
 	}
 }

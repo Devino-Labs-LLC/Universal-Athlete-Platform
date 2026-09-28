@@ -33,6 +33,23 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_CHECKOUT_INITIATED",
 				subscriptionId,
 				organizationId,
+				null,
+				actorAccountId,
+				"{\"planKey\":\"" + planKey.name() + "\",\"cadence\":\"" + cadence.name() + "\"}");
+	}
+
+	@Override
+	public void accountCheckoutInitiated(
+			UUID subscriptionId,
+			UUID accountId,
+			UUID actorAccountId,
+			CommercialPlanKey planKey,
+			BillingCadence cadence) {
+		append(
+				"BILLING_CHECKOUT_INITIATED",
+				subscriptionId,
+				null,
+				accountId,
 				actorAccountId,
 				"{\"planKey\":\"" + planKey.name() + "\",\"cadence\":\"" + cadence.name() + "\"}");
 	}
@@ -47,6 +64,22 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_SUBSCRIPTION_SYNCHRONIZED",
 				subscriptionId,
 				organizationId,
+				null,
+				actorAccountId,
+				"{\"lifecycleState\":\"" + lifecycleState.name() + "\"}");
+	}
+
+	@Override
+	public void accountSubscriptionSynchronized(
+			UUID subscriptionId,
+			UUID accountId,
+			UUID actorAccountId,
+			SubscriptionLifecycleState lifecycleState) {
+		append(
+				"BILLING_SUBSCRIPTION_SYNCHRONIZED",
+				subscriptionId,
+				null,
+				accountId,
 				actorAccountId,
 				"{\"lifecycleState\":\"" + lifecycleState.name() + "\"}");
 	}
@@ -60,6 +93,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_SUBSCRIPTION_ACTIVATED",
 				subscriptionId,
 				organizationId,
+				null,
 				null,
 				"{\"lifecycleState\":\"" + lifecycleState.name() + "\"}");
 	}
@@ -76,6 +110,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_PLAN_CHANGED",
 				subscriptionId,
 				organizationId,
+				null,
 				actorAccountId,
 				"{\"fromPlan\":\"" + fromPlan.name() + "\",\"toPlan\":\"" + toPlan.name()
 						+ "\",\"cadence\":\"" + cadence.name() + "\"}");
@@ -87,6 +122,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_CANCEL_REQUESTED",
 				subscriptionId,
 				organizationId,
+				null,
 				actorAccountId,
 				"{}");
 	}
@@ -97,6 +133,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_SUBSCRIPTION_REACTIVATED",
 				subscriptionId,
 				organizationId,
+				null,
 				actorAccountId,
 				"{}");
 	}
@@ -108,6 +145,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				subscriptionId,
 				organizationId,
 				null,
+				null,
 				"{}");
 	}
 
@@ -117,6 +155,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				"BILLING_PAYMENT_RECOVERED",
 				subscriptionId,
 				organizationId,
+				null,
 				null,
 				"{}");
 	}
@@ -129,6 +168,7 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 				subscriptionId,
 				organizationId,
 				null,
+				null,
 				metadata);
 	}
 
@@ -136,12 +176,13 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 			String eventType,
 			UUID subscriptionId,
 			UUID organizationId,
+			UUID subjectAccountId,
 			UUID actorAccountId,
 			String metadataJson) {
 		auditWriter.append(SecurityAuditRecord.of(
 				eventType,
 				actorAccountId,
-				null,
+				subjectAccountId,
 				null,
 				organizationId,
 				null,
