@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Alert, Linking, Platform } from 'react-native';
 
 import { ThemeProvider } from '@/src/app/theme/ThemeProvider';
@@ -33,7 +33,7 @@ const activeStripe = {
 };
 
 function renderScreen() {
-  render(
+  return render(
     <ThemeProvider>
       <PremiumBillingScreen />
     </ThemeProvider>,
@@ -70,17 +70,17 @@ describe('PremiumBillingScreen', () => {
     jest.restoreAllMocks();
   });
 
-  it('shows locked pricing summary when no subscription', () => {
-    renderScreen();
+  it('shows locked pricing summary when no subscription', async () => {
+    const { getByText, getByTestId } = await renderScreen();
 
-    expect(screen.getByTestId('premium-billing-screen')).toBeTruthy();
-    expect(screen.getByText(/\$9\.99/)).toBeTruthy();
-    expect(screen.getByText(/\$99\.99/)).toBeTruthy();
-    expect(screen.getByText(/No active Premium/i)).toBeTruthy();
-    expect(screen.getByTestId('premium-restore')).toBeTruthy();
+    expect(getByTestId('premium-billing-screen')).toBeTruthy();
+    expect(getByText(/\$9\.99/)).toBeTruthy();
+    expect(getByText(/\$99\.99/)).toBeTruthy();
+    expect(getByText(/No active Premium/i)).toBeTruthy();
+    expect(getByTestId('premium-restore')).toBeTruthy();
   });
 
-  it('shows Stripe origin without store manage link', () => {
+  it('shows Stripe origin without store manage link', async () => {
     useAccountBillingStatus.mockReturnValue({
       data: activeStripe,
       isLoading: false,
@@ -90,12 +90,12 @@ describe('PremiumBillingScreen', () => {
       refetch: mockRefetch,
     });
 
-    renderScreen();
+    const { getByText, queryByTestId } = await renderScreen();
 
-    expect(screen.getByText('Stripe')).toBeTruthy();
-    expect(screen.getByText(/Your Premium subscription is active/i)).toBeTruthy();
-    expect(screen.getByText(/purchased on the web \(Stripe\)/i)).toBeTruthy();
-    expect(screen.queryByTestId('premium-manage-store')).toBeNull();
+    expect(getByText('Stripe')).toBeTruthy();
+    expect(getByText(/Your Premium subscription is active/i)).toBeTruthy();
+    expect(getByText(/purchased on the web \(Stripe\)/i)).toBeTruthy();
+    expect(queryByTestId('premium-manage-store')).toBeNull();
   });
 
   it('opens App Store management URL for Apple origin', async () => {
@@ -112,10 +112,10 @@ describe('PremiumBillingScreen', () => {
       refetch: mockRefetch,
     });
 
-    renderScreen();
+    const { getByText, getByTestId } = await renderScreen();
 
-    expect(screen.getByText('App Store')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('premium-manage-store'));
+    expect(getByText('App Store')).toBeTruthy();
+    fireEvent.press(getByTestId('premium-manage-store'));
 
     await waitFor(() => {
       expect(Linking.openURL).toHaveBeenCalledWith(
@@ -139,8 +139,8 @@ describe('PremiumBillingScreen', () => {
       refetch: mockRefetch,
     });
 
-    renderScreen();
-    fireEvent.press(screen.getByTestId('premium-manage-store'));
+    const { getByTestId } = await renderScreen();
+    fireEvent.press(getByTestId('premium-manage-store'));
 
     await waitFor(() => {
       expect(Linking.openURL).toHaveBeenCalledWith(
@@ -149,7 +149,7 @@ describe('PremiumBillingScreen', () => {
     });
   });
 
-  it('shows grace copy for store-origin grace period', () => {
+  it('shows grace copy for store-origin grace period', async () => {
     useAccountBillingStatus.mockReturnValue({
       data: {
         ...activeStripe,
@@ -165,16 +165,16 @@ describe('PremiumBillingScreen', () => {
       refetch: mockRefetch,
     });
 
-    renderScreen();
+    const { getByText, getByTestId } = await renderScreen();
 
-    expect(screen.getByText(/Payment needs attention/i)).toBeTruthy();
-    expect(screen.getByText(/Access continues until/i)).toBeTruthy();
-    expect(screen.getByTestId('premium-manage-store')).toBeTruthy();
+    expect(getByText(/Payment needs attention/i)).toBeTruthy();
+    expect(getByText(/Access continues until/i)).toBeTruthy();
+    expect(getByTestId('premium-manage-store')).toBeTruthy();
   });
 
-  it('invokes restore mutation from the restore entry point', () => {
-    renderScreen();
-    fireEvent.press(screen.getByTestId('premium-restore'));
+  it('invokes restore mutation from the restore entry point', async () => {
+    const { getByTestId } = await renderScreen();
+    fireEvent.press(getByTestId('premium-restore'));
     expect(mockRestoreMutate).toHaveBeenCalled();
   });
 });

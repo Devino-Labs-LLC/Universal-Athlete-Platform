@@ -360,6 +360,24 @@ describe('Account billing page', () => {
     expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
   });
 
+  it('shows past-due store origin with App Store manage link only', async () => {
+    fetchStatus.mockResolvedValue({
+      ...activeStatus,
+      provider: 'APPLE_APP_STORE',
+      managementChannel: 'APPLE_APP_STORE',
+      lifecycleState: 'PAST_DUE',
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+    expect(
+      await screen.findByText(/Manage this subscription in the store where it was purchased/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage in App Store' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Manage payment method and invoices' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('allows checkout again after an expired subscription', async () => {
     fetchStatus.mockResolvedValue({
       ...activeStatus,
