@@ -129,6 +129,277 @@ class OrganizationWebhookServiceTests {
 	}
 
 	@Test
+	void individualEventIgnoresWhenSubscriptionMissingOrAccountMismatches() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		ProviderEventReceipt missingReceipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_missing",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(individualEvent(
+				"evt_ind_missing", "customer.subscription.updated", accountId, subscriptionId, "sub_ind"));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_missing"), any(), any())).thenReturn(Optional.of(missingReceipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.empty());
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(eventInbox).complete(missingReceipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+
+		Subscription foreign = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(UUID.randomUUID()),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt mismatchReceipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_mismatch",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(individualEvent(
+				"evt_ind_mismatch", "customer.subscription.updated", accountId, subscriptionId, "sub_ind"));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_mismatch"), any(), any())).thenReturn(Optional.of(mismatchReceipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(foreign));
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(eventInbox).complete(mismatchReceipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+		verify(subscriptionRepository, never()).save(any());
+	}
+
+	@Test
+	void individualEventIgnoresOrganizationSubjectAndProviderRefConflict() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription organizationOwned = Subscription.startPendingOrganizationCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.organization(UUID.randomUUID()),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt orgReceipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_org",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(individualEvent(
+				"evt_ind_org", "customer.subscription.updated", accountId, subscriptionId, "sub_ind"));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_org"), any(), any())).thenReturn(Optional.of(orgReceipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId)))
+				.thenReturn(Optional.of(organizationOwned));
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(eventInbox).complete(orgReceipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+
+		Subscription bound = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		bound.attachProviderReferences("cus_ind", "sub_bound", CLOCK);
+		bound.activate(NOW.plusSeconds(30 * 24 * 60 * 60), CLOCK);
+		ProviderEventReceipt conflictReceipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_ref",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(individualEvent(
+				"evt_ind_ref", "customer.subscription.updated", accountId, subscriptionId, "sub_other"));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_ref"), any(), any())).thenReturn(Optional.of(conflictReceipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(bound));
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(eventInbox).complete(conflictReceipt.id(), ProviderEventProcessingStatus.IGNORED, NOW);
+	}
+
+	@Test
+	void individualIdentityResolvedFromProviderSubscriptionReference() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		pending.attachProviderReferences("cus_ind", "sub_ind_ref", CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_lookup",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(
+				new OrganizationBillingProvider.VerifiedProviderEvent(
+						"evt_ind_lookup",
+						"customer.subscription.updated",
+						false,
+						NOW.plusSeconds(20),
+						null,
+						"sub_ind_ref",
+						null,
+						null,
+						null));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_lookup"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(BillingProvider.STRIPE, "sub_ind_ref"))
+				.thenReturn(Optional.of(pending));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(billingProvider.fetchAuthoritativeSnapshot(any())).thenReturn(new ProviderSubscriptionSnapshot(
+				"cus_ind",
+				"sub_ind_ref",
+				ProviderCommercialStatus.ACTIVE,
+				false,
+				null,
+				NOW.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				NOW.plusSeconds(20)));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		verify(auditPort).accountSubscriptionSynchronized(
+				subscriptionId, accountId, null, SubscriptionLifecycleState.ACTIVE);
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+	}
+
+	@Test
+	void individualExpiredCheckoutExpiresAbandonedPendingWithoutProviderSubscription() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_expired",
+				"checkout.session.expired",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(
+				new OrganizationBillingProvider.VerifiedProviderEvent(
+						"evt_ind_expired",
+						"checkout.session.expired",
+						false,
+						NOW.plusSeconds(3),
+						"cs_ind_expired",
+						null,
+						null,
+						subscriptionId,
+						accountId));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_expired"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(pending.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(auditPort).accountSubscriptionSynchronized(
+				subscriptionId, accountId, null, SubscriptionLifecycleState.EXPIRED);
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+	}
+
+	@Test
+	void individualExpiredCheckoutLeavesBoundRelationshipWhenSessionHasNoSubscription() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription active = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		active.attachProviderReferences("cus_ind", "sub_ind_bound", CLOCK);
+		active.activate(NOW.plusSeconds(30 * 24 * 60 * 60), CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_bound_expired",
+				"checkout.session.expired",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(
+				new OrganizationBillingProvider.VerifiedProviderEvent(
+						"evt_ind_bound_expired",
+						"checkout.session.expired",
+						false,
+						NOW.plusSeconds(4),
+						"cs_unused_ind",
+						null,
+						null,
+						subscriptionId,
+						accountId));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_bound_expired"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(active));
+
+		service.handle("{}".getBytes(), "sig");
+
+		assertThat(active.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		verify(billingProvider, never()).fetchAuthoritativeSnapshot(any());
+		verify(subscriptionRepository, never()).save(any());
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.PROCESSED, NOW);
+	}
+
+	@Test
+	void individualPriceRejectionMarksReceiptFailedWithoutThrowing() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		Subscription pending = Subscription.startPendingIndividualCheckout(
+				SubscriptionId.of(subscriptionId),
+				BillingSubject.account(accountId),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+		ProviderEventReceipt receipt = new ProviderEventReceipt(
+				UUID.randomUUID(),
+				BillingProvider.STRIPE,
+				"evt_ind_price",
+				"customer.subscription.updated",
+				NOW,
+				null,
+				ProviderEventProcessingStatus.RECEIVED);
+		when(billingProvider.verifyWebhook(any(), any())).thenReturn(individualEvent(
+				"evt_ind_price", "customer.subscription.updated", accountId, subscriptionId, "sub_ind"));
+		when(eventInbox.tryBegin(any(), eq("evt_ind_price"), any(), any())).thenReturn(Optional.of(receipt));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(pending));
+		when(billingProvider.fetchAuthoritativeSnapshot(any())).thenThrow(
+				new BillingConflictException("BILLING_PROVIDER_PRICE_REJECTED", "price rejected"));
+
+		service.handle("{}".getBytes(), "sig");
+
+		verify(subscriptionRepository, never()).save(any());
+		verify(eventInbox).complete(receipt.id(), ProviderEventProcessingStatus.FAILED, NOW);
+	}
+
+	@Test
 	void invalidSignatureNeverTouchesInboxOrSubscriptions() {
 		when(billingProvider.verifyWebhook(any(), any())).thenThrow(new InvalidWebhookSignatureException());
 
@@ -756,6 +1027,24 @@ class OrganizationWebhookServiceTests {
 				organizationId,
 				subscriptionId,
 				null);
+	}
+
+	private static OrganizationBillingProvider.VerifiedProviderEvent individualEvent(
+			String eventId,
+			String type,
+			UUID accountId,
+			UUID subscriptionId,
+			String providerSubscriptionRef) {
+		return new OrganizationBillingProvider.VerifiedProviderEvent(
+				eventId,
+				type,
+				false,
+				NOW.plusSeconds(10),
+				"cs_" + eventId,
+				providerSubscriptionRef,
+				null,
+				subscriptionId,
+				accountId);
 	}
 
 	private static ProviderSubscriptionSnapshot snapshot(ProviderCommercialStatus status, Instant asOf) {

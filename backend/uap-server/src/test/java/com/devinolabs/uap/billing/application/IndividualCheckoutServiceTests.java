@@ -220,6 +220,144 @@ class IndividualCheckoutServiceTests {
 				subscriptionId, accountId, accountId, SubscriptionLifecycleState.ACTIVE);
 	}
 
+	@Test
+	void synchronizeWithoutChangeSkipsAudit() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		AccountBillingCustomer customer = customer(accountId);
+		Subscription active = pending(accountId, subscriptionId);
+		ProviderSubscriptionSnapshot snapshot = new ProviderSubscriptionSnapshot(
+				"cus_test_account",
+				"sub_test_account",
+				ProviderCommercialStatus.ACTIVE,
+				false,
+				null,
+				NOW.plusSeconds(30 * 24 * 60 * 60),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				NOW.plusSeconds(1));
+		assertThat(active.synchronizeProviderSnapshot(snapshot, CLOCK)).isTrue();
+		when(customerRepository.findByAccountIdForUpdate(accountId)).thenReturn(Optional.of(customer));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(active));
+		when(billingProvider.fetchAccountCheckoutSubscription(any(), any(), any(), any(), any(), any()))
+				.thenReturn(snapshot);
+
+		IndividualCheckoutService.SubscriptionResult result = service.synchronize(
+				accountId, subscriptionId, "cs_test_sync");
+
+		assertThat(result.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
+		verify(subscriptionRepository, never()).save(any());
+		verify(auditPort, never()).accountSubscriptionSynchronized(any(), any(), any(), any());
+	}
+
+	@Test
+	void synchronizeRejectsMissingCustomerForeignOwnershipAndMissingCadence() {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		when(customerRepository.findByAccountIdForUpdate(accountId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> service.synchronize(accountId, subscriptionId, "cs_missing"))
+				.isInstanceOf(BillingAccountNotFoundException.class);
+
+		AccountBillingCustomer customer = customer(accountId);
+		when(customerRepository.findByAccountIdForUpdate(accountId)).thenReturn(Optional.of(customer));
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> service.synchronize(accountId, subscriptionId, "cs_missing_sub"))
+				.isInstanceOf(BillingAccountNotFoundException.class);
+
+		Subscription foreign = pending(UUID.randomUUID(), subscriptionId);
+		when(subscriptionRepository.findById(SubscriptionId.of(subscriptionId))).thenReturn(Optional.of(foreign));
+
+		assertThatThrownBy(() -> service.synchronize(accountId, subscriptionId, "cs_foreign"))
+				.isInstanceOf(BillingAccountNotFoundException.class);
+	}
+
+	@Test
+	void currentStatusReturnsOpenSubscriptionAndRejectsAmbiguousOrEmpty() {
+		UUID accountId = UUID.randomUUID();
+		Subscription open = pending(accountId, UUID.randomUUID());
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(open));
+
+		IndividualCheckoutService.SubscriptionResult result = service.currentStatus(accountId);
+
+		assertThat(result.subscriptionId()).isEqualTo(open.id().value());
+		assertThat(result.lifecycleState()).isEqualTo(SubscriptionLifecycleState.PENDING);
+
+		Subscription second = pending(accountId, UUID.randomUUID());
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(open, second));
+
+		assertThatThrownBy(() -> service.currentStatus(accountId))
+				.isInstanceOfSatisfying(BillingConflictException.class,
+						ex -> assertThat(ex.code()).isEqualTo("BILLING_SUBSCRIPTION_STATE_CONFLICT"));
+
+		Subscription expired = pending(accountId, UUID.randomUUID());
+		expired.expire(CLOCK);
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(expired));
+
+		assertThatThrownBy(() -> service.currentStatus(accountId))
+				.isInstanceOf(BillingAccountNotFoundException.class);
+	}
+
+	@Test
+	void expiredSubscriptionsDoNotBlockNewCheckout() {
+		UUID accountId = UUID.randomUUID();
+		UUID requestId = UUID.randomUUID();
+		AccountBillingCustomer customer = customer(accountId);
+		Subscription expired = pending(accountId, UUID.randomUUID());
+		expired.expire(CLOCK);
+		when(customerRepository.findByAccountId(accountId)).thenReturn(Optional.of(customer));
+		when(customerRepository.findByAccountIdForUpdate(accountId)).thenReturn(Optional.of(customer));
+		when(subscriptionRepository.findById(SubscriptionId.of(requestId))).thenReturn(Optional.empty());
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(expired));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(billingProvider.createAccountCheckoutSession(any(), any(), any(), any(), any()))
+				.thenReturn(new IndividualBillingProvider.CheckoutSession(
+						"cs_after_expired", "https://checkout.stripe.test/after-expired"));
+
+		IndividualCheckoutService.CheckoutResult result = service.startCheckout(
+				accountId,
+				requestId,
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY);
+
+		assertThat(result.checkoutSessionId()).isEqualTo("cs_after_expired");
+		verify(auditPort).accountCheckoutInitiated(
+				requestId, accountId, accountId, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY);
+	}
+
+	@Test
+	void nonIndividualPlanIsRejected() {
+		assertThatThrownBy(() -> service.startCheckout(
+				UUID.randomUUID(),
+				UUID.randomUUID(),
+				CommercialPlanKey.ORG_BAND_25,
+				BillingCadence.MONTHLY))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("INDIVIDUAL_PREMIUM");
+	}
+
+	@Test
+	void missingPersistedCustomerAfterCreateFailsFast() {
+		UUID accountId = UUID.randomUUID();
+		when(customerRepository.findByAccountId(accountId)).thenReturn(Optional.empty());
+		when(billingProvider.createAccountCustomer(accountId)).thenReturn("cus_orphan");
+		when(customerRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+		when(customerRepository.findByAccountIdForUpdate(accountId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> service.startCheckout(
+				accountId,
+				UUID.randomUUID(),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("was not persisted");
+	}
+
 	private static AccountBillingCustomer customer(UUID accountId) {
 		return AccountBillingCustomer.stripe(accountId, "cus_test_account", NOW);
 	}

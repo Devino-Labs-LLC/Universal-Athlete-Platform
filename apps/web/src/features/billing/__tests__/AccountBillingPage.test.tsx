@@ -157,6 +157,100 @@ describe('Account billing page', () => {
     expect(await screen.findByText('Checkout is already in progress.')).toBeInTheDocument();
   });
 
+  it('shows pending checkout state without offering a new checkout', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-pending',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'MONTHLY',
+      lifecycleState: 'PENDING',
+      trialEndsAt: null,
+      currentPeriodEndsAt: null,
+      graceEndsAt: null,
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Checkout is already in progress/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+  });
+
+  it('shows grace-period attention copy', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-grace',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'ANNUAL',
+      lifecycleState: 'GRACE_PERIOD',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: '2026-09-20T12:00:00Z',
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Payment needs attention/i)).toBeInTheDocument();
+    expect(screen.getByText(/Access continues until/i)).toBeInTheDocument();
+  });
+
+  it('shows past-due and cancel-at-period-end attention copy', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-past-due',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'MONTHLY',
+      lifecycleState: 'PAST_DUE',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
+    });
+
+    const { unmount } = renderWithProviders(<AccountBillingPage />);
+    expect(await screen.findByText(/Billing needs attention/i)).toBeInTheDocument();
+    unmount();
+
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-cancel',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'MONTHLY',
+      lifecycleState: 'CANCEL_AT_PERIOD_END',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: null,
+    });
+    renderWithProviders(<AccountBillingPage />);
+    expect(await screen.findByText(/Renewal is scheduled to end/i)).toBeInTheDocument();
+  });
+
+  it('allows checkout again after an expired subscription', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-expired',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'MONTHLY',
+      lifecycleState: 'EXPIRED',
+      trialEndsAt: null,
+      currentPeriodEndsAt: null,
+      graceEndsAt: null,
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByRole('button', { name: 'Start Checkout' })).toBeEnabled();
+    expect(screen.getByText(/EXPIRED/i)).toBeInTheDocument();
+  });
+
+  it('surfaces non-missing load failures', async () => {
+    fetchStatus.mockRejectedValue(
+      new ApiError('temporary outage', {
+        category: 'SERVER',
+        status: 500,
+        code: 'BILLING_PROVIDER_UNAVAILABLE',
+      }),
+    );
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText('Billing is temporarily unavailable. Try again.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+  });
+
   it('syncs on success return using query params', async () => {
     renderWithProviders(<AccountBillingCheckoutSuccessPage />, {
       initialEntries: [
@@ -174,6 +268,36 @@ describe('Account billing page', () => {
     expect(await screen.findByText(/Confirmation request completed/i)).toBeInTheDocument();
     expect(screen.queryByText(/Subscription activated/i)).not.toBeInTheDocument();
     expect(clearPending).toHaveBeenCalled();
+  });
+
+  it('shows missing-params guidance when success return lacks ids', async () => {
+    renderWithProviders(<AccountBillingCheckoutSuccessPage />, {
+      initialEntries: ['/app/billing/success'],
+    });
+
+    expect(
+      await screen.findByText(/Checkout returned without enough information/i),
+    ).toBeInTheDocument();
+    expect(syncSubscription).not.toHaveBeenCalled();
+  });
+
+  it('uses pending checkout storage when query params are absent', async () => {
+    readPending.mockReturnValue({
+      subscriptionId: '11111111-2222-3333-4444-555555555555',
+      checkoutSessionId: 'cs_from_storage',
+    });
+
+    renderWithProviders(<AccountBillingCheckoutSuccessPage />, {
+      initialEntries: ['/app/billing/success'],
+    });
+
+    await waitFor(() => {
+      expect(syncSubscription).toHaveBeenCalledWith(
+        { axios: {} },
+        '11111111-2222-3333-4444-555555555555',
+        'cs_from_storage',
+      );
+    });
   });
 
   it('surfaces sync failure on success return', async () => {
