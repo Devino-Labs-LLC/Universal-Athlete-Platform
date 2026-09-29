@@ -19,6 +19,7 @@ import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingOrganizationNotFoundException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
 import com.devinolabs.uap.billing.application.InvalidApplePurchaseException;
+import com.devinolabs.uap.billing.application.InvalidGooglePlayPurchaseException;
 
 @RestControllerAdvice(basePackageClasses = {
 		OrganizationBillingController.class,
@@ -26,7 +27,9 @@ import com.devinolabs.uap.billing.application.InvalidApplePurchaseException;
 		OrganizationCapacityController.class,
 		StripeWebhookController.class,
 		AppleBillingController.class,
-		AppleNotificationController.class
+		AppleNotificationController.class,
+		GooglePlayBillingController.class,
+		GooglePlayNotificationController.class
 })
 class BillingExceptionHandler {
 
@@ -95,6 +98,18 @@ class BillingExceptionHandler {
 			HttpServletRequest request) {
 		return ResponseEntity.badRequest()
 				.body(error("BILLING_APPLE_PURCHASE_REJECTED", "Apple purchase could not be validated", request, List.of()));
+	}
+
+	@ExceptionHandler(InvalidGooglePlayPurchaseException.class)
+	ResponseEntity<BillingApiErrorResponse> handleInvalidGooglePlayPurchase(
+			InvalidGooglePlayPurchaseException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error(
+						"BILLING_GOOGLE_PLAY_PURCHASE_REJECTED",
+						"Google Play purchase could not be validated",
+						request,
+						List.of()));
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)

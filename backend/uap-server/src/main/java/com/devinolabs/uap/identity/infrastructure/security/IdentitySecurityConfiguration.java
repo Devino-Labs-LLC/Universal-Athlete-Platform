@@ -61,6 +61,7 @@ class IdentitySecurityConfiguration {
 	static final String BILLING_API = "/api/v1/billing/**";
 	static final String STRIPE_WEBHOOK_PATH = "/api/v1/billing/webhooks/stripe";
 	static final String APPLE_WEBHOOK_PATH = "/api/v1/billing/webhooks/apple";
+	static final String GOOGLE_PLAY_WEBHOOK_PATH = "/api/v1/billing/webhooks/google-play";
 
 	@Bean
 	AuthTokenTransport authTokenTransport(
@@ -146,7 +147,8 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(HttpMethod.POST, REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH, REFRESH_PATH)
 						.permitAll()
 						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-						.requestMatchers(HttpMethod.POST, STRIPE_WEBHOOK_PATH, APPLE_WEBHOOK_PATH).permitAll()
+						.requestMatchers(HttpMethod.POST, STRIPE_WEBHOOK_PATH, APPLE_WEBHOOK_PATH, GOOGLE_PLAY_WEBHOOK_PATH)
+						.permitAll()
 						.requestMatchers(HttpMethod.GET, IDENTITY_ME_PATH).authenticated()
 						.requestMatchers(HttpMethod.POST, LOGOUT_PATH, LOGOUT_ALL_PATH).authenticated()
 						.requestMatchers(ATHLETES_API).authenticated()
@@ -165,8 +167,8 @@ class IdentitySecurityConfiguration {
 	}
 
 	/**
-	 * Provider webhooks are signed by Stripe / Apple; CSRF cookies cannot be sent by those
-	 * providers. CSRF stays enabled for the rest of the API. This filter marks webhook
+	 * Provider webhooks are signed by Stripe / Apple / Google Play; CSRF cookies cannot be sent by
+	 * those providers. CSRF stays enabled for the rest of the API. This filter marks webhook
 	 * requests skipped before {@link CsrfFilter} without {@code csrf.disable()}.
 	 */
 	static final class BillingWebhookCsrfSkipFilter extends OncePerRequestFilter {
@@ -175,13 +177,17 @@ class IdentitySecurityConfiguration {
 				HttpMethod.POST, STRIPE_WEBHOOK_PATH);
 		private static final RequestMatcher APPLE_WEBHOOK_POST = PathPatternRequestMatcher.pathPattern(
 				HttpMethod.POST, APPLE_WEBHOOK_PATH);
+		private static final RequestMatcher GOOGLE_PLAY_WEBHOOK_POST = PathPatternRequestMatcher.pathPattern(
+				HttpMethod.POST, GOOGLE_PLAY_WEBHOOK_PATH);
 
 		@Override
 		protected void doFilterInternal(
 				HttpServletRequest request,
 				HttpServletResponse response,
 				FilterChain filterChain) throws ServletException, IOException {
-			if (STRIPE_WEBHOOK_POST.matches(request) || APPLE_WEBHOOK_POST.matches(request)) {
+			if (STRIPE_WEBHOOK_POST.matches(request)
+					|| APPLE_WEBHOOK_POST.matches(request)
+					|| GOOGLE_PLAY_WEBHOOK_POST.matches(request)) {
 				CsrfFilter.skipRequest(request);
 			}
 			filterChain.doFilter(request, response);

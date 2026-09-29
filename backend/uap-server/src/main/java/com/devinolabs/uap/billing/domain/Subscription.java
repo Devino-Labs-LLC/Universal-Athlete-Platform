@@ -159,6 +159,20 @@ public class Subscription {
 				id, subject, BillingProvider.APPLE_APP_STORE, planKey, billingCadence, clock);
 	}
 
+	/**
+	 * Starts an Account Individual Premium Google Play purchase bind (PENDING until
+	 * server validation applies an authoritative snapshot). No trial in initial V4.
+	 */
+	public static Subscription startPendingIndividualGooglePlayPurchase(
+			SubscriptionId id,
+			BillingSubject subject,
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
+			Clock clock) {
+		return startPendingIndividual(
+				id, subject, BillingProvider.GOOGLE_PLAY, planKey, billingCadence, clock);
+	}
+
 	private static Subscription startPendingIndividual(
 			SubscriptionId id,
 			BillingSubject subject,
@@ -175,7 +189,9 @@ public class Subscription {
 		if (planKey != CommercialPlanKey.INDIVIDUAL_PREMIUM) {
 			throw new IllegalArgumentException("Individual checkout supports INDIVIDUAL_PREMIUM only");
 		}
-		if (provider != BillingProvider.STRIPE && provider != BillingProvider.APPLE_APP_STORE) {
+		if (provider != BillingProvider.STRIPE
+				&& provider != BillingProvider.APPLE_APP_STORE
+				&& provider != BillingProvider.GOOGLE_PLAY) {
 			throw new IllegalArgumentException("Unsupported individual billing provider: " + provider);
 		}
 		Instant now = Instant.now(clock);

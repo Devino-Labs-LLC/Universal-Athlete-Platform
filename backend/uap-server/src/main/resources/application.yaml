@@ -64,6 +64,16 @@ uap:
       products:
         individual-premium-monthly: ${UAP_BILLING_APPLE_PRODUCT_INDIVIDUAL_PREMIUM_MONTHLY:}
         individual-premium-annual: ${UAP_BILLING_APPLE_PRODUCT_INDIVIDUAL_PREMIUM_ANNUAL:}
+    google-play:
+      # Explicit opt-in. Default off. When true, Play Developer API service-account JSON and
+      # allow-listed Individual Premium product IDs are required (Sandbox / testPurchase only in V4 G3).
+      enabled: ${UAP_BILLING_GOOGLE_PLAY_ENABLED:false}
+      package-name: ${UAP_BILLING_GOOGLE_PLAY_PACKAGE_NAME:}
+      service-account-json: ${UAP_BILLING_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:}
+      environment: ${UAP_BILLING_GOOGLE_PLAY_ENVIRONMENT:Sandbox}
+      products:
+        individual-premium-monthly: ${UAP_BILLING_GOOGLE_PLAY_PRODUCT_INDIVIDUAL_PREMIUM_MONTHLY:}
+        individual-premium-annual: ${UAP_BILLING_GOOGLE_PLAY_PRODUCT_INDIVIDUAL_PREMIUM_ANNUAL:}
     stripe:
       # Explicit opt-in. Tests and default local boot leave Stripe disabled.
       # When true, a test-mode key, all Price IDs, and return URLs are required.

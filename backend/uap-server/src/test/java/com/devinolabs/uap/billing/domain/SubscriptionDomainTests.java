@@ -293,6 +293,21 @@ class SubscriptionDomainTests {
 	}
 
 	@Test
+	void individualPendingGooglePlayPurchaseUsesPlayProviderAndHasNoTrial() {
+		Subscription subscription = Subscription.startPendingIndividualGooglePlayPurchase(
+				SubscriptionId.generate(),
+				BillingSubject.account(UUID.randomUUID()),
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				CLOCK);
+
+		assertThat(subscription.provider()).isEqualTo(BillingProvider.GOOGLE_PLAY);
+		assertThat(subscription.lifecycleState()).isEqualTo(SubscriptionLifecycleState.PENDING);
+		assertThat(subscription.trialEndsAt()).isNull();
+		assertThat(subscription.planKey()).isEqualTo(CommercialPlanKey.INDIVIDUAL_PREMIUM);
+	}
+
+	@Test
 	void authoritativePriceReplacesPlanAndStaleSnapshotDoesNotRollItBack() {
 		Subscription subscription = pendingCheckout();
 		Instant trialEnd = T0.plusSeconds(14 * 24 * 60 * 60);

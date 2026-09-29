@@ -44,6 +44,16 @@ class BillingWebhookCsrfSkipFilterTests {
 	}
 
 	@Test
+	void googlePlayWebhookPostIsSkippedSoCsrfFilterDoesNotRequireAToken() throws Exception {
+		MockHttpServletRequest request = request(
+				HttpMethod.POST, IdentitySecurityConfiguration.GOOGLE_PLAY_WEBHOOK_PATH);
+
+		skipFilter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+		assertThat(request.getAttribute(CSRF_SKIP_ATTRIBUTE)).isEqualTo(Boolean.TRUE);
+	}
+
+	@Test
 	void billingCheckoutPostIsNotSkipped() throws Exception {
 		MockHttpServletRequest request = request(
 				HttpMethod.POST,
