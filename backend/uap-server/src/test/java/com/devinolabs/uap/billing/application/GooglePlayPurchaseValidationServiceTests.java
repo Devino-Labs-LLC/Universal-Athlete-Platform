@@ -166,6 +166,50 @@ class GooglePlayPurchaseValidationServiceTests {
 	}
 
 	@Test
+	void blankProductIdFailsClosed() {
+		assertThatThrownBy(() -> service.validateOrRestore(UUID.randomUUID(), PURCHASE_TOKEN, "  "))
+				.isInstanceOf(InvalidGooglePlayPurchaseException.class)
+				.hasMessageContaining("Product id");
+		verify(googleProvider, never()).validatePurchase(any(), any());
+	}
+
+	@Test
+	void paidThroughCancelAllowsNewGooglePlayBindAndExpiresPriorOpenRow() {
+		UUID accountId = UUID.randomUUID();
+		VerifiedPurchase purchase = purchase(accountId.toString());
+		ProviderSubscriptionSnapshot snapshot = snapshot(accountId, purchase);
+		Subscription paidThroughApple = Subscription.rehydrate(
+				SubscriptionId.generate(),
+				BillingSubject.account(accountId),
+				BillingProvider.APPLE_APP_STORE,
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				SubscriptionLifecycleState.CANCEL_AT_PERIOD_END,
+				accountId.toString(),
+				"apple-original-prior",
+				null,
+				NOW.minusSeconds(60),
+				null,
+				NOW.minusSeconds(120),
+				NOW.minusSeconds(3600),
+				NOW.minusSeconds(120),
+				1L);
+		when(googleProvider.validatePurchase(PURCHASE_TOKEN, PRODUCT_ID)).thenReturn(purchase);
+		when(googleProvider.toSnapshot(purchase, accountId)).thenReturn(snapshot);
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(
+				BillingProvider.GOOGLE_PLAY, PURCHASE_TOKEN)).thenReturn(Optional.empty());
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(paidThroughApple));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		GooglePlayPurchaseValidationService.SubscriptionResult result =
+				service.validateOrRestore(accountId, PURCHASE_TOKEN, PRODUCT_ID);
+
+		assertThat(result.provider()).isEqualTo(BillingProvider.GOOGLE_PLAY);
+		assertThat(paidThroughApple.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+	}
+
+	@Test
 	void activeStripeIndividualBlocksNewGooglePlayBind() {
 		UUID accountId = UUID.randomUUID();
 		VerifiedPurchase purchase = purchase(accountId.toString());

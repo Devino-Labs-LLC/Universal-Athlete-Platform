@@ -187,6 +187,66 @@ class ApplePurchaseValidationServiceTests {
 						ex -> assertThat(ex.code()).isEqualTo("BILLING_SUBSCRIPTION_EXISTS"));
 	}
 
+	@Test
+	void restoreAllowsNullAppAccountTokenWhenAlreadyBound() {
+		UUID accountId = UUID.randomUUID();
+		VerifiedPurchase purchase = purchase(null);
+		Subscription existing = ownedApple(accountId, SubscriptionLifecycleState.ACTIVE);
+		ProviderSubscriptionSnapshot unchanged = snapshot(accountId, purchase);
+		when(appleProvider.validateSignedTransaction(SIGNED)).thenReturn(purchase);
+		when(appleProvider.toSnapshot(purchase, accountId)).thenReturn(unchanged);
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(
+				BillingProvider.APPLE_APP_STORE, ORIGINAL_TX)).thenReturn(Optional.of(existing));
+
+		ApplePurchaseValidationService.SubscriptionResult result =
+				service.validateOrRestore(accountId, SIGNED);
+
+		assertThat(result.subscriptionId()).isEqualTo(existing.id().value());
+		verify(subscriptionRepository, never()).save(any());
+		verify(auditPort, never()).accountCheckoutInitiated(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void paidThroughGraceAllowsNewAppleBindAndExpiresPriorOpenRow() {
+		UUID accountId = UUID.randomUUID();
+		VerifiedPurchase purchase = purchase(accountId.toString());
+		ProviderSubscriptionSnapshot snapshot = snapshot(accountId, purchase);
+		Subscription paidThroughGoogle = Subscription.rehydrate(
+				SubscriptionId.generate(),
+				BillingSubject.account(accountId),
+				BillingProvider.GOOGLE_PLAY,
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				SubscriptionLifecycleState.GRACE_PERIOD,
+				accountId.toString(),
+				"google-play-token-prior",
+				null,
+				null,
+				NOW.minusSeconds(60),
+				NOW.minusSeconds(120),
+				NOW.minusSeconds(3600),
+				NOW.minusSeconds(120),
+				1L);
+		when(appleProvider.validateSignedTransaction(SIGNED)).thenReturn(purchase);
+		when(appleProvider.toSnapshot(purchase, accountId)).thenReturn(snapshot);
+		when(subscriptionRepository.findByProviderAndProviderSubscriptionRef(
+				BillingProvider.APPLE_APP_STORE, ORIGINAL_TX)).thenReturn(Optional.empty());
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(paidThroughGoogle));
+		when(subscriptionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		ApplePurchaseValidationService.SubscriptionResult result =
+				service.validateOrRestore(accountId, SIGNED);
+
+		assertThat(result.provider()).isEqualTo(BillingProvider.APPLE_APP_STORE);
+		assertThat(paidThroughGoogle.lifecycleState()).isEqualTo(SubscriptionLifecycleState.EXPIRED);
+		ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);
+		verify(subscriptionRepository, org.mockito.Mockito.atLeastOnce()).save(saved.capture());
+		assertThat(saved.getAllValues().stream()
+				.anyMatch(subscription -> subscription.lifecycleState() == SubscriptionLifecycleState.EXPIRED
+						&& subscription.provider() == BillingProvider.GOOGLE_PLAY)).isTrue();
+	}
+
 	private static VerifiedPurchase purchase(String appAccountToken) {
 		return new VerifiedPurchase(
 				ORIGINAL_TX,

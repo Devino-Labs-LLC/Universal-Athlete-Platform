@@ -174,4 +174,101 @@ class GooglePlayBillingAdapterTests {
 		assertThat(notification.purchase().purchaseToken()).isEqualTo(TOKEN);
 	}
 
+	@Test
+	void productIdMismatchFailsClosed() {
+		when(apiClient.getSubscriptionPurchase(TOKEN)).thenReturn(new SubscriptionPurchase(
+				TOKEN,
+				"GPA.1111-2222",
+				"premium.annual",
+				"com.devinolabs.athletereadiness",
+				true,
+				null,
+				NOW,
+				NOW.plusSeconds(60),
+				NOW,
+				true,
+				"SUBSCRIPTION_STATE_ACTIVE"));
+
+		assertThatThrownBy(() -> adapter.validatePurchase(TOKEN, "premium.monthly"))
+				.isInstanceOf(InvalidGooglePlayPurchaseException.class)
+				.hasMessageContaining("productId did not match");
+	}
+
+	@Test
+	void gracePeriodStateMapsToPaymentAttention() {
+		when(apiClient.getSubscriptionPurchase(TOKEN)).thenReturn(new SubscriptionPurchase(
+				TOKEN,
+				"GPA.7777-8888",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				true,
+				null,
+				NOW.minusSeconds(60),
+				NOW.plusSeconds(3 * 24 * 60 * 60),
+				NOW,
+				false,
+				"SUBSCRIPTION_STATE_IN_GRACE_PERIOD"));
+
+		VerifiedPurchase purchase = adapter.validatePurchase(TOKEN, "premium.monthly");
+
+		assertThat(purchase.status()).isEqualTo(ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED);
+		assertThat(purchase.cancelAtPeriodEnd()).isTrue();
+	}
+
+	@Test
+	void rtdnExpiredTypeMapsToEnded() {
+		String developerNotification = """
+				{"version":"1.0","packageName":"com.devinolabs.athletereadiness","eventTimeMillis":"1727542800000",
+				"subscriptionNotification":{"version":"1.0","notificationType":13,
+				"purchaseToken":"%s","subscriptionId":"premium.monthly"}}
+				""".formatted(TOKEN);
+		String data = Base64.getEncoder().encodeToString(developerNotification.getBytes(StandardCharsets.UTF_8));
+		String envelope = """
+				{"message":{"data":"%s","messageId":"msg-expired"},
+				"subscription":"projects/test/subscriptions/play-rtdn"}
+				""".formatted(data);
+		when(apiClient.getSubscriptionPurchase(TOKEN)).thenReturn(new SubscriptionPurchase(
+				TOKEN,
+				"GPA.9999-0000",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				true,
+				null,
+				NOW.minusSeconds(120),
+				NOW.minusSeconds(30),
+				NOW,
+				false,
+				"SUBSCRIPTION_STATE_ACTIVE"));
+
+		assertThat(adapter.verifyRtdnPayload(envelope.getBytes(StandardCharsets.UTF_8)).purchase().status())
+				.isEqualTo(ProviderCommercialStatus.ENDED);
+	}
+
+	@Test
+	void rtdnPackageMismatchFailsClosed() {
+		String developerNotification = """
+				{"version":"1.0","packageName":"com.other.app","eventTimeMillis":"1727542800000",
+				"subscriptionNotification":{"version":"1.0","notificationType":2,
+				"purchaseToken":"%s","subscriptionId":"premium.monthly"}}
+				""".formatted(TOKEN);
+		String data = Base64.getEncoder().encodeToString(developerNotification.getBytes(StandardCharsets.UTF_8));
+		String envelope = """
+				{"message":{"data":"%s","messageId":"msg-bad-pkg"},
+				"subscription":"projects/test/subscriptions/play-rtdn"}
+				""".formatted(data);
+
+		assertThatThrownBy(() -> adapter.verifyRtdnPayload(envelope.getBytes(StandardCharsets.UTF_8)))
+				.isInstanceOf(InvalidGooglePlayPurchaseException.class)
+				.hasMessageContaining("package");
+	}
+
+	@Test
+	void mapRtdnTypeCoversKnownCodes() {
+		assertThat(GooglePlayBillingAdapter.mapRtdnType(GooglePlayBillingAdapter.RTDN_CANCELED))
+				.isEqualTo("SUBSCRIPTION_CANCELED");
+		assertThat(GooglePlayBillingAdapter.mapRtdnType(GooglePlayBillingAdapter.RTDN_ON_HOLD))
+				.isEqualTo("SUBSCRIPTION_ON_HOLD");
+		assertThat(GooglePlayBillingAdapter.mapRtdnType(99)).isEqualTo("SUBSCRIPTION_OTHER_99");
+	}
+
 }

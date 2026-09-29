@@ -137,6 +137,148 @@ class AppleAppStoreBillingAdapterTests {
 				.isEqualTo(BillingCadence.ANNUAL);
 	}
 
+	@Test
+	void productionEnvironmentFailsClosed() {
+		String signed = signedJwt("""
+				{"transactionId":"2004","originalTransactionId":"1004","productId":"premium.monthly",
+				"bundleId":"com.devinolabs.athletereadiness","environment":"Production",
+				"purchaseDate":1727542800000}
+				""");
+		when(serverClient.getTransactionInfo("2004")).thenReturn(new TransactionInfo(
+				"2004",
+				"1004",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				"Production",
+				null,
+				NOW,
+				NOW.plusSeconds(60),
+				NOW,
+				true,
+				"1"));
+
+		assertThatThrownBy(() -> adapter.validateSignedTransaction(signed))
+				.isInstanceOf(InvalidApplePurchaseException.class)
+				.hasMessageContaining("Production");
+	}
+
+	@Test
+	void bundleMismatchFailsClosed() {
+		String signed = signedJwt("""
+				{"transactionId":"2005","originalTransactionId":"1005","productId":"premium.monthly",
+				"bundleId":"com.other.app","environment":"Sandbox","purchaseDate":1727542800000}
+				""");
+		when(serverClient.getTransactionInfo("2005")).thenReturn(new TransactionInfo(
+				"2005",
+				"1005",
+				"premium.monthly",
+				"com.other.app",
+				"Sandbox",
+				null,
+				NOW,
+				NOW.plusSeconds(60),
+				NOW,
+				true,
+				"1"));
+
+		assertThatThrownBy(() -> adapter.validateSignedTransaction(signed))
+				.isInstanceOf(InvalidApplePurchaseException.class)
+				.hasMessageContaining("bundle");
+	}
+
+	@Test
+	void billingGraceStatusMapsToPaymentAttention() {
+		String signed = signedJwt("""
+				{"transactionId":"2006","originalTransactionId":"1006","productId":"premium.monthly",
+				"bundleId":"com.devinolabs.athletereadiness","environment":"Sandbox",
+				"purchaseDate":1727542800000}
+				""");
+		when(serverClient.getTransactionInfo("2006")).thenReturn(new TransactionInfo(
+				"2006",
+				"1006",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				"Sandbox",
+				null,
+				NOW.minusSeconds(60),
+				NOW.plusSeconds(3 * 24 * 60 * 60),
+				NOW,
+				false,
+				"4"));
+
+		VerifiedPurchase purchase = adapter.validateSignedTransaction(signed);
+
+		assertThat(purchase.status()).isEqualTo(ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED);
+		assertThat(purchase.cancelAtPeriodEnd()).isTrue();
+	}
+
+	@Test
+	void verifySignedNotificationRequiresClaimsAndLooksUpTransaction() {
+		String signedTransaction = signedJwt("""
+				{"transactionId":"2007","originalTransactionId":"1007","productId":"premium.monthly"}
+				""");
+		String notification = signedJwt("""
+				{"notificationUUID":"notif-1","notificationType":"DID_FAIL_TO_RENEW","signedDate":1727542800000,
+				"data":{"signedTransactionInfo":"%s"}}
+				""".formatted(signedTransaction));
+		when(serverClient.getTransactionInfo("2007")).thenReturn(new TransactionInfo(
+				"2007",
+				"1007",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				"Sandbox",
+				null,
+				NOW.minusSeconds(60),
+				NOW.plusSeconds(60),
+				NOW,
+				true,
+				"3"));
+
+		var verified = adapter.verifySignedNotification(notification);
+
+		assertThat(verified.notificationUUID()).isEqualTo("notif-1");
+		assertThat(verified.notificationType()).isEqualTo("DID_FAIL_TO_RENEW");
+		assertThat(verified.purchase().status())
+				.isEqualTo(ProviderCommercialStatus.PAYMENT_ATTENTION_REQUIRED);
+	}
+
+	@Test
+	void verifySignedNotificationRejectsIncompleteClaims() {
+		String notification = signedJwt("""
+				{"notificationUUID":"notif-2","signedDate":1727542800000}
+				""");
+
+		assertThatThrownBy(() -> adapter.verifySignedNotification(notification))
+				.isInstanceOf(InvalidApplePurchaseException.class)
+				.hasMessageContaining("incomplete");
+	}
+
+	@Test
+	void expiredNotificationTypeMapsToEnded() {
+		String signedTransaction = signedJwt("""
+				{"transactionId":"2008","originalTransactionId":"1008","productId":"premium.monthly"}
+				""");
+		String notification = signedJwt("""
+				{"notificationUUID":"notif-3","notificationType":"EXPIRED","signedDate":1727542800000,
+				"data":{"signedTransactionInfo":"%s"}}
+				""".formatted(signedTransaction));
+		when(serverClient.getTransactionInfo("2008")).thenReturn(new TransactionInfo(
+				"2008",
+				"1008",
+				"premium.monthly",
+				"com.devinolabs.athletereadiness",
+				"Sandbox",
+				null,
+				NOW.minusSeconds(120),
+				NOW.minusSeconds(30),
+				NOW,
+				false,
+				"1"));
+
+		assertThat(adapter.verifySignedNotification(notification).purchase().status())
+				.isEqualTo(ProviderCommercialStatus.ENDED);
+	}
+
 	private static String signedJwt(String payloadJson) {
 		String header = Base64.getUrlEncoder().withoutPadding()
 				.encodeToString("{\"alg\":\"none\"}".getBytes(StandardCharsets.UTF_8));
