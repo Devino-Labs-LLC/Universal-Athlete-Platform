@@ -3466,7 +3466,7 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 | Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| G1 | **COMPLETE on develop** | pending this commit tip | Focused billing + athlete Web manage green; Verify/Sonar **SUCCESS** on `d7d7828`; this tip adds Account portal/cancel/reactivate + Web manage | pending push | pending push | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
+| G1 | **COMPLETE on develop** | 794da71 | Focused billing + athlete Web manage green; Verify/Sonar **SUCCESS** on `d7d7828`; this tip adds Account portal/cancel/reactivate + Web manage | pending Verify | pending Sonar | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
 | G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Sandbox credentials are a certification dependency, not an implementation STOP |
 | G3 | Not started | — | — | — | — | Google sandbox not claimed | — | — | Same |
 | G4 | Not started | — | — | — | — | — | — | — | — |
