@@ -3473,7 +3473,27 @@ Provider Price and store product identifiers stay server configuration. Missing 
 | H1 | **COMPLETE on develop** | `e131052` (UX) / `2216f2a` (ledger + test tighten) | Web AccountBillingPage origin matrix + pricing summary; mobile Premium billing (status, restore bridge, manage-by-origin); focused web/mobile UX tests | pending latest Verify | pending Sonar | None | None | Web + Mobile | No public marketing site; no IAP SDK / no secrets in bundles |
 | I1 | **COMPLETE (RC evidence on develop)** | impl tip `fa51268` | T12–T22 evidence map (**§48.4**); flags default-off confirmed; migration review (**§48.3**); Windows full-serial **INCONCLUSIVE** | pending latest Verify on tip | pending Sonar on tip | Apple/Google remain **BLOCKED**; Stripe Individual sandbox Prices not certified | Develop head **V37** only | Documentation / Lead | Commercial activation + `main` promotion remain **separate explicit gates** |
 
-**Local Windows backend full-serial Testcontainers check:** **INCONCLUSIVE** — Docker Desktop / Testcontainers MySQL connection drops (`CommunicationsException` / `EOFException`) on this Windows host. Those transport failures are **not** classified as repository test failures. Do not burn time re-running the entire serial suite solely against Docker instability. **Authoritative full-suite gate = GitHub Actions Verify** (backend shards + web + mobile). Last recorded Verify/Sonar **SUCCESS** on G1 coverage tip `d7d7828`; results for develop tip `2216f2a` (G2–I1) are **pending latest Verify** — do not invent Sonar numbers.
+**Local Windows backend full-serial Testcontainers check:** **INCONCLUSIVE** — Docker Desktop / Testcontainers MySQL connection drops (`CommunicationsException` / `EOFException`) on this Windows host. Those transport failures are **not** classified as repository test failures. Do not burn time re-running the entire serial suite solely against Docker instability. **Authoritative full-suite gate = GitHub Actions Verify** (backend shards + web + mobile).
+
+**Verify / Sonar chronology (post-I1 tips):**
+
+| Tip | Verify | Result |
+| --- | --- | --- |
+| `d7d7828` (G1 coverage) | prior | Web/Mobile/Backend + Sonar **SUCCESS** |
+| `0f27de861e013d8fc146bf4dba1bb917cc174462` (Apple/Google New Code coverage tests) | [36522348655](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36522348655) | Web/Mobile/Backend **SUCCESS**; Sonar **FAILURE** (compute-engine analysis **completed** — real Quality Gate fail, not scanner/network) |
+
+**Sonar Quality Gate conditions on `0f27de8` / develop (SonarCloud `qualitygates/project_status`):**
+
+| Condition | Threshold | Actual | Status |
+| --- | --- | --- | --- |
+| `new_reliability_rating` | ≤ 1 (A) | 1 | OK |
+| `new_security_rating` | ≤ 1 (A) | 1 | OK |
+| `new_maintainability_rating` | ≤ 1 (A) | 1 | OK |
+| `new_coverage` | ≥ 80% | **78.4%** | **ERROR** |
+| `new_duplicated_lines_density` | ≤ 3% | **5.0%** | **ERROR** |
+| `new_security_hotspots_reviewed` | = 100% | 100.0% | OK |
+
+Failing metrics were **both** New Code coverage **and** New Code duplication (not coverage alone). Remediation (no NOSONAR / no exclusions / no gate weakening): shared `@uap/billing-contracts` package + Java store/notification dedupe (`StoreBillingPropertySupport`, `IndividualPremiumProductCatalog`, `ProviderNotificationApplySupport`) + additional Stripe/Apple/Google coverage tests. Post-remediation tip SHA and Verify run recorded after push.
 
 **Commercial flags (repository defaults — remain off):**
 
@@ -3534,10 +3554,10 @@ Pointer table only. Does **not** claim live provider certification or commercial
 - Production promotion to **`main`** is a **SEPARATE explicit gate**. This section does **not** merge `main`.
 - Commercial flags remain default **off**. Do not enable them from this ledger.
 - Apple / Google sandbox certification remains **BLOCKED** without credentials.
-- Verify / Sonar for tip `2216f2a` (and any later I1 doc tip): **pending latest Verify** — do not invent metrics.
+- Verify / Sonar: tip `0f27de8` run **36522348655** failed QG on New Code coverage **78.4%** and duplication **5.0%** (other New Code ratings OK). Remediation pushed separately — do not invent post-remediation metrics until the new Verify completes.
 - Windows local full-serial Testcontainers: **INCONCLUSIVE** (authoritative gate = GitHub Verify).
 
-Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop**; authoritative CI/Sonar on the tip remains **pending latest Verify**. V4 is **not** commercially active. V4 is **not** complete.
+Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop**; authoritative CI/Sonar on the post-`0f27de8` remediation tip remains **pending latest Verify**. V4 is **not** commercially active. V4 is **not** complete.
 
 
 

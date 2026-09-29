@@ -95,6 +95,63 @@ class HttpAppleAppStoreServerClientTests {
 	}
 
 	@Test
+	void getTransactionInfoMaps400ToInvalidPurchase() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenThrow(HttpClientErrorException.create(
+						HttpStatus.BAD_REQUEST, "Bad Request", null, null, StandardCharsets.UTF_8));
+
+		assertThatThrownBy(() -> client.getTransactionInfo("bad"))
+				.isInstanceOf(InvalidApplePurchaseException.class)
+				.hasMessageContaining("not found");
+	}
+
+	@Test
+	void getTransactionInfoMapsNon404HttpFailureToProviderUnavailable() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenThrow(HttpClientErrorException.create(
+						HttpStatus.INTERNAL_SERVER_ERROR, "Server Error", null, null, StandardCharsets.UTF_8));
+
+		assertThatThrownBy(() -> client.getTransactionInfo("2001"))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+	}
+
+	@Test
+	void getTransactionInfoRejectsNonSuccessResponseBody() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenReturn(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+
+		assertThatThrownBy(() -> client.getTransactionInfo("2001"))
+				.isInstanceOf(InvalidApplePurchaseException.class)
+				.hasMessageContaining("not found");
+	}
+
+	@Test
+	void mapClaimsDefaultsMissingAutoRenewToEnabled() {
+		JsonNode claims = JSON.readTree("""
+				{"transactionId":"2001","originalTransactionId":"1001","productId":"premium.monthly",
+				"bundleId":"com.devinolabs.athletereadiness","environment":"Sandbox",
+				"purchaseDate":1727542800000,"expiresDate":1730134800000,"signedDate":1727542800000}
+				""");
+
+		TransactionInfo info = client.mapClaims(claims);
+
+		assertThat(info.autoRenewEnabled()).isTrue();
+		assertThat(info.subscriptionStatus()).isNull();
+	}
+
+	@Test
+	void mapClaimsTreatsAutoRenewStatusZeroAsDisabled() {
+		JsonNode claims = JSON.readTree("""
+				{"transactionId":"2001","originalTransactionId":"1001","productId":"premium.monthly",
+				"bundleId":"com.devinolabs.athletereadiness","environment":"Sandbox",
+				"purchaseDate":1727542800000,"expiresDate":1730134800000,"signedDate":1727542800000,
+				"autoRenewStatus":0}
+				""");
+
+		assertThat(client.mapClaims(claims).autoRenewEnabled()).isFalse();
+	}
+
+	@Test
 	void getTransactionInfoMapsTransportFailureToProviderUnavailable() {
 		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
 				.thenThrow(new RestClientException("boom"));

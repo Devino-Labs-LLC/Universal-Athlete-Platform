@@ -1,13 +1,13 @@
 package com.devinolabs.uap.billing.infrastructure.google;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.infrastructure.store.IndividualPremiumProductCatalog;
+import com.devinolabs.uap.billing.infrastructure.store.StoreBillingPropertySupport;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -15,6 +15,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class GooglePlayBillingProperties {
 
 	private static final JsonMapper JSON = JsonMapper.builder().build();
+	private static final String ENABLED_LABEL = "Google Play";
+	private static final String PRODUCTS_PREFIX = "uap.billing.google-play.products.";
 
 	private boolean enabled;
 	private String packageName;
@@ -77,17 +79,15 @@ public class GooglePlayBillingProperties {
 		if (!enabled) {
 			return;
 		}
-		packageName = requireText(packageName, "uap.billing.google-play.package-name");
-		serviceAccountJson = requireText(serviceAccountJson, "uap.billing.google-play.service-account-json");
-		environment = requireText(environment, "uap.billing.google-play.environment");
-		if (!"Sandbox".equals(environment) && !"Production".equals(environment)) {
-			throw new IllegalStateException(
-					"uap.billing.google-play.environment must be Sandbox or Production");
-		}
-		if ("Production".equals(environment)) {
-			throw new IllegalStateException(
-					"uap.billing.google-play.environment Production is not authorized in V4 G3 (Sandbox only)");
-		}
+		packageName = StoreBillingPropertySupport.requireText(
+				packageName, "uap.billing.google-play.package-name", ENABLED_LABEL);
+		serviceAccountJson = StoreBillingPropertySupport.requireText(
+				serviceAccountJson, "uap.billing.google-play.service-account-json", ENABLED_LABEL);
+		environment = StoreBillingPropertySupport.requireSandboxEnvironment(
+				environment,
+				"uap.billing.google-play.environment",
+				ENABLED_LABEL,
+				"uap.billing.google-play.environment Production is not authorized in V4 G3 (Sandbox only)");
 		parseServiceAccount(serviceAccountJson);
 		if (products == null) {
 			throw new IllegalStateException("uap.billing.google-play.products must be configured");
@@ -107,8 +107,10 @@ public class GooglePlayBillingProperties {
 				throw new IllegalStateException(
 						"uap.billing.google-play.service-account-json must be a Google service_account credential");
 			}
-			clientEmail = requireText(text(root, "client_email"),
-					"uap.billing.google-play.service-account-json.client_email");
+			clientEmail = StoreBillingPropertySupport.requireText(
+					text(root, "client_email"),
+					"uap.billing.google-play.service-account-json.client_email",
+					ENABLED_LABEL);
 			String privateKey = text(root, "private_key");
 			if (privateKey == null || !privateKey.contains("BEGIN PRIVATE KEY")) {
 				throw new IllegalStateException(
@@ -137,13 +139,6 @@ public class GooglePlayBillingProperties {
 	public record PricedProduct(CommercialPlanKey planKey, BillingCadence cadence) {
 	}
 
-	private static String requireText(String value, String propertyName) {
-		if (value == null || value.isBlank()) {
-			throw new IllegalStateException(propertyName + " must be configured when Google Play billing is enabled");
-		}
-		return value.trim();
-	}
-
 	public static class Products {
 
 		private String individualPremiumMonthly;
@@ -166,46 +161,22 @@ public class GooglePlayBillingProperties {
 		}
 
 		private void validate() {
-			Set<String> distinct = new HashSet<>(catalog().values());
-			if (distinct.size() != 2) {
-				throw new IllegalStateException("Google Play Individual Premium product IDs must be distinct");
-			}
+			IndividualPremiumProductCatalog.requireDistinctProductIds(catalog(), "Google Play");
 		}
 
 		private PricedProduct requirePlanForProduct(String productId) {
-			if (productId == null || productId.isBlank()) {
-				throw new IllegalArgumentException("Google Play product is not an allow-listed product");
-			}
-			String normalized = productId.trim();
-			for (Map.Entry<CatalogSlot, String> entry : catalog().entrySet()) {
-				if (entry.getValue().equals(normalized)) {
-					return new PricedProduct(entry.getKey().planKey(), entry.getKey().cadence());
-				}
-			}
-			throw new IllegalArgumentException("Google Play product is not an allow-listed product");
+			IndividualPremiumProductCatalog.PricedProduct priced =
+					IndividualPremiumProductCatalog.requirePlanForProduct(catalog(), productId, "Google Play");
+			return new PricedProduct(priced.planKey(), priced.cadence());
 		}
 
-		private Map<CatalogSlot, String> catalog() {
-			Map<CatalogSlot, String> catalog = new java.util.HashMap<>();
-			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY,
-					individualPremiumMonthly, "individual-premium-monthly");
-			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.ANNUAL,
-					individualPremiumAnnual, "individual-premium-annual");
-			return Map.copyOf(catalog);
+		private Map<IndividualPremiumProductCatalog.CatalogSlot, String> catalog() {
+			return IndividualPremiumProductCatalog.catalog(
+					individualPremiumMonthly,
+					individualPremiumAnnual,
+					PRODUCTS_PREFIX,
+					ENABLED_LABEL);
 		}
-
-		private static void put(
-				Map<CatalogSlot, String> catalog,
-				CommercialPlanKey planKey,
-				BillingCadence cadence,
-				String value,
-				String propertySuffix) {
-			String normalized = requireText(value, "uap.billing.google-play.products." + propertySuffix);
-			catalog.put(new CatalogSlot(planKey, cadence), normalized);
-		}
-	}
-
-	private record CatalogSlot(CommercialPlanKey planKey, BillingCadence cadence) {
 	}
 
 }

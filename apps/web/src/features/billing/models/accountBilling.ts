@@ -1,96 +1,32 @@
-import { z } from 'zod';
+export {
+  APPLE_SUBSCRIPTIONS_URL,
+  GOOGLE_PLAY_SUBSCRIPTIONS_URL,
+  accountBillingStatusSchema,
+  billingCadenceSchema,
+  billingProviderSchema,
+  checkoutSessionResponseSchema,
+  individualManagementChannelSchema,
+  individualPlanKeySchema,
+  individualPremiumCatalog,
+  accountSubscriptionStateSchema,
+  isStripeManagedChannel,
+  premiumOriginLabel,
+  storeManagementUrl,
+} from '@uap/billing-contracts';
 
-export const individualPlanKeySchema = z.literal('INDIVIDUAL_PREMIUM');
-export const billingCadenceSchema = z.enum(['MONTHLY', 'ANNUAL']);
-export const accountSubscriptionStateSchema = z.enum([
-  'PENDING',
-  'TRIALING',
-  'ACTIVE',
-  'PAST_DUE',
-  'GRACE_PERIOD',
-  'CANCEL_AT_PERIOD_END',
-  'EXPIRED',
-]);
+export type {
+  AccountBillingStatus,
+  BillingProvider,
+  CheckoutSessionResponse,
+  IndividualManagementChannel,
+} from '@uap/billing-contracts';
 
-export const billingProviderSchema = z.enum(['STRIPE', 'APPLE_APP_STORE', 'GOOGLE_PLAY']);
-export const individualManagementChannelSchema = z.enum([
-  'STRIPE_CUSTOMER_PORTAL',
-  'APPLE_APP_STORE',
-  'GOOGLE_PLAY',
-]);
+import {
+  storeManagementLabel as sharedStoreManagementLabel,
+  type IndividualManagementChannel,
+} from '@uap/billing-contracts';
 
-/** Locked Individual Premium display prices (tax-exclusive). Not Stripe Price IDs. */
-export const individualPremiumCatalog = {
-  planKey: 'INDIVIDUAL_PREMIUM' as const,
-  name: 'Individual Premium',
-  monthlyUsd: 9.99,
-  annualUsd: 99.99,
-} as const;
-
-export const checkoutSessionResponseSchema = z.object({
-  subscriptionId: z.string().min(1),
-  checkoutSessionId: z.string().min(1),
-  checkoutUrl: z.string().url(),
-});
-
-export type CheckoutSessionResponse = z.infer<typeof checkoutSessionResponseSchema>;
-
-export const accountBillingStatusSchema = z.object({
-  subscriptionId: z.string().min(1),
-  provider: billingProviderSchema,
-  managementChannel: individualManagementChannelSchema,
-  planKey: individualPlanKeySchema,
-  cadence: billingCadenceSchema.nullable(),
-  lifecycleState: accountSubscriptionStateSchema,
-  trialEndsAt: z.string().nullable(),
-  currentPeriodEndsAt: z.string().nullable(),
-  graceEndsAt: z.string().nullable(),
-});
-
-export type AccountBillingStatus = z.infer<typeof accountBillingStatusSchema>;
-export type BillingProvider = z.infer<typeof billingProviderSchema>;
-export type IndividualManagementChannel = z.infer<typeof individualManagementChannelSchema>;
-
-export function premiumOriginLabel(provider: BillingProvider): string {
-  switch (provider) {
-    case 'STRIPE':
-      return 'Stripe';
-    case 'APPLE_APP_STORE':
-      return 'App Store';
-    case 'GOOGLE_PLAY':
-      return 'Google Play';
-  }
-}
-
-export function isStripeManagedChannel(channel: IndividualManagementChannel): boolean {
-  return channel === 'STRIPE_CUSTOMER_PORTAL';
-}
-
-/** Public store subscription management destinations (no secrets). */
-export const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
-export const GOOGLE_PLAY_SUBSCRIPTIONS_URL =
-  'https://play.google.com/store/account/subscriptions';
-
-export function storeManagementUrl(
-  channel: IndividualManagementChannel,
-): string | null {
-  switch (channel) {
-    case 'APPLE_APP_STORE':
-      return APPLE_SUBSCRIPTIONS_URL;
-    case 'GOOGLE_PLAY':
-      return GOOGLE_PLAY_SUBSCRIPTIONS_URL;
-    case 'STRIPE_CUSTOMER_PORTAL':
-      return null;
-  }
-}
-
+/** Web copy for Stripe Customer Portal. */
 export function storeManagementLabel(channel: IndividualManagementChannel): string {
-  switch (channel) {
-    case 'APPLE_APP_STORE':
-      return 'Manage in App Store';
-    case 'GOOGLE_PLAY':
-      return 'Manage in Google Play';
-    case 'STRIPE_CUSTOMER_PORTAL':
-      return 'Manage payment method and invoices';
-  }
+  return sharedStoreManagementLabel(channel);
 }

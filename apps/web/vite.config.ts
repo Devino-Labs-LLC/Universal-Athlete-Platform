@@ -44,7 +44,7 @@ export default defineConfig(({ command, mode }) => {
         provider: 'v8',
         reporter: ['lcov', 'text-summary'],
         reportsDirectory: './coverage',
-        include: ['src/**/*.{ts,tsx}'],
+        include: ['src/**/*.{ts,tsx}', '../../packages/billing-contracts/src/**/*.{ts,tsx}'],
         exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts'],
       },
     },

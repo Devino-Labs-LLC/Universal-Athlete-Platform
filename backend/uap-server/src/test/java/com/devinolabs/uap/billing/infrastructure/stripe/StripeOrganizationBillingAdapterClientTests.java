@@ -490,6 +490,189 @@ class StripeOrganizationBillingAdapterClientTests {
 	}
 
 	@Test
+	void createAccountCustomerRejectsLiveModeAndReturnsSandboxId() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		Customer live = new Customer();
+		live.setId("cus_live_account");
+		live.setLivemode(true);
+		when(stripeClient.v1().customers().create(any(CustomerCreateParams.class), any())).thenReturn(live);
+		assertThatThrownBy(() -> adapter.createAccountCustomer(accountId))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("sandbox");
+
+		Customer sandbox = new Customer();
+		sandbox.setId("cus_account_sandbox");
+		sandbox.setLivemode(false);
+		when(stripeClient.v1().customers().create(any(CustomerCreateParams.class), any())).thenReturn(sandbox);
+		assertThat(adapter.createAccountCustomer(accountId)).isEqualTo("cus_account_sandbox");
+
+		ArgumentCaptor<CustomerCreateParams> params = ArgumentCaptor.forClass(CustomerCreateParams.class);
+		ArgumentCaptor<RequestOptions> options = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(stripeClient.v1().customers(), times(2)).create(params.capture(), options.capture());
+		assertThat(params.getValue().getDescription()).isEqualTo("Athlete Readiness account");
+		assertThat(options.getValue().getIdempotencyKey()).isEqualTo("uap_account_customer_" + accountId);
+	}
+
+	@Test
+	void createAccountCustomerSurfacesStripeFailure() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		when(stripeClient.v1().customers().create(any(CustomerCreateParams.class), any()))
+				.thenThrow(new ApiException("down", "req", "code", 500, null));
+		assertThatThrownBy(() -> adapter.createAccountCustomer(accountId))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+	}
+
+	@Test
+	void createAccountCheckoutSessionReturnsHostedUrl() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		Session session = new Session();
+		session.setId("cs_account_1");
+		session.setUrl("https://checkout.stripe.test/cs_account_1");
+		session.setLivemode(false);
+		ArgumentCaptor<SessionCreateParams> params = ArgumentCaptor.forClass(SessionCreateParams.class);
+		ArgumentCaptor<RequestOptions> options = ArgumentCaptor.forClass(RequestOptions.class);
+		when(stripeClient.v1().checkout().sessions().create(params.capture(), options.capture()))
+				.thenReturn(session);
+
+		var result = adapter.createAccountCheckoutSession(
+				accountId,
+				subscriptionId,
+				"cus_account",
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY);
+
+		assertThat(result.sessionId()).isEqualTo("cs_account_1");
+		assertThat(result.checkoutUrl()).isEqualTo("https://checkout.stripe.test/cs_account_1");
+		assertThat(params.getValue().getCustomer()).isEqualTo("cus_account");
+		assertThat(params.getValue().getSuccessUrl())
+				.contains("/app/billing/success");
+		assertThat(params.getValue().getCancelUrl()).contains("/app/billing/cancel");
+		assertThat(params.getValue().getMetadata())
+				.containsEntry("uap_account_id", accountId.toString())
+				.containsEntry("uap_subscription_id", subscriptionId.toString());
+		assertThat(options.getValue().getIdempotencyKey())
+				.isEqualTo("uap_account_checkout_" + subscriptionId);
+	}
+
+	@Test
+	void createAccountCheckoutSessionRejectsNonIndividualPlanAndLiveMode() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		assertThatThrownBy(() -> adapter.createAccountCheckoutSession(
+				accountId,
+				subscriptionId,
+				"cus_account",
+				CommercialPlanKey.ORG_BAND_75,
+				BillingCadence.ANNUAL))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("INDIVIDUAL_PREMIUM");
+
+		Session live = new Session();
+		live.setId("cs_live");
+		live.setUrl("https://checkout.stripe.com/cs_live");
+		live.setLivemode(true);
+		when(stripeClient.v1().checkout().sessions().create(any(SessionCreateParams.class), any()))
+				.thenReturn(live);
+		assertThatThrownBy(() -> adapter.createAccountCheckoutSession(
+				accountId,
+				subscriptionId,
+				"cus_account",
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.ANNUAL))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("sandbox");
+	}
+
+	@Test
+	void fetchAccountCheckoutSubscriptionMapsActiveSnapshot() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		Session session = accountCheckoutSession(accountId);
+		when(stripeClient.v1().checkout().sessions().retrieve("cs_account_1")).thenReturn(session);
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
+				.thenReturn(accountSubscription(accountId, "active"));
+
+		assertThat(adapter.fetchAccountCheckoutSubscription(
+				accountId,
+				subscriptionId,
+				"cs_account_1",
+				"cus_account",
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY))
+				.satisfies(snapshot -> {
+					assertThat(snapshot.providerCustomerRef()).isEqualTo("cus_account");
+					assertThat(snapshot.providerSubscriptionRef()).isEqualTo("sub_test_1");
+					assertThat(snapshot.status()).isEqualTo(ProviderCommercialStatus.ACTIVE);
+					assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.INDIVIDUAL_PREMIUM);
+					assertThat(snapshot.billingCadence()).isEqualTo(BillingCadence.MONTHLY);
+				});
+	}
+
+	@Test
+	void fetchAccountCheckoutSubscriptionRejectsMetadataMismatch() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		Session mismatched = accountCheckoutSession(accountId);
+		mismatched.setCustomer("cus_other");
+		when(stripeClient.v1().checkout().sessions().retrieve("cs_account_1")).thenReturn(mismatched);
+		assertThatThrownBy(() -> adapter.fetchAccountCheckoutSubscription(
+				accountId,
+				subscriptionId,
+				"cs_account_1",
+				"cus_account",
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("customer");
+	}
+
+	@Test
+	void accountCancelAndReactivateUseAccountIdempotencyKeys() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		ArgumentCaptor<SubscriptionUpdateParams> params = ArgumentCaptor.forClass(SubscriptionUpdateParams.class);
+		ArgumentCaptor<RequestOptions> options = ArgumentCaptor.forClass(RequestOptions.class);
+		when(stripeClient.v1().subscriptions().update(eq("sub_test_1"), params.capture(), options.capture()))
+				.thenReturn(subscription("active"));
+		UUID requestId = UUID.randomUUID();
+
+		adapter.scheduleAccountCancelAtPeriodEnd(subscriptionId, "sub_test_1", requestId);
+		assertThat(params.getValue().getCancelAtPeriodEnd()).isTrue();
+		assertThat(options.getValue().getIdempotencyKey())
+				.isEqualTo("athlete-readiness:account-cancel:" + subscriptionId + ":" + requestId);
+
+		adapter.reactivateAccountSubscription(subscriptionId, "sub_test_1", requestId);
+		assertThat(params.getAllValues().get(1).getCancelAtPeriodEnd()).isFalse();
+		assertThat(options.getAllValues().get(1).getIdempotencyKey())
+				.isEqualTo("athlete-readiness:account-reactivate:" + subscriptionId + ":" + requestId);
+	}
+
+	@Test
+	void fetchAccountSubscriptionDelegatesToSharedFetch() throws Exception {
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1")).thenReturn(subscription("active"));
+		assertThat(adapter.fetchAccountSubscription("sub_test_1").status())
+				.isEqualTo(ProviderCommercialStatus.ACTIVE);
+	}
+
+	@Test
+	void fetchAuthoritativeSnapshotUsesAccountMetadataPath() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
+				.thenReturn(accountSubscription(accountId, "active"));
+		OrganizationBillingProvider.VerifiedProviderEvent event = new OrganizationBillingProvider.VerifiedProviderEvent(
+				"evt_account",
+				"customer.subscription.updated",
+				false,
+				NOW.plusSeconds(10),
+				null,
+				"sub_test_1",
+				null,
+				subscriptionId,
+				accountId);
+
+		assertThat(adapter.fetchAuthoritativeSnapshot(event)).satisfies(snapshot -> {
+			assertThat(snapshot.status()).isEqualTo(ProviderCommercialStatus.ACTIVE);
+			assertThat(snapshot.planKey()).isEqualTo(CommercialPlanKey.INDIVIDUAL_PREMIUM);
+		});
+	}
+
+	@Test
 	void nonpaymentTerminationCancelsOnlyADelinquentSandboxSubscription() throws Exception {
 		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
 				.thenReturn(subscription("past_due"), subscription("canceled"));
@@ -629,6 +812,17 @@ class StripeOrganizationBillingAdapterClientTests {
 		return session;
 	}
 
+	private Session accountCheckoutSession(UUID accountId) {
+		Session session = new Session();
+		session.setId("cs_account_1");
+		session.setLivemode(false);
+		session.setCustomer("cus_account");
+		session.setSubscription("sub_test_1");
+		session.setClientReferenceId(subscriptionId.toString());
+		session.setMetadata(accountMetadata(accountId));
+		return session;
+	}
+
 	private Subscription subscription(String status) {
 		Price price = new Price();
 		price.setId("price_75_annual");
@@ -651,12 +845,41 @@ class StripeOrganizationBillingAdapterClientTests {
 		return subscription;
 	}
 
+	private Subscription accountSubscription(UUID accountId, String status) {
+		Price price = new Price();
+		price.setId("price_test_individual_monthly");
+		SubscriptionItem item = new SubscriptionItem();
+		item.setId("si_account_1");
+		item.setPrice(price);
+		item.setQuantity(1L);
+		item.setCurrentPeriodEnd(NOW.plusSeconds(30L * 24 * 60 * 60).getEpochSecond());
+		SubscriptionItemCollection items = new SubscriptionItemCollection();
+		items.setData(List.of(item));
+		Subscription subscription = new Subscription();
+		subscription.setId("sub_test_1");
+		subscription.setLivemode(false);
+		subscription.setCustomer("cus_account");
+		subscription.setStatus(status);
+		subscription.setCancelAtPeriodEnd(false);
+		subscription.setMetadata(accountMetadata(accountId));
+		subscription.setItems(items);
+		return subscription;
+	}
+
 	private Map<String, String> uapMetadata() {
 		return Map.of(
 				"uap_organization_id", organizationId.toString(),
 				"uap_subscription_id", subscriptionId.toString(),
 				"uap_plan_key", CommercialPlanKey.ORG_BAND_75.name(),
 				"uap_billing_cadence", BillingCadence.ANNUAL.name());
+	}
+
+	private Map<String, String> accountMetadata(UUID accountId) {
+		return Map.of(
+				"uap_account_id", accountId.toString(),
+				"uap_subscription_id", subscriptionId.toString(),
+				"uap_plan_key", CommercialPlanKey.INDIVIDUAL_PREMIUM.name(),
+				"uap_billing_cadence", BillingCadence.MONTHLY.name());
 	}
 
 }

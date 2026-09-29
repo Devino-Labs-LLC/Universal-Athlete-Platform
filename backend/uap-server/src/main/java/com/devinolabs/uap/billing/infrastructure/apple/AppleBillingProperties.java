@@ -1,17 +1,19 @@
 package com.devinolabs.uap.billing.infrastructure.apple;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.infrastructure.store.IndividualPremiumProductCatalog;
+import com.devinolabs.uap.billing.infrastructure.store.StoreBillingPropertySupport;
 
 @ConfigurationProperties(prefix = "uap.billing.apple")
 public class AppleBillingProperties {
+
+	private static final String ENABLED_LABEL = "Apple";
+	private static final String PRODUCTS_PREFIX = "uap.billing.apple.products.";
 
 	private boolean enabled;
 	private String bundleId;
@@ -81,19 +83,16 @@ public class AppleBillingProperties {
 		if (!enabled) {
 			return;
 		}
-		bundleId = requireText(bundleId, "uap.billing.apple.bundle-id");
-		keyId = requireText(keyId, "uap.billing.apple.key-id");
-		issuerId = requireText(issuerId, "uap.billing.apple.issuer-id");
-		privateKeyPem = requireText(privateKeyPem, "uap.billing.apple.private-key-pem");
-		environment = requireText(environment, "uap.billing.apple.environment");
-		if (!"Sandbox".equals(environment) && !"Production".equals(environment)) {
-			throw new IllegalStateException(
-					"uap.billing.apple.environment must be Sandbox or Production");
-		}
-		if ("Production".equals(environment)) {
-			throw new IllegalStateException(
-					"uap.billing.apple.environment Production is not authorized in V4 G2 (Sandbox only)");
-		}
+		bundleId = StoreBillingPropertySupport.requireText(bundleId, "uap.billing.apple.bundle-id", ENABLED_LABEL);
+		keyId = StoreBillingPropertySupport.requireText(keyId, "uap.billing.apple.key-id", ENABLED_LABEL);
+		issuerId = StoreBillingPropertySupport.requireText(issuerId, "uap.billing.apple.issuer-id", ENABLED_LABEL);
+		privateKeyPem = StoreBillingPropertySupport.requireText(
+				privateKeyPem, "uap.billing.apple.private-key-pem", ENABLED_LABEL);
+		environment = StoreBillingPropertySupport.requireSandboxEnvironment(
+				environment,
+				"uap.billing.apple.environment",
+				ENABLED_LABEL,
+				"uap.billing.apple.environment Production is not authorized in V4 G2 (Sandbox only)");
 		if (!privateKeyPem.contains("BEGIN PRIVATE KEY")) {
 			throw new IllegalStateException(
 					"uap.billing.apple.private-key-pem must be a PEM-encoded App Store Connect API private key");
@@ -108,18 +107,7 @@ public class AppleBillingProperties {
 		return products.requirePlanForProduct(productId);
 	}
 
-	String productId(CommercialPlanKey planKey, BillingCadence cadence) {
-		return products.productId(planKey, cadence);
-	}
-
 	public record PricedProduct(CommercialPlanKey planKey, BillingCadence cadence) {
-	}
-
-	private static String requireText(String value, String propertyName) {
-		if (value == null || value.isBlank()) {
-			throw new IllegalStateException(propertyName + " must be configured when Apple billing is enabled");
-		}
-		return value.trim();
 	}
 
 	public static class Products {
@@ -144,56 +132,22 @@ public class AppleBillingProperties {
 		}
 
 		private void validate() {
-			Set<String> distinct = new HashSet<>(catalog().values());
-			if (distinct.size() != 2) {
-				throw new IllegalStateException("Apple Individual Premium product IDs must be distinct");
-			}
-		}
-
-		private String productId(CommercialPlanKey planKey, BillingCadence cadence) {
-			Objects.requireNonNull(planKey, "planKey must not be null");
-			Objects.requireNonNull(cadence, "cadence must not be null");
-			String value = catalog().get(new CatalogSlot(planKey, cadence));
-			if (value == null) {
-				throw new IllegalArgumentException("Apple catalog does not contain " + planKey);
-			}
-			return value;
+			IndividualPremiumProductCatalog.requireDistinctProductIds(catalog(), "Apple");
 		}
 
 		private PricedProduct requirePlanForProduct(String productId) {
-			if (productId == null || productId.isBlank()) {
-				throw new IllegalArgumentException("Apple product is not an allow-listed product");
-			}
-			String normalized = productId.trim();
-			for (Map.Entry<CatalogSlot, String> entry : catalog().entrySet()) {
-				if (entry.getValue().equals(normalized)) {
-					return new PricedProduct(entry.getKey().planKey(), entry.getKey().cadence());
-				}
-			}
-			throw new IllegalArgumentException("Apple product is not an allow-listed product");
+			IndividualPremiumProductCatalog.PricedProduct priced =
+					IndividualPremiumProductCatalog.requirePlanForProduct(catalog(), productId, "Apple");
+			return new PricedProduct(priced.planKey(), priced.cadence());
 		}
 
-		private Map<CatalogSlot, String> catalog() {
-			Map<CatalogSlot, String> catalog = new java.util.HashMap<>();
-			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.MONTHLY,
-					individualPremiumMonthly, "individual-premium-monthly");
-			put(catalog, CommercialPlanKey.INDIVIDUAL_PREMIUM, BillingCadence.ANNUAL,
-					individualPremiumAnnual, "individual-premium-annual");
-			return Map.copyOf(catalog);
+		private Map<IndividualPremiumProductCatalog.CatalogSlot, String> catalog() {
+			return IndividualPremiumProductCatalog.catalog(
+					individualPremiumMonthly,
+					individualPremiumAnnual,
+					PRODUCTS_PREFIX,
+					ENABLED_LABEL);
 		}
-
-		private static void put(
-				Map<CatalogSlot, String> catalog,
-				CommercialPlanKey planKey,
-				BillingCadence cadence,
-				String value,
-				String propertySuffix) {
-			String normalized = requireText(value, "uap.billing.apple.products." + propertySuffix);
-			catalog.put(new CatalogSlot(planKey, cadence), normalized);
-		}
-	}
-
-	private record CatalogSlot(CommercialPlanKey planKey, BillingCadence cadence) {
 	}
 
 }

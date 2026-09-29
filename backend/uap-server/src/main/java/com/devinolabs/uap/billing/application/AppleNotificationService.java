@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -42,8 +41,6 @@ public class AppleNotificationService {
 			"REVOKE",
 			"OFFER_REDEEMED",
 			"RENEWAL_EXTENDED");
-
-	private static final int MAX_APPLY_ATTEMPTS = 3;
 
 	private final AppleAppStoreBillingProvider appleProvider;
 	private final ProviderEventInbox eventInbox;
@@ -97,18 +94,9 @@ public class AppleNotificationService {
 			return;
 		}
 
-		ObjectOptimisticLockingFailureException lastConflict = null;
-		for (int attempt = 1; attempt <= MAX_APPLY_ATTEMPTS; attempt++) {
-			try {
-				VerifiedNotification captured = notification;
-				billingTransactions.executeWithoutResult(status -> apply(captured, claimed.id()));
-				return;
-			}
-			catch (ObjectOptimisticLockingFailureException ex) {
-				lastConflict = ex;
-			}
-		}
-		throw lastConflict;
+		ProviderNotificationApplySupport.applyWithOptimisticRetry(
+				billingTransactions,
+				() -> apply(notification, claimed.id()));
 	}
 
 	private void apply(VerifiedNotification notification, UUID receiptId) {

@@ -103,6 +103,48 @@ class HttpGooglePlayDeveloperApiClientTests {
 	}
 
 	@Test
+	void getSubscriptionPurchaseMaps400ToInvalidPurchase() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenReturn(ResponseEntity.ok("{\"access_token\":\"tok\",\"expires_in\":3600}"))
+				.thenThrow(HttpClientErrorException.create(
+						HttpStatus.BAD_REQUEST, "Bad Request", null, null, StandardCharsets.UTF_8));
+
+		assertThatThrownBy(() -> client.getSubscriptionPurchase(TOKEN))
+				.isInstanceOf(InvalidGooglePlayPurchaseException.class)
+				.hasMessageContaining("not found");
+	}
+
+	@Test
+	void getSubscriptionPurchaseMapsNon404HttpFailureToProviderUnavailable() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenReturn(ResponseEntity.ok("{\"access_token\":\"tok\",\"expires_in\":3600}"))
+				.thenThrow(HttpClientErrorException.create(
+						HttpStatus.INTERNAL_SERVER_ERROR, "Server Error", null, null, StandardCharsets.UTF_8));
+
+		assertThatThrownBy(() -> client.getSubscriptionPurchase(TOKEN))
+				.isInstanceOf(BillingProviderUnavailableException.class);
+	}
+
+	@Test
+	void getSubscriptionPurchaseRejectsNonSuccessResponseBody() {
+		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
+				.thenReturn(ResponseEntity.ok("{\"access_token\":\"tok\",\"expires_in\":3600}"))
+				.thenReturn(ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+
+		assertThatThrownBy(() -> client.getSubscriptionPurchase(TOKEN))
+				.isInstanceOf(InvalidGooglePlayPurchaseException.class)
+				.hasMessageContaining("not found");
+	}
+
+	@Test
+	void parseSubscriptionResponseTreatsNullTestPurchaseAsFalse() {
+		SubscriptionPurchase purchase = client.parseSubscriptionResponse(TOKEN, subscriptionBody(false));
+
+		assertThat(purchase.testPurchase()).isFalse();
+		assertThat(purchase.autoRenewEnabled()).isTrue();
+	}
+
+	@Test
 	void getSubscriptionPurchaseMapsTransportFailureToProviderUnavailable() {
 		when(restTemplate.exchange(any(RequestEntity.class), eq(String.class)))
 				.thenThrow(new RestClientException("boom"));

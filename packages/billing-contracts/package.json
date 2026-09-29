@@ -1,0 +1,20 @@
+{
+  "name": "@uap/billing-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./accountBilling": "./src/accountBilling.ts",
+    "./errors": "./src/errors.ts"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "zod": "^4.4.3"
+  }
+}
