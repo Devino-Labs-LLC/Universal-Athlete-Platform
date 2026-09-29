@@ -6,7 +6,7 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice F **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bbac5fc2afa7b05a00c8fd3881f117fdceb5fbf9`; see **§47**). Prior Slice E SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe` (see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slices **G–I** implementation + **I1 RC evidence** on develop (ledger **§48**). Slice F remains **PRODUCTION VERIFIED** on `main` with commercial billing **off** (**§45–§47**). Not commercially active. Not billing live. Commercial flags remain default **off**. Apple/Google sandbox certification remains **BLOCKED** without credentials. Production promotion to `main` is a **separate explicit gate** (not authorized by this ledger). V4 is **not** complete.  
+**`develop`:** Slices **G–I** implementation + **I1 RC evidence** on develop (ledger **§48**). Authoritative tip `0ea3f18` — Verify **36530853656** + Sonar **OK**. Slice F remains **PRODUCTION VERIFIED** on `main` with commercial billing **off** (**§45–§47**). Not commercially active. Not billing live. Commercial flags remain default **off**. Apple/Google sandbox certification remains **BLOCKED** without credentials. Production promotion to `main` is a **separate explicit gate** (not authorized by this ledger). V4 is **not** complete.  
 **Production schema (`main`):** Flyway **V36** (inferred — see §33 / §39 / §47). **`develop` schema head:** Flyway **V37** (G–I only beyond the V36 production baseline — see **§48.3**).  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
@@ -3447,7 +3447,7 @@ Sandbox certification in **§46** stays the provider evidence. This section is t
 
 **Status:** **I1 RC EVIDENCE COMPLETE on develop** (G1–H1 implementation closed; I1 RC ledger recorded). Authorized as one continuous program. Commercial controls stay **off**. This section is the running ledger. It does **not** activate billing. It does **not** authorize commercial launch. It does **not** authorize merge/promotion to `main`.
 
-Starting refs: `main` = `develop` = `8ba443de247e62b3e985280e8f4a02632b399bfe` at program open. Schema then **V36**. Slices A–F remain **PRODUCTION VERIFIED** on `main`. Current `develop` tip at I1 close: `2216f2a8d9333626a5d16ae0caddb1858bf7dfa0`. Develop schema head **V37**. Individual product semantics stay **§7–§9** and **§22**. `INDIVIDUAL_PREMIUM` is the Account capability. Existing athlete product edges stay free. Premium does not add a new athlete paywall in this program. Organization gates stay **§34**.
+Starting refs: `main` = `develop` = `8ba443de247e62b3e985280e8f4a02632b399bfe` at program open. Schema then **V36**. Slices A–F remain **PRODUCTION VERIFIED** on `main`. Authoritative post-Sonar-remediation `develop` tip: `0ea3f189ca3744a47bbfdb8a6435c7b926fee642` (Verify **36530853656** + Sonar **OK**). Develop schema head **V37**. Individual product semantics stay **§7–§9** and **§22**. `INDIVIDUAL_PREMIUM` is the Account capability. Existing athlete product edges stay free. Premium does not add a new athlete paywall in this program. Organization gates stay **§34**.
 
 Provider Price and store product identifiers stay server configuration. Missing individual catalog ids fail fast only when that provider is enabled. Live catalog creation, live charging, Stripe Tax, App Store submission, and Play production publication are outside this program.
 
@@ -3466,12 +3466,12 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 | Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| G1 | **COMPLETE on develop** | `794da71` | Focused billing + athlete Web manage; Account portal/cancel/reactivate | **SUCCESS** on `d7d7828`; pending latest tip | **SUCCESS** on `d7d7828`; pending latest tip | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
-| G2 | **COMPLETE on develop** — sandbox cert **BLOCKED** | `5be2e47` | Fixture unit tests (validate/restore, foreign ownership, fake token, ASN replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client; no live Apple calls | pending latest Verify | pending Sonar | **BLOCKED** — App Store Connect API credentials absent (do not invent) | None (V37 inbox CHECK already includes `APPLE_APP_STORE`) | Backend + External Integration | Sandbox credentials for live certification only |
-| G3 | **COMPLETE on develop** — sandbox cert **BLOCKED** | `711fba5` | Fixture unit tests (validate/restore, foreign ownership, fake token, RTDN replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client; no live Google calls | pending latest Verify | pending Sonar | **BLOCKED** — Play Console service-account credentials absent (do not invent) | None (V37 inbox CHECK already includes `GOOGLE_PLAY`) | Backend + External Integration | Sandbox credentials for live certification only |
-| G4 | **COMPLETE on develop** | `9e0dce9` | ADR-045 unit tests (`IndividualAdr045PolicyTests`: overlap rejection, paid-through switch, org∪Premium union, origin management channel); focused billing suites | pending latest Verify | pending Sonar | None | None | Backend | None for implementation |
-| H1 | **COMPLETE on develop** | `e131052` (UX) / `2216f2a` (ledger + test tighten) | Web AccountBillingPage origin matrix + pricing summary; mobile Premium billing (status, restore bridge, manage-by-origin); focused web/mobile UX tests | pending latest Verify | pending Sonar | None | None | Web + Mobile | No public marketing site; no IAP SDK / no secrets in bundles |
-| I1 | **COMPLETE (RC evidence on develop)** | impl tip `fa51268` | T12–T22 evidence map (**§48.4**); flags default-off confirmed; migration review (**§48.3**); Windows full-serial **INCONCLUSIVE** | pending latest Verify on tip | pending Sonar on tip | Apple/Google remain **BLOCKED**; Stripe Individual sandbox Prices not certified | Develop head **V37** only | Documentation / Lead | Commercial activation + `main` promotion remain **separate explicit gates** |
+| G1 | **COMPLETE on develop** | `794da71` | Focused billing + athlete Web manage; Account portal/cancel/reactivate | **SUCCESS** [36530853656](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36530853656) on `0ea3f18` | **OK** on `0ea3f18` | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
+| G2 | **COMPLETE on develop** — sandbox cert **BLOCKED** | `5be2e47` | Fixture unit tests (validate/restore, foreign ownership, fake token, ASN replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client; no live Apple calls | **SUCCESS** on `0ea3f18` | **OK** on `0ea3f18` | **BLOCKED** — App Store Connect API credentials absent (do not invent) | None (V37 inbox CHECK already includes `APPLE_APP_STORE`) | Backend + External Integration | Sandbox credentials for live certification only |
+| G3 | **COMPLETE on develop** — sandbox cert **BLOCKED** | `711fba5` | Fixture unit tests (validate/restore, foreign ownership, fake token, RTDN replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client; no live Google calls | **SUCCESS** on `0ea3f18` | **OK** on `0ea3f18` | **BLOCKED** — Play Console service-account credentials absent (do not invent) | None (V37 inbox CHECK already includes `GOOGLE_PLAY`) | Backend + External Integration | Sandbox credentials for live certification only |
+| G4 | **COMPLETE on develop** | `9e0dce9` | ADR-045 unit tests (`IndividualAdr045PolicyTests`: overlap rejection, paid-through switch, org∪Premium union, origin management channel); focused billing suites | **SUCCESS** on `0ea3f18` | **OK** on `0ea3f18` | None | None | Backend | None for implementation |
+| H1 | **COMPLETE on develop** | `e131052` (UX) / `2216f2a` (ledger + test tighten) | Web AccountBillingPage origin matrix + pricing summary; mobile Premium billing (status, restore bridge, manage-by-origin); focused web/mobile UX tests | **SUCCESS** on `0ea3f18` | **OK** on `0ea3f18` | None | None | Web + Mobile | No public marketing site; no IAP SDK / no secrets in bundles |
+| I1 | **COMPLETE (RC evidence on develop)** | tip `0ea3f18` | T12–T22 evidence map (**§48.4**); flags default-off confirmed; migration review (**§48.3**); Windows full-serial **INCONCLUSIVE** | **SUCCESS** [36530853656](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36530853656) | **OK** — coverage **80.8%**, duplication **1.9%**, ratings **A**, hotspots **100%** | Apple/Google remain **BLOCKED**; Stripe Individual sandbox Prices not certified | Develop head **V37** only | Documentation / Lead | Commercial activation + `main` promotion remain **separate explicit gates** |
 
 **Local Windows backend full-serial Testcontainers check:** **INCONCLUSIVE** — Docker Desktop / Testcontainers MySQL connection drops (`CommunicationsException` / `EOFException`) on this Windows host. Those transport failures are **not** classified as repository test failures. Do not burn time re-running the entire serial suite solely against Docker instability. **Authoritative full-suite gate = GitHub Actions Verify** (backend shards + web + mobile).
 
@@ -3481,6 +3481,7 @@ Provider Price and store product identifiers stay server configuration. Missing 
 | --- | --- | --- |
 | `d7d7828` (G1 coverage) | prior | Web/Mobile/Backend + Sonar **SUCCESS** |
 | `0f27de861e013d8fc146bf4dba1bb917cc174462` (Apple/Google New Code coverage tests) | [36522348655](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36522348655) | Web/Mobile/Backend **SUCCESS**; Sonar **FAILURE** (compute-engine analysis **completed** — real Quality Gate fail, not scanner/network) |
+| `0ea3f189ca3744a47bbfdb8a6435c7b926fee642` (coverage + duplication remediation) | [36530853656](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36530853656) | Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, Sonar — all **SUCCESS** |
 
 **Sonar Quality Gate conditions on `0f27de8` / develop (SonarCloud `qualitygates/project_status`):**
 
@@ -3493,7 +3494,9 @@ Provider Price and store product identifiers stay server configuration. Missing 
 | `new_duplicated_lines_density` | ≤ 3% | **5.0%** | **ERROR** |
 | `new_security_hotspots_reviewed` | = 100% | 100.0% | OK |
 
-Failing metrics were **both** New Code coverage **and** New Code duplication (not coverage alone). Remediation (no NOSONAR / no exclusions / no gate weakening): shared `@uap/billing-contracts` package + Java store/notification dedupe (`StoreBillingPropertySupport`, `IndividualPremiumProductCatalog`, `ProviderNotificationApplySupport`) + additional Stripe/Apple/Google coverage tests. Post-remediation tip SHA and Verify run recorded after push.
+Failing metrics were **both** New Code coverage **and** New Code duplication (not coverage alone). Remediation (no NOSONAR / no exclusions / no gate weakening): shared `@uap/billing-contracts` package + Java store/notification dedupe (`StoreBillingPropertySupport`, `IndividualPremiumProductCatalog`, `ProviderNotificationApplySupport`) + additional Stripe/Apple/Google coverage tests.
+
+**Sonar Quality Gate after remediation tip `0ea3f18` (develop):** status **OK**. New Code coverage **80.8%**, duplication **1.9%**, reliability/security/maintainability **A** (1.0), hotspots reviewed **100%**.
 
 **Commercial flags (repository defaults — remain off):**
 
@@ -3554,10 +3557,10 @@ Pointer table only. Does **not** claim live provider certification or commercial
 - Production promotion to **`main`** is a **SEPARATE explicit gate**. This section does **not** merge `main`.
 - Commercial flags remain default **off**. Do not enable them from this ledger.
 - Apple / Google sandbox certification remains **BLOCKED** without credentials.
-- Verify / Sonar: tip `0f27de8` run **36522348655** failed QG on New Code coverage **78.4%** and duplication **5.0%** (other New Code ratings OK). Remediation pushed separately — do not invent post-remediation metrics until the new Verify completes.
+- Verify / Sonar: tip `0f27de8` run **36522348655** failed QG on New Code coverage **78.4%** and duplication **5.0%**. Remediation tip `0ea3f18` Verify **36530853656** **SUCCESS** including Sonar (**OK**: coverage **80.8%**, duplication **1.9%**).
 - Windows local full-serial Testcontainers: **INCONCLUSIVE** (authoritative gate = GitHub Verify).
 
-Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop**; authoritative CI/Sonar on the post-`0f27de8` remediation tip remains **pending latest Verify**. V4 is **not** commercially active. V4 is **not** complete.
+Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop** with authoritative Verify/Sonar green on `0ea3f18`. V4 is **not** commercially active. V4 is **not** complete. Production promotion to `main` remains a **SEPARATE explicit gate**.
 
 
 
