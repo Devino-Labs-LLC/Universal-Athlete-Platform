@@ -866,11 +866,19 @@ class UapServerApplicationTests {
 						null, null, "billing_account_customers", new String[] { "TABLE" });
 				ResultSet accountId = connection.getMetaData().getColumns(
 						null, null, "billing_account_customers", "account_id");
+				ResultSet provider = connection.getMetaData().getColumns(
+						null, null, "billing_account_customers", "provider");
+				ResultSet providerCustomerRef = connection.getMetaData().getColumns(
+						null, null, "billing_account_customers", "provider_customer_ref");
 				ResultSet versions = connection.createStatement()
 						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '37'")) {
 			assertThat(customers.next()).isTrue();
 			assertThat(accountId.next()).isTrue();
 			assertThat(accountId.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(provider.next()).isTrue();
+			assertThat(provider.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(providerCustomerRef.next()).isTrue();
+			assertThat(providerCustomerRef.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create billing account customers");
 			assertThat(versions.getBoolean("success")).isTrue();

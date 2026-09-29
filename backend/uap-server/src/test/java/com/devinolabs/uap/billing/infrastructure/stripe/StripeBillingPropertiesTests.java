@@ -62,6 +62,19 @@ class StripeBillingPropertiesTests {
 		assertThatThrownBy(properties::validateSandbox)
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("CHECKOUT_SESSION_ID");
+
+		properties = validProperties();
+		properties.setIndividualCancelUrl("http://billing.example.com/app/cancel");
+		assertThatThrownBy(properties::validateSandbox)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("HTTPS or local HTTP");
+
+		properties = validProperties();
+		properties.setIndividualSuccessUrl("https://app.example.com/app/billing/success");
+		assertThatThrownBy(properties::validateSandbox)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("individual-success-url")
+				.hasMessageContaining("CHECKOUT_SESSION_ID");
 	}
 
 	@Test
@@ -127,6 +140,9 @@ class StripeBillingPropertiesTests {
 		properties.setWebhookSecret("whsec_placeholder_not_a_real_secret");
 		properties.setSuccessUrl("https://app.example.com/billing/success?session_id={CHECKOUT_SESSION_ID}");
 		properties.setCancelUrl("https://app.example.com/billing/cancel");
+		properties.setIndividualSuccessUrl(
+				"https://app.example.com/app/billing/success?session_id={CHECKOUT_SESSION_ID}");
+		properties.setIndividualCancelUrl("https://app.example.com/app/billing/cancel");
 		properties.setPortalConfigurationId("bpc_test_configuration");
 		properties.setPortalReturnUrl("https://app.example.com/coach/billing");
 		StripeBillingProperties.Prices prices = properties.getPrices();

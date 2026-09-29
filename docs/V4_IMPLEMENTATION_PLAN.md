@@ -3466,12 +3466,16 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 | Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| G1 | Not started | — | — | — | — | — | — | — | — |
+| G1 | In progress | `d521d5c` (+ local athlete web / individual return URLs / V37 flyway-head test fix pending commit) | Backend unit billing green; web billing + full web suite green locally; full `./gradlew test` in progress on Windows | — | — | Stripe sandbox Prices not certified this turn | **V37** on develop | Lead G1 gap review done | **PO:** confirm Account Stripe cancel/manage mirrors §40 (Portal PM/invoices only; app-owned cancel/reactivate). Remaining: Account portal/cancel/reactivate APIs + HTTP identity tests |
 | G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Credentials unknown until the adapter config is exercised |
 | G3 | Not started | — | — | — | — | Google sandbox not claimed | — | — | Same |
 | G4 | Not started | — | — | — | — | — | — | — | — |
 | H1 | Not started | — | — | — | — | — | — | — | — |
-| I1 | Not started | — | — | — | — | — | V36 head | — | Commercial activation remains a later launch gate |
+| I1 | Not started | — | — | — | — | — | Develop head **V37** (I1 still reviews migrations only) | — | Commercial activation remains a later launch gate |
+
+**G1 code so far (SoT):** Account Stripe checkout/sync/GET, `billing_account_customers` (V37), individual Price allowlist, webhook individual path, athlete Web `/app/billing` read/checkout/return, separate individual success/cancel URLs. **Not done:** Account cancel/manage (blocked on PO confirm below), dedicated Individual HTTP integration suite, G1 close evidence.
+
+**Unresolved Product Owner decision (blocks G1 manage only):** Confirm Individual Stripe management mirrors Organization §40 — Customer Portal for payment method / invoices only (Portal cancel off); app-owned cancel-at-period-end + reactivate. Recommend **yes, mirror §40**.
 
 Slice G is **not** complete. Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
 

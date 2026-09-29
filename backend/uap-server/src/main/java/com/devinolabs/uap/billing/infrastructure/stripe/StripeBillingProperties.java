@@ -20,6 +20,8 @@ public class StripeBillingProperties {
 	private String webhookSecret;
 	private String successUrl;
 	private String cancelUrl;
+	private String individualSuccessUrl;
+	private String individualCancelUrl;
 	private String portalConfigurationId;
 	private String portalReturnUrl;
 	private Prices prices = new Prices();
@@ -64,6 +66,22 @@ public class StripeBillingProperties {
 		this.cancelUrl = cancelUrl;
 	}
 
+	public String getIndividualSuccessUrl() {
+		return individualSuccessUrl;
+	}
+
+	public void setIndividualSuccessUrl(String individualSuccessUrl) {
+		this.individualSuccessUrl = individualSuccessUrl;
+	}
+
+	public String getIndividualCancelUrl() {
+		return individualCancelUrl;
+	}
+
+	public void setIndividualCancelUrl(String individualCancelUrl) {
+		this.individualCancelUrl = individualCancelUrl;
+	}
+
 	public String getPortalConfigurationId() {
 		return portalConfigurationId;
 	}
@@ -106,6 +124,12 @@ public class StripeBillingProperties {
 		cancelUrl = requireText(cancelUrl, "uap.billing.stripe.cancel-url");
 		validateUrl(successUrl, "uap.billing.stripe.success-url");
 		validateUrl(cancelUrl, "uap.billing.stripe.cancel-url");
+		individualSuccessUrl = requireText(
+				individualSuccessUrl, "uap.billing.stripe.individual-success-url");
+		individualCancelUrl = requireText(
+				individualCancelUrl, "uap.billing.stripe.individual-cancel-url");
+		validateUrl(individualSuccessUrl, "uap.billing.stripe.individual-success-url");
+		validateUrl(individualCancelUrl, "uap.billing.stripe.individual-cancel-url");
 		portalConfigurationId = requireText(
 				portalConfigurationId, "uap.billing.stripe.portal-configuration-id");
 		if (!portalConfigurationId.startsWith("bpc_")) {
@@ -117,6 +141,10 @@ public class StripeBillingProperties {
 		if (!successUrl.contains("{CHECKOUT_SESSION_ID}")) {
 			throw new IllegalStateException(
 					"uap.billing.stripe.success-url must include {CHECKOUT_SESSION_ID}");
+		}
+		if (!individualSuccessUrl.contains("{CHECKOUT_SESSION_ID}")) {
+			throw new IllegalStateException(
+					"uap.billing.stripe.individual-success-url must include {CHECKOUT_SESSION_ID}");
 		}
 		if (prices == null) {
 			throw new IllegalStateException("uap.billing.stripe.prices must be configured");

@@ -163,6 +163,9 @@ export function ProfilePage() {
 
             <div className={styles.infoBlock}>
               <p className={styles.panelHint}>Account</p>
+              <Link to="/app/billing" className={styles.homeLink}>
+                Premium billing
+              </Link>
               <Link to="/app/invitations" className={styles.homeLink}>
                 Invitations
               </Link>

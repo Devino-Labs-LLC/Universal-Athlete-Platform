@@ -55,6 +55,8 @@ import com.devinolabs.uap.organization.domain.OrganizationMembershipRole;
 		"uap.billing.stripe.webhook-secret=whsec_placeholder_for_http_tests",
 		"uap.billing.stripe.success-url=https://app.example.com/billing/success?session_id={CHECKOUT_SESSION_ID}",
 		"uap.billing.stripe.cancel-url=https://app.example.com/billing/cancel",
+		"uap.billing.stripe.individual-success-url=https://app.example.com/app/billing/success?session_id={CHECKOUT_SESSION_ID}",
+		"uap.billing.stripe.individual-cancel-url=https://app.example.com/app/billing/cancel",
 		"uap.billing.stripe.portal-configuration-id=bpc_test_http",
 		"uap.billing.stripe.portal-return-url=https://app.example.com/coach/billing",
 		"uap.billing.stripe.prices.org-band-25-monthly=price_http_25_monthly",

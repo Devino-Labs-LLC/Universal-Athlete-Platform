@@ -101,6 +101,21 @@ const ManageSportsPage = lazy(() =>
 const ManageGoalsPage = lazy(() =>
   import('@/features/profile/pages/ManageGoalsPage').then((m) => ({ default: m.ManageGoalsPage })),
 );
+const AccountBillingPage = lazy(() =>
+  import('@/features/billing/pages/AccountBillingPage').then((m) => ({
+    default: m.AccountBillingPage,
+  })),
+);
+const AccountBillingCheckoutSuccessPage = lazy(() =>
+  import('@/features/billing/pages/AccountBillingCheckoutReturnPages').then((m) => ({
+    default: m.AccountBillingCheckoutSuccessPage,
+  })),
+);
+const AccountBillingCheckoutCancelPage = lazy(() =>
+  import('@/features/billing/pages/AccountBillingCheckoutReturnPages').then((m) => ({
+    default: m.AccountBillingCheckoutCancelPage,
+  })),
+);
 const TrainingLandingPage = lazy(() =>
   import('@/features/training/pages/TrainingLandingPage').then((m) => ({ default: m.TrainingLandingPage })),
 );
@@ -360,6 +375,30 @@ export function AppRouter() {
               <Route path="profile/edit" element={<EditProfilePage />} />
               <Route path="profile/sports" element={<ManageSportsPage />} />
               <Route path="profile/goals" element={<ManageGoalsPage />} />
+              <Route
+                path="billing"
+                element={
+                  <LazyPage>
+                    <AccountBillingPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="billing/success"
+                element={
+                  <LazyPage>
+                    <AccountBillingCheckoutSuccessPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="billing/cancel"
+                element={
+                  <LazyPage>
+                    <AccountBillingCheckoutCancelPage />
+                  </LazyPage>
+                }
+              />
               <Route
                 path="invitations"
                 element={

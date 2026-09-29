@@ -31,8 +31,9 @@ class StripeOrganizationBillingAdapterTests {
 	void checkoutUsesLockedServerPriceTrialAndDynamicMethods() {
 		UUID organizationId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();
+		StripeBillingProperties properties = StripeBillingPropertiesTests.validProperties();
 		SessionCreateParams params = StripeOrganizationBillingAdapter.checkoutParams(
-				StripeBillingPropertiesTests.validProperties(),
+				properties,
 				organizationId,
 				subscriptionId,
 				"cus_sandbox",
@@ -42,6 +43,8 @@ class StripeOrganizationBillingAdapterTests {
 		assertThat(params.getMode()).isEqualTo(SessionCreateParams.Mode.SUBSCRIPTION);
 		assertThat(params.getCustomer()).isEqualTo("cus_sandbox");
 		assertThat(params.getClientReferenceId()).isEqualTo(subscriptionId.toString());
+		assertThat(params.getSuccessUrl()).isEqualTo(properties.getSuccessUrl());
+		assertThat(params.getCancelUrl()).isEqualTo(properties.getCancelUrl());
 		assertThat(params.getPaymentMethodCollection())
 				.isEqualTo(SessionCreateParams.PaymentMethodCollection.ALWAYS);
 		assertThat(params.getPaymentMethodTypes()).isNullOrEmpty();
@@ -58,8 +61,9 @@ class StripeOrganizationBillingAdapterTests {
 	void individualCheckoutUsesServerPriceWithoutTrial() {
 		UUID accountId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();
+		StripeBillingProperties properties = StripeBillingPropertiesTests.validProperties();
 		SessionCreateParams params = StripeOrganizationBillingAdapter.individualCheckoutParams(
-				StripeBillingPropertiesTests.validProperties(),
+				properties,
 				accountId,
 				subscriptionId,
 				"cus_account",
@@ -68,6 +72,10 @@ class StripeOrganizationBillingAdapterTests {
 
 		assertThat(params.getMode()).isEqualTo(SessionCreateParams.Mode.SUBSCRIPTION);
 		assertThat(params.getCustomer()).isEqualTo("cus_account");
+		assertThat(params.getSuccessUrl()).isEqualTo(properties.getIndividualSuccessUrl());
+		assertThat(params.getCancelUrl()).isEqualTo(properties.getIndividualCancelUrl());
+		assertThat(params.getSuccessUrl()).isNotEqualTo(properties.getSuccessUrl());
+		assertThat(params.getCancelUrl()).isNotEqualTo(properties.getCancelUrl());
 		assertThat(params.getAutomaticTax()).isNull();
 		assertThat(params.getLineItems()).singleElement().satisfies(item -> {
 			assertThat(item.getPrice()).isEqualTo("price_test_individual_monthly");
