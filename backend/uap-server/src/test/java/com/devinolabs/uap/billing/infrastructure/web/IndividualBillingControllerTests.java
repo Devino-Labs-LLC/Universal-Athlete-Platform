@@ -82,6 +82,8 @@ class IndividualBillingControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.subscriptionId").value(subscriptionId.toString()))
 				.andExpect(jsonPath("$.planKey").value("INDIVIDUAL_PREMIUM"))
+				.andExpect(jsonPath("$.provider").value("STRIPE"))
+				.andExpect(jsonPath("$.managementChannel").value("STRIPE_CUSTOMER_PORTAL"))
 				.andExpect(jsonPath("$.lifecycleState").value("ACTIVE"));
 	}
 
@@ -237,6 +239,8 @@ class IndividualBillingControllerTests {
 			SubscriptionLifecycleState lifecycleState) {
 		return new IndividualCheckoutService.SubscriptionResult(
 				subscriptionId,
+				com.devinolabs.uap.billing.domain.BillingProvider.STRIPE,
+				com.devinolabs.uap.billing.domain.IndividualManagementChannel.STRIPE_CUSTOMER_PORTAL,
 				CommercialPlanKey.INDIVIDUAL_PREMIUM,
 				BillingCadence.MONTHLY,
 				lifecycleState,

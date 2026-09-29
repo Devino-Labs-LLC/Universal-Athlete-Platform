@@ -50,7 +50,12 @@ class GooglePlayPurchaseValidationServiceTests {
 		googleProvider = mock(GooglePlayBillingProvider.class);
 		subscriptionRepository = mock(SubscriptionRepository.class);
 		auditPort = mock(BillingAuditPort.class);
-		service = new GooglePlayPurchaseValidationService(googleProvider, subscriptionRepository, auditPort, CLOCK);
+		service = new GooglePlayPurchaseValidationService(
+				googleProvider,
+				subscriptionRepository,
+				new IndividualSubscriptionConflictService(subscriptionRepository, CLOCK),
+				auditPort,
+				CLOCK);
 	}
 
 	@Test
@@ -69,6 +74,8 @@ class GooglePlayPurchaseValidationServiceTests {
 				service.validateOrRestore(accountId, PURCHASE_TOKEN, PRODUCT_ID);
 
 		assertThat(result.provider()).isEqualTo(BillingProvider.GOOGLE_PLAY);
+		assertThat(result.managementChannel())
+				.isEqualTo(com.devinolabs.uap.billing.domain.IndividualManagementChannel.GOOGLE_PLAY);
 		assertThat(result.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
 		assertThat(result.planKey()).isEqualTo(CommercialPlanKey.INDIVIDUAL_PREMIUM);
 		ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);

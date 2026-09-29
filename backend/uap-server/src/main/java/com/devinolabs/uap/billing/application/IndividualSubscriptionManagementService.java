@@ -56,7 +56,8 @@ public class IndividualSubscriptionManagementService {
 
 	public PortalSessionResult openPortal(UUID actorAccountId) {
 		Objects.requireNonNull(actorAccountId, "actorAccountId must not be null");
-		requireSingleOpenSubscription(actorAccountId);
+		Subscription open = requireSingleOpenSubscription(actorAccountId);
+		requireStripeOrigin(open);
 		AccountBillingCustomer customer = customerRepository.findByAccountId(actorAccountId)
 				.orElseThrow(BillingAccountNotFoundException::new);
 		PortalSession session = billingProvider.createAccountPortalSession(
@@ -146,13 +147,25 @@ public class IndividualSubscriptionManagementService {
 		return subscription;
 	}
 
-	private void requireSingleOpenSubscription(UUID accountId) {
+	private Subscription requireSingleOpenSubscription(UUID accountId) {
 		List<Subscription> open = subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId)
 				.stream()
 				.filter(subscription -> subscription.lifecycleState() != SubscriptionLifecycleState.EXPIRED)
 				.toList();
 		if (open.size() > 1) {
 			throw conflict("BILLING_SUBSCRIPTION_STATE_CONFLICT", "Account billing state is ambiguous");
+		}
+		if (open.isEmpty()) {
+			throw new BillingAccountNotFoundException();
+		}
+		return open.getFirst();
+	}
+
+	private static void requireStripeOrigin(Subscription subscription) {
+		if (subscription.provider() != BillingProvider.STRIPE) {
+			throw conflict(
+					"BILLING_MANAGED_BY_ORIGIN_PROVIDER",
+					"Manage this subscription through its original billing provider");
 		}
 	}
 

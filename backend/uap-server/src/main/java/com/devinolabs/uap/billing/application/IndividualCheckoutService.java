@@ -14,6 +14,7 @@ import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.IndividualManagementChannel;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
@@ -26,6 +27,7 @@ public class IndividualCheckoutService {
 	private final AccountBillingCustomerRepository customerRepository;
 	private final SubscriptionRepository subscriptionRepository;
 	private final IndividualBillingProvider billingProvider;
+	private final IndividualSubscriptionConflictService conflictService;
 	private final BillingAuditPort auditPort;
 	private final Clock clock;
 
@@ -33,11 +35,13 @@ public class IndividualCheckoutService {
 			AccountBillingCustomerRepository customerRepository,
 			SubscriptionRepository subscriptionRepository,
 			IndividualBillingProvider billingProvider,
+			IndividualSubscriptionConflictService conflictService,
 			BillingAuditPort auditPort,
 			Clock clock) {
 		this.customerRepository = Objects.requireNonNull(customerRepository);
 		this.subscriptionRepository = Objects.requireNonNull(subscriptionRepository);
 		this.billingProvider = Objects.requireNonNull(billingProvider);
+		this.conflictService = Objects.requireNonNull(conflictService);
 		this.auditPort = Objects.requireNonNull(auditPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
@@ -58,7 +62,7 @@ public class IndividualCheckoutService {
 		Subscription subscription = subscriptionRepository.findById(subscriptionId).orElse(null);
 		boolean created = subscription == null;
 		if (created) {
-			requireNoBlockingIndividualSubscription(accountId);
+			conflictService.requireClearForNewIndividualPurchase(accountId, null);
 			subscription = Subscription.startPendingIndividualCheckout(
 					subscriptionId,
 					BillingSubject.account(accountId),
@@ -146,26 +150,6 @@ public class IndividualCheckoutService {
 				.orElseThrow(() -> new IllegalStateException("Account billing customer was not persisted"));
 	}
 
-	private void requireNoBlockingIndividualSubscription(UUID accountId) {
-		Instant now = Instant.now(clock);
-		for (Subscription existing : subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId)) {
-			if (existing.lifecycleState() == SubscriptionLifecycleState.EXPIRED) {
-				continue;
-			}
-			if (existing.lifecycleState() == SubscriptionLifecycleState.PENDING) {
-				throw new BillingConflictException(
-						"BILLING_CHECKOUT_IN_PROGRESS",
-						"Account already has an open Individual checkout");
-			}
-			if (existing.isEffectiveIndividualRelationshipAt(now)
-					|| existing.planKey().isIndividualPlan()) {
-				throw new BillingConflictException(
-						"BILLING_SUBSCRIPTION_EXISTS",
-						"Account already has an Individual commercial relationship");
-			}
-		}
-	}
-
 	private static void requireMatchingReplay(
 			Subscription subscription,
 			UUID accountId,
@@ -201,6 +185,8 @@ public class IndividualCheckoutService {
 
 	public record SubscriptionResult(
 			UUID subscriptionId,
+			BillingProvider provider,
+			IndividualManagementChannel managementChannel,
 			CommercialPlanKey planKey,
 			BillingCadence cadence,
 			SubscriptionLifecycleState lifecycleState,
@@ -211,6 +197,8 @@ public class IndividualCheckoutService {
 		static SubscriptionResult from(Subscription subscription) {
 			return new SubscriptionResult(
 					subscription.id().value(),
+					subscription.provider(),
+					IndividualManagementChannel.forProvider(subscription.provider()),
 					subscription.planKey(),
 					subscription.billingCadence(),
 					subscription.lifecycleState(),

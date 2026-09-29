@@ -50,10 +50,13 @@ class IndividualCheckoutServiceTests {
 		subscriptionRepository = mock(SubscriptionRepository.class);
 		billingProvider = mock(IndividualBillingProvider.class);
 		auditPort = mock(BillingAuditPort.class);
+		IndividualSubscriptionConflictService conflictService =
+				new IndividualSubscriptionConflictService(subscriptionRepository, CLOCK);
 		service = new IndividualCheckoutService(
 				customerRepository,
 				subscriptionRepository,
 				billingProvider,
+				conflictService,
 				auditPort,
 				CLOCK);
 	}

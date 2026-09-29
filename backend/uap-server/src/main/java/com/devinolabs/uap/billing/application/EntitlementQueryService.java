@@ -19,6 +19,10 @@ import com.devinolabs.uap.billing.domain.Subscription;
 /**
  * Published entitlement lookup. Product-edge enforcement uses
  * {@link com.devinolabs.uap.entitlements.CommercialEntitlementGuard}.
+ *
+ * <p>Capabilities are subject-scoped. Organization gates (§34) and Account
+ * {@code INDIVIDUAL_PREMIUM} form a safe union across subjects (ADR-038 / §13) —
+ * neither subject grants the other's capabilities.
  */
 @Service
 @Transactional(readOnly = true)

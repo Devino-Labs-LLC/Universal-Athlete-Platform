@@ -14,6 +14,7 @@ import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.BillingProvider;
 import com.devinolabs.uap.billing.domain.BillingSubject;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
+import com.devinolabs.uap.billing.domain.IndividualManagementChannel;
 import com.devinolabs.uap.billing.domain.ProviderSubscriptionSnapshot;
 import com.devinolabs.uap.billing.domain.Subscription;
 import com.devinolabs.uap.billing.domain.SubscriptionId;
@@ -30,16 +31,19 @@ public class GooglePlayPurchaseValidationService {
 
 	private final GooglePlayBillingProvider googleProvider;
 	private final SubscriptionRepository subscriptionRepository;
+	private final IndividualSubscriptionConflictService conflictService;
 	private final BillingAuditPort auditPort;
 	private final Clock clock;
 
 	public GooglePlayPurchaseValidationService(
 			GooglePlayBillingProvider googleProvider,
 			SubscriptionRepository subscriptionRepository,
+			IndividualSubscriptionConflictService conflictService,
 			BillingAuditPort auditPort,
 			Clock clock) {
 		this.googleProvider = Objects.requireNonNull(googleProvider);
 		this.subscriptionRepository = Objects.requireNonNull(subscriptionRepository);
+		this.conflictService = Objects.requireNonNull(conflictService);
 		this.auditPort = Objects.requireNonNull(auditPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
@@ -67,7 +71,7 @@ public class GooglePlayPurchaseValidationService {
 		}
 
 		requireMatchingObfuscatedAccountId(purchase, accountId, true);
-		requireNoBlockingIndividualSubscription(accountId, purchase.purchaseToken());
+		conflictService.requireClearForNewIndividualPurchase(accountId, purchase.purchaseToken());
 		Subscription created = Subscription.startPendingIndividualGooglePlayPurchase(
 				SubscriptionId.generate(),
 				BillingSubject.account(accountId),
@@ -102,29 +106,6 @@ public class GooglePlayPurchaseValidationService {
 		return SubscriptionResult.from(saved);
 	}
 
-	private void requireNoBlockingIndividualSubscription(UUID accountId, String purchaseToken) {
-		Instant now = Instant.now(clock);
-		for (Subscription existing : subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId)) {
-			if (existing.lifecycleState() == SubscriptionLifecycleState.EXPIRED) {
-				continue;
-			}
-			if (purchaseToken.equals(existing.providerSubscriptionRef())) {
-				continue;
-			}
-			if (existing.lifecycleState() == SubscriptionLifecycleState.PENDING) {
-				throw new BillingConflictException(
-						"BILLING_CHECKOUT_IN_PROGRESS",
-						"Account already has an open Individual checkout");
-			}
-			if (existing.isEffectiveIndividualRelationshipAt(now)
-					|| existing.planKey().isIndividualPlan()) {
-				throw new BillingConflictException(
-						"BILLING_SUBSCRIPTION_EXISTS",
-						"Account already has an Individual commercial relationship");
-			}
-		}
-	}
-
 	private static void requireOwnedByAccount(Subscription subscription, UUID accountId) {
 		if (subscription.subject().type() != BillingSubjectType.ACCOUNT
 				|| !accountId.equals(subscription.subject().subjectId())
@@ -153,6 +134,7 @@ public class GooglePlayPurchaseValidationService {
 	public record SubscriptionResult(
 			UUID subscriptionId,
 			BillingProvider provider,
+			IndividualManagementChannel managementChannel,
 			CommercialPlanKey planKey,
 			BillingCadence cadence,
 			SubscriptionLifecycleState lifecycleState,
@@ -164,6 +146,7 @@ public class GooglePlayPurchaseValidationService {
 			return new SubscriptionResult(
 					subscription.id().value(),
 					subscription.provider(),
+					IndividualManagementChannel.forProvider(subscription.provider()),
 					subscription.planKey(),
 					subscription.billingCadence(),
 					subscription.lifecycleState(),

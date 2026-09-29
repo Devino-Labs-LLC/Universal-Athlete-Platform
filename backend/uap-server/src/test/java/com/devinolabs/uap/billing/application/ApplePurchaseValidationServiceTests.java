@@ -50,7 +50,12 @@ class ApplePurchaseValidationServiceTests {
 		appleProvider = mock(AppleAppStoreBillingProvider.class);
 		subscriptionRepository = mock(SubscriptionRepository.class);
 		auditPort = mock(BillingAuditPort.class);
-		service = new ApplePurchaseValidationService(appleProvider, subscriptionRepository, auditPort, CLOCK);
+		service = new ApplePurchaseValidationService(
+				appleProvider,
+				subscriptionRepository,
+				new IndividualSubscriptionConflictService(subscriptionRepository, CLOCK),
+				auditPort,
+				CLOCK);
 	}
 
 	@Test
@@ -69,6 +74,8 @@ class ApplePurchaseValidationServiceTests {
 				service.validateOrRestore(accountId, SIGNED);
 
 		assertThat(result.provider()).isEqualTo(BillingProvider.APPLE_APP_STORE);
+		assertThat(result.managementChannel())
+				.isEqualTo(com.devinolabs.uap.billing.domain.IndividualManagementChannel.APPLE_APP_STORE);
 		assertThat(result.lifecycleState()).isEqualTo(SubscriptionLifecycleState.ACTIVE);
 		assertThat(result.planKey()).isEqualTo(CommercialPlanKey.INDIVIDUAL_PREMIUM);
 		ArgumentCaptor<Subscription> saved = ArgumentCaptor.forClass(Subscription.class);

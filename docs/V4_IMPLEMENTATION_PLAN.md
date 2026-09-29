@@ -3469,7 +3469,7 @@ Provider Price and store product identifiers stay server configuration. Missing 
 | G1 | **COMPLETE on develop** | 794da71 | Focused billing + athlete Web manage green; Verify/Sonar **SUCCESS** on `d7d7828`; this tip adds Account portal/cancel/reactivate + Web manage | pending Verify | pending Sonar | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
 | G2 | **COMPLETE (implementation)** — sandbox cert blocked | uncommitted on develop tip `2a83327` | Fixture unit tests green (validate/restore, foreign ownership, fake token, notification replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client test green; no live Apple calls | pending Verify | pending Sonar | **BLOCKED** — App Store Connect API credentials absent (do not invent) | None (V37 inbox CHECK already includes `APPLE_APP_STORE`) | Backend + External Integration | Sandbox credentials for live certification only; H1 owns purchase/restore UX beyond thin mobile API client |
 | G3 | **COMPLETE (implementation)** — sandbox cert blocked | uncommitted on develop tip (post-G2) | Fixture unit tests (validate/restore, foreign ownership, fake token, RTDN replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client test; no live Google calls | pending Verify | pending Sonar | **BLOCKED** — Play Console service-account credentials absent (do not invent) | None (V37 inbox CHECK already includes `GOOGLE_PLAY`) | Backend + External Integration | Sandbox credentials for live certification only; H1 owns purchase/restore UX beyond thin mobile API client |
-| G4 | Not started | — | — | — | — | — | — | — | — |
+| G4 | **COMPLETE (implementation)** | uncommitted on develop tip `711fba5` | ADR-045 unit tests green (overlap rejection, paid-through switch, org∪Premium union, origin management channel); focused billing suites green | pending Verify | pending Sonar | None | None | Backend | H1 owns store-management UX using `provider` / `managementChannel`; Web zod schema still optional on new fields |
 | H1 | Not started | — | — | — | — | — | — | — | — |
 | I1 | Not started | — | — | — | — | — | Develop head **V37** | — | Commercial activation remains a later launch gate |
 
@@ -3481,9 +3481,11 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 **G3 SoT (implementation complete; sandbox cert blocked):** Google Play Developer API adapter behind `uap.billing.google-play.enabled` (default **false**). Validate/restore `POST /api/v1/billing/account/google-play/purchases` binds to authenticated Account (`obfuscatedExternalAccountId` required for new bind; foreign ownership fail-closed). RTDN inbox reuses `billing_provider_events` with `provider=GOOGLE_PLAY`. Maps into existing Subscription lifecycle (no new enum). CI fixture tests only — no live Google calls. Web Premium origin label deferred (Account billing read model does not expose `provider`). Mobile thin `validateOrRestoreGooglePlayPurchase` client + unit test; full restore/purchase UX deferred to **H1**. Google sandbox certification **BLOCKED** until real Play Console service-account credentials exist.
 
+**G4 SoT (implementation complete):** Shared `IndividualSubscriptionConflictService` enforces ADR-045 across Stripe checkout, Apple validate/restore, and Google validate/restore: one open entitled Individual relationship; `BILLING_SUBSCRIPTION_EXISTS` / `BILLING_CHECKOUT_IN_PROGRESS`; paid-through CANCEL/GRACE leftovers expire then allow replacement (no credential copy). Account Individual status exposes `provider` + `managementChannel`. Stripe portal/cancel/reactivate reject non-Stripe origin with `BILLING_MANAGED_BY_ORIGIN_PROVIDER`. Org capabilities and `INDIVIDUAL_PREMIUM` remain subject-scoped safe union (§13 / §34); Premium does not paywall basic athlete edges. No migration. H1 owns client store-management UX.
+
 **Product decision applied:** Individual Stripe management **mirrors Organization §40** (Portal = payment method / invoices only; Portal cancel off; app-owned cancel-at-period-end + reactivate).
 
-Slice G is **not** complete (G4 remains). Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
+Slice G is **COMPLETE (implementation)** pending Verify/Sonar on the develop tip that includes G2–G4. Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
 
 
 

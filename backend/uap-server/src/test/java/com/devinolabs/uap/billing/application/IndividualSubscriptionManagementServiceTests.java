@@ -86,6 +86,34 @@ class IndividualSubscriptionManagementServiceTests {
 	}
 
 	@Test
+	void openPortalRejectsNonStripeOriginProvider() {
+		UUID accountId = UUID.randomUUID();
+		Subscription apple = Subscription.rehydrate(
+				SubscriptionId.generate(),
+				BillingSubject.account(accountId),
+				com.devinolabs.uap.billing.domain.BillingProvider.APPLE_APP_STORE,
+				CommercialPlanKey.INDIVIDUAL_PREMIUM,
+				BillingCadence.MONTHLY,
+				SubscriptionLifecycleState.ACTIVE,
+				accountId.toString(),
+				"1000000123456789",
+				null,
+				PERIOD_END,
+				null,
+				NOW,
+				NOW,
+				NOW,
+				1L);
+		when(subscriptionRepository.findBySubject(BillingSubjectType.ACCOUNT, accountId))
+				.thenReturn(List.of(apple));
+
+		assertThatThrownBy(() -> service.openPortal(accountId))
+				.isInstanceOfSatisfying(BillingConflictException.class,
+						ex -> assertThat(ex.code()).isEqualTo("BILLING_MANAGED_BY_ORIGIN_PROVIDER"));
+		verify(billingProvider, never()).createAccountPortalSession(any(), any());
+	}
+
+	@Test
 	void cancelSchedulesPeriodEndAndAudits() {
 		UUID accountId = UUID.randomUUID();
 		UUID subscriptionId = UUID.randomUUID();
