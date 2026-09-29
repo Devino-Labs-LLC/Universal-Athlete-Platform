@@ -6,8 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.core.env.Environment;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.stripe.StripeClient;
 
@@ -26,11 +24,6 @@ class StripeBillingConfiguration {
 			}
 		}
 		return new StripeClient(properties.getSecretKey());
-	}
-
-	@Bean
-	TransactionTemplate billingTransactions(PlatformTransactionManager transactionManager) {
-		return new TransactionTemplate(transactionManager);
 	}
 
 }

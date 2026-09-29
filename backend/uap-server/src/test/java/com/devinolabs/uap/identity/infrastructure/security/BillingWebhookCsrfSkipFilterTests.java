@@ -10,12 +10,12 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 
-class StripeWebhookCsrfSkipFilterTests {
+class BillingWebhookCsrfSkipFilterTests {
 
 	private static final String CSRF_SKIP_ATTRIBUTE = "SHOULD_NOT_FILTER" + CsrfFilter.class.getName();
 
-	private final IdentitySecurityConfiguration.StripeWebhookCsrfSkipFilter skipFilter =
-			new IdentitySecurityConfiguration.StripeWebhookCsrfSkipFilter();
+	private final IdentitySecurityConfiguration.BillingWebhookCsrfSkipFilter skipFilter =
+			new IdentitySecurityConfiguration.BillingWebhookCsrfSkipFilter();
 
 	@Test
 	void stripeWebhookPostIsSkippedSoCsrfFilterDoesNotRequireAToken() throws Exception {
@@ -32,6 +32,15 @@ class StripeWebhookCsrfSkipFilterTests {
 
 		assertThat(remaining.getRequest()).isSameAs(request);
 		assertThat(response.getStatus()).isNotEqualTo(403);
+	}
+
+	@Test
+	void appleWebhookPostIsSkippedSoCsrfFilterDoesNotRequireAToken() throws Exception {
+		MockHttpServletRequest request = request(HttpMethod.POST, IdentitySecurityConfiguration.APPLE_WEBHOOK_PATH);
+
+		skipFilter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+		assertThat(request.getAttribute(CSRF_SKIP_ATTRIBUTE)).isEqualTo(Boolean.TRUE);
 	}
 
 	@Test

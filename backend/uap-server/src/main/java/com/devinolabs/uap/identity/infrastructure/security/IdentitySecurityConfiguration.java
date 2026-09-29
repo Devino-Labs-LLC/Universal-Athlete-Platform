@@ -60,6 +60,7 @@ class IdentitySecurityConfiguration {
 	static final String ME_INVITATIONS_API = "/api/v1/me/invitations/**";
 	static final String BILLING_API = "/api/v1/billing/**";
 	static final String STRIPE_WEBHOOK_PATH = "/api/v1/billing/webhooks/stripe";
+	static final String APPLE_WEBHOOK_PATH = "/api/v1/billing/webhooks/apple";
 
 	@Bean
 	AuthTokenTransport authTokenTransport(
@@ -145,7 +146,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(HttpMethod.POST, REGISTER_PATH, VERIFY_EMAIL_PATH, LOGIN_PATH, REFRESH_PATH)
 						.permitAll()
 						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-						.requestMatchers(HttpMethod.POST, STRIPE_WEBHOOK_PATH).permitAll()
+						.requestMatchers(HttpMethod.POST, STRIPE_WEBHOOK_PATH, APPLE_WEBHOOK_PATH).permitAll()
 						.requestMatchers(HttpMethod.GET, IDENTITY_ME_PATH).authenticated()
 						.requestMatchers(HttpMethod.POST, LOGOUT_PATH, LOGOUT_ALL_PATH).authenticated()
 						.requestMatchers(ATHLETES_API).authenticated()
@@ -156,7 +157,7 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(ME_INVITATIONS_API).authenticated()
 						.requestMatchers(BILLING_API).authenticated()
 						.anyRequest().denyAll())
-				.addFilterBefore(new StripeWebhookCsrfSkipFilter(), CsrfFilter.class)
+				.addFilterBefore(new BillingWebhookCsrfSkipFilter(), CsrfFilter.class)
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterAfter(csrfCookieFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -164,21 +165,23 @@ class IdentitySecurityConfiguration {
 	}
 
 	/**
-	 * Stripe signs webhooks; CSRF cookies cannot be sent by Stripe. CSRF stays enabled for the
-	 * rest of the API. This filter marks the webhook request skipped before {@link CsrfFilter}
-	 * without {@code csrf.disable()} or {@code requireCsrfProtectionMatcher}.
+	 * Provider webhooks are signed by Stripe / Apple; CSRF cookies cannot be sent by those
+	 * providers. CSRF stays enabled for the rest of the API. This filter marks webhook
+	 * requests skipped before {@link CsrfFilter} without {@code csrf.disable()}.
 	 */
-	static final class StripeWebhookCsrfSkipFilter extends OncePerRequestFilter {
+	static final class BillingWebhookCsrfSkipFilter extends OncePerRequestFilter {
 
 		private static final RequestMatcher STRIPE_WEBHOOK_POST = PathPatternRequestMatcher.pathPattern(
 				HttpMethod.POST, STRIPE_WEBHOOK_PATH);
+		private static final RequestMatcher APPLE_WEBHOOK_POST = PathPatternRequestMatcher.pathPattern(
+				HttpMethod.POST, APPLE_WEBHOOK_PATH);
 
 		@Override
 		protected void doFilterInternal(
 				HttpServletRequest request,
 				HttpServletResponse response,
 				FilterChain filterChain) throws ServletException, IOException {
-			if (STRIPE_WEBHOOK_POST.matches(request)) {
+			if (STRIPE_WEBHOOK_POST.matches(request) || APPLE_WEBHOOK_POST.matches(request)) {
 				CsrfFilter.skipRequest(request);
 			}
 			filterChain.doFilter(request, response);

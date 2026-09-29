@@ -141,19 +141,48 @@ public class Subscription {
 			CommercialPlanKey planKey,
 			BillingCadence billingCadence,
 			Clock clock) {
+		return startPendingIndividual(
+				id, subject, BillingProvider.STRIPE, planKey, billingCadence, clock);
+	}
+
+	/**
+	 * Starts an Account Individual Premium Apple App Store purchase bind (PENDING until
+	 * server validation applies an authoritative snapshot). No trial in initial V4.
+	 */
+	public static Subscription startPendingIndividualApplePurchase(
+			SubscriptionId id,
+			BillingSubject subject,
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
+			Clock clock) {
+		return startPendingIndividual(
+				id, subject, BillingProvider.APPLE_APP_STORE, planKey, billingCadence, clock);
+	}
+
+	private static Subscription startPendingIndividual(
+			SubscriptionId id,
+			BillingSubject subject,
+			BillingProvider provider,
+			CommercialPlanKey planKey,
+			BillingCadence billingCadence,
+			Clock clock) {
 		Objects.requireNonNull(billingCadence, "billingCadence must not be null");
 		Objects.requireNonNull(clock, "Clock must not be null");
+		Objects.requireNonNull(provider, "provider must not be null");
 		if (subject.type() != BillingSubjectType.ACCOUNT || !planKey.isIndividualPlan()) {
 			throw new IllegalArgumentException("Individual checkout requires an Account subject and individual plan");
 		}
 		if (planKey != CommercialPlanKey.INDIVIDUAL_PREMIUM) {
 			throw new IllegalArgumentException("Individual checkout supports INDIVIDUAL_PREMIUM only");
 		}
+		if (provider != BillingProvider.STRIPE && provider != BillingProvider.APPLE_APP_STORE) {
+			throw new IllegalArgumentException("Unsupported individual billing provider: " + provider);
+		}
 		Instant now = Instant.now(clock);
 		return new Subscription(
 				id,
 				subject,
-				BillingProvider.STRIPE,
+				provider,
 				planKey,
 				billingCadence,
 				SubscriptionLifecycleState.PENDING,

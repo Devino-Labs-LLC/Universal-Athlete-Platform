@@ -3467,7 +3467,7 @@ Provider Price and store product identifiers stay server configuration. Missing 
 | Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | G1 | **COMPLETE on develop** | 794da71 | Focused billing + athlete Web manage green; Verify/Sonar **SUCCESS** on `d7d7828`; this tip adds Account portal/cancel/reactivate + Web manage | pending Verify | pending Sonar | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
-| G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Sandbox credentials are a certification dependency, not an implementation STOP |
+| G2 | **COMPLETE (implementation)** — sandbox cert blocked | uncommitted on develop tip `2a83327` | Fixture unit tests green (validate/restore, foreign ownership, fake token, notification replay/expire, properties, adapter fixtures, CSRF skip); mobile thin client test green; no live Apple calls | pending Verify | pending Sonar | **BLOCKED** — App Store Connect API credentials absent (do not invent) | None (V37 inbox CHECK already includes `APPLE_APP_STORE`) | Backend + External Integration | Sandbox credentials for live certification only; H1 owns purchase/restore UX beyond thin mobile API client |
 | G3 | Not started | — | — | — | — | Google sandbox not claimed | — | — | Same |
 | G4 | Not started | — | — | — | — | — | — | — | — |
 | H1 | Not started | — | — | — | — | — | — | — | — |
@@ -3477,9 +3477,11 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 **G1 SoT (COMPLETE on develop):** Account Stripe checkout/sync/GET, portal/cancel/reactivate (mirror §40), V37 `billing_account_customers`, webhook individual path, athlete Web `/app/billing` read/checkout/return/manage, individual success/cancel/portal-return URLs, New Code coverage tests. Not commercially active. Sandbox catalog certification deferred. Not PRODUCTION VERIFIED.
 
+**G2 SoT (implementation complete; sandbox cert blocked):** Apple App Store Server API adapter behind `uap.billing.apple.enabled` (default **false**). Validate/restore `POST /api/v1/billing/account/apple/transactions` binds to authenticated Account (`appAccountToken` required for new bind; foreign ownership fail-closed). ASN V2 inbox reuses `billing_provider_events` with `provider=APPLE_APP_STORE`. Maps into existing Subscription lifecycle (no new enum). CI fixture tests only — no live Apple calls. Web Premium origin label deferred (Account billing read model does not expose `provider`). Mobile thin `validateOrRestoreAppleTransaction` client + unit test; full restore/purchase UX deferred to **H1**. Apple sandbox certification **BLOCKED** until real App Store Connect credentials exist.
+
 **Product decision applied:** Individual Stripe management **mirrors Organization §40** (Portal = payment method / invoices only; Portal cancel off; app-owned cancel-at-period-end + reactivate).
 
-Slice G is **not** complete (G2–G4 remain). Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
+Slice G is **not** complete (G3–G4 remain). Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
 
 
 

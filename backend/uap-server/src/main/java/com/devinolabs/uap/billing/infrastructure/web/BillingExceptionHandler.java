@@ -18,12 +18,15 @@ import com.devinolabs.uap.billing.application.BillingAccountNotFoundException;
 import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.BillingOrganizationNotFoundException;
 import com.devinolabs.uap.billing.application.BillingProviderUnavailableException;
+import com.devinolabs.uap.billing.application.InvalidApplePurchaseException;
 
 @RestControllerAdvice(basePackageClasses = {
 		OrganizationBillingController.class,
 		IndividualBillingController.class,
 		OrganizationCapacityController.class,
-		StripeWebhookController.class
+		StripeWebhookController.class,
+		AppleBillingController.class,
+		AppleNotificationController.class
 })
 class BillingExceptionHandler {
 
@@ -84,6 +87,14 @@ class BillingExceptionHandler {
 						"Billing provider request failed",
 						request,
 						List.of()));
+	}
+
+	@ExceptionHandler(InvalidApplePurchaseException.class)
+	ResponseEntity<BillingApiErrorResponse> handleInvalidApplePurchase(
+			InvalidApplePurchaseException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
+				.body(error("BILLING_APPLE_PURCHASE_REJECTED", "Apple purchase could not be validated", request, List.of()));
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
