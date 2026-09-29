@@ -6,7 +6,7 @@
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
 **Production baseline (`main`):** Slice F **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bbac5fc2afa7b05a00c8fd3881f117fdceb5fbf9`; see **§47**). Prior Slice E SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe` (see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slices **G–I** implementation + **I1 RC evidence** on develop (ledger **§48**). Authoritative tip `0ea3f18` — Verify **36530853656** + Sonar **OK**. Slice F remains **PRODUCTION VERIFIED** on `main` with commercial billing **off** (**§45–§47**). Not commercially active. Not billing live. Commercial flags remain default **off**. Apple/Google sandbox certification remains **BLOCKED** without credentials. Production promotion to `main` is a **separate explicit gate** (not authorized by this ledger). V4 is **not** complete.  
+**`develop`:** Slices **G–I** implementation + **I1 RC evidence** on develop (ledger **§48**). Individual Stripe sandbox **CERTIFIED**; Apple/Google sandbox **BLOCKED — CREDENTIALS** (**§49**). Authoritative runtime tip `0ea3f18` — Verify **36530853656** + Sonar **OK**. Slice F remains **PRODUCTION VERIFIED** on `main` with commercial billing **off** (**§45–§47**). Not commercially active. Not billing live. Commercial flags remain default **off**. Production promotion to `main` is a **separate explicit gate** (not authorized by this ledger). V4 is **not** complete.  
 **Production schema (`main`):** Flyway **V36** (inferred — see §33 / §39 / §47). **`develop` schema head:** Flyway **V37** (G–I only beyond the V36 production baseline — see **§48.3**).  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
@@ -3560,10 +3560,116 @@ Pointer table only. Does **not** claim live provider certification or commercial
 - Verify / Sonar: tip `0f27de8` run **36522348655** failed QG on New Code coverage **78.4%** and duplication **5.0%**. Remediation tip `0ea3f18` Verify **36530853656** **SUCCESS** including Sonar (**OK**: coverage **80.8%**, duplication **1.9%**).
 - Windows local full-serial Testcontainers: **INCONCLUSIVE** (authoritative gate = GitHub Verify).
 
-Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop** with authoritative Verify/Sonar green on `0ea3f18`. V4 is **not** commercially active. V4 is **not** complete. Production promotion to `main` remains a **SEPARATE explicit gate**.
+Slice G is **COMPLETE on develop** (implementation; Apple/Google sandbox cert **BLOCKED** until credentials — see **§49**). Slice H **H1 is COMPLETE on develop**. Slice I **I1 RC evidence is COMPLETE on develop** with authoritative Verify/Sonar green on `0ea3f18`. Individual Stripe sandbox certification is recorded in **§49**. V4 is **not** commercially active. V4 is **not** complete. Production promotion to `main` remains a **SEPARATE explicit gate**.
 
+---
 
+## 49. V4 external provider certification gate (Individual Stripe + Apple/Google readiness)
 
+**Status:** Individual Stripe sandbox **CERTIFIED** (Athlete Readiness sandbox; not live; not commercially active). Apple sandbox **BLOCKED — CREDENTIALS**. Google Play sandbox **BLOCKED — CREDENTIALS**. No `main` promotion. No Railway / production mutation. Commercial flags remain default **off**.
+
+**Gate tip (pre-docs):** `develop` = `05e8b246768886a212d52f541e622ebd649ec0e1`. Runtime remediation baseline `0ea3f18` / Verify **36530853656** / Sonar **OK**. `main` = `8ba443de247e62b3e985280e8f4a02632b399bfe` (**unchanged**). Schema head on develop **V37** (not on production).
+
+### 49.1 Stripe CLI / account
+
+| Check | Result |
+| --- | --- |
+| `stripe --version` | **1.52.0** |
+| Account | **Athlete Readiness sandbox** `acct_1UHZjZD418eILvNQ` |
+| Mode | Test (`livemode=false` throughout). Live mode key **not available** |
+
+### 49.2 Individual Premium sandbox catalog
+
+No prior Individual Premium Product existed (only Org Slice B catalog). Created sandbox-only catalog (retained; not disposable):
+
+| Item | Id | Amount |
+| --- | --- | --- |
+| Product | `prod_VLd2u3LFpGXC7K` | Athlete Readiness Individual Premium |
+| Monthly Price | `price_1UKvmmD418eILvNQShLXPh99` | **999** USD / month |
+| Annual Price | `price_1UKvmmD418eILvNQLdtAKcdF` | **9999** USD / year |
+
+Metadata tagged `uap_certification=v4_g1_individual`, `uap_environment=sandbox`, `plan_key=INDIVIDUAL_PREMIUM`. IDs are **not** hard-coded in source; local `.env` only (`UAP_BILLING_STRIPE_PRICE_INDIVIDUAL_PREMIUM_*`). Org Prices untouched.
+
+### 49.3 Preserved Slice E objects
+
+| Object | Id | Pre | Post |
+| --- | --- | --- | --- |
+| Customer | `cus_VIAgQcdqprYAbs` | present, test | unchanged |
+| Subscription | `sub_1UHaOKD418eILvNQ2evsoO9Z` | `trialing` | **`trialing`** unchanged |
+
+Not reused for Individual cert. Not cancelled/updated/deleted.
+
+### 49.4 Individual Stripe certification scenarios
+
+Disposable Accounts + Customers/Subscriptions (run id `v4g1_20260929034910`). App path: authenticated Account → `POST /api/v1/billing/account/checkout-sessions` with server Price allowlist; **no trial**.
+
+| Scenario | Result |
+| --- | --- |
+| Monthly acquisition | App Checkout Session **201** PENDING → Stripe test payment (`tok_visa` PM + Subscription create on same Customer/Price/metadata; Playwright hosted card UI blocked by Link/iframes) → `stripe listen` webhooks → local **ACTIVE** `INDIVIDUAL_PREMIUM` **MONTHLY**; `provider=STRIPE`; `managementChannel=STRIPE_CUSTOMER_PORTAL`; `trialEndsAt=null`; Stripe sub `sub_1UKw1cD418eILvNQlS3my7F7` |
+| Annual mapping | Separate Account; Checkout **201**; annual Price **9999**; Stripe sub `sub_1UKw5dD418eILvNQ697Npp0V` **active**; GET **ANNUAL** ACTIVE; item Price matches allowlist; no trial |
+| Duplicate prevention | Second checkout → **409** `BILLING_SUBSCRIPTION_EXISTS` (server-enforced) |
+| Portal | **200** `billing.stripe.com` session; config `bpc_1UJYXED418eILvNQxS8y1RPA`: PM update + invoice history **on**; subscription cancel/update + customer_update **off** |
+| Cancel at period end | App cancel → **CANCEL_AT_PERIOD_END**; paid-through `currentPeriodEndsAt` retained |
+| Reactivate | App reactivate → **ACTIVE** same UAP `subscriptionId`; Stripe `cancel_at_period_end=false` |
+| Replay / idempotency | Resend `invoice.paid` → **one** `billing_provider_events` row per provider+event id; no duplicate Individual subscription |
+| Safe union | **CI VERIFIED** — `IndividualAdr045PolicyTests` PASS (org∪Premium; no coach/membership/consent/IDOR bypass) |
+| Web recognition | `GET /api/v1/billing/account` returns Premium state + Stripe origin/channel + cadence; **no** Price/Customer/Stripe Subscription ids/secrets in response |
+| Cleanup | Disposable Stripe Subscriptions **canceled**; disposable Customers **deleted**; open Checkout Sessions **expired**; catalog Product/Prices **retained**; local `UAP_BILLING_STRIPE_ENABLED` restored **false** |
+
+**Residual note (QA):** Hosted Checkout **card UI** Session `complete` was not automated (Stripe Link / card iframe). Fulfillment was certified via Stripe **test-mode API payment** after app-created Checkout Session + real webhook apply. Downstream portal/cancel/reactivate/replay evidence is on that path.
+
+**Classification:** Individual Stripe sandbox **CERTIFIED** (not LIVE / not PRODUCTION ACTIVE / not COMMERCIALLY ACTIVE).
+
+### 49.5 Apple readiness (G2)
+
+**Credentials:** **MISSING** locally (all `UAP_BILLING_APPLE_*` absent). **Sandbox certification: BLOCKED — CREDENTIALS.** Implementation + CI fixtures: **IMPLEMENTED / CI VERIFIED**.
+
+**PO setup checklist (sandbox/test only — do not print secrets):**
+
+1. Apple Developer Program + App Store Connect app; lock bundle ID (mobile SoT `com.devinolabs.uap`).
+2. Subscription group + monthly/annual auto-renewable Product IDs → `UAP_BILLING_APPLE_PRODUCT_INDIVIDUAL_PREMIUM_MONTHLY` / `_ANNUAL`.
+3. In-App Purchase API key: Issuer ID / Key ID / `.p8` PEM → `ISSUER_ID` / `KEY_ID` / `PRIVATE_KEY_PEM` (**SECRET**, local only).
+4. `UAP_BILLING_APPLE_BUNDLE_ID`, `ENVIRONMENT=Sandbox`, enable only for cert runs.
+5. Sandbox Apple Accounts; StoreKit purchase must set `appAccountToken` = Account UUID.
+6. ASN V2 Sandbox URL → `POST /api/v1/billing/webhooks/apple` (HTTPS).
+7. Windows can do ASC config + server Get Transaction Info once a `transactionId` exists; **device/Simulator required** for real purchase/restore.
+8. Place secrets only in local `backend/uap-server/.env` (gitignored). Never commit.
+
+Known follow-ups before live ASN cert (not claimed fixed here): prefer `api.storekit-sandbox.apple.com`; unwrap ASN `signedPayload` JSON; consider App Store Server Library for JWT/JWS verify.
+
+### 49.6 Google Play readiness (G3)
+
+**Credentials:** **MISSING** locally (all `UAP_BILLING_GOOGLE_PLAY_*` absent). **Sandbox certification: BLOCKED — CREDENTIALS.** Implementation + CI fixtures: **IMPLEMENTED / CI VERIFIED**.
+
+**PO setup checklist (sandbox/test only — do not print secrets):**
+
+1. Play Console app package **`com.devinolabs.uap`** → `UAP_BILLING_GOOGLE_PLAY_PACKAGE_NAME`.
+2. Subscription product(s) + monthly/annual base plans → `PRODUCT_INDIVIDUAL_PREMIUM_MONTHLY` / `_ANNUAL`.
+3. Testing track + **license testers**; purchases must surface `testPurchase`.
+4. GCP service account + Play Developer API; JSON → `SERVICE_ACCOUNT_JSON` (**SECRET**, local only); grant financial/orders permissions.
+5. `ENVIRONMENT=Sandbox`; enable only for cert runs.
+6. RTDN: Pub/Sub topic + push to `POST /api/v1/billing/webhooks/google-play`.
+7. Windows can call `subscriptionsv2.get` with a known test token; **Android device/emulator** required for purchase + `obfuscatedAccountId` bind.
+8. Place secrets only in local `.env`. Never commit. Native Play Billing Library still injectable/not bundled for full device E2E.
+
+### 49.7 Gate verdicts
+
+| Role | Verdict |
+| --- | --- |
+| QA | Stripe lifecycle cells **SANDBOX VERIFIED**; hosted Checkout card UI **BLOCKED** (automation); Apple/Google sandbox **BLOCKED**; store fixtures **CI VERIFIED**. Overall **FAIL-WITH-NOTES** on hosted UI cell only — does not revoke Stripe CERTIFIED classification for API+webhook fulfillment. |
+| Security / Code Quality | **PASS-WITH-NOTES** — server Price authority; duplicate 409; sanitized GET; portal cancel off; replay uniqueness; CI fail-closed for Apple/Google; no secrets in commits |
+| DevOps / CI-CD | **PASS** — no Railway; no live Stripe; no store production mutation; `.env` gitignored; `main` unchanged; V37 not on production; flags restored off |
+| External Integration | Stripe catalog + Individual sandbox path exercised; Apple/Google **BLOCKED — CREDENTIALS** with PO checklists above |
+| Lead / Architect | Individual Stripe sandbox **CERTIFIED**; Apple/Google **BLOCKED**; no `main` promotion; V4 still **not** commercially active |
+
+### 49.8 Explicit non-claims
+
+- Not LIVE. Not PRODUCTION ACTIVE. Not COMMERCIALLY ACTIVE.
+- No `develop` → `main` merge. No Railway deploy. No V37 production apply.
+- No live Stripe Product/Price creation. No App Store / Play production publish.
+- Apple/Google sandbox certification remains **BLOCKED** until credentials + device purchases exist.
+
+**End state:** Athlete Readiness V4 external certification: **STRIPE INDIVIDUAL CERTIFIED; APPLE/GOOGLE BLOCKED**.
 
 
 
