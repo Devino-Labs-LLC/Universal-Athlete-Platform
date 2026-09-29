@@ -31,6 +31,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import com.devinolabs.uap.billing.application.BillingAccountNotFoundException;
 import com.devinolabs.uap.billing.application.BillingConflictException;
 import com.devinolabs.uap.billing.application.IndividualCheckoutService;
+import com.devinolabs.uap.billing.application.IndividualSubscriptionManagementService;
 import com.devinolabs.uap.billing.domain.BillingCadence;
 import com.devinolabs.uap.billing.domain.CommercialPlanKey;
 import com.devinolabs.uap.billing.domain.SubscriptionLifecycleState;
@@ -43,13 +44,17 @@ class IndividualBillingControllerTests {
 	@Mock
 	private IndividualCheckoutService checkoutService;
 
+	@Mock
+	private IndividualSubscriptionManagementService managementService;
+
 	private MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
 		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
 		validator.afterPropertiesSet();
-		mockMvc = MockMvcBuilders.standaloneSetup(new IndividualBillingController(checkoutService))
+		mockMvc = MockMvcBuilders.standaloneSetup(
+						new IndividualBillingController(checkoutService, managementService))
 				.setControllerAdvice(new BillingExceptionHandler())
 				.setValidator(validator)
 				.setMessageConverters(new JacksonJsonHttpMessageConverter(JsonMapper.builder().build()))
@@ -154,12 +159,87 @@ class IndividualBillingControllerTests {
 				.andExpect(jsonPath("$.code").value("ACCOUNT_NOT_FOUND"));
 	}
 
+	@Test
+	void openPortalHappyPathAndNotFound() throws Exception {
+		UUID accountId = UUID.randomUUID();
+		when(managementService.openPortal(accountId))
+				.thenReturn(new IndividualSubscriptionManagementService.PortalSessionResult(
+						"https://billing.stripe.test/account-portal"));
+
+		mockMvc.perform(post("/api/v1/billing/account/portal-sessions").principal(authFor(accountId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.url").value("https://billing.stripe.test/account-portal"));
+
+		when(managementService.openPortal(accountId)).thenThrow(new BillingAccountNotFoundException());
+		mockMvc.perform(post("/api/v1/billing/account/portal-sessions").principal(authFor(accountId)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ACCOUNT_NOT_FOUND"));
+	}
+
+	@Test
+	void cancelAndReactivateHappyPathAndForeignNotFound() throws Exception {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		UUID requestId = UUID.randomUUID();
+		when(managementService.cancel(accountId, subscriptionId, requestId))
+				.thenReturn(subscriptionStatus(
+						subscriptionId, SubscriptionLifecycleState.CANCEL_AT_PERIOD_END));
+		when(managementService.reactivate(accountId, subscriptionId, requestId))
+				.thenReturn(subscriptionStatus(subscriptionId));
+
+		mockMvc.perform(post("/api/v1/billing/account/subscriptions/" + subscriptionId + "/cancel")
+					.principal(authFor(accountId))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(mutationBody(requestId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lifecycleState").value("CANCEL_AT_PERIOD_END"));
+
+		mockMvc.perform(post("/api/v1/billing/account/subscriptions/" + subscriptionId + "/reactivate")
+					.principal(authFor(accountId))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(mutationBody(requestId)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.lifecycleState").value("ACTIVE"));
+
+		when(managementService.cancel(eq(accountId), eq(subscriptionId), any()))
+				.thenThrow(new BillingAccountNotFoundException());
+		mockMvc.perform(post("/api/v1/billing/account/subscriptions/" + subscriptionId + "/cancel")
+					.principal(authFor(accountId))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(mutationBody(UUID.randomUUID())))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("ACCOUNT_NOT_FOUND"));
+	}
+
+	@Test
+	void cancelMapsLifecycleConflict() throws Exception {
+		UUID accountId = UUID.randomUUID();
+		UUID subscriptionId = UUID.randomUUID();
+		when(managementService.cancel(any(), any(), any()))
+				.thenThrow(new BillingConflictException(
+						"BILLING_LIFECYCLE_CONFLICT",
+						"This subscription cannot be changed in its current state"));
+
+		mockMvc.perform(post("/api/v1/billing/account/subscriptions/" + subscriptionId + "/cancel")
+					.principal(authFor(accountId))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(mutationBody(UUID.randomUUID())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("BILLING_LIFECYCLE_CONFLICT"));
+	}
+
 	private static IndividualCheckoutService.SubscriptionResult subscriptionStatus(UUID subscriptionId) {
+		return subscriptionStatus(subscriptionId, SubscriptionLifecycleState.ACTIVE);
+	}
+
+	private static IndividualCheckoutService.SubscriptionResult subscriptionStatus(
+			UUID subscriptionId,
+			SubscriptionLifecycleState lifecycleState) {
 		return new IndividualCheckoutService.SubscriptionResult(
 				subscriptionId,
 				CommercialPlanKey.INDIVIDUAL_PREMIUM,
 				BillingCadence.MONTHLY,
-				SubscriptionLifecycleState.ACTIVE,
+				lifecycleState,
 				null,
 				Instant.parse("2026-10-01T00:00:00Z"),
 				null);
@@ -168,6 +248,10 @@ class IndividualBillingControllerTests {
 	private static String checkoutBody(UUID requestId) {
 		return "{\"requestId\":\"" + requestId
 				+ "\",\"planKey\":\"INDIVIDUAL_PREMIUM\",\"cadence\":\"MONTHLY\"}";
+	}
+
+	private static String mutationBody(UUID requestId) {
+		return "{\"requestId\":\"" + requestId + "\"}";
 	}
 
 	private static UsernamePasswordAuthenticationToken authFor(UUID accountId) {

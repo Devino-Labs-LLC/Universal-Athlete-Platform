@@ -1,4 +1,5 @@
 import type { ApiClient } from '@/core/api/apiClient';
+import { z } from 'zod';
 
 import {
   accountBillingStatusSchema,
@@ -6,6 +7,10 @@ import {
   type AccountBillingStatus,
   type CheckoutSessionResponse,
 } from '@/features/billing/models/accountBilling';
+
+const portalSessionResponseSchema = z.object({
+  url: z.string().url(),
+});
 
 const PENDING_CHECKOUT_STORAGE_KEY = 'uap.accountBilling.pendingCheckout';
 
@@ -79,6 +84,37 @@ export async function syncAccountSubscription(
   const response = await client.axios.post(
     `/api/v1/billing/account/subscriptions/${subscriptionId}/sync`,
     { checkoutSessionId },
+  );
+  return accountBillingStatusSchema.parse(response.data);
+}
+
+export async function createAccountPortalSession(
+  client: ApiClient,
+): Promise<{ url: string }> {
+  const response = await client.axios.post('/api/v1/billing/account/portal-sessions');
+  return portalSessionResponseSchema.parse(response.data);
+}
+
+export async function cancelAccountRenewal(
+  client: ApiClient,
+  subscriptionId: string,
+  requestId: string,
+): Promise<AccountBillingStatus> {
+  const response = await client.axios.post(
+    `/api/v1/billing/account/subscriptions/${subscriptionId}/cancel`,
+    { requestId },
+  );
+  return accountBillingStatusSchema.parse(response.data);
+}
+
+export async function reactivateAccountSubscription(
+  client: ApiClient,
+  subscriptionId: string,
+  requestId: string,
+): Promise<AccountBillingStatus> {
+  const response = await client.axios.post(
+    `/api/v1/billing/account/subscriptions/${subscriptionId}/reactivate`,
+    { requestId },
   );
   return accountBillingStatusSchema.parse(response.data);
 }

@@ -53,9 +53,19 @@ public interface BillingAuditPort {
 			UUID organizationId,
 			UUID actorAccountId);
 
+	void accountCancelRequested(
+			UUID subscriptionId,
+			UUID accountId,
+			UUID actorAccountId);
+
 	void subscriptionReactivated(
 			UUID subscriptionId,
 			UUID organizationId,
+			UUID actorAccountId);
+
+	void accountSubscriptionReactivated(
+			UUID subscriptionId,
+			UUID accountId,
 			UUID actorAccountId);
 
 	void graceStarted(UUID subscriptionId, UUID organizationId);

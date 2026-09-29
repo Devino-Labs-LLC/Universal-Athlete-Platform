@@ -24,6 +24,7 @@ public class StripeBillingProperties {
 	private String individualCancelUrl;
 	private String portalConfigurationId;
 	private String portalReturnUrl;
+	private String individualPortalReturnUrl;
 	private Prices prices = new Prices();
 
 	public boolean isEnabled() {
@@ -98,6 +99,14 @@ public class StripeBillingProperties {
 		this.portalReturnUrl = portalReturnUrl;
 	}
 
+	public String getIndividualPortalReturnUrl() {
+		return individualPortalReturnUrl;
+	}
+
+	public void setIndividualPortalReturnUrl(String individualPortalReturnUrl) {
+		this.individualPortalReturnUrl = individualPortalReturnUrl;
+	}
+
 	public Prices getPrices() {
 		return prices;
 	}
@@ -138,6 +147,9 @@ public class StripeBillingProperties {
 		}
 		portalReturnUrl = requireText(portalReturnUrl, "uap.billing.stripe.portal-return-url");
 		validateUrl(portalReturnUrl, "uap.billing.stripe.portal-return-url");
+		individualPortalReturnUrl = requireText(
+				individualPortalReturnUrl, "uap.billing.stripe.individual-portal-return-url");
+		validateUrl(individualPortalReturnUrl, "uap.billing.stripe.individual-portal-return-url");
 		if (!successUrl.contains("{CHECKOUT_SESSION_ID}")) {
 			throw new IllegalStateException(
 					"uap.billing.stripe.success-url must include {CHECKOUT_SESSION_ID}");

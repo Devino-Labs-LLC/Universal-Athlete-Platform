@@ -11,6 +11,9 @@ import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 const fetchStatus = vi.fn();
 const createCheckout = vi.fn();
 const syncSubscription = vi.fn();
+const createPortal = vi.fn();
+const cancelRenewal = vi.fn();
+const reactivateSubscription = vi.fn();
 const rememberPending = vi.fn();
 const readPending = vi.fn();
 const clearPending = vi.fn();
@@ -19,6 +22,9 @@ vi.mock('@/features/billing/api/accountBillingApi', () => ({
   fetchAccountBillingStatus: (...args: unknown[]) => fetchStatus(...args),
   createAccountCheckoutSession: (...args: unknown[]) => createCheckout(...args),
   syncAccountSubscription: (...args: unknown[]) => syncSubscription(...args),
+  createAccountPortalSession: (...args: unknown[]) => createPortal(...args),
+  cancelAccountRenewal: (...args: unknown[]) => cancelRenewal(...args),
+  reactivateAccountSubscription: (...args: unknown[]) => reactivateSubscription(...args),
   rememberPendingAccountCheckout: (...args: unknown[]) => rememberPending(...args),
   readPendingAccountCheckout: (...args: unknown[]) => readPending(...args),
   clearPendingAccountCheckout: (...args: unknown[]) => clearPending(...args),
@@ -31,6 +37,16 @@ vi.mock('@/app/providers/AuthSessionProvider', () => ({
     apiClient: { axios: {} },
   }),
 }));
+
+const activeStatus = {
+  subscriptionId: 'sub-1',
+  planKey: 'INDIVIDUAL_PREMIUM' as const,
+  cadence: 'MONTHLY' as const,
+  lifecycleState: 'ACTIVE' as const,
+  trialEndsAt: null,
+  currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+  graceEndsAt: null,
+};
 
 describe('Account billing page', () => {
   beforeEach(() => {
@@ -59,6 +75,17 @@ describe('Account billing page', () => {
       currentPeriodEndsAt: '2026-10-01T00:00:00Z',
       graceEndsAt: null,
     });
+    createPortal.mockReset();
+    createPortal.mockResolvedValue({
+      url: 'https://billing.stripe.test/portal/account',
+    });
+    cancelRenewal.mockReset();
+    cancelRenewal.mockResolvedValue({
+      ...activeStatus,
+      lifecycleState: 'CANCEL_AT_PERIOD_END',
+    });
+    reactivateSubscription.mockReset();
+    reactivateSubscription.mockResolvedValue(activeStatus);
     rememberPending.mockReset();
     readPending.mockReset();
     readPending.mockReturnValue(null);
@@ -109,23 +136,117 @@ describe('Account billing page', () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
-  it('shows active subscription and hides checkout', async () => {
-    fetchStatus.mockResolvedValue({
-      subscriptionId: 'sub-1',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
-      lifecycleState: 'ACTIVE',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
-      graceEndsAt: null,
-    });
+  it('shows active subscription with portal and cancel actions', async () => {
+    fetchStatus.mockResolvedValue(activeStatus);
 
     renderWithProviders(<AccountBillingPage />);
 
     expect(await screen.findByText(/Individual Premium/i)).toBeInTheDocument();
     expect(screen.getByText(/Your Premium subscription is active/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Cancel renewal/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Manage payment method and invoices' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel renewal' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+  });
+
+  it('opens the customer portal from an active subscription', async () => {
+    fetchStatus.mockResolvedValue(activeStatus);
+    renderWithProviders(<AccountBillingPage />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Manage payment method and invoices' }),
+    );
+
+    await waitFor(() => {
+      expect(createPortal).toHaveBeenCalledWith({ axios: {} });
+    });
+    expect(window.location.assign).toHaveBeenCalledWith(
+      'https://billing.stripe.test/portal/account',
+    );
+  });
+
+  it('confirms cancel renewal and updates status', async () => {
+    fetchStatus.mockResolvedValue(activeStatus);
+    renderWithProviders(<AccountBillingPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel renewal' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm cancel renewal' }));
+
+    await waitFor(() => {
+      expect(cancelRenewal).toHaveBeenCalledWith(
+        { axios: {} },
+        'sub-1',
+        expect.any(String),
+      );
+    });
+    expect(await screen.findByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+  });
+
+  it('reactivates a subscription scheduled to end', async () => {
+    fetchStatus.mockResolvedValue({
+      ...activeStatus,
+      lifecycleState: 'CANCEL_AT_PERIOD_END',
+    });
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Renewal is scheduled to end/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reactivate' }));
+
+    await waitFor(() => {
+      expect(reactivateSubscription).toHaveBeenCalledWith(
+        { axios: {} },
+        'sub-1',
+        expect.any(String),
+      );
+    });
+    expect(await screen.findByText(/Your Premium subscription is active/i)).toBeInTheDocument();
+  });
+
+  it('surfaces manage action conflicts without navigating away', async () => {
+    fetchStatus.mockResolvedValue(activeStatus);
+    cancelRenewal.mockRejectedValue(
+      new ApiError('This subscription cannot be changed in its current state.', {
+        category: 'CONFLICT',
+        status: 409,
+        code: 'BILLING_LIFECYCLE_CONFLICT',
+      }),
+    );
+    renderWithProviders(<AccountBillingPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel renewal' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm cancel renewal' }));
+
+    expect(
+      await screen.findByText('This subscription cannot be changed in its current state.'),
+    ).toBeInTheDocument();
+    expect(window.location.assign).not.toHaveBeenCalled();
+  });
+
+  it('shows portal without cancel or reactivate during grace', async () => {
+    fetchStatus.mockResolvedValue({
+      subscriptionId: 'sub-grace',
+      planKey: 'INDIVIDUAL_PREMIUM',
+      cadence: 'ANNUAL',
+      lifecycleState: 'GRACE_PERIOD',
+      trialEndsAt: null,
+      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+      graceEndsAt: '2026-09-20T12:00:00Z',
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Payment needs attention/i)).toBeInTheDocument();
+    expect(screen.getByText(/Access continues until/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Manage payment method and invoices' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
   });
 
   it('degrades gracefully when Stripe billing routes are unavailable', async () => {
@@ -139,6 +260,9 @@ describe('Account billing page', () => {
       await screen.findByText(/Individual Premium checkout is not available right now/i),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Manage payment method and invoices' }),
+    ).not.toBeInTheDocument();
   });
 
   it('maps conflict errors from checkout', async () => {
@@ -172,26 +296,12 @@ describe('Account billing page', () => {
 
     expect(await screen.findByText(/Checkout is already in progress/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Manage payment method and invoices' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('shows grace-period attention copy', async () => {
-    fetchStatus.mockResolvedValue({
-      subscriptionId: 'sub-grace',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'ANNUAL',
-      lifecycleState: 'GRACE_PERIOD',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
-      graceEndsAt: '2026-09-20T12:00:00Z',
-    });
-
-    renderWithProviders(<AccountBillingPage />);
-
-    expect(await screen.findByText(/Payment needs attention/i)).toBeInTheDocument();
-    expect(screen.getByText(/Access continues until/i)).toBeInTheDocument();
-  });
-
-  it('shows past-due and cancel-at-period-end attention copy', async () => {
+  it('shows past-due attention with portal only', async () => {
     fetchStatus.mockResolvedValue({
       subscriptionId: 'sub-past-due',
       planKey: 'INDIVIDUAL_PREMIUM',
@@ -202,21 +312,13 @@ describe('Account billing page', () => {
       graceEndsAt: null,
     });
 
-    const { unmount } = renderWithProviders(<AccountBillingPage />);
-    expect(await screen.findByText(/Billing needs attention/i)).toBeInTheDocument();
-    unmount();
-
-    fetchStatus.mockResolvedValue({
-      subscriptionId: 'sub-cancel',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
-      lifecycleState: 'CANCEL_AT_PERIOD_END',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
-      graceEndsAt: null,
-    });
     renderWithProviders(<AccountBillingPage />);
-    expect(await screen.findByText(/Renewal is scheduled to end/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Billing needs attention/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Manage payment method and invoices' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
   });
 
   it('allows checkout again after an expired subscription', async () => {

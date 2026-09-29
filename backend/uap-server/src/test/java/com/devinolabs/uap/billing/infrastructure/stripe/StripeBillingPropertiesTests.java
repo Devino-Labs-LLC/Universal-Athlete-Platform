@@ -105,6 +105,12 @@ class StripeBillingPropertiesTests {
 		assertThatThrownBy(properties::validateSandbox)
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("HTTPS or local HTTP");
+
+		properties = validProperties();
+		properties.setIndividualPortalReturnUrl("http://billing.example.com/app/return");
+		assertThatThrownBy(properties::validateSandbox)
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("individual-portal-return-url");
 	}
 
 	@Test
@@ -145,6 +151,7 @@ class StripeBillingPropertiesTests {
 		properties.setIndividualCancelUrl("https://app.example.com/app/billing/cancel");
 		properties.setPortalConfigurationId("bpc_test_configuration");
 		properties.setPortalReturnUrl("https://app.example.com/coach/billing");
+		properties.setIndividualPortalReturnUrl("https://app.example.com/app/billing");
 		StripeBillingProperties.Prices prices = properties.getPrices();
 		prices.setOrgBand25Monthly("price_25_monthly");
 		prices.setOrgBand25Annual("price_25_annual");

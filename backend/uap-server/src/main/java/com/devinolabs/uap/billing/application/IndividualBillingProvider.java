@@ -30,6 +30,31 @@ public interface IndividualBillingProvider {
 			CommercialPlanKey planKey,
 			BillingCadence cadence);
 
+	PortalSession createAccountPortalSession(UUID accountId, String providerCustomerRef);
+
+	ProviderSubscriptionSnapshot scheduleAccountCancelAtPeriodEnd(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId);
+
+	ProviderSubscriptionSnapshot reactivateAccountSubscription(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId);
+
+	ProviderSubscriptionSnapshot fetchAccountSubscription(String providerSubscriptionRef);
+
+	record PortalSession(String hostedUrl) {
+
+		public PortalSession {
+			Objects.requireNonNull(hostedUrl, "hostedUrl must not be null");
+			hostedUrl = hostedUrl.trim();
+			if (hostedUrl.isEmpty()) {
+				throw new IllegalArgumentException("hostedUrl must not be blank");
+			}
+		}
+	}
+
 	record CheckoutSession(String sessionId, String checkoutUrl) {
 
 		public CheckoutSession {

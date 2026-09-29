@@ -471,6 +471,25 @@ class StripeOrganizationBillingAdapterClientTests {
 	}
 
 	@Test
+	void accountPortalSessionUsesIndividualReturnUrlAndSharedConfiguration() throws Exception {
+		UUID accountId = UUID.fromString("99999999-aaaa-bbbb-cccc-dddddddddddd");
+		when(stripeClient.v1().billingPortal().configurations().retrieve("bpc_test_configuration"))
+				.thenReturn(portalConfiguration(false));
+		com.stripe.model.billingportal.Session session = new com.stripe.model.billingportal.Session();
+		session.setLivemode(false);
+		session.setUrl("https://billing.stripe.test/session/account");
+		ArgumentCaptor<com.stripe.param.billingportal.SessionCreateParams> params =
+				ArgumentCaptor.forClass(com.stripe.param.billingportal.SessionCreateParams.class);
+		when(stripeClient.v1().billingPortal().sessions().create(params.capture())).thenReturn(session);
+
+		assertThat(adapter.createAccountPortalSession(accountId, "cus_account").hostedUrl())
+				.isEqualTo("https://billing.stripe.test/session/account");
+		assertThat(params.getValue().getCustomer()).isEqualTo("cus_account");
+		assertThat(params.getValue().getConfiguration()).isEqualTo("bpc_test_configuration");
+		assertThat(params.getValue().getReturnUrl()).isEqualTo("https://app.example.com/app/billing");
+	}
+
+	@Test
 	void nonpaymentTerminationCancelsOnlyADelinquentSandboxSubscription() throws Exception {
 		when(stripeClient.v1().subscriptions().retrieve("sub_test_1"))
 				.thenReturn(subscription("past_due"), subscription("canceled"));

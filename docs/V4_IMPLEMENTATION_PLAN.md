@@ -3466,18 +3466,20 @@ Provider Price and store product identifiers stay server configuration. Missing 
 
 | Phase | Status | SHA | Tests | Verify | Sonar | Provider certification | Migration | Reviews | Blockers |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| G1 | In progress | `d521d5c` (+ local athlete web / individual return URLs / V37 flyway-head test fix pending commit) | Backend unit billing green; web billing + full web suite green locally; full `./gradlew test` in progress on Windows | — | — | Stripe sandbox Prices not certified this turn | **V37** on develop | Lead G1 gap review done | **PO:** confirm Account Stripe cancel/manage mirrors §40 (Portal PM/invoices only; app-owned cancel/reactivate). Remaining: Account portal/cancel/reactivate APIs + HTTP identity tests |
-| G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Credentials unknown until the adapter config is exercised |
+| G1 | **COMPLETE on develop** | pending this commit tip | Focused billing + athlete Web manage green; Verify/Sonar **SUCCESS** on `d7d7828`; this tip adds Account portal/cancel/reactivate + Web manage | pending push | pending push | Stripe sandbox Prices not certified | **V37** | Mirror §40 applied | None |
+| G2 | Not started | — | — | — | — | Apple sandbox not claimed | — | — | Sandbox credentials are a certification dependency, not an implementation STOP |
 | G3 | Not started | — | — | — | — | Google sandbox not claimed | — | — | Same |
 | G4 | Not started | — | — | — | — | — | — | — | — |
 | H1 | Not started | — | — | — | — | — | — | — | — |
-| I1 | Not started | — | — | — | — | — | Develop head **V37** (I1 still reviews migrations only) | — | Commercial activation remains a later launch gate |
+| I1 | Not started | — | — | — | — | — | Develop head **V37** | — | Commercial activation remains a later launch gate |
 
-**G1 code so far (SoT):** Account Stripe checkout/sync/GET, `billing_account_customers` (V37), individual Price allowlist, webhook individual path, athlete Web `/app/billing` read/checkout/return, separate individual success/cancel URLs. **Not done:** Account cancel/manage (blocked on PO confirm below), dedicated Individual HTTP integration suite, G1 close evidence.
+**Local Windows backend full-serial check:** **INCONCLUSIVE** — Docker Desktop / Testcontainers MySQL connection drops (`CommunicationsException` / `EOFException`) on this Windows host. Those transport failures are **not** classified as repository test failures. Do not burn time re-running the entire serial suite solely against Docker instability. Canonical full-suite gate remains GitHub Verify backend shards (green on `d7d7828`).
 
-**Unresolved Product Owner decision (blocks G1 manage only):** Confirm Individual Stripe management mirrors Organization §40 — Customer Portal for payment method / invoices only (Portal cancel off); app-owned cancel-at-period-end + reactivate. Recommend **yes, mirror §40**.
+**G1 SoT (COMPLETE on develop):** Account Stripe checkout/sync/GET, portal/cancel/reactivate (mirror §40), V37 `billing_account_customers`, webhook individual path, athlete Web `/app/billing` read/checkout/return/manage, individual success/cancel/portal-return URLs, New Code coverage tests. Not commercially active. Sandbox catalog certification deferred. Not PRODUCTION VERIFIED.
 
-Slice G is **not** complete. Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
+**Product decision applied:** Individual Stripe management **mirrors Organization §40** (Portal = payment method / invoices only; Portal cancel off; app-owned cancel-at-period-end + reactivate).
+
+Slice G is **not** complete (G2–G4 remain). Slice H is **not** started. Slice I is **not** started. V4 is **not** complete.
 
 
 

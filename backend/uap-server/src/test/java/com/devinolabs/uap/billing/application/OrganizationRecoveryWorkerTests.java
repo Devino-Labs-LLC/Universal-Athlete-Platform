@@ -657,5 +657,13 @@ class OrganizationRecoveryWorkerTests {
 				UUID actorAccountId,
 				SubscriptionLifecycleState lifecycleState) {
 		}
+
+		@Override
+		public void accountCancelRequested(UUID subscriptionId, UUID accountId, UUID actorAccountId) {
+		}
+
+		@Override
+		public void accountSubscriptionReactivated(UUID subscriptionId, UUID accountId, UUID actorAccountId) {
+		}
 	}
 }

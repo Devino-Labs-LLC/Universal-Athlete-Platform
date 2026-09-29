@@ -64,4 +64,26 @@ final class BillingSnapshotAudit {
 		}
 	}
 
+	/**
+	 * Account Individual Premium snapshot transitions (cancel / reactivate). Portal sessions
+	 * are not audited — same policy as Organization §40.
+	 */
+	static void recordAccount(
+			BillingAuditPort auditPort,
+			UUID subscriptionId,
+			UUID accountId,
+			UUID actorAccountId,
+			SubscriptionLifecycleState fromState,
+			Subscription after) {
+		if (after.lifecycleState() == SubscriptionLifecycleState.CANCEL_AT_PERIOD_END
+				&& fromState != SubscriptionLifecycleState.CANCEL_AT_PERIOD_END) {
+			auditPort.accountCancelRequested(subscriptionId, accountId, actorAccountId);
+		}
+		if (fromState == SubscriptionLifecycleState.CANCEL_AT_PERIOD_END
+				&& (after.lifecycleState() == SubscriptionLifecycleState.ACTIVE
+						|| after.lifecycleState() == SubscriptionLifecycleState.TRIALING)) {
+			auditPort.accountSubscriptionReactivated(subscriptionId, accountId, actorAccountId);
+		}
+	}
+
 }

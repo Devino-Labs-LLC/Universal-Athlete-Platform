@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ApiClient } from '@/core/api/apiClient';
 import {
+  cancelAccountRenewal,
   clearPendingAccountCheckout,
   createAccountCheckoutSession,
+  createAccountPortalSession,
   fetchAccountBillingStatus,
   readPendingAccountCheckout,
+  reactivateAccountSubscription,
   rememberPendingAccountCheckout,
   syncAccountSubscription,
 } from '@/features/billing/api/accountBillingApi';
@@ -88,6 +91,58 @@ describe('accountBillingApi', () => {
       { checkoutSessionId: 'cs_test_1' },
     );
     expect(status.lifecycleState).toBe('ACTIVE');
+  });
+
+  it('posts portal cancel and reactivate without price identifiers', async () => {
+    const post = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: { url: 'https://billing.stripe.test/portal/account' },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          subscriptionId: '11111111-2222-3333-4444-555555555555',
+          planKey: 'INDIVIDUAL_PREMIUM',
+          cadence: 'MONTHLY',
+          lifecycleState: 'CANCEL_AT_PERIOD_END',
+          trialEndsAt: null,
+          currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+          graceEndsAt: null,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          subscriptionId: '11111111-2222-3333-4444-555555555555',
+          planKey: 'INDIVIDUAL_PREMIUM',
+          cadence: 'MONTHLY',
+          lifecycleState: 'ACTIVE',
+          trialEndsAt: null,
+          currentPeriodEndsAt: '2026-10-01T00:00:00Z',
+          graceEndsAt: null,
+        },
+      });
+    const client = clientWith({ post });
+    const requestId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const subscriptionId = '11111111-2222-3333-4444-555555555555';
+
+    const portal = await createAccountPortalSession(client);
+    const cancelled = await cancelAccountRenewal(client, subscriptionId, requestId);
+    const reactivated = await reactivateAccountSubscription(client, subscriptionId, requestId);
+
+    expect(portal.url).toBe('https://billing.stripe.test/portal/account');
+    expect(cancelled.lifecycleState).toBe('CANCEL_AT_PERIOD_END');
+    expect(reactivated.lifecycleState).toBe('ACTIVE');
+    expect(post).toHaveBeenNthCalledWith(1, '/api/v1/billing/account/portal-sessions');
+    expect(post).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/billing/account/subscriptions/11111111-2222-3333-4444-555555555555/cancel',
+      { requestId },
+    );
+    expect(post).toHaveBeenNthCalledWith(
+      3,
+      '/api/v1/billing/account/subscriptions/11111111-2222-3333-4444-555555555555/reactivate',
+      { requestId },
+    );
   });
 
   it('remembers and clears pending checkout in sessionStorage', () => {

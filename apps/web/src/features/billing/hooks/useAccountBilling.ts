@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuthSession } from '@/app/providers/AuthSessionProvider';
 import {
+  cancelAccountRenewal,
   createAccountCheckoutSession,
+  createAccountPortalSession,
   fetchAccountBillingStatus,
+  reactivateAccountSubscription,
   syncAccountSubscription,
 } from '@/features/billing/api/accountBillingApi';
 import {
@@ -52,6 +55,40 @@ export function useSyncAccountSubscriptionMutation() {
   return useMutation({
     mutationFn: (input: { subscriptionId: string; checkoutSessionId: string }) =>
       syncAccountSubscription(apiClient, input.subscriptionId, input.checkoutSessionId),
+    onSuccess: (status) => {
+      queryClient.setQueryData(accountBillingQueryKeys.status(), status);
+    },
+  });
+}
+
+export function useCreateAccountPortalSessionMutation() {
+  const { apiClient } = useAuthSession();
+
+  return useMutation({
+    mutationFn: () => createAccountPortalSession(apiClient),
+  });
+}
+
+export function useCancelAccountRenewalMutation() {
+  const { apiClient } = useAuthSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { subscriptionId: string; requestId: string }) =>
+      cancelAccountRenewal(apiClient, input.subscriptionId, input.requestId),
+    onSuccess: (status) => {
+      queryClient.setQueryData(accountBillingQueryKeys.status(), status);
+    },
+  });
+}
+
+export function useReactivateAccountSubscriptionMutation() {
+  const { apiClient } = useAuthSession();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { subscriptionId: string; requestId: string }) =>
+      reactivateAccountSubscription(apiClient, input.subscriptionId, input.requestId),
     onSuccess: (status) => {
       queryClient.setQueryData(accountBillingQueryKeys.status(), status);
     },

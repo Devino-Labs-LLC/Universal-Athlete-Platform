@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.devinolabs.uap.billing.application.IndividualCheckoutService;
 import com.devinolabs.uap.billing.application.IndividualCheckoutService.CheckoutResult;
 import com.devinolabs.uap.billing.application.IndividualCheckoutService.SubscriptionResult;
+import com.devinolabs.uap.billing.application.IndividualSubscriptionManagementService;
+import com.devinolabs.uap.billing.application.IndividualSubscriptionManagementService.PortalSessionResult;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 
 @RestController
@@ -26,9 +28,13 @@ import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 class IndividualBillingController {
 
 	private final IndividualCheckoutService checkoutService;
+	private final IndividualSubscriptionManagementService managementService;
 
-	IndividualBillingController(IndividualCheckoutService checkoutService) {
+	IndividualBillingController(
+			IndividualCheckoutService checkoutService,
+			IndividualSubscriptionManagementService managementService) {
 		this.checkoutService = checkoutService;
+		this.managementService = managementService;
 	}
 
 	@PostMapping("/checkout-sessions")
@@ -57,6 +63,33 @@ class IndividualBillingController {
 	@GetMapping
 	SubscriptionResult current(Authentication authentication) {
 		return checkoutService.currentStatus(accountId(authentication));
+	}
+
+	@PostMapping("/portal-sessions")
+	PortalSessionResult openPortal(Authentication authentication) {
+		return managementService.openPortal(accountId(authentication));
+	}
+
+	@PostMapping("/subscriptions/{subscriptionId}/cancel")
+	SubscriptionResult cancel(
+			@PathVariable UUID subscriptionId,
+			@Valid @RequestBody BillingMutationRequest request,
+			Authentication authentication) {
+		return managementService.cancel(
+				accountId(authentication),
+				subscriptionId,
+				request.requestId());
+	}
+
+	@PostMapping("/subscriptions/{subscriptionId}/reactivate")
+	SubscriptionResult reactivate(
+			@PathVariable UUID subscriptionId,
+			@Valid @RequestBody BillingMutationRequest request,
+			Authentication authentication) {
+		return managementService.reactivate(
+				accountId(authentication),
+				subscriptionId,
+				request.requestId());
 	}
 
 	private static UUID accountId(Authentication authentication) {

@@ -87,6 +87,7 @@ import com.jayway.jsonpath.JsonPath;
 		"uap.billing.stripe.individual-cancel-url=https://app.example.com/app/billing/cancel",
 		"uap.billing.stripe.portal-configuration-id=bpc_test_management",
 		"uap.billing.stripe.portal-return-url=https://app.example.com/coach/billing",
+		"uap.billing.stripe.individual-portal-return-url=https://app.example.com/app/billing",
 		"uap.billing.stripe.prices.org-band-25-monthly=price_mgmt_25_monthly",
 		"uap.billing.stripe.prices.org-band-25-annual=price_mgmt_25_annual",
 		"uap.billing.stripe.prices.org-band-75-monthly=price_mgmt_75_monthly",

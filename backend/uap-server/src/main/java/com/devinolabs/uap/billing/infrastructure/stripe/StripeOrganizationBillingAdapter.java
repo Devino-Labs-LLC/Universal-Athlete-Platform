@@ -331,8 +331,26 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider, I
 	}
 
 	@Override
-	public PortalSession createPortalSession(UUID organizationId, String providerCustomerRef) {
+	public OrganizationBillingProvider.PortalSession createPortalSession(
+			UUID organizationId,
+			String providerCustomerRef) {
 		Objects.requireNonNull(organizationId, "organizationId must not be null");
+		return createPortalSession(providerCustomerRef, properties.getPortalReturnUrl());
+	}
+
+	@Override
+	public IndividualBillingProvider.PortalSession createAccountPortalSession(
+			UUID accountId,
+			String providerCustomerRef) {
+		Objects.requireNonNull(accountId, "accountId must not be null");
+		OrganizationBillingProvider.PortalSession session =
+				createPortalSession(providerCustomerRef, properties.getIndividualPortalReturnUrl());
+		return new IndividualBillingProvider.PortalSession(session.hostedUrl());
+	}
+
+	private OrganizationBillingProvider.PortalSession createPortalSession(
+			String providerCustomerRef,
+			String returnUrl) {
 		try {
 			com.stripe.model.billingportal.Configuration configuration = stripeClient.v1().billingPortal()
 					.configurations()
@@ -343,10 +361,10 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider, I
 					com.stripe.param.billingportal.SessionCreateParams.builder()
 							.setCustomer(requireText(providerCustomerRef, "providerCustomerRef"))
 							.setConfiguration(properties.getPortalConfigurationId())
-							.setReturnUrl(properties.getPortalReturnUrl())
+							.setReturnUrl(returnUrl)
 							.build());
 			requireSandbox(session.getLivemode());
-			return new PortalSession(session.getUrl());
+			return new OrganizationBillingProvider.PortalSession(session.getUrl());
 		}
 		catch (BillingProviderUnavailableException ex) {
 			throw ex;
@@ -391,11 +409,29 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider, I
 	}
 
 	@Override
+	public ProviderSubscriptionSnapshot scheduleAccountCancelAtPeriodEnd(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId) {
+		return updateCancelFlag(
+				subscriptionId, providerSubscriptionRef, true, "account-cancel", requestId.toString());
+	}
+
+	@Override
 	public ProviderSubscriptionSnapshot reactivateSubscription(
 			UUID subscriptionId,
 			String providerSubscriptionRef,
 			UUID requestId) {
 		return updateCancelFlag(subscriptionId, providerSubscriptionRef, false, "reactivate", requestId.toString());
+	}
+
+	@Override
+	public ProviderSubscriptionSnapshot reactivateAccountSubscription(
+			UUID subscriptionId,
+			String providerSubscriptionRef,
+			UUID requestId) {
+		return updateCancelFlag(
+				subscriptionId, providerSubscriptionRef, false, "account-reactivate", requestId.toString());
 	}
 
 	@Override
@@ -409,6 +445,11 @@ class StripeOrganizationBillingAdapter implements OrganizationBillingProvider, I
 		catch (StripeException ex) {
 			throw new BillingProviderUnavailableException(ex);
 		}
+	}
+
+	@Override
+	public ProviderSubscriptionSnapshot fetchAccountSubscription(String providerSubscriptionRef) {
+		return fetchSubscription(providerSubscriptionRef);
 	}
 
 	@Override

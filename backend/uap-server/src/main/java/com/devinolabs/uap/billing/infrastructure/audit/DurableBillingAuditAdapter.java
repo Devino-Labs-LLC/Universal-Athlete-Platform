@@ -128,12 +128,34 @@ class DurableBillingAuditAdapter implements BillingAuditPort {
 	}
 
 	@Override
+	public void accountCancelRequested(UUID subscriptionId, UUID accountId, UUID actorAccountId) {
+		append(
+				"BILLING_CANCEL_REQUESTED",
+				subscriptionId,
+				null,
+				accountId,
+				actorAccountId,
+				"{}");
+	}
+
+	@Override
 	public void subscriptionReactivated(UUID subscriptionId, UUID organizationId, UUID actorAccountId) {
 		append(
 				"BILLING_SUBSCRIPTION_REACTIVATED",
 				subscriptionId,
 				organizationId,
 				null,
+				actorAccountId,
+				"{}");
+	}
+
+	@Override
+	public void accountSubscriptionReactivated(UUID subscriptionId, UUID accountId, UUID actorAccountId) {
+		append(
+				"BILLING_SUBSCRIPTION_REACTIVATED",
+				subscriptionId,
+				null,
+				accountId,
 				actorAccountId,
 				"{}");
 	}
