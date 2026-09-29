@@ -6,6 +6,7 @@ describe('appleBillingApi', () => {
       data: {
         subscriptionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
         provider: 'APPLE_APP_STORE',
+        managementChannel: 'APPLE_APP_STORE',
         planKey: 'INDIVIDUAL_PREMIUM',
         cadence: 'MONTHLY',
         lifecycleState: 'ACTIVE',

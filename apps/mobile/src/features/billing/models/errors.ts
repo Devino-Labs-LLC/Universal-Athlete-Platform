@@ -1,4 +1,4 @@
-import { isApiError } from '@/core/api/errors';
+import { isApiError } from '@/src/core/api/errors';
 
 const billingMessages: Record<string, string> = {
   BILLING_LIFECYCLE_CONFLICT: 'This subscription cannot be changed in its current state.',
@@ -23,15 +23,6 @@ export function accountBillingErrorMessage(
     if (error.code && billingMessages[error.code]) {
       return billingMessages[error.code];
     }
-    if (error.category === 'UNAUTHORIZED') {
-      return 'Your session expired. Sign in again to continue.';
-    }
-    if (error.category === 'COMMERCIAL_ENTITLEMENT' || error.code === 'COMMERCIAL_ENTITLEMENT_REQUIRED') {
-      return 'Premium access is not available for this account right now.';
-    }
-    if (error.category === 'CONFLICT') {
-      return error.message || fallback;
-    }
     return error.message || fallback;
   }
   if (error instanceof Error) {
@@ -40,15 +31,15 @@ export function accountBillingErrorMessage(
   return fallback;
 }
 
-/** Enabled Stripe with no Account subscription. */
+/** Enabled billing with no Account subscription. */
 export function isAccountBillingMissing(error: unknown): boolean {
-  return isApiError(error) && error.category === 'NOT_FOUND' && error.code === 'ACCOUNT_NOT_FOUND';
+  return isApiError(error) && error.category === 'notFound' && error.code === 'ACCOUNT_NOT_FOUND';
 }
 
 /**
- * Stripe billing controllers are absent when disabled — Spring returns a generic 404.
- * Treat non-ACCOUNT_NOT_FOUND not-found as “billing unavailable” so the page degrades.
+ * Billing controllers absent when disabled — generic not-found.
+ * Treat non-ACCOUNT_NOT_FOUND not-found as billing unavailable.
  */
 export function isAccountBillingUnavailable(error: unknown): boolean {
-  return isApiError(error) && error.category === 'NOT_FOUND' && error.code !== 'ACCOUNT_NOT_FOUND';
+  return isApiError(error) && error.category === 'notFound' && error.code !== 'ACCOUNT_NOT_FOUND';
 }

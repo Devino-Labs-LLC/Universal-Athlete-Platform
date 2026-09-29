@@ -47,10 +47,12 @@ describe('accountBillingApi', () => {
     expect(result.checkoutSessionId).toBe('cs_1');
   });
 
-  it('fetches account billing status without provider identifiers', async () => {
+  it('fetches account billing status with provider and management channel', async () => {
     const get = vi.fn().mockResolvedValue({
       data: {
         subscriptionId: '11111111-2222-3333-4444-555555555555',
+        provider: 'STRIPE',
+        managementChannel: 'STRIPE_CUSTOMER_PORTAL',
         planKey: 'INDIVIDUAL_PREMIUM',
         cadence: 'ANNUAL',
         lifecycleState: 'ACTIVE',
@@ -65,12 +67,16 @@ describe('accountBillingApi', () => {
     expect(get).toHaveBeenCalledWith('/api/v1/billing/account');
     expect(status.lifecycleState).toBe('ACTIVE');
     expect(status.planKey).toBe('INDIVIDUAL_PREMIUM');
+    expect(status.provider).toBe('STRIPE');
+    expect(status.managementChannel).toBe('STRIPE_CUSTOMER_PORTAL');
   });
 
   it('posts sync with checkoutSessionId only', async () => {
     const post = vi.fn().mockResolvedValue({
       data: {
         subscriptionId: '11111111-2222-3333-4444-555555555555',
+        provider: 'STRIPE',
+        managementChannel: 'STRIPE_CUSTOMER_PORTAL',
         planKey: 'INDIVIDUAL_PREMIUM',
         cadence: 'MONTHLY',
         lifecycleState: 'ACTIVE',
@@ -102,6 +108,8 @@ describe('accountBillingApi', () => {
       .mockResolvedValueOnce({
         data: {
           subscriptionId: '11111111-2222-3333-4444-555555555555',
+          provider: 'STRIPE',
+          managementChannel: 'STRIPE_CUSTOMER_PORTAL',
           planKey: 'INDIVIDUAL_PREMIUM',
           cadence: 'MONTHLY',
           lifecycleState: 'CANCEL_AT_PERIOD_END',
@@ -113,6 +121,8 @@ describe('accountBillingApi', () => {
       .mockResolvedValueOnce({
         data: {
           subscriptionId: '11111111-2222-3333-4444-555555555555',
+          provider: 'STRIPE',
+          managementChannel: 'STRIPE_CUSTOMER_PORTAL',
           planKey: 'INDIVIDUAL_PREMIUM',
           cadence: 'MONTHLY',
           lifecycleState: 'ACTIVE',

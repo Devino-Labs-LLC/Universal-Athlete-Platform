@@ -40,6 +40,8 @@ vi.mock('@/app/providers/AuthSessionProvider', () => ({
 
 const activeStatus = {
   subscriptionId: 'sub-1',
+  provider: 'STRIPE' as const,
+  managementChannel: 'STRIPE_CUSTOMER_PORTAL' as const,
   planKey: 'INDIVIDUAL_PREMIUM' as const,
   cadence: 'MONTHLY' as const,
   lifecycleState: 'ACTIVE' as const,
@@ -67,13 +69,8 @@ describe('Account billing page', () => {
     });
     syncSubscription.mockReset();
     syncSubscription.mockResolvedValue({
+      ...activeStatus,
       subscriptionId: '11111111-2222-3333-4444-555555555555',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
-      lifecycleState: 'ACTIVE',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
-      graceEndsAt: null,
     });
     createPortal.mockReset();
     createPortal.mockResolvedValue({
@@ -101,11 +98,11 @@ describe('Account billing page', () => {
 
     expect(await screen.findByRole('button', { name: 'Start Checkout' })).toBeEnabled();
     expect(screen.getAllByText(/plus applicable taxes/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/No trial/i)).toBeInTheDocument();
-    expect(screen.getByText(/\$9\.99/)).toBeInTheDocument();
+    expect(screen.getAllByText(/No trial/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/\$9\.99/).length).toBeGreaterThanOrEqual(1);
 
     await userEvent.click(screen.getByRole('radio', { name: /Annual/i }));
-    expect(screen.getByText(/\$99\.99/)).toBeInTheDocument();
+    expect(screen.getAllByText(/\$99\.99/).length).toBeGreaterThanOrEqual(1);
 
     await userEvent.click(screen.getByRole('button', { name: 'Start Checkout' }));
 
@@ -136,19 +133,70 @@ describe('Account billing page', () => {
     expect(window.location.assign).not.toHaveBeenCalled();
   });
 
+  it('shows locked pricing summary on the authenticated billing page', async () => {
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(
+      await screen.findByRole('region', { name: /Individual Premium pricing/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/\$9\.99 \/ month/i)).toBeInTheDocument();
+    expect(screen.getByText(/\$99\.99 \/ year/i)).toBeInTheDocument();
+  });
+
   it('shows active subscription with portal and cancel actions', async () => {
     fetchStatus.mockResolvedValue(activeStatus);
 
     renderWithProviders(<AccountBillingPage />);
 
-    expect(await screen.findByText(/Individual Premium/i)).toBeInTheDocument();
-    expect(screen.getByText(/Your Premium subscription is active/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Your Premium subscription is active/i)).toBeInTheDocument();
+    expect(screen.getByText(/Premium origin: Stripe/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Manage payment method and invoices' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel renewal' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+  });
+
+  it('routes App Store origin to store management without Stripe portal actions', async () => {
+    fetchStatus.mockResolvedValue({
+      ...activeStatus,
+      provider: 'APPLE_APP_STORE',
+      managementChannel: 'APPLE_APP_STORE',
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Premium origin: App Store/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage in App Store' })).toHaveAttribute(
+      'href',
+      'https://apps.apple.com/account/subscriptions',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Manage payment method and invoices' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Checkout' })).not.toBeInTheDocument();
+  });
+
+  it('routes Google Play origin to store management without Stripe portal actions', async () => {
+    fetchStatus.mockResolvedValue({
+      ...activeStatus,
+      provider: 'GOOGLE_PLAY',
+      managementChannel: 'GOOGLE_PLAY',
+    });
+
+    renderWithProviders(<AccountBillingPage />);
+
+    expect(await screen.findByText(/Premium origin: Google Play/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage in Google Play' })).toHaveAttribute(
+      'href',
+      'https://play.google.com/store/account/subscriptions',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Manage payment method and invoices' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel renewal' })).not.toBeInTheDocument();
   });
 
   it('opens the customer portal from an active subscription', async () => {
@@ -228,12 +276,10 @@ describe('Account billing page', () => {
 
   it('shows portal without cancel or reactivate during grace', async () => {
     fetchStatus.mockResolvedValue({
+      ...activeStatus,
       subscriptionId: 'sub-grace',
-      planKey: 'INDIVIDUAL_PREMIUM',
       cadence: 'ANNUAL',
       lifecycleState: 'GRACE_PERIOD',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
       graceEndsAt: '2026-09-20T12:00:00Z',
     });
 
@@ -283,13 +329,10 @@ describe('Account billing page', () => {
 
   it('shows pending checkout state without offering a new checkout', async () => {
     fetchStatus.mockResolvedValue({
+      ...activeStatus,
       subscriptionId: 'sub-pending',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
       lifecycleState: 'PENDING',
-      trialEndsAt: null,
       currentPeriodEndsAt: null,
-      graceEndsAt: null,
     });
 
     renderWithProviders(<AccountBillingPage />);
@@ -303,13 +346,9 @@ describe('Account billing page', () => {
 
   it('shows past-due attention with portal only', async () => {
     fetchStatus.mockResolvedValue({
+      ...activeStatus,
       subscriptionId: 'sub-past-due',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
       lifecycleState: 'PAST_DUE',
-      trialEndsAt: null,
-      currentPeriodEndsAt: '2026-10-01T00:00:00Z',
-      graceEndsAt: null,
     });
 
     renderWithProviders(<AccountBillingPage />);
@@ -323,13 +362,10 @@ describe('Account billing page', () => {
 
   it('allows checkout again after an expired subscription', async () => {
     fetchStatus.mockResolvedValue({
+      ...activeStatus,
       subscriptionId: 'sub-expired',
-      planKey: 'INDIVIDUAL_PREMIUM',
-      cadence: 'MONTHLY',
       lifecycleState: 'EXPIRED',
-      trialEndsAt: null,
       currentPeriodEndsAt: null,
-      graceEndsAt: null,
     });
 
     renderWithProviders(<AccountBillingPage />);

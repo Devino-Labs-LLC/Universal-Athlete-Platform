@@ -6,6 +6,7 @@ describe('googlePlayBillingApi', () => {
       data: {
         subscriptionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
         provider: 'GOOGLE_PLAY',
+        managementChannel: 'GOOGLE_PLAY',
         planKey: 'INDIVIDUAL_PREMIUM',
         cadence: 'MONTHLY',
         lifecycleState: 'ACTIVE',

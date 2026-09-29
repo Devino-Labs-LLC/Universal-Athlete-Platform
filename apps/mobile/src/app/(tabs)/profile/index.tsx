@@ -152,6 +152,15 @@ export default function ProfileScreen() {
         />
       </HomeCard>
 
+      <HomeCard eyebrow="Account" title="Premium">
+        <Button
+          variant="secondary"
+          label="Premium billing"
+          testID="profile-premium-billing-link"
+          onPress={() => router.push('/(tabs)/profile/billing')}
+        />
+      </HomeCard>
+
       <HomeCard eyebrow="Training" title="Environments">
         <Button
           variant="secondary"

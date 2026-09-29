@@ -67,6 +67,32 @@
   border-radius: var(--uap-radius-lg);
 }
 
+.pricingSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+  max-width: 28rem;
+}
+
+.storeLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--uap-space-4);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface);
+  color: var(--uap-text-primary);
+  font-weight: 600;
+  font-size: var(--uap-font-size-sm);
+  text-decoration: none;
+}
+
+.storeLink:hover,
+.storeLink:focus-visible {
+  text-decoration: underline;
+}
+
 .inlineLink {
   color: var(--uap-accent-cyan);
   font-weight: 600;

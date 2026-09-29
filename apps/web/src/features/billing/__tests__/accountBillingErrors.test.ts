@@ -44,6 +44,13 @@ describe('account billing errors', () => {
         new ApiError('raw', { category: 'CONFLICT', code: 'BILLING_SUBSCRIPTION_STATE_CONFLICT' }),
       ),
     ).toBe('Account billing needs attention before it can be managed.');
+    expect(
+      accountBillingErrorMessage(
+        new ApiError('raw', { category: 'CONFLICT', code: 'BILLING_MANAGED_BY_ORIGIN_PROVIDER' }),
+      ),
+    ).toBe(
+      'Manage this Premium subscription through the store or channel where it was purchased.',
+    );
   });
 
   it('maps auth entitlement conflict and generic api fallbacks', () => {

@@ -19,21 +19,13 @@ export const individualManagementChannelSchema = z.enum([
   'GOOGLE_PLAY',
 ]);
 
-/** Locked Individual Premium display prices (tax-exclusive). Not Stripe Price IDs. */
+/** Locked Individual Premium display prices (tax-exclusive). Not store product IDs. */
 export const individualPremiumCatalog = {
   planKey: 'INDIVIDUAL_PREMIUM' as const,
   name: 'Individual Premium',
   monthlyUsd: 9.99,
   annualUsd: 99.99,
 } as const;
-
-export const checkoutSessionResponseSchema = z.object({
-  subscriptionId: z.string().min(1),
-  checkoutSessionId: z.string().min(1),
-  checkoutUrl: z.string().url(),
-});
-
-export type CheckoutSessionResponse = z.infer<typeof checkoutSessionResponseSchema>;
 
 export const accountBillingStatusSchema = z.object({
   subscriptionId: z.string().min(1),
@@ -66,7 +58,6 @@ export function isStripeManagedChannel(channel: IndividualManagementChannel): bo
   return channel === 'STRIPE_CUSTOMER_PORTAL';
 }
 
-/** Public store subscription management destinations (no secrets). */
 export const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 export const GOOGLE_PLAY_SUBSCRIPTIONS_URL =
   'https://play.google.com/store/account/subscriptions';
@@ -91,6 +82,23 @@ export function storeManagementLabel(channel: IndividualManagementChannel): stri
     case 'GOOGLE_PLAY':
       return 'Manage in Google Play';
     case 'STRIPE_CUSTOMER_PORTAL':
-      return 'Manage payment method and invoices';
+      return 'Manage on the web';
   }
+}
+
+export function formatUsd(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+}
+
+export function cadenceLabel(cadence: 'MONTHLY' | 'ANNUAL' | null): string {
+  if (cadence === 'ANNUAL') {
+    return 'Annual';
+  }
+  if (cadence === 'MONTHLY') {
+    return 'Monthly';
+  }
+  return 'Cadence unavailable';
 }

@@ -17,7 +17,13 @@ import {
   useReactivateAccountSubscriptionMutation,
   isAccountBillingUnavailable,
 } from '@/features/billing/hooks/useAccountBilling';
-import { individualPremiumCatalog } from '@/features/billing/models/accountBilling';
+import {
+  individualPremiumCatalog,
+  isStripeManagedChannel,
+  premiumOriginLabel,
+  storeManagementLabel,
+  storeManagementUrl,
+} from '@/features/billing/models/accountBilling';
 import { accountBillingErrorMessage } from '@/features/billing/models/errors';
 import styles from '@/features/billing/pages/AccountBillingPage.module.scss';
 
@@ -40,6 +46,16 @@ function formatUtc(instant: string): string {
   }).format(parsed);
 }
 
+function cadenceLabel(cadence: 'MONTHLY' | 'ANNUAL' | null): string {
+  if (cadence === 'ANNUAL') {
+    return 'Annual';
+  }
+  if (cadence === 'MONTHLY') {
+    return 'Monthly';
+  }
+  return 'Cadence unavailable';
+}
+
 export function AccountBillingPage() {
   const statusQuery = useAccountBillingStatus();
   const checkoutMutation = useCreateAccountCheckoutMutation();
@@ -52,15 +68,27 @@ export function AccountBillingPage() {
 
   const subscription = statusQuery.data ?? null;
   const lifecycle = subscription?.lifecycleState;
+  const stripeManaged =
+    subscription != null && isStripeManagedChannel(subscription.managementChannel);
+  const storeUrl =
+    subscription != null ? storeManagementUrl(subscription.managementChannel) : null;
   const billingUnavailable =
     statusQuery.isError && isAccountBillingUnavailable(statusQuery.error);
   const loadError =
     statusQuery.isError && !billingUnavailable ? statusQuery.error : null;
   const showCheckout =
     statusQuery.isSuccess && (subscription == null || lifecycle === 'EXPIRED');
-  const showPortal =
-    subscription != null && lifecycle !== 'PENDING' && !billingUnavailable;
-  const manageable = lifecycle === 'ACTIVE' || lifecycle === 'TRIALING';
+  const showStripePortal =
+    stripeManaged && subscription != null && lifecycle !== 'PENDING' && !billingUnavailable;
+  const showStoreManage =
+    !stripeManaged &&
+    subscription != null &&
+    storeUrl != null &&
+    lifecycle !== 'PENDING' &&
+    lifecycle !== 'EXPIRED' &&
+    !billingUnavailable;
+  const manageable =
+    stripeManaged && (lifecycle === 'ACTIVE' || lifecycle === 'TRIALING');
   const price =
     cadence === 'MONTHLY'
       ? individualPremiumCatalog.monthlyUsd
@@ -80,6 +108,17 @@ export function AccountBillingPage() {
       <div className={styles.stack}>
         {statusQuery.isLoading ? <LoadingView message="Loading billing…" /> : null}
 
+        <section className={styles.pricingSummary} aria-label="Individual Premium pricing">
+          <p className={styles.meta}>
+            {individualPremiumCatalog.name} — locked list prices (tax-exclusive).
+          </p>
+          <p className={styles.meta}>
+            {formatUsd(individualPremiumCatalog.monthlyUsd)} / month ·{' '}
+            {formatUsd(individualPremiumCatalog.annualUsd)} / year
+          </p>
+          <p className={styles.meta}>No trial. Basic athlete features stay available without Premium.</p>
+        </section>
+
         {billingUnavailable ? (
           <p className={styles.meta}>
             Individual Premium checkout is not available right now. You can keep using Athlete
@@ -90,9 +129,11 @@ export function AccountBillingPage() {
         {subscription && !billingUnavailable ? (
           <section className={styles.statusPanel} aria-label="Current subscription">
             <p className={styles.meta}>
-              {individualPremiumCatalog.name} ·{' '}
-              {subscription.cadence === 'ANNUAL' ? 'Annual' : 'Monthly'} ·{' '}
+              {individualPremiumCatalog.name} · {cadenceLabel(subscription.cadence)} ·{' '}
               {subscription.lifecycleState}
+            </p>
+            <p className={styles.meta}>
+              Premium origin: {premiumOriginLabel(subscription.provider)}
             </p>
             {subscription.currentPeriodEndsAt ? (
               <p className={styles.meta}>
@@ -112,7 +153,9 @@ export function AccountBillingPage() {
             ) : null}
             {lifecycle === 'PAST_DUE' ? (
               <p className={styles.meta}>
-                Billing needs attention. Manage payment method and invoices.
+                {stripeManaged
+                  ? 'Billing needs attention. Manage payment method and invoices.'
+                  : 'Billing needs attention. Manage this subscription in the store where it was purchased.'}
               </p>
             ) : null}
             {lifecycle === 'CANCEL_AT_PERIOD_END' ? (
@@ -121,7 +164,26 @@ export function AccountBillingPage() {
             {lifecycle === 'ACTIVE' || lifecycle === 'TRIALING' ? (
               <p className={styles.meta}>Your Premium subscription is active.</p>
             ) : null}
-            {showPortal ? (
+            {showStoreManage && storeUrl ? (
+              <>
+                <p className={styles.meta}>
+                  This Premium subscription is managed through{' '}
+                  {premiumOriginLabel(subscription.provider)}. Changes to payment method, renewal,
+                  or cancellation happen there — not through Stripe on the web.
+                </p>
+                <div className={styles.formActions}>
+                  <a
+                    className={styles.storeLink}
+                    href={storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {storeManagementLabel(subscription.managementChannel)}
+                  </a>
+                </div>
+              </>
+            ) : null}
+            {showStripePortal ? (
               <div className={styles.formActions}>
                 <Button
                   type="button"
@@ -190,7 +252,7 @@ export function AccountBillingPage() {
                 </Button>
               </div>
             ) : null}
-            {lifecycle === 'CANCEL_AT_PERIOD_END' ? (
+            {stripeManaged && lifecycle === 'CANCEL_AT_PERIOD_END' ? (
               <div className={styles.formActions}>
                 <Button
                   type="button"
@@ -248,8 +310,9 @@ export function AccountBillingPage() {
             }}
           >
             <p className={styles.meta}>
-              Start Individual Premium. No trial — payment method is charged when checkout
-              completes.
+              Start Individual Premium on the web (Stripe). No trial — payment method is charged
+              when checkout completes. App Store and Google Play purchases are managed in those
+              stores.
             </p>
             <fieldset className={`${styles.field} ${styles.cadenceOptions}`}>
               <legend className={styles.fieldLabel}>Billing cadence</legend>
