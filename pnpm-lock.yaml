@@ -147,7 +147,7 @@ importers:
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.3)
       '@uap/billing-contracts':
-        specifier: workspace:*
+        specifier: file:../../packages/billing-contracts
         version: link:../../packages/billing-contracts
       axios:
         specifier: ^1.19.0
