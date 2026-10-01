@@ -1,35 +1,16 @@
 import { isApiError } from '@/core/api/errors';
 import {
-  CONNECTION_ERROR_MESSAGES,
-  isProviderDisabledCode,
-  resolveConnectedAppsErrorMessage,
+  formatConnectedAppsClientError,
+  isProviderDisabledApiError,
 } from '@uap/connected-apps-contracts';
 
 export function connectedAppsErrorMessage(
   error: unknown,
   fallback = 'Unable to load connected apps.',
 ): string {
-  if (isApiError(error)) {
-    if (error.code && CONNECTION_ERROR_MESSAGES[error.code]) {
-      return CONNECTION_ERROR_MESSAGES[error.code];
-    }
-    if (error.category === 'UNAUTHORIZED') {
-      return 'Your session expired. Sign in again to continue.';
-    }
-    if (error.category === 'FORBIDDEN') {
-      return 'You do not have permission to manage connected apps.';
-    }
-    if (error.category === 'NOT_FOUND') {
-      return 'Connected Apps are not available right now.';
-    }
-    return resolveConnectedAppsErrorMessage(error, fallback);
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return fallback;
+  return formatConnectedAppsClientError(error, { fallback, isApiError });
 }
 
 export function isProviderDisabledError(error: unknown): boolean {
-  return isApiError(error) && isProviderDisabledCode(error.code);
+  return isProviderDisabledApiError(error, isApiError);
 }

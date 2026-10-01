@@ -115,3 +115,35 @@ export function requestConnectionSyncWithAxios(
 ): Promise<SyncRunView> {
   return requestConnectionSync(connectionsHttpFromAxios(axios), connectionId, requestId);
 }
+
+/** Any client that exposes an Axios-like instance (web/mobile ApiClient). */
+export type AxiosClientHolder = { axios: AxiosLike };
+
+/**
+ * Bind connections API methods to clients that expose `.axios`.
+ * Platform modules re-export these to stay thin and structurally distinct.
+ */
+export function bindApiClientConnections<TClient extends AxiosClientHolder>() {
+  return {
+    listConnections: (client: TClient): Promise<ConnectionView[]> =>
+      listConnectionsWithAxios(client.axios),
+    beginConnect: (
+      client: TClient,
+      input: { requestId: string; provider: HealthProviderKey },
+    ): Promise<ConnectionView> => beginConnectWithAxios(client.axios, input),
+    confirmConnection: (client: TClient, connectionId: string): Promise<ConnectionView> =>
+      confirmConnectionWithAxios(client.axios, connectionId),
+    disconnectConnection: (
+      client: TClient,
+      connectionId: string,
+      requestId: string,
+    ): Promise<ConnectionView> =>
+      disconnectConnectionWithAxios(client.axios, connectionId, requestId),
+    requestConnectionSync: (
+      client: TClient,
+      connectionId: string,
+      requestId: string,
+    ): Promise<SyncRunView> =>
+      requestConnectionSyncWithAxios(client.axios, connectionId, requestId),
+  };
+}

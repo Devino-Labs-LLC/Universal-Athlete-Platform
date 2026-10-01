@@ -14,6 +14,7 @@ module.exports = {
     '^@/src/app/theme/(.*)$': '<rootDir>/src/theme/$1',
     '^@/(.*)$': '<rootDir>/$1',
     '^react-native-health$': '<rootDir>/__mocks__/react-native-health.js',
+    '^react-native-health-connect$': '<rootDir>/__mocks__/react-native-health-connect.js',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

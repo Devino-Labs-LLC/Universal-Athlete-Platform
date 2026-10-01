@@ -11,6 +11,7 @@
     "./errors": "./src/errors.ts",
     "./providers": "./src/providers.ts",
     "./queryKeys": "./src/queryKeys.ts",
+    "./queryOptions": "./src/queryOptions.ts",
     "./connectionsApi": "./src/connectionsApi.ts"
   },
   "peerDependencies": {

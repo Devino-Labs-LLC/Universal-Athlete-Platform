@@ -20,7 +20,7 @@ describe('connectedApps providers', () => {
     expect(newRequestId()).toMatch(/^[0-9a-f-]{36}$/i);
   });
 
-  it('enables Apple Health connect copy on iOS for C1 and gates Health Connect', () => {
+  it('enables Apple Health on iOS and Health Connect on Android', () => {
     expect(
       providerConnectGateReason('APPLE_HEALTHKIT', 'ios', {
         appleHealthKit: true,
@@ -33,9 +33,21 @@ describe('connectedApps providers', () => {
     expect(
       providerConnectGateReason('HEALTH_CONNECT', 'android', {
         appleHealthKit: false,
+        healthConnect: true,
+      }),
+    ).toMatch(/Connect Health Connect/i);
+    expect(
+      canAttemptConnect('HEALTH_CONNECT', 'android', {
+        appleHealthKit: false,
+        healthConnect: true,
+      }),
+    ).toBe(true);
+    expect(
+      providerConnectGateReason('HEALTH_CONNECT', 'android', {
+        appleHealthKit: false,
         healthConnect: false,
       }),
-    ).toMatch(/later release/i);
+    ).toMatch(/development build|Health Connect is not available/i);
     expect(
       canAttemptConnect('HEALTH_CONNECT', 'android', {
         appleHealthKit: false,
@@ -49,7 +61,7 @@ describe('connectedApps providers', () => {
     expect(
       providerConnectGateReason('APPLE_HEALTHKIT', 'android', {
         appleHealthKit: false,
-        healthConnect: false,
+        healthConnect: true,
       }),
     ).toMatch(/iPhone/i);
     expect(

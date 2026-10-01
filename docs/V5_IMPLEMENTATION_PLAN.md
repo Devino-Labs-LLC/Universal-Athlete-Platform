@@ -637,6 +637,6 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
 | F3 UX shell | **COMPLETE** | `dee885b` | — | Verify failed Sonar (New Code: security Math.random; duplication ~7.8%; coverage ~77.7%) | FAIL on dee885b | N/A | Profile → Connected Apps Web+Mobile; Sonar remediation + shared contracts package in working tree |
 | C1 HealthKit | **IMPLEMENTED** | pending | — | CI VERIFIED pending | pending | **DEVICE BLOCKED** | iOS HealthKit adapter + evidence queue + OS_HUB_UPLOAD_ONLY; device/sandbox cert pending |
-| C2 Health Connect | NOT STARTED | — | — | — | — | — | |
+| C2 Health Connect | **WIP on develop working tree** | pending (tip `6f88bc7` + local WIP) | — | pending | Sonar New Code remediation in progress (adapter tests + contracts dedupe) | **DEVICE BLOCKED** | Android Health Connect adapter + connect flow + evidence normalize; history clamped to 30d; Play/settings install UX; device/sandbox cert pending |
 | U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
 | R1 RC | NOT STARTED | — | — | — | — | — | |

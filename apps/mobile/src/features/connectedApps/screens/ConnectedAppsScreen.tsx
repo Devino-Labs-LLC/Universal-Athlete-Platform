@@ -10,11 +10,13 @@ import { LoadingView } from '@/src/core/components/LoadingView';
 import { Screen } from '@/src/core/components/Screen';
 import { CompactInfoRow, StatusBadge } from '@/src/core/components/Surface';
 import { HomeCard } from '@/src/features/home/components/HomeCard';
+import { isAvailable as isHealthConnectAvailable } from '@/src/features/connectedApps/adapters/androidHealthConnect';
 import { isAvailable as isHealthKitAvailable } from '@/src/features/connectedApps/adapters/iosHealthKit';
 import {
   useAppleHealthConnectMutation,
   useConnectionsList,
   useDisconnectConnectionMutation,
+  useHealthConnectConnectMutation,
 } from '@/src/features/connectedApps/hooks/useConnections';
 import {
   canDisconnect,
@@ -48,8 +50,10 @@ export function ConnectedAppsScreen() {
   const { apiClient, status } = useAuthSession();
   const connectionsQuery = useConnectionsList();
   const disconnectMutation = useDisconnectConnectionMutation();
-  const connectMutation = useAppleHealthConnectMutation();
+  const appleConnectMutation = useAppleHealthConnectMutation();
+  const healthConnectMutation = useHealthConnectConnectMutation();
   const [healthKitReady, setHealthKitReady] = useState(Platform.OS === 'ios');
+  const [healthConnectReady, setHealthConnectReady] = useState(Platform.OS === 'android');
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +65,25 @@ export function ConnectedAppsScreen() {
       if (!cancelled) {
         // Enable connect CTA on iOS even when native module is missing so UX can fail honestly.
         setHealthKitReady(true);
+        void available;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (Platform.OS !== 'android') {
+      setHealthConnectReady(false);
+      return;
+    }
+    void isHealthConnectAvailable().then((available) => {
+      if (!cancelled) {
+        // Enable connect CTA on Android even when HC SDK is missing so UX can fail honestly
+        // (install / update messaging lives in the connect flow).
+        setHealthConnectReady(true);
         void available;
       }
     });
@@ -96,9 +119,9 @@ export function ConnectedAppsScreen() {
   const availability: ConnectorAvailability = useMemo(
     () => ({
       appleHealthKit: Platform.OS === 'ios' && healthKitReady,
-      healthConnect: false,
+      healthConnect: Platform.OS === 'android' && healthConnectReady,
     }),
-    [healthKitReady],
+    [healthKitReady, healthConnectReady],
   );
 
   const connections = useMemo(
@@ -122,7 +145,8 @@ export function ConnectedAppsScreen() {
   const busy =
     disconnectMutation.isPending ||
     connectionsQuery.isFetching ||
-    connectMutation.isPending;
+    appleConnectMutation.isPending ||
+    healthConnectMutation.isPending;
 
   const handleDisconnect = (connectionId: string) => {
     if (busy) {
@@ -132,11 +156,31 @@ export function ConnectedAppsScreen() {
   };
 
   const handleConnect = (provider: HealthProviderKey) => {
-    if (busy || provider !== 'APPLE_HEALTHKIT') {
+    if (busy) {
       return;
     }
-    connectMutation.mutate();
+    if (provider === 'APPLE_HEALTHKIT') {
+      appleConnectMutation.mutate();
+      return;
+    }
+    if (provider === 'HEALTH_CONNECT') {
+      healthConnectMutation.mutate();
+    }
   };
+
+  const connectResult =
+    (appleConnectMutation.isSuccess && appleConnectMutation.data
+      ? { provider: 'APPLE_HEALTHKIT' as const, data: appleConnectMutation.data }
+      : null) ??
+    (healthConnectMutation.isSuccess && healthConnectMutation.data
+      ? { provider: 'HEALTH_CONNECT' as const, data: healthConnectMutation.data }
+      : null);
+
+  const connectError = appleConnectMutation.isError
+    ? appleConnectMutation.error
+    : healthConnectMutation.isError
+      ? healthConnectMutation.error
+      : null;
 
   if (connectionsQuery.isLoading && connections.length === 0 && !connectionsQuery.isError) {
     return <LoadingView message="Loading connected apps…" />;
@@ -156,9 +200,10 @@ export function ConnectedAppsScreen() {
     >
       <HomeCard eyebrow="About" title="Health connections">
         <Text style={{ color: theme.colors.textMuted }}>
-          On iPhone, Apple Health can upload sleep, resting heart rate, HRV, activity, and workouts as
-          connected evidence. Health Connect for Android ships later. Manual check-ins and training
-          stay available without a connection.
+          {Platform.OS === 'android'
+            ? 'On Android, Health Connect can upload sleep, resting heart rate, HRV (RMSSD), activity, and exercise as connected evidence. Apple Health connects only from iPhone.'
+            : 'On iPhone, Apple Health can upload sleep, resting heart rate, HRV (SDNN), activity, and workouts as connected evidence. Health Connect connects only from Android.'}{' '}
+          Manual check-ins and training stay available without a connection.
         </Text>
         <Text style={{ color: theme.colors.textMuted }}>
           Connected Apps are not part of Premium billing.
@@ -207,29 +252,30 @@ export function ConnectedAppsScreen() {
         </>
       ) : null}
 
-      {connectMutation.isError ? (
+      {connectError ? (
         <ErrorView
           title="Connect failed"
-          message={connectedAppsErrorMessage(connectMutation.error)}
+          message={connectedAppsErrorMessage(connectError)}
           testID="connected-apps-connect-error"
         />
       ) : null}
 
-      {connectMutation.isSuccess && connectMutation.data ? (
-        <HomeCard eyebrow="Connect result" title={providerDisplayName('APPLE_HEALTHKIT')}>
+      {connectResult ? (
+        <HomeCard eyebrow="Connect result" title={providerDisplayName(connectResult.provider)}>
           <Text
             style={{ color: theme.colors.textMuted }}
             testID="connected-apps-connect-result"
           >
-            {connectMutation.data.message}
+            {connectResult.data.message}
           </Text>
-          {connectMutation.data.partialPermissions ? (
+          {connectResult.data.partialPermissions ? (
             <Text
               style={{ color: theme.colors.textMuted }}
               testID="connected-apps-partial-permissions"
             >
-              Some health types may be missing. Review Settings → Health → Sharing if expected data
-              did not appear.
+              {connectResult.provider === 'HEALTH_CONNECT'
+                ? 'Some health types may be missing. Review Health Connect permissions if expected data did not appear.'
+                : 'Some health types may be missing. Review Settings → Health → Sharing if expected data did not appear.'}
             </Text>
           ) : null}
         </HomeCard>

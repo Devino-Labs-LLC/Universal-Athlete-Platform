@@ -11,9 +11,16 @@ export const CONNECTION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   VALIDATION_ERROR: 'The connection request was invalid.',
 };
 
+export const CONNECTION_SESSION_MESSAGES = {
+  unauthorized: 'Your session expired. Sign in again to continue.',
+  forbidden: 'You do not have permission to manage connected apps.',
+  notFound: 'Connected Apps are not available right now.',
+} as const;
+
 export type ConnectedAppsApiErrorLike = {
   code?: string;
   message?: string;
+  category?: string;
 };
 
 /**
@@ -35,6 +42,61 @@ export function resolveConnectedAppsErrorMessage(
 
 export function isProviderDisabledCode(code: string | undefined): boolean {
   return code === 'INTEGRATION_PROVIDER_DISABLED' || code === 'INTEGRATIONS_DISABLED';
+}
+
+/** Normalize web (UNAUTHORIZED) and mobile (unauthorized) category strings. */
+export function normalizeConnectionErrorCategory(
+  category: string | undefined,
+): 'unauthorized' | 'forbidden' | 'notFound' | null {
+  if (!category) {
+    return null;
+  }
+  const normalized = category.replace(/_/g, '').toLowerCase();
+  if (normalized === 'unauthorized') {
+    return 'unauthorized';
+  }
+  if (normalized === 'forbidden') {
+    return 'forbidden';
+  }
+  if (normalized === 'notfound') {
+    return 'notFound';
+  }
+  return null;
+}
+
+/**
+ * Full client-side Connected Apps error formatting.
+ * Platforms only supply ApiError detection — category casing differences are handled here.
+ */
+export function formatConnectedAppsClientError(
+  error: unknown,
+  options: {
+    fallback?: string;
+    isApiError: (value: unknown) => value is ConnectedAppsApiErrorLike;
+  },
+): string {
+  const fallback = options.fallback ?? 'Unable to load connected apps.';
+  if (options.isApiError(error)) {
+    if (error.code && CONNECTION_ERROR_MESSAGES[error.code]) {
+      return CONNECTION_ERROR_MESSAGES[error.code];
+    }
+    const session = normalizeConnectionErrorCategory(error.category);
+    if (session) {
+      return CONNECTION_SESSION_MESSAGES[session];
+    }
+    return resolveConnectedAppsErrorMessage(error, fallback);
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
+
+export function isProviderDisabledApiError(
+  error: unknown,
+  isApiError: (value: unknown) => value is ConnectedAppsApiErrorLike,
+): boolean {
+  return isApiError(error) && isProviderDisabledCode(error.code);
 }
 
 /** Sync run error codes that are expected for OS hubs using evidence-batch upload. */

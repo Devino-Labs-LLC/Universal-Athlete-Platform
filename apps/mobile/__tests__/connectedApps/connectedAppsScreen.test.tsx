@@ -7,7 +7,8 @@ import { ConnectedAppsScreen } from '@/src/features/connectedApps/screens/Connec
 
 const mockRefetch = jest.fn();
 const mockDisconnectMutate = jest.fn();
-const mockConnectMutate = jest.fn();
+const mockAppleConnectMutate = jest.fn();
+const mockHealthConnectMutate = jest.fn();
 
 jest.mock('@/src/app/providers/AuthSessionProvider', () => ({
   useAuthSession: () => ({
@@ -28,6 +29,10 @@ jest.mock('@/src/features/connectedApps/adapters/iosHealthKit', () => ({
   isAvailable: jest.fn(async () => true),
 }));
 
+jest.mock('@/src/features/connectedApps/adapters/androidHealthConnect', () => ({
+  isAvailable: jest.fn(async () => true),
+}));
+
 jest.mock('@/src/features/connectedApps/queue/evidenceUploadQueue', () => ({
   drainEvidenceUploadQueue: jest.fn(async () => ({ uploaded: 0, remaining: 0, skippedStopped: 0 })),
 }));
@@ -36,12 +41,14 @@ jest.mock('@/src/features/connectedApps/hooks/useConnections', () => ({
   useConnectionsList: jest.fn(),
   useDisconnectConnectionMutation: jest.fn(),
   useAppleHealthConnectMutation: jest.fn(),
+  useHealthConnectConnectMutation: jest.fn(),
 }));
 
 const {
   useConnectionsList,
   useDisconnectConnectionMutation,
   useAppleHealthConnectMutation,
+  useHealthConnectConnectMutation,
 } = jest.requireMock('@/src/features/connectedApps/hooks/useConnections');
 
 function renderScreen() {
@@ -73,7 +80,15 @@ describe('ConnectedAppsScreen', () => {
       error: null,
     });
     useAppleHealthConnectMutation.mockReturnValue({
-      mutate: (...args: unknown[]) => mockConnectMutate(...args),
+      mutate: (...args: unknown[]) => mockAppleConnectMutate(...args),
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+      error: null,
+      data: undefined,
+    });
+    useHealthConnectConnectMutation.mockReturnValue({
+      mutate: (...args: unknown[]) => mockHealthConnectMutate(...args),
       isPending: false,
       isError: false,
       isSuccess: false,
@@ -106,7 +121,7 @@ describe('ConnectedAppsScreen', () => {
     expect(getByTestId('connected-apps-reason-HEALTH_CONNECT').props.children).toMatch(/Android/i);
 
     fireEvent.press(getByTestId('connected-apps-connect-APPLE_HEALTHKIT'));
-    expect(mockConnectMutate).toHaveBeenCalled();
+    expect(mockAppleConnectMutate).toHaveBeenCalled();
   });
 
   it('shows error retry when connections API fails', async () => {
@@ -166,7 +181,7 @@ describe('ConnectedAppsScreen', () => {
     );
   });
 
-  it('shows honest not-this-platform messaging on Android', async () => {
+  it('enables Health Connect on Android and keeps Apple Health gated', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
     const { getByTestId } = await renderScreen();
 
@@ -174,11 +189,18 @@ describe('ConnectedAppsScreen', () => {
       true,
     );
     expect(getByTestId('connected-apps-reason-APPLE_HEALTHKIT').props.children).toMatch(/iPhone/i);
-    expect(getByTestId('connected-apps-connect-HEALTH_CONNECT').props.accessibilityState?.disabled).toBe(
-      true,
-    );
+
+    await waitFor(() => {
+      expect(getByTestId('connected-apps-connect-HEALTH_CONNECT').props.accessibilityState?.disabled).toBe(
+        false,
+      );
+    });
     expect(getByTestId('connected-apps-reason-HEALTH_CONNECT').props.children).toMatch(
-      /later release|not available yet/i,
+      /Connect Health Connect/i,
     );
+
+    fireEvent.press(getByTestId('connected-apps-connect-HEALTH_CONNECT'));
+    expect(mockHealthConnectMutate).toHaveBeenCalled();
+    expect(mockAppleConnectMutate).not.toHaveBeenCalled();
   });
 });

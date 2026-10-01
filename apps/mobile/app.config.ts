@@ -44,8 +44,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.devinolabs.uap',
       predictiveBackGestureEnabled: false,
+      // C2: Health Connect READ declarations (WRITE not requested).
+      permissions: [
+        'android.permission.health.READ_SLEEP',
+        'android.permission.health.READ_RESTING_HEART_RATE',
+        'android.permission.health.READ_HEART_RATE_VARIABILITY',
+        'android.permission.health.READ_STEPS',
+        'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
+        'android.permission.health.READ_EXERCISE',
+      ],
       ...(isDevelopment ? { usesCleartextTraffic: true } : {}),
     },
+
     web: {
       bundler: 'metro',
       output: 'static',
@@ -73,6 +83,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             'Athlete Readiness reads sleep, resting heart rate, heart-rate variability, activity energy, steps, and workouts from Apple Health to store connected evidence. It does not write health data.',
           healthUpdatePermission:
             'Athlete Readiness does not write to Apple Health. This string is required by the HealthKit capability configuration.',
+        },
+      ],
+      // C2: react-native-health-connect Expo config plugin — READ usage only.
+      // Requires an Android development / EAS build; not available in Expo Go.
+      'react-native-health-connect',
+      [
+        'expo-build-properties',
+        {
+          android: {
+            minSdkVersion: 26,
+          },
         },
       ],
     ],

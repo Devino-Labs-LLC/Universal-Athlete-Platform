@@ -23,12 +23,12 @@ export {
 export type ConnectorAvailability = {
   /** C1 Apple HealthKit native path (iOS). */
   appleHealthKit: boolean;
-  /** C2 Health Connect — not implemented in this slice. */
+  /** C2 Health Connect native path (Android). */
   healthConnect: boolean;
 };
 
 /**
- * Honest connect copy — C1 enables Apple Health on iOS; Health Connect remains C2.
+ * Honest connect copy — Apple Health on iOS; Health Connect on Android.
  */
 export function providerConnectGateReason(
   provider: HealthProviderKey,
@@ -47,9 +47,9 @@ export function providerConnectGateReason(
     return 'Connect Apple Health to upload sleep, heart, HRV, activity, and workout evidence.';
   }
   if (!availability.healthConnect) {
-    return 'Health Connect connection is not available yet. Native Health Connect support ships in a later release.';
+    return 'Health Connect is not available in this build. Use an Android development build with Health Connect enabled, and install Health Connect if prompted.';
   }
-  return `Connect ${providerDisplayName(provider)} to sync health data.`;
+  return 'Connect Health Connect to upload sleep, resting heart rate, HRV (RMSSD), activity, and exercise evidence.';
 }
 
 export function canAttemptConnect(
