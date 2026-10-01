@@ -140,6 +140,23 @@ class ConnectionDomainTests {
 	}
 
 	@Test
+	void syncRunOsHubUploadOnlyPipelineFailsHonestly() {
+		SyncRun syncRun = SyncRun.request(
+				SyncRunId.generate(),
+				ConnectionId.generate(),
+				UUID.randomUUID(),
+				CLOCK);
+		syncRun.completeOsHubUploadOnlyPipeline(CLOCK);
+
+		assertThat(syncRun.status()).isEqualTo(SyncRunStatus.FAILED);
+		assertThat(syncRun.errorCode()).isEqualTo("OS_HUB_UPLOAD_ONLY");
+		assertThat(syncRun.recordsAccepted()).isZero();
+		assertThat(syncRun.recordsRejected()).isZero();
+		assertThat(syncRun.startedAt()).isEqualTo(T0);
+		assertThat(syncRun.finishedAt()).isEqualTo(T0);
+	}
+
+	@Test
 	void syncRunNoAdapterPipelineFailsHonestly() {
 		SyncRun syncRun = SyncRun.request(
 				SyncRunId.generate(),
@@ -154,6 +171,12 @@ class ConnectionDomainTests {
 		assertThat(syncRun.recordsRejected()).isZero();
 		assertThat(syncRun.startedAt()).isEqualTo(T0);
 		assertThat(syncRun.finishedAt()).isEqualTo(T0);
+	}
+
+	@Test
+	void osHubProvidersAreUploadOnly() {
+		assertThat(HealthProviderKey.APPLE_HEALTHKIT.isOsHub()).isTrue();
+		assertThat(HealthProviderKey.HEALTH_CONNECT.isOsHub()).isTrue();
 	}
 
 	@Test

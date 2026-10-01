@@ -23,6 +23,31 @@ describe('connectedApps errors', () => {
         new ApiError('expired', { category: 'UNAUTHORIZED', status: 401 }),
       ),
     ).toMatch(/session expired/i);
+
+    expect(
+      connectedAppsErrorMessage(
+        new ApiError('nope', { category: 'FORBIDDEN', status: 403 }),
+      ),
+    ).toMatch(/permission/i);
+
+    expect(
+      connectedAppsErrorMessage(
+        new ApiError('missing', { category: 'NOT_FOUND', status: 404 }),
+      ),
+    ).toMatch(/not available right now/i);
+
+    expect(
+      connectedAppsErrorMessage(
+        new ApiError('conflict', {
+          category: 'CONFLICT',
+          status: 409,
+          code: 'INTEGRATION_ACTIVE_CONNECTION_EXISTS',
+        }),
+      ),
+    ).toMatch(/already active/i);
+
+    expect(connectedAppsErrorMessage(new Error('boom'))).toBe('boom');
+    expect(connectedAppsErrorMessage('plain')).toMatch(/Unable to load/i);
   });
 
   it('detects provider disabled errors', () => {

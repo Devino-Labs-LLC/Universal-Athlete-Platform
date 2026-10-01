@@ -1,16 +1,9 @@
 import { isApiError } from '@/core/api/errors';
-
-const CONNECTION_ERROR_MESSAGES: Record<string, string> = {
-  INTEGRATION_PROVIDER_DISABLED:
-    'This health provider is not available yet. It will unlock when the connector is certified.',
-  INTEGRATIONS_DISABLED: 'Connected Apps are temporarily unavailable.',
-  INTEGRATION_ACTIVE_CONNECTION_EXISTS:
-    'Another health connection is already active. Disconnect it before connecting a different provider.',
-  INTEGRATION_CONNECTION_INVALID_STATE: 'That connection cannot be updated in its current state.',
-  INTEGRATION_CONCURRENT_MODIFICATION: 'Connection state changed. Refresh and try again.',
-  CONNECTION_NOT_FOUND: 'That connection was not found.',
-  VALIDATION_ERROR: 'The connection request was invalid.',
-};
+import {
+  CONNECTION_ERROR_MESSAGES,
+  isProviderDisabledCode,
+  resolveConnectedAppsErrorMessage,
+} from '@uap/connected-apps-contracts';
 
 export function connectedAppsErrorMessage(
   error: unknown,
@@ -29,7 +22,7 @@ export function connectedAppsErrorMessage(
     if (error.category === 'NOT_FOUND') {
       return 'Connected Apps are not available right now.';
     }
-    return error.message || fallback;
+    return resolveConnectedAppsErrorMessage(error, fallback);
   }
   if (error instanceof Error) {
     return error.message;
@@ -38,8 +31,5 @@ export function connectedAppsErrorMessage(
 }
 
 export function isProviderDisabledError(error: unknown): boolean {
-  return (
-    isApiError(error) &&
-    (error.code === 'INTEGRATION_PROVIDER_DISABLED' || error.code === 'INTEGRATIONS_DISABLED')
-  );
+  return isApiError(error) && isProviderDisabledCode(error.code);
 }

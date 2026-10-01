@@ -181,8 +181,13 @@ public class IntegrationConnectionService {
 		}
 
 		try {
-			// F1 has no provider adapters yet — fail closed rather than fake SUCCEEDED (ADR-049).
-			syncRun.completeNoAdapterPipeline(clock);
+			// OS hubs are upload-only (evidence-batch). Pull sync fails honestly — never fake SUCCEEDED.
+			if (connection.provider().isOsHub()) {
+				syncRun.completeOsHubUploadOnlyPipeline(clock);
+			}
+			else {
+				syncRun.completeNoAdapterPipeline(clock);
+			}
 			connection.recordSyncAttempt(clock);
 		}
 		catch (IllegalStateException ex) {

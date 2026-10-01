@@ -1,58 +1,38 @@
 import type { ApiClient } from '@/src/core/api/apiClient';
-
 import {
-  connectionListSchema,
-  connectionViewSchema,
-  syncRunViewSchema,
+  beginConnectWithAxios,
+  confirmConnectionWithAxios,
+  disconnectConnectionWithAxios,
+  listConnectionsWithAxios,
+  requestConnectionSyncWithAxios,
   type ConnectionView,
   type HealthProviderKey,
   type SyncRunView,
-} from '@/src/features/connectedApps/models/connection';
+} from '@uap/connected-apps-contracts';
 
-const CONNECTIONS_PATH = '/api/v1/integrations/connections';
+export const listConnections = (client: ApiClient): Promise<ConnectionView[]> =>
+  listConnectionsWithAxios(client.axios);
 
-export async function listConnections(client: ApiClient): Promise<ConnectionView[]> {
-  const response = await client.axios.get(CONNECTIONS_PATH);
-  return connectionListSchema.parse(response.data);
-}
-
-export async function beginConnect(
+export const beginConnect = (
   client: ApiClient,
   input: { requestId: string; provider: HealthProviderKey },
-): Promise<ConnectionView> {
-  const response = await client.axios.post(CONNECTIONS_PATH, {
-    requestId: input.requestId,
-    provider: input.provider,
-  });
-  return connectionViewSchema.parse(response.data);
-}
+): Promise<ConnectionView> => beginConnectWithAxios(client.axios, input);
 
-export async function confirmConnection(
+export const confirmConnection = (
   client: ApiClient,
   connectionId: string,
-): Promise<ConnectionView> {
-  const response = await client.axios.post(`${CONNECTIONS_PATH}/${connectionId}/confirm`);
-  return connectionViewSchema.parse(response.data);
-}
+): Promise<ConnectionView> => confirmConnectionWithAxios(client.axios, connectionId);
 
-export async function disconnectConnection(
+export const disconnectConnection = (
   client: ApiClient,
   connectionId: string,
   requestId: string,
-): Promise<ConnectionView> {
-  const response = await client.axios.post(`${CONNECTIONS_PATH}/${connectionId}/disconnect`, {
-    requestId,
-  });
-  return connectionViewSchema.parse(response.data);
-}
+): Promise<ConnectionView> =>
+  disconnectConnectionWithAxios(client.axios, connectionId, requestId);
 
-export async function requestConnectionSync(
+export const requestConnectionSync = (
   client: ApiClient,
   connectionId: string,
   requestId: string,
-): Promise<SyncRunView> {
-  const response = await client.axios.post(`${CONNECTIONS_PATH}/${connectionId}/sync`, {
-    requestId,
-  });
-  return syncRunViewSchema.parse(response.data);
-}
+): Promise<SyncRunView> =>
+  requestConnectionSyncWithAxios(client.axios, connectionId, requestId);

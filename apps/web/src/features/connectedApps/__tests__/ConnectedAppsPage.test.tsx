@@ -84,4 +84,35 @@ describe('ConnectedAppsPage', () => {
 
     expect(await screen.findByText(/session expired/i)).toBeInTheDocument();
   });
+
+  it('shows disconnect error without retry when load succeeded', async () => {
+    listConnections.mockResolvedValue([connected]);
+    disconnectConnection.mockRejectedValue(
+      new ApiError('conflict', {
+        category: 'CONFLICT',
+        status: 409,
+        code: 'INTEGRATION_CONCURRENT_MODIFICATION',
+      }),
+    );
+    renderWithProviders(<ConnectedAppsPage />);
+
+    expect(await screen.findByText('Connected')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+
+    expect(await screen.findByText(/Connection state changed/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it('renders connection without sync timestamps', async () => {
+    listConnections.mockResolvedValue([
+      {
+        ...connected,
+        lastSuccessfulSyncAt: null,
+        lastAttemptedSyncAt: null,
+      },
+    ]);
+    renderWithProviders(<ConnectedAppsPage />);
+
+    expect(await screen.findByText(/No sync activity yet/i)).toBeInTheDocument();
+  });
 });

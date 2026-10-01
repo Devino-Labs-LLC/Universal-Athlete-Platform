@@ -7,15 +7,42 @@ import { ConnectedAppsScreen } from '@/src/features/connectedApps/screens/Connec
 
 const mockRefetch = jest.fn();
 const mockDisconnectMutate = jest.fn();
+const mockConnectMutate = jest.fn();
+
+jest.mock('@/src/app/providers/AuthSessionProvider', () => ({
+  useAuthSession: () => ({
+    apiClient: { axios: {} },
+    status: 'AUTHENTICATED',
+  }),
+}));
+
+jest.mock('@react-native-community/netinfo', () => ({
+  __esModule: true,
+  default: {
+    fetch: jest.fn(async () => ({ isConnected: true })),
+    addEventListener: jest.fn(() => jest.fn()),
+  },
+}));
+
+jest.mock('@/src/features/connectedApps/adapters/iosHealthKit', () => ({
+  isAvailable: jest.fn(async () => true),
+}));
+
+jest.mock('@/src/features/connectedApps/queue/evidenceUploadQueue', () => ({
+  drainEvidenceUploadQueue: jest.fn(async () => ({ uploaded: 0, remaining: 0, skippedStopped: 0 })),
+}));
 
 jest.mock('@/src/features/connectedApps/hooks/useConnections', () => ({
   useConnectionsList: jest.fn(),
   useDisconnectConnectionMutation: jest.fn(),
+  useAppleHealthConnectMutation: jest.fn(),
 }));
 
-const { useConnectionsList, useDisconnectConnectionMutation } = jest.requireMock(
-  '@/src/features/connectedApps/hooks/useConnections',
-);
+const {
+  useConnectionsList,
+  useDisconnectConnectionMutation,
+  useAppleHealthConnectMutation,
+} = jest.requireMock('@/src/features/connectedApps/hooks/useConnections');
 
 function renderScreen() {
   return render(
@@ -45,13 +72,21 @@ describe('ConnectedAppsScreen', () => {
       isError: false,
       error: null,
     });
+    useAppleHealthConnectMutation.mockReturnValue({
+      mutate: (...args: unknown[]) => mockConnectMutate(...args),
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+      error: null,
+      data: undefined,
+    });
   });
 
   afterEach(() => {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOs });
   });
 
-  it('shows empty status and disabled connect CTAs', async () => {
+  it('enables Apple Health connect on iOS and keeps Health Connect gated', async () => {
     const { getByTestId, getByText } = await renderScreen();
 
     expect(getByTestId('connected-apps-screen')).toBeTruthy();
@@ -60,16 +95,18 @@ describe('ConnectedAppsScreen', () => {
     expect(getByTestId('connected-apps-provider-APPLE_HEALTHKIT')).toBeTruthy();
     expect(getByTestId('connected-apps-provider-HEALTH_CONNECT')).toBeTruthy();
 
-    expect(getByTestId('connected-apps-connect-APPLE_HEALTHKIT').props.accessibilityState?.disabled).toBe(
-      true,
-    );
+    await waitFor(() => {
+      expect(getByTestId('connected-apps-connect-APPLE_HEALTHKIT').props.accessibilityState?.disabled).toBe(
+        false,
+      );
+    });
     expect(getByTestId('connected-apps-connect-HEALTH_CONNECT').props.accessibilityState?.disabled).toBe(
       true,
     );
-    expect(getByTestId('connected-apps-reason-APPLE_HEALTHKIT').props.children).toMatch(
-      /not available yet/i,
-    );
     expect(getByTestId('connected-apps-reason-HEALTH_CONNECT').props.children).toMatch(/Android/i);
+
+    fireEvent.press(getByTestId('connected-apps-connect-APPLE_HEALTHKIT'));
+    expect(mockConnectMutate).toHaveBeenCalled();
   });
 
   it('shows error retry when connections API fails', async () => {
@@ -126,6 +163,22 @@ describe('ConnectedAppsScreen', () => {
         connectionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
         requestId: expect.any(String),
       }),
+    );
+  });
+
+  it('shows honest not-this-platform messaging on Android', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+    const { getByTestId } = await renderScreen();
+
+    expect(getByTestId('connected-apps-connect-APPLE_HEALTHKIT').props.accessibilityState?.disabled).toBe(
+      true,
+    );
+    expect(getByTestId('connected-apps-reason-APPLE_HEALTHKIT').props.children).toMatch(/iPhone/i);
+    expect(getByTestId('connected-apps-connect-HEALTH_CONNECT').props.accessibilityState?.disabled).toBe(
+      true,
+    );
+    expect(getByTestId('connected-apps-reason-HEALTH_CONNECT').props.children).toMatch(
+      /later release|not available yet/i,
     );
   });
 });

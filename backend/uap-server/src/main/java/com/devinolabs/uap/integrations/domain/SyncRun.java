@@ -8,7 +8,9 @@ import java.util.UUID;
 /**
  * Single sync attempt for a connection (ADR-048 / ADR-049).
  *
- * <p>Without a provider adapter, F1 fails honestly with {@code NO_ADAPTER} — never fake SUCCEEDED.
+ * <p>OS hubs (HealthKit / Health Connect) are upload-only — pull sync fails with
+ * {@code OS_HUB_UPLOAD_ONLY}. Future OAuth pull providers without an adapter fail with
+ * {@code NO_ADAPTER}. Never fake SUCCEEDED.
  */
 public class SyncRun {
 
@@ -126,7 +128,17 @@ public class SyncRun {
 	}
 
 	/**
-	 * F1 honesty: no provider adapter registered → REQUESTED → RUNNING → FAILED({@code NO_ADAPTER}).
+	 * OS hubs are client upload-only (evidence-batch). Server pull is not supported →
+	 * REQUESTED → RUNNING → FAILED({@code OS_HUB_UPLOAD_ONLY}).
+	 */
+	public void completeOsHubUploadOnlyPipeline(Clock clock) {
+		markRunning(clock);
+		fail("OS_HUB_UPLOAD_ONLY", clock);
+	}
+
+	/**
+	 * Honesty for future pull providers: no adapter registered →
+	 * REQUESTED → RUNNING → FAILED({@code NO_ADAPTER}).
 	 */
 	public void completeNoAdapterPipeline(Clock clock) {
 		markRunning(clock);

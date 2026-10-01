@@ -1,4 +1,1 @@
-export const connectedAppsQueryKeys = {
-  all: ['connectedApps'] as const,
-  connections: () => [...connectedAppsQueryKeys.all, 'connections'] as const,
-};
+export { connectedAppsQueryKeys } from '@uap/connected-apps-contracts';

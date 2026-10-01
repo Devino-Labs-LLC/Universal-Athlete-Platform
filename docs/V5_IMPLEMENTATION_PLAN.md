@@ -635,8 +635,8 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F0 PO lock + ADR accept | **COMPLETE** | `8d3d6ee` | — | [36805522460](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36805522460) SUCCESS | PASS | N/A | D1–D14 locked; ADR 046–051 Accepted |
 | F1 Foundation module | **COMPLETE** | `e6d85f1` | **V38** | [36809793740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36809793740) SUCCESS | PASS | N/A | Flyway tip fix after `0c71b96` |
 | F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
-| F3 UX shell | **COMPLETE (pending push)** | pending | — | pending | pending | N/A | Profile → Connected Apps Web+Mobile |
-| C1 HealthKit | NOT STARTED | — | — | — | — | — | |
+| F3 UX shell | **COMPLETE** | `dee885b` | — | Verify failed Sonar (New Code: security Math.random; duplication ~7.8%; coverage ~77.7%) | FAIL on dee885b | N/A | Profile → Connected Apps Web+Mobile; Sonar remediation + shared contracts package in working tree |
+| C1 HealthKit | **IMPLEMENTED** | pending | — | CI VERIFIED pending | pending | **DEVICE BLOCKED** | iOS HealthKit adapter + evidence queue + OS_HUB_UPLOAD_ONLY; device/sandbox cert pending |
 | C2 Health Connect | NOT STARTED | — | — | — | — | — | |
 | U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
 | R1 RC | NOT STARTED | — | — | — | — | — | |

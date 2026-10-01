@@ -1,0 +1,23 @@
+{
+  "name": "@uap/connected-apps-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./connection": "./src/connection.ts",
+    "./errors": "./src/errors.ts",
+    "./providers": "./src/providers.ts",
+    "./queryKeys": "./src/queryKeys.ts",
+    "./connectionsApi": "./src/connectionsApi.ts"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "zod": "^4.4.3"
+  }
+}

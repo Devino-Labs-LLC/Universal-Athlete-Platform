@@ -148,7 +148,7 @@ class IntegrationConnectionsHttpIntegrationTests {
 						.content("{\"requestId\":\"" + syncRequestId + "\"}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("FAILED"))
-				.andExpect(jsonPath("$.errorCode").value("NO_ADAPTER"))
+				.andExpect(jsonPath("$.errorCode").value("OS_HUB_UPLOAD_ONLY"))
 				.andExpect(jsonPath("$.recordsAccepted").value(0))
 				.andExpect(jsonPath("$.recordsRejected").value(0))
 				.andReturn();

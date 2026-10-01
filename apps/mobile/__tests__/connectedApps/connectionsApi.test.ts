@@ -5,6 +5,7 @@ import {
   listConnections,
   requestConnectionSync,
 } from '@/src/features/connectedApps/api/connectionsApi';
+import { uploadEvidenceBatch } from '@/src/features/connectedApps/api/evidenceBatchesApi';
 
 const sampleConnection = {
   connectionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
@@ -74,6 +75,40 @@ describe('connectedApps connectionsApi', () => {
       4,
       `/api/v1/integrations/connections/${sampleConnection.connectionId}/sync`,
       { requestId },
+    );
+  });
+
+  it('posts evidence-batches', async () => {
+    const post = jest.fn().mockResolvedValue({
+      data: {
+        requestId: '11111111-2222-4333-8444-555555555555',
+        syncRunId: '11111111-2222-4333-8444-555555555555',
+        acceptedCount: 1,
+        rejectedCount: 0,
+        replayed: false,
+      },
+    });
+    const client = { axios: { post } };
+    const requestId = '11111111-2222-4333-8444-555555555555';
+
+    await uploadEvidenceBatch(client as never, sampleConnection.connectionId, {
+      requestId,
+      items: [
+        {
+          externalRecordId: 'hk-1',
+          signalFamily: 'SLEEP',
+          signalType: 'DURATION',
+          valueNumeric: 420,
+          unitCode: 'MINUTE',
+          observedAt: '2026-09-29T06:00:00.000Z',
+          provenanceClass: 'CLIENT_DEVICE',
+        },
+      ],
+    });
+
+    expect(post).toHaveBeenCalledWith(
+      `/api/v1/integrations/connections/${sampleConnection.connectionId}/evidence-batches`,
+      expect.objectContaining({ requestId }),
     );
   });
 });

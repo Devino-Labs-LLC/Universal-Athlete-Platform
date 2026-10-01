@@ -63,6 +63,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       'expo-secure-store',
       'expo-dev-client',
+      // C1: react-native-health Expo config plugin — READ usage only (no clinical records).
+      // Requires an iOS development / EAS build; not available in Expo Go.
+      [
+        'react-native-health',
+        {
+          isClinicalDataEnabled: false,
+          healthSharePermission:
+            'Athlete Readiness reads sleep, resting heart rate, heart-rate variability, activity energy, steps, and workouts from Apple Health to store connected evidence. It does not write health data.',
+          healthUpdatePermission:
+            'Athlete Readiness does not write to Apple Health. This string is required by the HealthKit capability configuration.',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,
