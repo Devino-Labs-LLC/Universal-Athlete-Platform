@@ -57,3 +57,16 @@ Product Owner decisions: [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4_IMPLEMENTATION
 | [043](043-tax-channel-boundaries.md) | Tax responsibility boundaries |
 | [044](044-provider-webhook-idempotency.md) | Provider webhook / idempotency model |
 | [045](045-duplicate-subscription-and-provider-switch.md) | Duplicate-subscription / provider-switch policy |
+
+## Index (V5 Connected Athlete — Proposed)
+
+Planning lock: [`docs/V5_IMPLEMENTATION_PLAN.md`](../V5_IMPLEMENTATION_PLAN.md). Do **not** mark these Accepted and do **not** begin V5 runtime until Product Owner decisions in that plan are locked.
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [046](046-integrations-bounded-context.md) | Integrations bounded context (Connected Athlete) | **Proposed** |
+| [047](047-connected-evidence-and-provenance.md) | Connected evidence & provenance | **Proposed** |
+| [048](048-connection-and-sync-lifecycles.md) | Connection and sync lifecycles | **Proposed** |
+| [049](049-explicit-connected-sync.md) | Connected sync is explicit (no hidden sync on GET) | **Proposed** |
+| [050](050-connected-consent-layers.md) | Connected consent layers (connect ≠ share) | **Proposed** |
+| [051](051-health-integration-idempotency.md) | Health integration webhook/job idempotency | **Proposed** |
