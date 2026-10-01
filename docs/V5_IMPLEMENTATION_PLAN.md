@@ -641,7 +641,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
 | R1 RC | **COMPLETE on develop** | `01f8c4e` | V38–V39 | SUCCESS | PASS | Device cert **BLOCKED** | V5A CI-complete; no main/prod; Lead/QA/Security PASS-WITH-NOTES |
 | Phase 0 RC hygiene | **COMPLETE** | `375768d` | — | [36867244813](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36867244813) SUCCESS | PASS | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
-| Device cert gate | **BLOCKED** | `2bf16d4` runtime | V38–V39 | — | — | **BLOCKED — EXTERNAL DEVICE/PLATFORM ACCESS** | No EAS login; no iOS/Android device; Railway develop CLI Unauthorized; flags not toggled |
+| Device cert gate | **BLOCKED** | `2bf16d4` runtime | V38–V39 | — | — | **BLOCKED — EAS AUTH** (iOS) / **BLOCKED — DEVICE** (Android installable build) | Resume 2026-10-01: AVD+HC present; local Dev Client CMake fail; EAS still not logged in |
 
 ---
 
@@ -718,10 +718,41 @@ Material docs note (not a runtime redesign): HC privacy-policy rationale intent 
 | T23–T36 device paths | Applicable device rows **N/A this attempt** (access blocked); OAuth threats remain N/A for OS-hub V5 |
 | Develop provider flags restored OFF | **N/A** — flags never enabled |
 
-### 36.8 Classification
+### 36.8 Classification (initial attempt)
 
 - HealthKit: **BLOCKED — EAS LOGIN + PHYSICAL iOS DEVICE**
 - Health Connect: **BLOCKED — ANDROID DEVICE/EMULATOR**
 - D1 minimum (≥1 real certified connector): **not satisfied**
 - V5A CI implementation on develop: **unchanged COMPLETE**
+- `main` / production: **unchanged**
+
+### 36.9 Resume attempt (2026-10-01 later)
+
+| Check | Result |
+| --- | --- |
+| `eas whoami` | Still **Not logged in** → **EAS LOGIN STILL REQUIRED** (iOS stream STOP) |
+| `eas.json` development profile | **Reused** (`developmentClient: true`, `distribution: internal`) — no profile change |
+| Android AVD | **Pixel_7_API_34** started; `adb` **emulator-5554 device**; Android **14 / API 34**; `google_apis_playstore` |
+| Health Connect package | `com.google.android.healthconnect.controller` **present** |
+| Generated manifest READ_* | Sleep, RHR, HRV, Steps, ActiveCalories, Exercise — **read-only** (prebuild evidence) |
+| Local Dev Client build | Prebuild OK; Gradle 9 hit `jcenter()` in `@react-native-cookies/cookies` → **pnpm patch** `jcenter`→`mavenCentral` |
+| AssembleDebug after patch | **FAILED** — CMake/ninja `mkdir(CMakeFiles/…)` under deep Windows pnpm paths (`react-native-screens` / `react-native-worklets`) |
+| Installable APK / HC UX journey | **Not achieved** |
+| Backend flags | **Not toggled** — Railway Unauthorized; **BLOCKED — BACKEND CERT ENV** for live upload cells |
+| HealthKit certification | **BLOCKED — EAS AUTH** |
+| Health Connect certification | **BLOCKED — DEVICE** (emulator OK; installable build not produced on this host) |
+
+**PO unblock (exact):**
+1. `npx eas-cli@24.8.0 login` (interactive, local) — unblocks iOS **and** optional EAS Android cloud Dev Client (avoids local CMake).
+2. Prefer EAS Android `build --platform android --profile development` while local Windows CMake remains broken; **or** fix local long-path/CMake env (outside this program without PO approval for toolchain surgery).
+3. Railway **develop** only: set `UAP_INTEGRATIONS_ENABLED=true` and provider flags for E2E, then restore `false`.
+4. Separate disposable develop athletes per platform (D7).
+
+### 36.10 Classification (after resume)
+
+- HealthKit: **BLOCKED — EAS AUTH**
+- Health Connect: **BLOCKED — DEVICE** (AVD+HC available; Dev Client APK not installable here)
+- Backend live cells: **BLOCKED — BACKEND CERT ENV**
+- D1 minimum: **not satisfied**
+- Runtime defect fix landed for Gradle 9: cookies `jcenter` patch (does not by itself certify either hub)
 - `main` / production: **unchanged**
