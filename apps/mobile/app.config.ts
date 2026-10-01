@@ -6,6 +6,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
+    owner: 'jon204ds-team',
+    extra: {
+      ...config.extra,
+      eas: {
+        projectId: 'b9166022-2b56-4047-9a55-c0971e322fb3',
+      },
+    },
     name: 'Universal Athlete',
     slug: 'uap-mobile',
     version: '1.0.0',
