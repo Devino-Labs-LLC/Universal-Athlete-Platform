@@ -43,6 +43,7 @@ jobs:
                 --tests 'com.devinolabs.uap.consent.*' \
                 --tests 'com.devinolabs.uap.audit.*' \
                 --tests 'com.devinolabs.uap.billing.*' \
+                --tests 'com.devinolabs.uap.integrations.*' \
                 --tests 'com.devinolabs.uap.training.domain.*'
               ;;
             training-app)

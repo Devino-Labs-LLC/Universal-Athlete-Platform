@@ -45,6 +45,17 @@ uap:
       rate-limit:
         capacity: ${UAP_IDENTITY_RATE_LIMIT_CAPACITY:30}
         window: ${UAP_IDENTITY_RATE_LIMIT_WINDOW:1m}
+  integrations:
+    # V5 Connected Athlete module. Always present; boots without provider secrets.
+    enabled: ${UAP_INTEGRATIONS_ENABLED:true}
+    # Centrally owned initial backfill window (days).
+    backfill-days: ${UAP_INTEGRATIONS_BACKFILL_DAYS:30}
+    apple-healthkit:
+      # Explicit opt-in. Default off until connector certification (C1).
+      enabled: ${UAP_INTEGRATIONS_APPLE_HEALTHKIT_ENABLED:false}
+    health-connect:
+      # Explicit opt-in. Default off until connector certification (C2).
+      enabled: ${UAP_INTEGRATIONS_HEALTH_CONNECT_ENABLED:false}
   billing:
     entitlement-enforcement:
       # Product-edge 402s. Independent of Stripe. Production launch requires an explicit gate.

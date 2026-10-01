@@ -632,8 +632,8 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 
 | Slice | Status | Runtime SHA | Migrations | Verify | Sonar | Device/provider proof | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| F0 PO lock + ADR accept | **IN PROGRESS** | pending lock commit | — | pending | pending | N/A | This lock pass |
-| F1 Foundation module | NOT STARTED | — | — | — | — | — | After lock Verify green |
+| F0 PO lock + ADR accept | **COMPLETE** | `8d3d6ee` | — | [36805522460](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36805522460) SUCCESS | PASS | N/A | D1–D14 locked; ADR 046–051 Accepted |
+| F1 Foundation module | **COMPLETE (pending push)** | pending | **V38** | pending | pending | N/A | Module + HTTP; sync NO_ADAPTER honesty; QA/Security PASS-WITH-NOTES |
 | F2 Evidence + inbox | NOT STARTED | — | — | — | — | — | |
 | F3 UX shell | NOT STARTED | — | — | — | — | — | |
 | C1 HealthKit | NOT STARTED | — | — | — | — | — | |
