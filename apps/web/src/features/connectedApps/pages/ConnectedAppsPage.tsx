@@ -19,6 +19,8 @@ import {
   lifecycleTone,
   providerDisplayName,
   providerPlatformNote,
+  classifySyncFreshness,
+  syncFreshnessLabel,
 } from '@/features/connectedApps/models/providers';
 import styles from '@/features/connectedApps/pages/ConnectedAppsPage.module.scss';
 
@@ -33,6 +35,7 @@ function ConnectionCard({
 }) {
   const lastSync = formatInstant(connection.lastSuccessfulSyncAt);
   const lastAttempt = formatInstant(connection.lastAttemptedSyncAt);
+  const freshness = classifySyncFreshness(connection.lastSuccessfulSyncAt);
   const showDisconnect = canDisconnect(connection.lifecycleState);
 
   return (
@@ -44,6 +47,7 @@ function ConnectionCard({
         </Badge>
       </div>
       <p className={styles.meta}>{providerPlatformNote(connection.provider)}</p>
+      <p className={styles.meta}>Data freshness: {syncFreshnessLabel(freshness)}</p>
       {lastSync ? <p className={styles.meta}>Last successful sync: {lastSync}</p> : null}
       {lastAttempt ? <p className={styles.meta}>Last sync attempt: {lastAttempt}</p> : null}
       {!lastSync && !lastAttempt ? <p className={styles.meta}>No sync activity yet.</p> : null}

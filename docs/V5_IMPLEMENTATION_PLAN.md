@@ -635,8 +635,10 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F0 PO lock + ADR accept | **COMPLETE** | `8d3d6ee` | — | [36805522460](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36805522460) SUCCESS | PASS | N/A | D1–D14 locked; ADR 046–051 Accepted |
 | F1 Foundation module | **COMPLETE** | `e6d85f1` | **V38** | [36809793740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36809793740) SUCCESS | PASS | N/A | Flyway tip fix after `0c71b96` |
 | F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
-| F3 UX shell | **COMPLETE** | `dee885b` | — | Verify failed Sonar (New Code: security Math.random; duplication ~7.8%; coverage ~77.7%) | FAIL on dee885b | N/A | Profile → Connected Apps Web+Mobile; Sonar remediation + shared contracts package in working tree |
-| C1 HealthKit | **IMPLEMENTED** | pending | — | CI VERIFIED pending | pending | **DEVICE BLOCKED** | iOS HealthKit adapter + evidence queue + OS_HUB_UPLOAD_ONLY; device/sandbox cert pending |
-| C2 Health Connect | **WIP on develop working tree** | pending (tip `6f88bc7` + local WIP) | — | pending | Sonar New Code remediation in progress (adapter tests + contracts dedupe) | **DEVICE BLOCKED** | Android Health Connect adapter + connect flow + evidence normalize; history clamped to 30d; Play/settings install UX; device/sandbox cert pending |
+| F3 UX shell | **COMPLETE** | `2bf16d4` (includes Sonar remediations) | — | Sonar FAIL on `dee885b`; green after remediations on `2bf16d4` | PASS on `2bf16d4` | N/A | Profile → Connected Apps; shared `@uap/connected-apps-contracts` |
+| C1 HealthKit | **COMPLETE (CI)** | `2bf16d4` | — | [36819796718](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36819796718) SUCCESS | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + queue + evidence upload; needs iOS Dev Client/device |
+| C2 Health Connect | **COMPLETE (CI)** | `2bf16d4` | — | same as C1 | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + connect flow; needs Android SDK/device |
+| U1/U2 UX harden | **COMPLETE (pending push)** | pending | — | pending | pending | N/A | Provisional freshness labels (D12) |
+| R1 RC | **IN PROGRESS** | `2bf16d4` | V38–V39 | SUCCESS | PASS | Device cert blocked | V5A on develop; no main/prod |
 | U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
 | R1 RC | NOT STARTED | — | — | — | — | — | |

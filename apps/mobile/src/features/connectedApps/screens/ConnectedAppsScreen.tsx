@@ -26,6 +26,7 @@ import {
 import { connectedAppsErrorMessage } from '@/src/features/connectedApps/models/errors';
 import {
   canAttemptConnect,
+  classifySyncFreshness,
   formatInstant,
   lifecycleLabel,
   lifecycleTone,
@@ -33,6 +34,7 @@ import {
   providerConnectGateReason,
   providerDisplayName,
   isProviderSupportedOnPlatform,
+  syncFreshnessLabel,
   type ConnectorAvailability,
 } from '@/src/features/connectedApps/models/providers';
 import { drainEvidenceUploadQueue } from '@/src/features/connectedApps/queue/evidenceUploadQueue';
@@ -344,6 +346,10 @@ function ProviderCard({
 
       {lastSync ? <CompactInfoRow label="Last successful sync" value={lastSync} /> : null}
       {lastAttempt ? <CompactInfoRow label="Last sync attempt" value={lastAttempt} /> : null}
+      <CompactInfoRow
+        label="Data freshness"
+        value={syncFreshnessLabel(classifySyncFreshness(connection?.lastSuccessfulSyncAt))}
+      />
 
       {connection && canDisconnect(connection.lifecycleState) ? (
         <Button

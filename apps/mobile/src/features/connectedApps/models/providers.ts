@@ -10,6 +10,8 @@ import {
   lifecycleToneKind,
   newRequestId,
   providerDisplayName,
+  classifySyncFreshness,
+  syncFreshnessLabel,
 } from '@uap/connected-apps-contracts';
 
 export {
@@ -18,6 +20,8 @@ export {
   lifecycleLabel,
   newRequestId,
   providerDisplayName,
+  classifySyncFreshness,
+  syncFreshnessLabel,
 };
 
 export type ConnectorAvailability = {
