@@ -1,14 +1,15 @@
 # ADR-050 — Connected consent layers (connect ≠ share)
 
-- **Status:** Proposed (awaiting Product Owner / Lead lock)
+- **Status:** Accepted
 - **Date:** 2026-09-30
 - **Product:** Athlete Readiness V5 — Connected Athlete
+- **Product Owner locks:** D8 = A (no coach connected metadata); D9 = B; D10 = A (free in V5)
 
 ## Context
 
 ADR-033: membership does not auto-grant sensitive sharing. Connecting a wearable must not automatically increase coach/org visibility of athlete data.
 
-## Decision (proposed)
+## Decision
 
 Treat Connected Athlete consent as four independent layers:
 
@@ -23,9 +24,10 @@ Rules:
 
 1. Completing A does **not** imply B, C, or D.
 2. Completing A+B does **not** imply C.
-3. Coaches never receive provider credentials, raw provider payloads, or a wearable debugger console.
-4. V5 MVP Lead recommendation: coaches continue to see only existing readiness/recovery projections under current ConsentScopes; raw connected streams are never coach-visible. Adding a new ConsentScope for connected metadata requires Product Owner lock.
-5. Disconnect stops future sync; historical normalized athlete self-history retention is a Product Owner lock (Lead recommends retain athlete self-history, drop credentials immediately).
+3. Coaches never receive provider credentials, raw provider payloads, device lists, or a wearable debugger console.
+4. V5 MVP: coaches continue to see only existing readiness/recovery projections under current ConsentScopes. **No new coach connected-source/freshness metadata** (D8 = A).
+5. Disconnect stops future sync and drops credentials; normalized athlete self-history may remain (D9 = B). Explicit deletion is a separate privacy flow.
+6. Connected Athlete capabilities are **free in V5** (D10 = A); keep an entitlement seam but do not wire commercial gating.
 
 ## Consequences
 

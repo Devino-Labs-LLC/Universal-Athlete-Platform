@@ -58,15 +58,15 @@ Product Owner decisions: [`docs/V4_IMPLEMENTATION_PLAN.md`](../V4_IMPLEMENTATION
 | [044](044-provider-webhook-idempotency.md) | Provider webhook / idempotency model |
 | [045](045-duplicate-subscription-and-provider-switch.md) | Duplicate-subscription / provider-switch policy |
 
-## Index (V5 Connected Athlete — Proposed)
+## Index (V5 Connected Athlete — Accepted)
 
-Planning lock: [`docs/V5_IMPLEMENTATION_PLAN.md`](../V5_IMPLEMENTATION_PLAN.md). Do **not** mark these Accepted and do **not** begin V5 runtime until Product Owner decisions in that plan are locked.
+Product Owner decisions D1–D14 locked 2026-09-30: [`docs/V5_IMPLEMENTATION_PLAN.md`](../V5_IMPLEMENTATION_PLAN.md) §32–§33. Runtime implementation proceeds on `develop` under that plan; no automatic `main` / production promotion.
 
 | ADR | Title | Status |
 | --- | --- | --- |
-| [046](046-integrations-bounded-context.md) | Integrations bounded context (Connected Athlete) | **Proposed** |
-| [047](047-connected-evidence-and-provenance.md) | Connected evidence & provenance | **Proposed** |
-| [048](048-connection-and-sync-lifecycles.md) | Connection and sync lifecycles | **Proposed** |
-| [049](049-explicit-connected-sync.md) | Connected sync is explicit (no hidden sync on GET) | **Proposed** |
-| [050](050-connected-consent-layers.md) | Connected consent layers (connect ≠ share) | **Proposed** |
-| [051](051-health-integration-idempotency.md) | Health integration webhook/job idempotency | **Proposed** |
+| [046](046-integrations-bounded-context.md) | Integrations bounded context (Connected Athlete) | **Accepted** |
+| [047](047-connected-evidence-and-provenance.md) | Connected evidence & provenance | **Accepted** |
+| [048](048-connection-and-sync-lifecycles.md) | Connection and sync lifecycles | **Accepted** |
+| [049](049-explicit-connected-sync.md) | Connected sync is explicit (no hidden sync on GET) | **Accepted** |
+| [050](050-connected-consent-layers.md) | Connected consent layers (connect ≠ share) | **Accepted** |
+| [051](051-health-integration-idempotency.md) | Health integration webhook/job idempotency | **Accepted** |

@@ -1,14 +1,15 @@
 # ADR-048 — Connection and sync lifecycles
 
-- **Status:** Proposed (awaiting Product Owner / Lead lock)
+- **Status:** Accepted
 - **Date:** 2026-09-30
 - **Product:** Athlete Readiness V5 — Connected Athlete
+- **Product Owner locks:** D7 = A (one active provider MVP); D9 = B (retain history, drop credentials)
 
 ## Context
 
 Provider links and data pulls are different concerns. Collapsing them into one mega-status hides reauth vs partial sync failures.
 
-## Decision (proposed)
+## Decision
 
 ### Connection (athlete ↔ provider link)
 
@@ -21,14 +22,14 @@ Statuses: `REQUESTED` → `RUNNING` → `SUCCEEDED` | `PARTIAL` | `FAILED`.
 Rules:
 
 1. Connection may remain `CONNECTED` while a sync run `FAILED`.
-2. Disconnect / revoke stops future sync immediately and invalidates stored credentials.
-3. Re-grant prefers a new connection identity (mirrors ConsentGrant re-grant spirit in ADR-033) unless Product Owner locks upsert-in-place.
-4. One open connection per `(athleteId, providerKey)` unless Product Owner unlocks multi-active same-provider links.
+2. Disconnect / revoke stops future sync immediately and invalidates stored credentials; normalized athlete-owned historical evidence may remain (D9 = B). Explicit privacy deletion is a separate flow.
+3. Re-grant prefers a new connection identity (mirrors ConsentGrant re-grant spirit in ADR-033).
+4. V5 MVP enforces **one active health provider/hub per athlete** (D7 = A). Persistence must not preclude later multi-provider support.
 
 ## Consequences
 
 - UI can show honest “connected but last sync failed” and “needs reauth”.
-- Jobs and webhooks create sync runs; they do not invent connection health from empty reads.
+- Switching providers requires disconnect of the prior active connection before connecting another.
 
 ## References
 

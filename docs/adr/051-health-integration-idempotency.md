@@ -1,20 +1,22 @@
 # ADR-051 — Health integration webhook/job idempotency
 
-- **Status:** Proposed (awaiting Product Owner / Lead lock)
+- **Status:** Accepted
 - **Date:** 2026-09-30
 - **Product:** Athlete Readiness V5 — Connected Athlete
+- **Product Owner locks:** D4 = B (30-day backfill default); D11 = B (explicit sync)
 
 ## Context
 
 ADR-044 defines provider webhook idempotency for **billing**. Connected Athlete needs the same *pattern* for health/fitness providers and mobile upload batches without widening `billing_provider_events`.
 
-## Decision (proposed)
+## Decision
 
-1. Create an **integrations-scoped** provider event / ingest inbox (name TBD) — do **not** reuse `billing_provider_events` rows for wearables.
+1. Create an **integrations-scoped** provider event / ingest inbox — do **not** reuse `billing_provider_events` rows for wearables.
 2. Reuse ADR-044 pattern: verify authenticity → durable provider event / upload batch id uniqueness → prefer authoritative refetch when available → stale/out-of-order guards → transactional apply → minimal payload retention.
 3. Evidence uniqueness at minimum: `(providerKey, athleteId, externalRecordId)` or documented content-hash fallback when providers lack stable ids.
 4. Mobile HealthKit / Health Connect uploads are untrusted client observations (`CLIENT_DEVICE` provenance class) bound to authenticated athlete ownership; they still must be idempotent and schema-validated.
 5. Replay of the same source event must not duplicate sleep/workout/measurement rows or trigger hidden State Engine writes.
+6. Default initial backfill window is **30 days**, centrally configurable — not scattered magic constants (D4 = B). Respect OS history/permission limits.
 
 ## Consequences
 

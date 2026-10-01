@@ -1,14 +1,15 @@
 # ADR-046 — Integrations bounded context (Connected Athlete)
 
-- **Status:** Proposed (awaiting Product Owner / Lead lock)
+- **Status:** Accepted
 - **Date:** 2026-09-30
 - **Product:** Athlete Readiness V5 — Connected Athlete
+- **Product Owner lock:** D2 = A (`integrations` module)
 
 ## Context
 
 V3 §19 reserved V5 for wearables / provider integrations behind a separate integrations seam. State Engine remains owned by `training` (ADR-029). Billing providers (Stripe / App Store / Play) already live in `billing` and must not absorb health/fitness connectors.
 
-## Decision (proposed)
+## Decision
 
 1. Create Modulith module **`integrations`** for Connected Athlete connections, credentials, sync orchestration, provider adapters, and provider-neutral observation ports.
 2. Do **not** place health/fitness connectors in `training`, `athlete`, `billing`, or `organization`.

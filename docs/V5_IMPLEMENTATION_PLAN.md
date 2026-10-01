@@ -6,8 +6,10 @@
 **Planning tip:** `e955f05da58d230046c265b1b9a42ff5875a1004` (`main` = `develop`, 0/0)  
 **Production schema baseline:** Flyway **V37**  
 **Prior version:** V4 commercialization — G–I **PRODUCTION DEPLOYED / DORMANT VERIFIED**; commercial billing **OFF**; V4 **NOT** commercially active  
-**V5 status:** **PLANNING ONLY** — not started; no runtime authorized by this document  
-**Highest accepted ADR before this plan:** ADR-045 → V5 ADRs start at **046** (**Proposed**)
+**V5 status:** **PO LOCKED / IMPLEMENTATION AUTHORIZED on develop** (after lock Verify); V5B deferred; no production promotion in this program
+**Highest accepted ADR before this plan:** ADR-045 → V5 ADRs **046–051 Accepted** (2026-09-30 PO lock)  
+**PO decisions:** D1–D14 **LOCKED** 2026-09-30  
+**Implementation:** Authorized on `develop` after PO-lock Verify (this program); **no** `main`/production promotion
 
 ---
 
@@ -517,177 +519,124 @@ cd apps/web && npm install --install-links && cd /app && mkdir -p node_modules &
 
 ---
 
-## 31. ADRs proposed
+## 31. ADRs (Accepted)
 
 | ADR | Title | Status |
 | --- | --- | --- |
-| [046](adr/046-integrations-bounded-context.md) | Integrations bounded context | **Proposed** |
-| [047](adr/047-connected-evidence-and-provenance.md) | Connected evidence & provenance | **Proposed** |
-| [048](adr/048-connection-and-sync-lifecycles.md) | Connection & sync lifecycles | **Proposed** |
-| [049](adr/049-explicit-connected-sync.md) | Explicit sync / no hidden GET sync | **Proposed** |
-| [050](adr/050-connected-consent-layers.md) | Connected consent layers | **Proposed** |
-| [051](adr/051-health-integration-idempotency.md) | Health ingest idempotency | **Proposed** |
+| [046](adr/046-integrations-bounded-context.md) | Integrations bounded context | **Accepted** |
+| [047](adr/047-connected-evidence-and-provenance.md) | Connected evidence & provenance | **Accepted** |
+| [048](adr/048-connection-and-sync-lifecycles.md) | Connection & sync lifecycles | **Accepted** |
+| [049](adr/049-explicit-connected-sync.md) | Explicit sync / no hidden GET sync | **Accepted** |
+| [050](adr/050-connected-consent-layers.md) | Connected consent layers | **Accepted** |
+| [051](adr/051-health-integration-idempotency.md) | Health ingest idempotency | **Accepted** |
 
-Do **not** mark Accepted until Product Owner locks material decisions below.
-
----
-
-## 32. V5 PRODUCT OWNER DECISIONS REQUIRED
-
-Do not answer trivial engineering questions here. Technical choices (table names, exact HTTP paths, Expo plugin selection) remain engineering.
-
-### D1 — What “V5 complete” means
-
-- **Question:** Is V5 done at foundation-only, or foundation + one certified connector + minimal athlete UX?
-- **Why:** Prevents infinite connector scope and false “complete” claims.
-- **Evidence:** V3 §19; Lead F/C/S/U; External hub-first matrix.
-- **A:** Foundation only (F0–F3).  
-- **B:** Foundation + one certified connector + U1 (V5-MVP).  
-- **Lead recommendation:** **B**.
-- **Blocks architecture?** No for F1 design; **blocks claiming V5-MVP**.
-- **Independent work:** F0–F2 planning can proceed after D2/D4 directionally.
-
-### D2 — Modulith home
-
-- **Question:** New `integrations` module vs extend `training`?
-- **A:** New `integrations`.  
-- **B:** Extend `training`.  
-- **Lead recommendation:** **A** (V3 §19 + ADR-029).
-- **Blocks architecture?** **Yes** for F1.
-- **Independent work:** Evidence contract drafting can proceed conceptually.
-
-### D3 — First connector class & OS
-
-- **Question:** On-device hub first or cloud OAuth first? If hub, which OS first?
-- **Evidence:** HealthKit/Health Connect official OS models; Garmin partner access constrained; hubs already cover many devices.
-- **A1:** On-device first — HealthKit first.  
-- **A2:** On-device first — Health Connect first.  
-- **B:** Cloud OAuth first (e.g. WHOOP).  
-- **Lead recommendation:** **A1** if iOS is primary athlete surface; otherwise lock to real launch OS. Do not make both OS hubs “C1”.
-- **Blocks architecture?** Blocks C1 implementation order; not F1.
-- **Independent work:** Foundation + UX shell.
-
-### D4 — Backfill window
-
-- **Question:** Initial import window (7 / 30 / 90 days / other)?
-- **Why:** Privacy minimization vs product usefulness; Health Connect history permission.
-- **A:** 7 days.  
-- **B:** 30 days.  
-- **C:** 90 days.  
-- **Lead recommendation:** **B (30)** as default; document HC history permission if exceeding OS default.
-- **Blocks architecture?** Influences checkpoint design; not module choice.
-- **Independent work:** F1 schema without hard-coding window constants.
-
-### D5 — Ingest vs readiness generation
-
-- **Question:** May ingest enqueue State Engine generation, or store-only until explicit generate?
-- **A:** Ingest may enqueue explicit generation.  
-- **B:** Store-only; athlete/system triggers generation separately.  
-- **Lead recommendation:** **B** for clearest no-hidden-write story (V5A).
-- **Blocks architecture?** Blocks S2 wiring.
-- **Independent work:** V5A store path.
-
-### D6 — Manual vs connected precedence
-
-- **Question:** If connected sleep/HRV conflicts with athlete check-in, who wins?
-- **A:** Wearable overwrites.  
-- **B:** Athlete-entered wins; wearable is parallel evidence.  
-- **Lead recommendation:** **B**.
-- **Blocks architecture?** Blocks merge rules in S1/S2.
-- **Independent work:** Store both with provenance.
-
-### D7 — Multi-provider concurrency
-
-- **Question:** One active health provider vs multiple concurrent providers in V5-MVP?
-- **A:** One active health provider.  
-- **B:** Multiple concurrent.  
-- **Lead recommendation:** **A for MVP** (reduce dedup complexity); design schema to allow **B** later.
-- **Blocks architecture?** Affects uniqueness/UX; plan for B without implementing B.
-- **Independent work:** Foundation.
-
-### D8 — Coach visibility of connected metadata
-
-- **Question:** May coaches see source/freshness metadata, or only existing readiness/recovery projections?
-- **A:** Never raw; no new coach connected metadata in V5.  
-- **B:** New ConsentScope for limited connected metadata.  
-- **Lead recommendation:** **A** for MVP.
-- **Blocks architecture?** Blocks U3 / consent scope enum.
-- **Independent work:** Athlete Connected Apps.
-
-### D9 — Retention after disconnect
-
-- **Question:** Delete normalized evidence on disconnect, or retain athlete self-history and drop credentials only?
-- **A:** Delete mapped observations.  
-- **B:** Retain history; drop credentials.  
-- **Lead recommendation:** **B** (ADR-033 athlete self-history spirit).
-- **Blocks architecture?** Disconnect use case.
-- **Independent work:** Token vault design.
-
-### D10 — Entitlement for Connected Athlete
-
-- **Question:** Free vs `INDIVIDUAL_PREMIUM` vs org-paid?
-- **A:** Free in V5.  
-- **B:** Premium-gated.  
-- **C:** Org add-on.  
-- **Lead recommendation:** **A** until V4 commercial is live.
-- **Blocks architecture?** Only if B/C chosen (entitlements wiring).
-- **Independent work:** Foundation with free assumption + seam for later gate.
-
-### D11 — Background scheduled sync in MVP
-
-- **Question:** User-explicit sync only vs scheduled jobs when connected?
-- **A:** Scheduled jobs allowed when CONNECTED + flag on.  
-- **B:** User-explicit sync only in MVP.  
-- **Lead recommendation:** **B**; add jobs after idempotency proven.
-- **Blocks architecture?** Job design timing.
-- **Independent work:** Explicit sync API.
-
-### D12 — Stale thresholds
-
-- **Question:** What ages map to fresh / stale / unavailable for sleep/HRV/activity?
-- **Why:** UX honesty; avoid inventing medical cutovers.
-- **A:** Product picks numeric thresholds now.  
-- **B:** Ship qualitative stale flag with conservative placeholders documented as provisional.  
-- **Lead recommendation:** **B** until real pilot data; do not pretend clinical precision.
-- **Blocks architecture?** Display only.
-- **Independent work:** Provenance timestamps.
-
-### D13 — Whether V5B (readiness formula change) is in V5
-
-- **Question:** Does V5 include readiness calculator changes, or store-only + optional display?
-- **A:** V5A only (store/display).  
-- **B:** V5A + V5B formula lock in same version.  
-- **Lead recommendation:** **A**; schedule V5B as explicit later unlock with fixtures/version id.
-- **Blocks architecture?** Blocks S2 formula work.
-- **Independent work:** Entire evidence pipeline.
-
-### D14 — Optional OAuth wearable in V5
-
-- **Question:** Include a server OAuth connector (WHOOP candidate) in V5, or OS hubs only?
-- **A:** OS hubs only for V5.  
-- **B:** Hubs + one OAuth connector.  
-- **Lead recommendation:** **A** for MVP; keep B as expansion bar.
-- **Blocks architecture?** C3 planning only.
-- **Independent work:** HealthKit/Health Connect.
+Accepted 2026-09-30 after Product Owner locked D1–D14.
 
 ---
 
-## 33. Decision log (empty until PO responds)
+## 32. V5 PRODUCT OWNER DECISIONS (LOCKED 2026-09-30)
+
+Options and rationale remain below for audit. **Locked values** are authoritative in §33.
+
+### D1 — What “V5 complete” means — **LOCKED B**
+
+Foundation + at least one real connected-health connector certified + minimal Connected Apps UX. HealthKit first; Health Connect remains an approved V5 target after HealthKit. OAuth wearables not required for V5 completion.
+
+### D2 — Modulith home — **LOCKED A**
+
+New `integrations` module. `training` retains State Engine / readiness / recommendations.
+
+### D3 — First connector — **LOCKED A1**
+
+HealthKit first, then Health Connect. No fake parity. No simultaneous first-connector delivery if it harms quality.
+
+### D4 — Backfill window — **LOCKED B**
+
+Default **30 days**, centrally configurable. Respect OS history/permission limits.
+
+### D5 — Ingest vs readiness generation — **LOCKED B**
+
+V5A store/map/display only. Sync must not mutate readiness.
+
+### D6 — Manual vs connected precedence — **LOCKED B**
+
+Manual check-in remains authoritative for its workflow; connected data is parallel evidence.
+
+### D7 — Multi-provider concurrency — **LOCKED A (MVP)**
+
+One active health provider/hub per athlete in V5 MVP; schema must allow later multi-provider without destructive redesign.
+
+### D8 — Coach visibility — **LOCKED A**
+
+No new coach connected-health metadata in V5 MVP. Existing consented readiness/recovery projections only.
+
+### D9 — Retention after disconnect — **LOCKED B**
+
+Drop credentials; stop sync; retain normalized athlete self-history. Disconnect ≠ privacy deletion request.
+
+### D10 — Entitlement — **LOCKED A**
+
+Connected Athlete is **free** in V5. Keep entitlement seam; do not wire commercial gating.
+
+### D11 — Scheduled/background server sync — **LOCKED B**
+
+User-explicit sync only in MVP. No server scheduled polling. Mobile durable queue for athlete-initiated sync is allowed when idempotent.
+
+### D12 — Stale thresholds — **LOCKED B**
+
+Qualitative fresh/stale/unavailable from provenance timestamps; provisional product logic only; not clinical.
+
+### D13 — Readiness formula — **LOCKED A**
+
+V5A only. No `READINESS_V2`. Missing wearable never reduces readiness. V5B deferred.
+
+### D14 — OAuth wearable — **LOCKED A**
+
+OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Polar in this V5 program.
+
+---
+
+## 33. Decision log
 
 | ID | Decision | Locked value | Date | Notes |
 | --- | --- | --- | --- | --- |
-| — | — | — | — | Awaiting Product Owner checkpoint |
+| D1 | V5 complete bar | **B** | 2026-09-30 | Foundation + ≥1 certified connector + Connected Apps UX; HealthKit first; Health Connect approved next; OAuth not required |
+| D2 | Modulith home | **A** | 2026-09-30 | New `integrations` module |
+| D3 | First connector | **A1** | 2026-09-30 | HealthKit → Health Connect; honest platform differences |
+| D4 | Backfill window | **B** | 2026-09-30 | 30 days default; centrally configurable |
+| D5 | Ingest vs generate | **B** | 2026-09-30 | Store-only; no auto readiness |
+| D6 | Manual precedence | **B** | 2026-09-30 | Parallel evidence; no silent overwrite |
+| D7 | Multi-provider MVP | **A** | 2026-09-30 | One active hub; schema multi-ready |
+| D8 | Coach visibility | **A** | 2026-09-30 | No new connected coach metadata |
+| D9 | Disconnect retention | **B** | 2026-09-30 | Drop credentials; retain normalized history; deletion separate |
+| D10 | Entitlement | **A** | 2026-09-30 | Free in V5; seam only |
+| D11 | Scheduled sync | **B** | 2026-09-30 | User-explicit only; no server cron |
+| D12 | Stale thresholds | **B** | 2026-09-30 | Qualitative / provisional |
+| D13 | Readiness formula | **A** | 2026-09-30 | V5A only; V5B deferred |
+| D14 | OAuth wearable | **A** | 2026-09-30 | OS hubs only |
 
 ---
 
-## 34. Explicit non-claims
+## 34. Explicit non-claims / program boundary
 
-- This document does **not** authorize V5 runtime implementation, Flyway, provider activation, or production deploy.
-- ADRs 046–051 are **Proposed**, not Accepted.
-- V5 is **not** started.
+- Product Owner D1–D14 are **locked** (2026-09-30). ADRs 046–051 are **Accepted**.
+- This document **authorizes V5 runtime implementation on `develop`** after the PO-lock Verify is green.
+- Still **not** authorized by this program: merge to `main`, Railway production deploy, provider activation in production, V4 commercial billing on, App Store / Play publish, scheduled sync.
 - V4 remains **not** commercially active.
-- Apple/Google **billing** remain **not** sandbox-certified.
+- Apple/Google **billing** remain **not** sandbox-certified (orthogonal to HealthKit / Health Connect).
+- V5B readiness formula change remains **deferred**.
 
 ---
 
-**End state of this planning task:** Athlete Readiness V5 planning docs committed on `develop` for Product Owner lock — **no broad implementation**.
+## 35. Execution ledger
+
+| Slice | Status | Runtime SHA | Migrations | Verify | Sonar | Device/provider proof | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| F0 PO lock + ADR accept | **IN PROGRESS** | pending lock commit | — | pending | pending | N/A | This lock pass |
+| F1 Foundation module | NOT STARTED | — | — | — | — | — | After lock Verify green |
+| F2 Evidence + inbox | NOT STARTED | — | — | — | — | — | |
+| F3 UX shell | NOT STARTED | — | — | — | — | — | |
+| C1 HealthKit | NOT STARTED | — | — | — | — | — | |
+| C2 Health Connect | NOT STARTED | — | — | — | — | — | |
+| U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
+| R1 RC | NOT STARTED | — | — | — | — | — | |
