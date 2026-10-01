@@ -640,7 +640,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | C2 Health Connect | **COMPLETE (CI)** | `2bf16d4` | — | same as C1 | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + connect flow; needs Android SDK/device |
 | U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
 | R1 RC | **COMPLETE on develop** | `01f8c4e` | V38–V39 | SUCCESS | PASS | Device cert **BLOCKED** | V5A CI-complete; no main/prod; Lead/QA/Security PASS-WITH-NOTES |
-| Phase 0 RC hygiene | **COMPLETE** | *(tip after hygiene push)* | — | *(Verify after push)* | *(Sonar after push)* | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
+| Phase 0 RC hygiene | **COMPLETE** | `375768d` | — | [36867244813](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36867244813) SUCCESS | PASS | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
 | Device cert gate | **BLOCKED** | `2bf16d4` runtime | V38–V39 | — | — | **BLOCKED — EXTERNAL DEVICE/PLATFORM ACCESS** | No EAS login; no iOS/Android device; Railway develop CLI Unauthorized; flags not toggled |
 
 ---
