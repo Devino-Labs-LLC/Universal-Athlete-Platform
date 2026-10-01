@@ -5,15 +5,15 @@
 
 **Document type:** Product Owner decision lock (docs)  
 **Planning commit:** `117b37ef95c142daa323da021cc8172565b56803`  
-**Production baseline (`main`):** Slice F **PRODUCTION VERIFIED** with commercial controls **off** (runtime SHA `bbac5fc2afa7b05a00c8fd3881f117fdceb5fbf9`; see **§47**). Prior Slice E SHA `bf50e0158b74d215e318d290b16ccad06a8c6cfe` (see **§43**). Prior Slice D SHA `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C SHA `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B SHA `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
-**`develop`:** Slices **G–I** implementation + **I1 RC evidence** on develop (ledger **§48**). Individual Stripe sandbox **CERTIFIED**; Apple/Google sandbox **BLOCKED — CREDENTIALS** (**§49**). Authoritative runtime tip `0ea3f18` — Verify **36530853656** + Sonar **OK**. Slice F remains **PRODUCTION VERIFIED** on `main` with commercial billing **off** (**§45–§47**). Not commercially active. Not billing live. Commercial flags remain default **off**. Production promotion to `main` is a **separate explicit gate** (not authorized by this ledger). V4 is **not** complete.  
-**Production schema (`main`):** Flyway **V36** (inferred — see §33 / §39 / §47). **`develop` schema head:** Flyway **V37** (G–I only beyond the V36 production baseline — see **§48.3**).  
+**Production baseline (`main`):** V4 G–I runtime **PRODUCTION DEPLOYED / DORMANT VERIFIED** at SHA `a364fe8ba8e99816357b71d0b0a917f4264ce0f0` (see **§50**). Prior Slice F **PRODUCTION VERIFIED** (`bbac5fc2afa7b05a00c8fd3881f117fdceb5fbf9`; **§47**). Prior Slice E `bf50e0158b74d215e318d290b16ccad06a8c6cfe` (**§43**). Prior Slice D `1563b684b81e698aaaeaa2abb835f5f141f6201c`. Prior Slice C `0349424d1a05b543370ed9b75d25b58644d53a03` / `03fbdb1a827539bf66557750bf009ebb89e2f7e7`. Prior Slice B `212f3f44bfe4c8709b636a7839d83c0a978edaa3`.  
+**`develop` / `main`:** Equal at the §50 evidence tip after docs fast-forward. G–I implementation + I1 RC on **§48**; Individual Stripe sandbox **CERTIFIED**; Apple/Google **IMPLEMENTED / CI VERIFIED / SANDBOX BLOCKED — CREDENTIALS** (**§49**). Commercial billing **off**. Entitlement and capacity enforcement **off**. V4 is **not** commercially active. V4 is **not** fully external-provider certified while Apple/Google sandbox blockers remain. V4 is **not** complete. V5 is **not** started.  
+**Production schema (`main`):** Flyway **V37** (inferred from successful readiness after G–I deploy — see **§50**).  
 **Prior version:** Athlete Readiness V3 — **COMPLETE — PRODUCTION VERIFIED**  
 **§22 lock status:** **COMPLETE** (ADR-036–045 Accepted)  
 **Slice A status:** **PRODUCTION VERIFIED** — commercial foundation only (see §30).
 **Pre-Slice-B Organization catalog lock:** **COMPLETE** (see §31).
 **Slice B status:** **PRODUCTION VERIFIED** (see §32 sandbox cert + §33 production).  
-**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). **Slice F:** **PRODUCTION VERIFIED** with commercial controls **off** (runtime **§45**; sandbox **§46**; production **§47**). Not commercially active. Not billing live. Slices **G–I** implementation/RC evidence is on **`develop` only** (**§48**). V4 is **not** commercially active. `main` promotion remains a **separate explicit gate**. V4 is **not** complete.
+**Pre-Slice-C entitlement matrix:** **PRODUCT OWNER-APPROVED** (see §34). **Slice C:** **PRODUCTION VERIFIED** (see §36; develop certification in §35). Production **entitlement enforcement remains off**. **Pre-Slice-D capacity lock:** **PRODUCT OWNER LOCKED** (see **§37**; Option B). **Slice D:** **PRODUCTION VERIFIED** (see **§39**; develop certification in **§38**). Production **capacity enforcement remains off**. **Pre-Slice-E billing management:** **PRODUCT OWNER LOCKED** (see **§40**). **Slice E:** **PRODUCTION VERIFIED** with commercial controls **off** (see **§43**; sandbox certification **§42**; runtime **§41**). Stripe, entitlement enforcement, and capacity enforcement remain **off**. **Pre-Slice-F recovery:** **PRODUCT OWNER LOCKED** (see **§44**). **Slice F:** **PRODUCTION VERIFIED** with commercial controls **off** (runtime **§45**; sandbox **§46**; production **§47**). **G–I runtime:** **PRODUCTION DEPLOYED / DORMANT VERIFIED** (**§50**). Not commercially active. Not billing live. Individual Stripe remains sandbox **CERTIFIED**. Apple/Google remain **IMPLEMENTED / CI VERIFIED / SANDBOX BLOCKED — CREDENTIALS**. V4 is **not** complete.
 
 **This document's §22 lock does not by itself authorize runtime work.** Slice A was separately authorized and is evidenced in §30. Slice B was later explicitly authorized and its local implementation contract is recorded in §32. Live catalog and live charging remain unauthorized.
 
@@ -3671,5 +3671,126 @@ Known follow-ups before live ASN cert (not claimed fixed here): prefer `api.stor
 
 **End state:** Athlete Readiness V4 external certification: **STRIPE INDIVIDUAL CERTIFIED; APPLE/GOOGLE BLOCKED**.
 
+---
+
+## 50. V4 G–I — Dormant production verification
+
+**Status:** V4 G–I runtime is **production deployed and verified in dormant mode**.
+
+**PRODUCTION DEPLOYED / DORMANT VERIFIED** means the G–I code tip is on `main`, Railway production is serving it, Flyway **V37** applied through normal startup, and all commercial providers/enforcement remain **off**. It does **not** mean commercial billing is live, customers can purchase, Apple/Google are certified, entitlement or capacity enforcement is on, or V4 is complete.
+
+Individual Stripe remains **sandbox certified** (**§49**). Apple and Google Play remain **implemented and CI verified**; sandbox certification is **blocked by missing credentials**. Commercial billing remains **off**.
+
+### 50.1 Pre-promotion gates
+
+| Gate | Result |
+| --- | --- |
+| Starting `main` / `origin/main` | `8ba443de247e62b3e985280e8f4a02632b399bfe` |
+| Starting `develop` / `origin/develop` | `a364fe8ba8e99816357b71d0b0a917f4264ce0f0` |
+| Topology | `develop` **19** ahead / **0** behind |
+| Merge-base | `8ba443de247e62b3e985280e8f4a02632b399bfe` |
+| Working tree | Clean |
+| Develop Verify | [36551170448](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36551170448) **SUCCESS** on `a364fe8` (Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, Sonar) |
+| Commercial safety (repo) | `application.yaml` defaults: Stripe, Apple, Google Play, entitlement enforcement, and capacity enforcement all **`false`**. `application-prod.yaml` / `application-production.yaml` do not override them |
+| Railway variable dump | **Unavailable** — Railway CLI unauthorized (`railway whoami` → Unauthorized); no `RAILWAY_TOKEN` in this environment. Conclusions do **not** claim a dashboard secret dump. Runtime behavior remains consistent with providers/enforcement off |
+| Agent reviews | Lead, Backend, Web, Mobile, QA, Security, DevOps, External Integration, Athlete Intelligence, Documentation — all **PASS** for dormant promotion |
+
+### 50.2 Promotion
+
+| Item | Value |
+| --- | --- |
+| Method | Solo-maintainer `git merge --ff-only develop` on `main`. No PR, merge commit, rebase, tag, or force push |
+| Promoted runtime SHA | `a364fe8ba8e99816357b71d0b0a917f4264ce0f0` |
+| Push | `origin/main` updated `8ba443d..a364fe8` (explicitly authorized) |
+
+### 50.3 Main Verify and Sonar
+
+| Item | Value |
+| --- | --- |
+| Main Verify | [36796271748](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36796271748) **SUCCESS** on `a364fe8` |
+| Jobs | Web, Mobile, Backend core, Backend training-http, Backend training-app, Backend aggregate, Sonar quality gate — all **success** |
+| Quality Gate | **OK** |
+| New Code reliability / security / maintainability | **A** (1.0) |
+| New Code coverage | **80.8%** |
+| New Code duplication | **1.9%** |
+| New Code hotspot review | **100%** |
+
+Thresholds were not weakened.
+
+### 50.4 Railway runtime deployment
+
+GitHub environment `Universal Athlete Platform / production`, deployment **6773173401**, SHA `a364fe8ba8e99816357b71d0b0a917f4264ce0f0`. Created `2026-10-01T00:27:28Z`. Success `2026-10-01T00:28:49Z`. Description: Deployed to Railway. No manual redeploy was triggered.
+
+Public services: `UAP_Server` `https://uapserver-production.up.railway.app`; `UAP_Client_Web` `https://uapclientweb-production.up.railway.app`. Project `95a263a8-6dda-493d-b7fb-bfb25054f5a6`, production environment `118d7639-c3e3-4d70-a082-b2611c8029b8`.
+
+Production Web build settings (preconfigured to match proven develop deploy `589bb9d9`; **not** mutated during this promotion):
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `/` |
+| `RAILPACK_INSTALL_CMD` | `cd apps/web && npm install --install-links && cd /app && mkdir -p node_modules && cp -al apps/web/node_modules/. node_modules/` (Candidate **B1** hardlink materialization — **not** a symlink) |
+| Build | `cd apps/web && npm run build` |
+| Start | `cd apps/web && npm run start` |
+
+Railway CLI/token remained unavailable, so this record does not include Railway-native deployment UUIDs, raw build logs, or a variable dump. Failure classes `EUNSUPPORTEDPROTOCOL workspace:*`, `Cannot find module 'zod'`, `/app/node_modules not found`, and `cannot replace ... node_modules with file` were **not** observed in the serving production Web artifact.
+
+| Check | Result |
+| --- | --- |
+| `/actuator/health` | HTTP **200** `{"groups":["liveness","readiness"],"status":"UP"}` |
+| `/actuator/health/liveness` | HTTP **200** `{"status":"UP"}` |
+| `/actuator/health/readiness` | HTTP **200** `{"status":"UP"}` |
+| Web root | HTTP **200** |
+| Entry assets | `index-C1XUENgX.js` and `index-CWGepKIF.css` HTTP **200** |
+| G–I Web chunks | `AccountBillingPage-CjU6oh3t.js`, `AccountBillingCheckoutReturnPages-DW73eYgQ.js` HTTP **200** (absent from Slice F `8ba443d` tree) |
+| Bundle smoke | Chunks contain `AccountBilling`, `Individual Premium`, `managementChannel`, `portal-sessions`, `checkout-sessions` |
+| Secret scan | No `sk_live_`, `sk_test_`, `rk_live_`, `rk_test_`, `whsec_`, or PEM/`service_account` private-key material in entry or billing chunks |
+| SPA | `/`, `/login`, `/app/billing`, `/register` HTTP **200** (SPA shell) |
+
+### 50.5 Schema V37
+
+Latest repository migration on the promoted tip: `V37__create_billing_account_customers.sql` (`billing_account_customers` + widened `billing_provider_events` provider CHECK). No **V38** on the tip.
+
+Hibernate `ddl-auto` remains `validate`. Flyway remains enabled. Readiness stayed **UP** after the `a364fe8` deploy, which fails closed if Flyway or Hibernate validation startup fails. The production database was **not** connected to, queried, or manually altered. No production user, organization, membership, subscription, billing customer, Checkout, Portal session, grace state, or provider event was created by this promotion.
+
+### 50.6 Provider and enforcement dormancy
+
+| Control | Evidence |
+| --- | --- |
+| Stripe | Controllers/services `@ConditionalOnProperty(uap.billing.stripe.enabled=true)`. Default **false**. Dummy webhook POST → **401** (controller not registered / security barrier). No live Stripe calls |
+| Apple | Controllers/adapters `@ConditionalOnProperty(uap.billing.apple.enabled=true)`. Default **false**. Webhook POST → **401**. No App Store production calls |
+| Google Play | Controllers/adapters `@ConditionalOnProperty(uap.billing.google-play.enabled=true)`. Default **false**. Webhook POST → **401**. No Play production calls |
+| Individual Stripe HTTP | Checkout POST unauthenticated → **403** (CSRF/auth). Code present ≠ activation |
+| Entitlement enforcement | Repository default **false**; not enabled for this promotion |
+| Capacity enforcement | Repository default **false**; not enabled for this promotion |
+
+Code present ≠ commercial activation. No live provider catalog mutation. No Apple App Store submission. No Google Play rollout. No Stripe Tax activation.
+
+### 50.7 Explicit non-claims
+
+- V4 is **not** commercially active.
+- V4 is **not** fully external-provider certified (Apple/Google sandbox still **BLOCKED — CREDENTIALS**).
+- Commercial billing remains **off**.
+- Entitlement enforcement remains **off**.
+- Organization capacity enforcement remains **off**.
+- Do not write: V4 COMPLETE, V4 COMMERCIALLY ACTIVE, APPLE CERTIFIED, GOOGLE CERTIFIED, or BILLING LIVE.
+- V5 is **not** started.
+
+### 50.8 Canonical status after this section
+
+| Item | Status |
+| --- | --- |
+| A–F | **PRODUCTION VERIFIED** |
+| G–I runtime | **PRODUCTION DEPLOYED / DORMANT VERIFIED** |
+| Individual Stripe | **SANDBOX CERTIFIED** |
+| Apple | **IMPLEMENTED / CI VERIFIED / SANDBOX CERTIFICATION BLOCKED — CREDENTIALS** |
+| Google Play | **IMPLEMENTED / CI VERIFIED / SANDBOX CERTIFICATION BLOCKED — CREDENTIALS** |
+| Schema | **V37** |
+| Commercial billing | **OFF** |
+| Entitlement enforcement | **OFF** |
+| Capacity enforcement | **OFF** |
+| V4 | **NOT COMMERCIALLY ACTIVE**; **NOT FULLY EXTERNAL-PROVIDER CERTIFIED** |
+| V5 | **NOT STARTED** |
+
+**End state:** Athlete Readiness V4 G-I runtime: **PRODUCTION VERIFIED — COMMERCIAL BILLING OFF**.
 
 
