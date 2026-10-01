@@ -640,5 +640,88 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | C2 Health Connect | **COMPLETE (CI)** | `2bf16d4` | — | same as C1 | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + connect flow; needs Android SDK/device |
 | U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
 | R1 RC | **COMPLETE on develop** | `01f8c4e` | V38–V39 | SUCCESS | PASS | Device cert **BLOCKED** | V5A CI-complete; no main/prod; Lead/QA/Security PASS-WITH-NOTES |
-| U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
-| R1 RC | NOT STARTED | — | — | — | — | — | |
+| Phase 0 RC hygiene | **COMPLETE** | *(tip after hygiene push)* | — | *(Verify after push)* | *(Sonar after push)* | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
+| Device cert gate | **BLOCKED** | `2bf16d4` runtime | V38–V39 | — | — | **BLOCKED — EXTERNAL DEVICE/PLATFORM ACCESS** | No EAS login; no iOS/Android device; Railway develop CLI Unauthorized; flags not toggled |
+
+---
+
+## 36. Real-device certification evidence (develop only)
+
+**Gate date:** 2026-10-01  
+**Program:** develop-only; no `main` promotion; no production activation; V4 billing untouched.
+
+### 36.1 Phase 0 hygiene
+
+| Item | Result |
+| --- | --- |
+| Stale ledger dupes (`U1/U2` / `R1` NOT STARTED) | **Removed** (COMPLETE rows retained) |
+| Coach-of-athlete negative auth | **Added** `IntegrationCoachPrincipalAuthorizationHttpIntegrationTests` — coach on same team cannot get/mutate athlete connection/evidence (`CONNECTION_NOT_FOUND`); athlete owner still `CONNECTED` |
+| Focused local test | **PASS** (`gradlew test --tests …IntegrationCoachPrincipalAuthorizationHttpIntegrationTests`) |
+
+### 36.2 Develop backend certification environment
+
+| Check | Result |
+| --- | --- |
+| Railway CLI | Present; **`railway whoami` → Unauthorized** |
+| Develop provider flags enable/restore | **Not performed** (no authenticated develop Railway access) |
+| Health / readiness / Flyway V38–V39 on develop host | **Not verified live** — blocked on CLI auth |
+| Production | **Untouched** |
+
+### 36.3 Disposable athlete accounts
+
+Not created — device journeys could not start. Strategy remains: separate non-production athlete accounts per platform (D7 one-active-hub).
+
+### 36.4 Platform access preflight
+
+| Check | Result |
+| --- | --- |
+| `eas-cli` | `24.8.0` via `npx` (not on global PATH as `eas`) |
+| `eas whoami` | **Not logged in** (interactive `npx eas-cli login` required — PO local) |
+| Apple Developer / device registration | **Not exercised** |
+| `adb` | `34.0.4`; `adb devices` **empty** |
+| Android emulator/device | **None attached** |
+| Mobile config | **PASS** — `com.devinolabs.uap`; `expo-dev-client`; `react-native-health`; HealthKit no clinical; HC READ_* only |
+
+### 36.5 Apple HealthKit
+
+| Cell | Status |
+| --- | --- |
+| Build type / ID | **BLOCKED** — EAS auth required for development build |
+| Device / OS | **BLOCKED** — no iPhone available to this agent |
+| Availability / permissions / deny / allow | **Not exercised** |
+| Signal families (sleep, RHR, HRV, steps, active energy, workout) | **CI VERIFIED ONLY** (adapter/normalize unit tests); device cells **NO TEST RECORD AVAILABLE** |
+| 30-day import / upload / idempotency / offline / disconnect / reconnect | **Not exercised** |
+| **Certification** | **BLOCKED — EAS LOGIN + PHYSICAL iOS DEVICE** |
+
+PO unblock (interactive, local only): from `apps/mobile` run `npx eas-cli@24.8.0 login`, then `npx eas-cli@24.8.0 build --platform ios --profile development`, register/install on a physical iPhone Dev Client, re-run §12–§16 journey against develop backend.
+
+### 36.6 Android Health Connect
+
+| Cell | Status |
+| --- | --- |
+| Build / device | **BLOCKED — DEVICE/PLATFORM ACCESS** (`adb devices` empty) |
+| Health Connect availability | **Not exercised** |
+| Permissions / deny / grant / revoke | **Not exercised** |
+| Signal families | **CI VERIFIED ONLY**; device cells **NO TEST RECORD AVAILABLE** |
+| Incremental / upload / idempotency / offline / disconnect / reconnect | **Not exercised** |
+| **Certification** | **BLOCKED — ANDROID DEVICE/EMULATOR** |
+
+Material docs note (not a runtime redesign): HC privacy-policy rationale intent currently maps to MainActivity (Play compliance gap for store later); Toolbox not in CI path.
+
+### 36.7 Cross-cutting (not device-exercised)
+
+| Item | Result |
+| --- | --- |
+| One-provider enforcement | CI covered previously; not re-proven on device |
+| Coach/org non-expansion | **HTTP coach-of-athlete IDOR test PASS** (Phase 0) |
+| State Engine non-mutation | CI contracts unchanged; **no live device ingest** to re-prove |
+| T23–T36 device paths | Applicable device rows **N/A this attempt** (access blocked); OAuth threats remain N/A for OS-hub V5 |
+| Develop provider flags restored OFF | **N/A** — flags never enabled |
+
+### 36.8 Classification
+
+- HealthKit: **BLOCKED — EAS LOGIN + PHYSICAL iOS DEVICE**
+- Health Connect: **BLOCKED — ANDROID DEVICE/EMULATOR**
+- D1 minimum (≥1 real certified connector): **not satisfied**
+- V5A CI implementation on develop: **unchanged COMPLETE**
+- `main` / production: **unchanged**
