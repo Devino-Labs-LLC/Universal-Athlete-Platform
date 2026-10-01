@@ -638,7 +638,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F3 UX shell | **COMPLETE** | `2bf16d4` (includes Sonar remediations) | — | Sonar FAIL on `dee885b`; green after remediations on `2bf16d4` | PASS on `2bf16d4` | N/A | Profile → Connected Apps; shared `@uap/connected-apps-contracts` |
 | C1 HealthKit | **COMPLETE (CI)** | `2bf16d4` | — | [36819796718](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36819796718) SUCCESS | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + queue + evidence upload; needs iOS Dev Client/device |
 | C2 Health Connect | **COMPLETE (CI)** | `2bf16d4` | — | same as C1 | PASS | **BLOCKED — DEVICE/PLATFORM ACCESS** | Adapter + connect flow; needs Android SDK/device |
-| U1/U2 UX harden | **COMPLETE (pending push)** | pending | — | pending | pending | N/A | Provisional freshness labels (D12) |
-| R1 RC | **IN PROGRESS** | `2bf16d4` | V38–V39 | SUCCESS | PASS | Device cert blocked | V5A on develop; no main/prod |
+| U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
+| R1 RC | **COMPLETE on develop** | `01f8c4e` | V38–V39 | SUCCESS | PASS | Device cert **BLOCKED** | V5A CI-complete; no main/prod; Lead/QA/Security PASS-WITH-NOTES |
 | U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |
 | R1 RC | NOT STARTED | — | — | — | — | — | |
