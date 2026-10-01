@@ -633,9 +633,9 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | Slice | Status | Runtime SHA | Migrations | Verify | Sonar | Device/provider proof | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | F0 PO lock + ADR accept | **COMPLETE** | `8d3d6ee` | — | [36805522460](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36805522460) SUCCESS | PASS | N/A | D1–D14 locked; ADR 046–051 Accepted |
-| F1 Foundation module | **COMPLETE** | `e6d85f1` | **V38** | [36809793740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36809793740) SUCCESS | PASS | N/A | `0c71b96` + Flyway tip fix; QA/Security PASS-WITH-NOTES |
-| F2 Evidence + inbox | **COMPLETE (pending push)** | pending | **V39** | pending | pending | N/A | Store-only evidence batches + ingest inbox |
-| F3 UX shell | NOT STARTED | — | — | — | — | — | |
+| F1 Foundation module | **COMPLETE** | `e6d85f1` | **V38** | [36809793740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36809793740) SUCCESS | PASS | N/A | Flyway tip fix after `0c71b96` |
+| F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
+| F3 UX shell | **COMPLETE (pending push)** | pending | — | pending | pending | N/A | Profile → Connected Apps Web+Mobile |
 | C1 HealthKit | NOT STARTED | — | — | — | — | — | |
 | C2 Health Connect | NOT STARTED | — | — | — | — | — | |
 | U1/U2 UX harden | NOT STARTED | — | — | — | — | — | |

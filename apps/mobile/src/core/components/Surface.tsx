@@ -82,7 +82,7 @@ export function SectionHeader({ title, subtitle }: SectionHeaderProps) {
   );
 }
 
-type StatusTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
+export type StatusTone = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 interface StatusBadgeProps {
   label: string;

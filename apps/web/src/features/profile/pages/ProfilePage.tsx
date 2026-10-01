@@ -166,6 +166,9 @@ export function ProfilePage() {
               <Link to="/app/billing" className={styles.homeLink}>
                 Premium billing
               </Link>
+              <Link to="/app/connected-apps" className={styles.homeLink}>
+                Connected Apps
+              </Link>
               <Link to="/app/invitations" className={styles.homeLink}>
                 Invitations
               </Link>

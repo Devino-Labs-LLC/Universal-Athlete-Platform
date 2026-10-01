@@ -106,6 +106,11 @@ const AccountBillingPage = lazy(() =>
     default: m.AccountBillingPage,
   })),
 );
+const ConnectedAppsPage = lazy(() =>
+  import('@/features/connectedApps/pages/ConnectedAppsPage').then((m) => ({
+    default: m.ConnectedAppsPage,
+  })),
+);
 const AccountBillingCheckoutSuccessPage = lazy(() =>
   import('@/features/billing/pages/AccountBillingCheckoutReturnPages').then((m) => ({
     default: m.AccountBillingCheckoutSuccessPage,
@@ -396,6 +401,14 @@ export function AppRouter() {
                 element={
                   <LazyPage>
                     <AccountBillingCheckoutCancelPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="connected-apps"
+                element={
+                  <LazyPage>
+                    <ConnectedAppsPage />
                   </LazyPage>
                 }
               />

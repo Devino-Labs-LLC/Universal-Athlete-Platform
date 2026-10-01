@@ -161,6 +161,15 @@ export default function ProfileScreen() {
         />
       </HomeCard>
 
+      <HomeCard eyebrow="Integrations" title="Connected Apps">
+        <Button
+          variant="secondary"
+          label="Connected Apps"
+          testID="profile-connected-apps-link"
+          onPress={() => router.push('/(tabs)/profile/connected-apps')}
+        />
+      </HomeCard>
+
       <HomeCard eyebrow="Training" title="Environments">
         <Button
           variant="secondary"

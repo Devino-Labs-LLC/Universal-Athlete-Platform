@@ -55,6 +55,10 @@ describe('ProfilePage hierarchy', () => {
       'href',
       '/app/billing',
     );
+    expect(screen.getByRole('link', { name: 'Connected Apps' })).toHaveAttribute(
+      'href',
+      '/app/connected-apps',
+    );
     expect(screen.getByRole('link', { name: 'Invitations' })).toHaveAttribute(
       'href',
       '/app/invitations',
