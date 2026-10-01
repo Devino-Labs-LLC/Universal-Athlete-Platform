@@ -1,0 +1,24 @@
+﻿> Task :cleanTest
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources UP-TO-DATE
+> Task :testClasses UP-TO-DATE
+> Task :test
+
+.\gradlew.bat : OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap 
+classpath has been appended
+At C:\Users\rdjon\AppData\Local\Temp\ps-script-19cf7b93-e80d-4949-bc65-37013dca4b26.ps1:90 char:1
++ .\gradlew.bat cleanTest test --tests "com.devinolabs.uap.integrations ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (OpenJDK 64-Bit ...s been appended:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-09-30T23:31:27.189-04:00  INFO 30976 --- [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-30T23:31:27.747-04:00  INFO 30976 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-09-30T23:31:27.758-04:00  INFO 30976 --- [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+
+BUILD SUCCESSFUL in 2m 7s
+6 actionable tasks: 2 executed, 4 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html

@@ -18,6 +18,7 @@ import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.integrations.application.IntegrationConflictException;
 import com.devinolabs.uap.integrations.application.IntegrationConnectionNotFoundException;
 import com.devinolabs.uap.integrations.application.IntegrationProviderDisabledException;
+import com.devinolabs.uap.integrations.application.IntegrationValidationException;
 
 @RestControllerAdvice(basePackageClasses = IntegrationConnectionsController.class)
 class IntegrationsExceptionHandler {
@@ -52,6 +53,14 @@ class IntegrationsExceptionHandler {
 			IntegrationProviderDisabledException ex,
 			HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(error(ex.code(), ex.getMessage(), request, List.of()));
+	}
+
+	@ExceptionHandler(IntegrationValidationException.class)
+	ResponseEntity<IntegrationsApiErrorResponse> handleIntegrationValidation(
+			IntegrationValidationException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.badRequest()
 				.body(error(ex.code(), ex.getMessage(), request, List.of()));
 	}
 

@@ -48,7 +48,7 @@ uap:
   integrations:
     # V5 Connected Athlete module. Always present; boots without provider secrets.
     enabled: ${UAP_INTEGRATIONS_ENABLED:true}
-    # Centrally owned initial backfill window (days).
+    # Centrally owned initial backfill window (days). F2 rejects evidence older than this on ingest.
     backfill-days: ${UAP_INTEGRATIONS_BACKFILL_DAYS:30}
     apple-healthkit:
       # Explicit opt-in. Default off until connector certification (C1).

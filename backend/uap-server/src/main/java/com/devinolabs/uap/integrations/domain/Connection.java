@@ -217,6 +217,11 @@ public class Connection {
 		return status == ConnectionStatus.CONNECTED;
 	}
 
+	/** New evidence ingest is refused after disconnect (T35); same CONNECTED gate as sync. */
+	public boolean acceptsIngest() {
+		return status == ConnectionStatus.CONNECTED;
+	}
+
 	private void assertAcceptsSync() {
 		if (!acceptsSync()) {
 			throw new IllegalStateException("Sync is only accepted while CONNECTED; was " + status);

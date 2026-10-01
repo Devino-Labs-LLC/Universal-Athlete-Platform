@@ -133,6 +133,29 @@ public class SyncRun {
 		fail("NO_ADAPTER", clock);
 	}
 
+	/**
+	 * Evidence-batch upload outcome (F2). Does not mutate readiness — counts only.
+	 * Zero rejects → SUCCEEDED; any rejects with accepts → PARTIAL; all rejects → PARTIAL.
+	 */
+	public void completeUploadBatch(int accepted, int rejected, Clock clock) {
+		Objects.requireNonNull(clock, "clock must not be null");
+		if (accepted < 0 || rejected < 0) {
+			throw new IllegalArgumentException("Record counts must not be negative");
+		}
+		if (status == SyncRunStatus.REQUESTED) {
+			markRunning(clock);
+		}
+		if (status != SyncRunStatus.RUNNING) {
+			throw new IllegalStateException("Only RUNNING sync runs can complete an upload batch; was " + status);
+		}
+		Instant now = Instant.now(clock);
+		this.recordsAccepted = accepted;
+		this.recordsRejected = rejected;
+		this.finishedAt = now;
+		this.errorCode = null;
+		this.status = rejected == 0 ? SyncRunStatus.SUCCEEDED : SyncRunStatus.PARTIAL;
+	}
+
 	public void fail(String errorCode, Clock clock) {
 		Objects.requireNonNull(clock, "clock must not be null");
 		if (status != SyncRunStatus.RUNNING && status != SyncRunStatus.REQUESTED) {

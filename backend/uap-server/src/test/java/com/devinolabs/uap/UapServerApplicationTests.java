@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("38");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("39");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create integration connections and sync");
+				.isEqualTo("create integration evidence and ingest");
 	}
 
 	@Test
@@ -909,6 +909,23 @@ class UapServerApplicationTests {
 			assertThat(processConsent.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create integration connections and sync");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesIntegrationEvidenceAndIngestMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet evidence = connection.getMetaData().getTables(
+						null, null, "integration_evidence", new String[] { "TABLE" });
+				ResultSet ingestEvents = connection.getMetaData().getTables(
+						null, null, "integration_ingest_events", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '39'")) {
+			assertThat(evidence.next()).isTrue();
+			assertThat(ingestEvents.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create integration evidence and ingest");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

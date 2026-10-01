@@ -31,10 +31,12 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import com.devinolabs.uap.identity.domain.AccountId;
 import com.devinolabs.uap.identity.infrastructure.security.AccountPrincipal;
 import com.devinolabs.uap.integrations.api.connections.ConnectionView;
+import com.devinolabs.uap.integrations.api.connections.EvidenceBatchResultView;
 import com.devinolabs.uap.integrations.api.connections.SyncRunView;
 import com.devinolabs.uap.integrations.application.IntegrationConflictException;
 import com.devinolabs.uap.integrations.application.IntegrationConnectionNotFoundException;
 import com.devinolabs.uap.integrations.application.IntegrationConnectionService;
+import com.devinolabs.uap.integrations.application.IntegrationEvidenceService;
 import com.devinolabs.uap.integrations.domain.HealthProviderKey;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -44,13 +46,17 @@ class IntegrationConnectionsControllerTests {
 	@Mock
 	private IntegrationConnectionService connectionService;
 
+	@Mock
+	private IntegrationEvidenceService evidenceService;
+
 	private MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
 		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
 		validator.afterPropertiesSet();
-		mockMvc = MockMvcBuilders.standaloneSetup(new IntegrationConnectionsController(connectionService))
+		mockMvc = MockMvcBuilders
+				.standaloneSetup(new IntegrationConnectionsController(connectionService, evidenceService))
 				.setControllerAdvice(new IntegrationsExceptionHandler())
 				.setValidator(validator)
 				.setMessageConverters(new JacksonJsonHttpMessageConverter(JsonMapper.builder().build()))
@@ -138,6 +144,36 @@ class IntegrationConnectionsControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].syncRunId").value(syncRunId.toString()))
 				.andExpect(jsonPath("$[0].status").value("SUCCEEDED"));
+	}
+
+	@Test
+	void evidenceBatchMapsResult() throws Exception {
+		UUID accountId = UUID.randomUUID();
+		UUID connectionId = UUID.randomUUID();
+		UUID requestId = UUID.randomUUID();
+		when(evidenceService.uploadEvidenceBatch(any(), any(), any(), any()))
+				.thenReturn(new EvidenceBatchResultView(requestId, requestId, 1, 0, false));
+
+		mockMvc.perform(post("/api/v1/integrations/connections/" + connectionId + "/evidence-batches")
+						.principal(authFor(accountId))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "requestId":"%s",
+								  "items":[{
+								    "externalRecordId":"hk-1",
+								    "signalFamily":"SLEEP",
+								    "signalType":"DURATION",
+								    "valueNumeric":420,
+								    "unitCode":"MINUTE",
+								    "observedAt":"2026-09-29T06:00:00Z"
+								  }]
+								}
+								""".formatted(requestId)))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.acceptedCount").value(1))
+				.andExpect(jsonPath("$.rejectedCount").value(0))
+				.andExpect(jsonPath("$.replayed").value(false));
 	}
 
 	private static ConnectionView connectionView(UUID connectionId) {

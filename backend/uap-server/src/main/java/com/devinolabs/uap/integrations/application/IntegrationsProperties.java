@@ -13,7 +13,10 @@ public class IntegrationsProperties {
 	 */
 	private boolean enabled = true;
 
-	/** Centrally owned initial backfill window (days). */
+	/**
+	 * Centrally owned initial backfill window (days). F2 evidence ingest rejects
+	 * {@code observedAt} older than this window (ADR-051 / D4 = B).
+	 */
 	private int backfillDays = 30;
 
 	private final ProviderToggle appleHealthkit = new ProviderToggle();
