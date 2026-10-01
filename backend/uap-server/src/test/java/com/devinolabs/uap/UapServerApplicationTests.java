@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("37");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("38");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create billing account customers");
+				.isEqualTo("create integration connections and sync");
 	}
 
 	@Test
@@ -881,6 +881,34 @@ class UapServerApplicationTests {
 			assertThat(providerCustomerRef.getInt("NULLABLE")).isEqualTo(0);
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create billing account customers");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesIntegrationConnectionsAndSyncMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet connections = connection.getMetaData().getTables(
+						null, null, "integration_connections", new String[] { "TABLE" });
+				ResultSet syncRuns = connection.getMetaData().getTables(
+						null, null, "integration_sync_runs", new String[] { "TABLE" });
+				ResultSet checkpoints = connection.getMetaData().getTables(
+						null, null, "integration_sync_checkpoints", new String[] { "TABLE" });
+				ResultSet lifecycle = connection.getMetaData().getColumns(
+						null, null, "integration_connections", "lifecycle_state");
+				ResultSet processConsent = connection.getMetaData().getColumns(
+						null, null, "integration_connections", "process_consent_granted");
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '38'")) {
+			assertThat(connections.next()).isTrue();
+			assertThat(syncRuns.next()).isTrue();
+			assertThat(checkpoints.next()).isTrue();
+			assertThat(lifecycle.next()).isTrue();
+			assertThat(lifecycle.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(processConsent.next()).isTrue();
+			assertThat(processConsent.getInt("NULLABLE")).isEqualTo(0);
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create integration connections and sync");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}
