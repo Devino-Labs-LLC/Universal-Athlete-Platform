@@ -68,6 +68,87 @@ describe('@uap/connected-apps-contracts', () => {
     );
   });
 
+  describe('newRequestId', () => {
+    const UUID_V4 =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    const originalCrypto = globalThis.crypto;
+
+    afterEach(() => {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: originalCrypto,
+      });
+    });
+
+    it('uses native randomUUID when available', () => {
+      const randomUUID = vi.fn(() => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: { randomUUID, getRandomValues: vi.fn() },
+      });
+      expect(newRequestId()).toBe('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
+      expect(randomUUID).toHaveBeenCalledTimes(1);
+    });
+
+    it('builds RFC 4122 UUIDv4 from getRandomValues when randomUUID is absent', () => {
+      const getRandomValues = vi.fn((bytes: Uint8Array) => {
+        for (let i = 0; i < bytes.length; i += 1) {
+          bytes[i] = 0xff;
+        }
+        return bytes;
+      });
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: { getRandomValues },
+      });
+
+      const id = newRequestId();
+      expect(getRandomValues).toHaveBeenCalledTimes(1);
+      expect(id).toMatch(UUID_V4);
+      expect(id[14]).toBe('4');
+      expect(id[19]).toMatch(/[89ab]/);
+      // 0xff with version/variant masks → ffffffff-ffff-4fff-bfff-ffffffffffff
+      expect(id).toBe('ffffffff-ffff-4fff-bfff-ffffffffffff');
+    });
+
+    it('produces distinct ids under distinct mocked entropy', () => {
+      let call = 0;
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: {
+          getRandomValues: (bytes: Uint8Array) => {
+            call += 1;
+            bytes.fill(call === 1 ? 0x11 : 0x22);
+            return bytes;
+          },
+        },
+      });
+      const first = newRequestId();
+      const second = newRequestId();
+      expect(first).toMatch(UUID_V4);
+      expect(second).toMatch(UUID_V4);
+      expect(first).not.toBe(second);
+    });
+
+    it('fails closed when neither randomUUID nor getRandomValues exists', () => {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: {},
+      });
+      expect(() => newRequestId()).toThrow(
+        /randomUUID or getRandomValues is required/i,
+      );
+
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: undefined,
+      });
+      expect(() => newRequestId()).toThrow(
+        /randomUUID or getRandomValues is required/i,
+      );
+    });
+  });
+
   it('resolves error messages and OS hub sync codes', () => {
     expect(CONNECTION_ERROR_MESSAGES.INTEGRATIONS_DISABLED).toMatch(/unavailable/i);
     expect(

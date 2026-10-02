@@ -4,8 +4,17 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AppProviders } from '@/src/app/providers/AppProviders';
+import { installSecureCrypto } from '@/src/core/crypto/installSecureCrypto';
 
 export { ErrorBoundary } from 'expo-router';
+
+// Ensure Connected Apps (and other callers) can use Web-Crypto-compatible
+// randomUUID / getRandomValues on Hermes before any feature code runs.
+try {
+  installSecureCrypto();
+} catch {
+  // Fail closed at call sites (e.g. newRequestId). Do not crash unrelated boot.
+}
 
 SplashScreen.preventAutoHideAsync();
 

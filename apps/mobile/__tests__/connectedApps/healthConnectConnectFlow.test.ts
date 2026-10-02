@@ -1,3 +1,4 @@
+import { installSecureCrypto } from '@/src/core/crypto/installSecureCrypto';
 import {
   beginConnect,
   confirmConnection,
@@ -8,6 +9,15 @@ import {
   drainEvidenceUploadQueue,
   enqueueEvidenceBatch,
 } from '@/src/features/connectedApps/queue/evidenceUploadQueue';
+
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'),
+  getRandomValues: jest.fn(<T extends ArrayBufferView>(array: T): T => {
+    const view = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    view.fill(0x11);
+    return array;
+  }),
+}));
 
 jest.mock('@/src/features/connectedApps/api/connectionsApi', () => ({
   beginConnect: jest.fn(),
@@ -206,5 +216,55 @@ describe('runHealthConnectConnectFlow', () => {
       expect.any(Number),
       ['SleepSession', 'Steps'],
     );
+  });
+
+  it('proceeds past request-id creation after secure crypto bootstrap on Hermes-like crypto absence', async () => {
+    const originalCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    try {
+      expect(() => installSecureCrypto()).not.toThrow();
+
+      const healthConnect = {
+        checkAvailability: jest.fn().mockResolvedValue({ status: 'available' }),
+        requestAuthorization: jest.fn().mockResolvedValue({
+          granted: true,
+          partial: false,
+          grantedRecordTypes: ['SleepSession'],
+          deniedRecordTypes: [],
+          dialogCompleted: true,
+        }),
+        readSamplesForLastNDays: jest.fn().mockResolvedValue({
+          items: [],
+          rawCount: 0,
+          partial: true,
+          deniedOrEmptyFamilies: ['SLEEP'],
+        }),
+        openHealthConnectInstallOrSettings: jest.fn(),
+      };
+
+      const outcome = await runHealthConnectConnectFlow({ axios: {} } as never, {
+        healthConnect,
+      });
+
+      expect(beginConnect).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          provider: 'HEALTH_CONNECT',
+          requestId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+        }),
+      );
+      expect(outcome.status).toBe('connected');
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        writable: true,
+        value: originalCrypto,
+      });
+    }
   });
 });
