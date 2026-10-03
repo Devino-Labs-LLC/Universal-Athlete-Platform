@@ -48,6 +48,11 @@ export function isAxiosLikeError(error: unknown): error is AxiosError {
 }
 
 export function mapAxiosError(error: unknown): ApiError {
+  // Preserve typed client errors thrown from request interceptors (e.g. CSRF fail-closed).
+  if (isApiError(error)) {
+    return error;
+  }
+
   if (isAxiosLikeError(error)) {
     if (error.code === 'ECONNABORTED') {
       return new ApiError(error.message || 'Request timed out', {

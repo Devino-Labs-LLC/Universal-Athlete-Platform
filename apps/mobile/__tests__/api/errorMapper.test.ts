@@ -71,6 +71,17 @@ describe('mapAxiosError', () => {
     expect(mapped.status).toBeUndefined();
     expect(mapped.message).toContain('undefined');
   });
+
+  it('passes through ApiError from request interceptors without dropping code', () => {
+    const original = new ApiError('CSRF token is unavailable for this authenticated session', {
+      category: 'unknown',
+      code: 'CSRF_TOKEN_UNAVAILABLE',
+      path: '/api/v1/integrations/connections',
+    });
+    const mapped = mapAxiosError(original);
+    expect(mapped).toBe(original);
+    expect(mapped.code).toBe('CSRF_TOKEN_UNAVAILABLE');
+  });
 });
 
 describe('describeErrorForDiagnostics', () => {

@@ -9,6 +9,10 @@ export const CONNECTION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   INTEGRATION_CONCURRENT_MODIFICATION: 'Connection state changed. Refresh and try again.',
   CONNECTION_NOT_FOUND: 'That connection was not found.',
   VALIDATION_ERROR: 'The connection request was invalid.',
+  CSRF_INVALID:
+    'Your session security token is missing or invalid. Pull to refresh Connected Apps, then try again.',
+  CSRF_TOKEN_UNAVAILABLE:
+    'Your session security token could not be prepared. Sign out, sign back in, then try again.',
 };
 
 export const CONNECTION_SESSION_MESSAGES = {

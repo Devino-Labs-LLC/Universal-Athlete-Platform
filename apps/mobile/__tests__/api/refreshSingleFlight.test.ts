@@ -7,8 +7,10 @@ describe('refresh single-flight', () => {
   it('deduplicates concurrent refresh attempts', async () => {
     const cookieStore = createInMemoryCookieStoreForTests();
     // Session cookies must exist or the client skips refresh (fresh-install path).
+    // Refresh is CSRF-protected — token must be present (or probe/seedable).
     cookieStore.setCookie('http://127.0.0.1:8080', 'uap_at', 'expired-access');
     cookieStore.setCookie('http://127.0.0.1:8080', 'uap_rt', 'valid-refresh');
+    cookieStore.setCookie('http://127.0.0.1:8080', 'XSRF-TOKEN', 'xsrf-for-refresh');
     let refreshCalls = 0;
     let meCalls = 0;
 

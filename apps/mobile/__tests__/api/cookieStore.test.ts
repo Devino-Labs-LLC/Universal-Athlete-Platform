@@ -5,6 +5,7 @@ import {
   hasRefreshableSessionCookies,
   resolveCookieManagerModule,
   sessionCookiePresence,
+  withCsrfCookie,
 } from '@/src/core/api/cookieStore';
 
 describe('cookieStore', () => {
@@ -51,6 +52,13 @@ describe('cookieStore', () => {
     expect(JSON.stringify(presence)).not.toContain('secret');
     expect(hasRefreshableSessionCookies({})).toBe(false);
     expect(hasRefreshableSessionCookies({ uap_rt: 'x' })).toBe(true);
+  });
+
+  it('merges CSRF cookie onto request cookie maps without dropping auth cookies', () => {
+    const merged = withCsrfCookie({ uap_at: 'access' }, 'xsrf');
+    expect(merged.uap_at).toBe('access');
+    expect(merged['XSRF-TOKEN']).toBe('xsrf');
+    expect(getXsrfToken(merged)).toBe('xsrf');
   });
 
   it('resolves CJS cookie manager exports without requiring .default', () => {

@@ -199,12 +199,36 @@ export function hasRefreshableSessionCookies(cookies: Record<string, string>): b
 }
 
 /**
+ * Ensure the CSRF cookie name/value is present on the request cookie map so the
+ * explicit Cookie header participates in double-submit even when the request URL
+ * path would not surface a Path-scoped native jar entry.
+ */
+export function withCsrfCookie(
+  cookies: Record<string, string>,
+  token: string,
+): Record<string, string> {
+  return {
+    ...cookies,
+    'XSRF-TOKEN': token,
+  };
+}
+
+/**
  * Backend auth cookies use Path=/api (access) and Path=/api/v1/identity (refresh).
  * CookieManager.get(url) path-matches — probing the API origin (`/`) misses them.
+ *
+ * XSRF-TOKEN is issued with Path=/, but Android WebView CookieManager may only
+ * expose it for the identity URL used when setFromResponse ran. Always probe here
+ * when resolving CSRF for protected writes.
  */
 export function sessionCookieProbeUrl(apiBaseUrl: string): string {
   const base = apiBaseUrl.replace(/\/$/, '');
   return `${base}/api/v1/identity/me`;
+}
+
+/** Alias for CSRF token resolution — same identity probe as session cookies. */
+export function csrfCookieProbeUrl(apiBaseUrl: string): string {
+  return sessionCookieProbeUrl(apiBaseUrl);
 }
 
 /** Absolute URL used for native cookie jar get/set for a given Axios request. */

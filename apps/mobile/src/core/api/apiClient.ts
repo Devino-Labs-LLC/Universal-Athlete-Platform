@@ -5,16 +5,18 @@ import axios, {
   isAxiosError,
 } from 'axios';
 
-import { buildCsrfHeader, shouldAttachCsrf } from '@/src/core/api/csrf';
+import { buildCsrfHeader, CSRF_COOKIE_NAME, shouldAttachCsrf } from '@/src/core/api/csrf';
 import {
   buildCookieHeader,
   CookieStore,
+  csrfCookieProbeUrl,
   describeSetCookiePresence,
   getXsrfToken,
   hasRefreshableSessionCookies,
   resolveCookieRequestUrl,
   sessionCookiePresence,
   sessionCookieProbeUrl,
+  withCsrfCookie,
 } from '@/src/core/api/cookieStore';
 import { describeErrorForDiagnostics, mapAxiosError } from '@/src/core/api/errorMapper';
 import { ApiError } from '@/src/core/api/errors';
@@ -23,6 +25,7 @@ import { createLogger } from '@/src/core/logging/logger';
 const log = createLogger('api');
 
 const REFRESH_PATH = '/api/v1/identity/refresh';
+const ME_PATH = '/api/v1/identity/me';
 const AUTH_SKIP_PATHS = [
   '/api/v1/identity/login',
   '/api/v1/identity/register',
@@ -32,6 +35,8 @@ const AUTH_SKIP_PATHS = [
 
 export interface UapAxiosRequestConfig extends InternalAxiosRequestConfig {
   __uapRetried?: boolean;
+  /** Marks the authenticated GET used only to seed XSRF-TOKEN into the native jar. */
+  __uapCsrfSeed?: boolean;
 }
 
 export interface ApiClient {
@@ -95,6 +100,8 @@ function readSetCookieHeader(
 export function createApiClient(options: CreateApiClientOptions): ApiClient {
   const { baseURL, cookieStore, onSessionExpired } = options;
   const refreshMutex = new RefreshMutex();
+  /** Single-flight CSRF seed GET — must not be awaited from refresh (deadlock). */
+  let csrfSeedInFlight: Promise<void> | null = null;
 
   const client = axios.create({
     baseURL,
@@ -105,6 +112,95 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
     },
     withCredentials: true,
   });
+
+  const isRefreshPath = (path: string): boolean =>
+    path === REFRESH_PATH || path.endsWith(REFRESH_PATH);
+
+  /**
+   * Resolve XSRF for protected writes:
+   * 1) request-scoped jar read
+   * 2) identity probe URL (native path-matching quirk)
+   * 3) authenticated GET /me seed (not from refresh / seed itself)
+   * Fail closed when authenticated but still tokenless.
+   */
+  const resolveCsrfTokenForWrite = async (
+    requestCookies: Record<string, string>,
+    config: UapAxiosRequestConfig,
+    path: string,
+  ): Promise<{ cookies: Record<string, string>; token: string | null }> => {
+    let cookies = requestCookies;
+    let token = getXsrfToken(cookies);
+    if (token) {
+      return { cookies, token };
+    }
+
+    const probeUrl = csrfCookieProbeUrl(baseURL);
+    let probeCookies: Record<string, string> = {};
+    try {
+      probeCookies = await cookieStore.getCookies(probeUrl);
+    } catch (cookieError) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        log.warn(
+          'CSRF probe cookie read failed',
+          describeErrorForDiagnostics(cookieError),
+        );
+      }
+    }
+    token = getXsrfToken(probeCookies);
+    if (token) {
+      return { cookies: withCsrfCookie(cookies, token), token };
+    }
+
+    const authenticated =
+      hasRefreshableSessionCookies(cookies) ||
+      hasRefreshableSessionCookies(probeCookies);
+
+    if (
+      authenticated &&
+      !config.__uapCsrfSeed &&
+      !isRefreshPath(path)
+    ) {
+      if (!csrfSeedInFlight) {
+        csrfSeedInFlight = client
+          .get(ME_PATH, { __uapCsrfSeed: true } as UapAxiosRequestConfig)
+          .then(() => undefined)
+          .catch((seedError: unknown) => {
+            if (typeof __DEV__ !== 'undefined' && __DEV__) {
+              log.warn(
+                'CSRF seed GET /identity/me failed',
+                describeErrorForDiagnostics(seedError),
+              );
+            }
+          })
+          .finally(() => {
+            csrfSeedInFlight = null;
+          });
+      }
+      await csrfSeedInFlight;
+      try {
+        probeCookies = await cookieStore.getCookies(probeUrl);
+      } catch {
+        probeCookies = {};
+      }
+      token = getXsrfToken(probeCookies);
+      if (token) {
+        return { cookies: withCsrfCookie(cookies, token), token };
+      }
+    }
+
+    if (authenticated) {
+      throw new ApiError(
+        'CSRF token is unavailable for this authenticated session',
+        {
+          category: 'unknown',
+          code: 'CSRF_TOKEN_UNAVAILABLE',
+          path,
+        },
+      );
+    }
+
+    return { cookies, token: null };
+  };
 
   client.interceptors.request.use(async (config: UapAxiosRequestConfig) => {
     const path = resolveRequestPath(config, baseURL);
@@ -127,13 +223,11 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
         });
       }
     }
-    const cookieHeader = buildCookieHeader(cookies);
-    if (cookieHeader) {
-      config.headers.Cookie = cookieHeader;
-    }
 
     if (shouldAttachCsrf(method, path)) {
-      const token = getXsrfToken(cookies);
+      const resolved = await resolveCsrfTokenForWrite(cookies, config, path);
+      cookies = resolved.cookies;
+      const token = resolved.token;
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         log.debug('CSRF-protected request header attachment', {
           path,
@@ -144,7 +238,16 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
       }
       if (token) {
         Object.assign(config.headers, buildCsrfHeader(token));
+        // Keep canonical cookie name in the explicit Cookie header for double-submit.
+        if (!cookies[CSRF_COOKIE_NAME] && !cookies['xsrf-token']) {
+          cookies = withCsrfCookie(cookies, token);
+        }
       }
+    }
+
+    const cookieHeader = buildCookieHeader(cookies);
+    if (cookieHeader) {
+      config.headers.Cookie = cookieHeader;
     }
 
     return config;

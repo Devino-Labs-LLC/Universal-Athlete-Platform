@@ -166,4 +166,40 @@ describe('native login cookie handoff', () => {
     });
     mock.restore();
   });
+
+  it('login/session path leaves CSRF visible for a later protected write probe', async () => {
+    const store = createPathAwareCookieStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+
+    mock.onPost('/api/v1/identity/login').reply(200, { accountId: 'acc-1', status: 'ACTIVE' }, {
+      'set-cookie': [
+        'uap_at=access-token; Path=/api; HttpOnly; SameSite=Lax',
+        'uap_rt=refresh-token; Path=/api/v1/identity; HttpOnly; SameSite=Lax',
+      ],
+    });
+    mock.onGet('/api/v1/identity/me').reply(200, {
+      accountId: 'acc-1',
+      email: 'ra1.user1@devinolabs.test',
+      status: 'ACTIVE',
+      emailVerifiedAt: '2026-01-01T00:00:00Z',
+    }, {
+      'set-cookie': ['XSRF-TOKEN=seeded-xsrf; Path=/; SameSite=Lax'],
+    });
+
+    await login(client, {
+      email: 'ra1.user1@devinolabs.test',
+      password: 'does-not-matter-for-mock',
+    });
+
+    expect(sessionCookiePresence(await store.getCookies(sessionCookieProbeUrl('http://127.0.0.1:8080')))).toEqual({
+      access: true,
+      refresh: true,
+      antiForgery: true,
+    });
+    mock.restore();
+  });
 });
