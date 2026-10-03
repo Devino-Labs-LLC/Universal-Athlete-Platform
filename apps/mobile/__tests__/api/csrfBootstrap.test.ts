@@ -58,6 +58,9 @@ function createPathAwareCookieStore(): CookieStore & {
         jar.set(name, { value, path });
       }
     },
+    async ensureCsrfCookie(_apiBaseUrl: string, token: string) {
+      jar.set('XSRF-TOKEN', { value: token, path: '/' });
+    },
     async clearSession() {
       jar.clear();
     },
@@ -162,6 +165,8 @@ describe('CSRF bootstrap for protected writes', () => {
     expect(seenHeader).toBe('xsrf-identity-scoped');
     // Probe hit is enough — no seed churn when token already in identity jar.
     expect(meCalls).toBe(0);
+    // ensureCsrfCookie promotes Path=/ so integrations URL can see XSRF.
+    expect(store.jar.get('XSRF-TOKEN')?.path).toBe('/');
     mock.restore();
   });
 

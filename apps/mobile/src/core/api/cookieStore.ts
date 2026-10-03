@@ -4,6 +4,11 @@ export interface CookieStore {
   getCookies(url: string): Promise<Record<string, string>>;
   /** Persist Set-Cookie header value(s) into the store when visible to JS. */
   setFromResponse(url: string, setCookieHeader: string | string[] | undefined): Promise<void>;
+  /**
+   * Re-persist XSRF-TOKEN with Path=/ so native path-matching includes it on all API routes.
+   * RN often strips manual Cookie headers; the native jar is the CSRF cookie source of truth.
+   */
+  ensureCsrfCookie(apiBaseUrl: string, token: string): Promise<void>;
   clearSession(url: string): Promise<void>;
   clearAll(): Promise<void>;
 }
@@ -51,6 +56,13 @@ class InMemoryCookieStore implements CookieStore {
         existing[parsed.name] = parsed.value;
       }
     }
+    this.cookies.set(key, existing);
+  }
+
+  async ensureCsrfCookie(apiBaseUrl: string, token: string): Promise<void> {
+    const key = normalizeCookieUrl(apiBaseUrl);
+    const existing = { ...(this.cookies.get(key) ?? {}) };
+    existing['XSRF-TOKEN'] = token;
     this.cookies.set(key, existing);
   }
 
@@ -103,6 +115,25 @@ class NativeCookieStore implements CookieStore {
     for (const header of headers) {
       // setFromResponse accepts a single Set-Cookie line when available to JS.
       await this.manager.setFromResponse(url, header);
+    }
+  }
+
+  async ensureCsrfCookie(apiBaseUrl: string, token: string): Promise<void> {
+    const base = apiBaseUrl.replace(/\/$/, '');
+    const secure = base.startsWith('https://');
+    // Use origin URL + explicit Path=/ so integrations routes receive the CSRF cookie.
+    await this.manager.set(
+      `${base}/`,
+      {
+        name: 'XSRF-TOKEN',
+        value: token,
+        path: '/',
+        secure,
+      },
+      false,
+    );
+    if (typeof this.manager.flush === 'function') {
+      await this.manager.flush();
     }
   }
 

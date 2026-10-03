@@ -130,7 +130,37 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
   ): Promise<{ cookies: Record<string, string>; token: string | null }> => {
     let cookies = requestCookies;
     let token = getXsrfToken(cookies);
+    const cookieUrl = resolveCookieRequestUrl(baseURL, config.url);
+
+    const promoteCsrfCookie = async (value: string): Promise<{
+      cookies: Record<string, string>;
+      token: string;
+    }> => {
+      // RN may ignore manual Cookie headers; persist Path=/ into the native jar
+      // so the networking stack sends XSRF-TOKEN on integrations routes.
+      try {
+        await cookieStore.ensureCsrfCookie(baseURL, value);
+      } catch (persistError) {
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          log.warn(
+            'Failed to persist CSRF cookie with Path=/',
+            describeErrorForDiagnostics(persistError),
+          );
+        }
+      }
+      try {
+        cookies = await cookieStore.getCookies(cookieUrl);
+      } catch {
+        cookies = withCsrfCookie(cookies, value);
+      }
+      if (!getXsrfToken(cookies)) {
+        cookies = withCsrfCookie(cookies, value);
+      }
+      return { cookies, token: value };
+    };
+
     if (token) {
+      // Already visible for this request URL — no Path=/ promotion needed.
       return { cookies, token };
     }
 
@@ -148,7 +178,7 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
     }
     token = getXsrfToken(probeCookies);
     if (token) {
-      return { cookies: withCsrfCookie(cookies, token), token };
+      return promoteCsrfCookie(token);
     }
 
     const authenticated =
@@ -184,7 +214,7 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
       }
       token = getXsrfToken(probeCookies);
       if (token) {
-        return { cookies: withCsrfCookie(cookies, token), token };
+        return promoteCsrfCookie(token);
       }
     }
 

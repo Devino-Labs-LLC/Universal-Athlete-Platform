@@ -56,6 +56,9 @@ function createPathAwareCookieStore(): CookieStore & {
         jar.set(name, { value, path });
       }
     },
+    async ensureCsrfCookie(_apiBaseUrl: string, token: string) {
+      jar.set('XSRF-TOKEN', { value: token, path: '/' });
+    },
     async clearSession() {
       jar.clear();
     },

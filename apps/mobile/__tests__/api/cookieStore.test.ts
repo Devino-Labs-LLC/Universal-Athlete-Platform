@@ -61,6 +61,13 @@ describe('cookieStore', () => {
     expect(getXsrfToken(merged)).toBe('xsrf');
   });
 
+  it('ensureCsrfCookie persists XSRF for later reads', async () => {
+    const store = createInMemoryCookieStoreForTests();
+    await store.ensureCsrfCookie('http://127.0.0.1:8080', 'promoted-xsrf');
+    const cookies = await store.getCookies('http://127.0.0.1:8080/api/v1/integrations/connections');
+    expect(getXsrfToken(cookies)).toBe('promoted-xsrf');
+  });
+
   it('resolves CJS cookie manager exports without requiring .default', () => {
     const cjsShape = {
       get: jest.fn(),
