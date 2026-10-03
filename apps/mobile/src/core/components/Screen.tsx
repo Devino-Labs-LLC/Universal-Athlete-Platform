@@ -84,6 +84,13 @@ export function Screen({
       />
     ) : undefined;
 
+  const contentPad = {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.lg,
+  };
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }, style]}
@@ -92,12 +99,12 @@ export function Screen({
         <ScrollView
           testID={testID}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.content, contentStyle]}
+          contentContainerStyle={[styles.content, contentPad, contentStyle]}
           refreshControl={refreshControl}>
           {content}
         </ScrollView>
       ) : (
-        <View testID={testID} style={[styles.content, contentStyle]}>
+        <View testID={testID} style={[styles.content, contentPad, contentStyle]}>
           {content}
         </View>
       )}
@@ -111,10 +118,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
-    gap: 16,
   },
   headerRow: {
     flexDirection: 'row',

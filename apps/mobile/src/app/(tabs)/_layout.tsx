@@ -62,7 +62,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: theme.colors.accentCyan,
+        tabBarActiveTintColor: theme.colors.brandSecondary,
         tabBarInactiveTintColor: theme.colors.tabBarInactive,
         tabBarLabelStyle: {
           fontSize: 10,

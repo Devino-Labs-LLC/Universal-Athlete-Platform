@@ -28,12 +28,13 @@ export default function Root({ children }: { children: ReactNode }) {
   );
 }
 
+/* Align Expo web shell with UAP semantic backgrounds (light / dark). */
 const responsiveBackground = `
 body {
-  background-color: #fff;
+  background-color: #f4f6f9;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000;
+    background-color: #0a0c10;
   }
 }`;

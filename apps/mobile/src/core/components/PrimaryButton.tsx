@@ -41,16 +41,16 @@ export function Button({
     switch (variant) {
       case 'secondary':
         return {
-          background: 'transparent',
+          background: theme.colors.actionSecondary,
           border: theme.colors.borderStrong,
-          label: theme.colors.text,
+          label: theme.colors.textPrimary,
           pressedBackground: theme.colors.surfaceMuted,
         };
       case 'destructive':
         return {
           background: theme.colors.danger,
           border: theme.colors.danger,
-          label: '#ffffff',
+          label: theme.colors.dangerText,
           pressedBackground: theme.colors.danger,
         };
       case 'ghost':
@@ -63,10 +63,10 @@ export function Button({
       case 'primary':
       default:
         return {
-          background: theme.colors.primary,
-          border: theme.colors.primary,
-          label: theme.colors.primaryText,
-          pressedBackground: theme.colors.primaryPressed,
+          background: theme.colors.actionPrimary,
+          border: theme.colors.actionPrimary,
+          label: theme.colors.textInverse,
+          pressedBackground: theme.colors.actionPrimaryPressed,
         };
     }
   })();
@@ -84,6 +84,7 @@ export function Button({
         {
           backgroundColor: pressed && !isDisabled ? palette.pressedBackground : palette.background,
           borderColor: palette.border,
+          borderRadius: theme.radius.md,
           opacity: isDisabled ? 0.5 : 1,
         },
         style,
@@ -105,7 +106,6 @@ export function PrimaryButton(props: Omit<ButtonProps, 'variant'>) {
 const styles = StyleSheet.create({
   button: {
     minHeight: 44,
-    borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,

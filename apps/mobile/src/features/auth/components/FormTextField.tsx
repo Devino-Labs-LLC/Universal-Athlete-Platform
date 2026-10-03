@@ -39,15 +39,16 @@ export function FormTextField<TFieldValues extends FieldValues>({
               styles.input,
               {
                 borderColor: error ? theme.colors.danger : theme.colors.border,
-                color: theme.colors.text,
+                color: theme.colors.textPrimary,
                 backgroundColor: theme.colors.surfaceElevated,
+                borderRadius: theme.radius.md,
                 minHeight: inputProps.multiline ? 88 : 44,
               },
               inputProps.style,
             ]}
             value={value === undefined || value === null ? '' : String(value)}
             onBlur={onBlur}
-            selectionColor={theme.colors.accentCyan}
+            selectionColor={theme.colors.focus}
             onChangeText={(text) => {
               if (numeric) {
                 onChange(text === '' ? undefined : Number(text));
@@ -75,7 +76,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,

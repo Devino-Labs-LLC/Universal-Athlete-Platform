@@ -26,6 +26,7 @@ export function Surface({ elevated = false, style, testID, children }: SurfacePr
           padding: theme.spacing.md + 2,
           gap: theme.spacing.sm,
         },
+        elevated ? theme.shadows.md : theme.shadows.sm,
         style,
       ]}>
       {children}
