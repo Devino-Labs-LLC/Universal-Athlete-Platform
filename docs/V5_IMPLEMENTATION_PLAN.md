@@ -6,7 +6,7 @@
 **Planning tip:** `e955f05da58d230046c265b1b9a42ff5875a1004` (`main` = `develop`, 0/0)  
 **Production schema baseline:** Flyway **V37**  
 **Prior version:** V4 commercialization — G–I **PRODUCTION DEPLOYED / DORMANT VERIFIED**; commercial billing **OFF**; V4 **NOT** commercially active  
-**V5 status:** **V5A IMPLEMENTATION COMPLETE / CI VERIFIED on develop**; Health Connect Android **DEVICE CERTIFIED — DEVELOP** (2026-10-03; CSRF revalidated same day on tip); **V5 MVP device gate SATISFIED** (D1 — ≥1 real certified connector); HealthKit **IMPLEMENTED / CI VERIFIED**, **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**); production **NOT VERIFIED / NOT PROMOTED**; V5B deferred  
+**V5 status:** **V5A IMPLEMENTATION COMPLETE / CI VERIFIED on develop**; Health Connect Android **DEVICE CERTIFIED — DEVELOP** (2026-10-03; CSRF revalidated §36.12; final lifecycle closeout §36.13 on tip `b3b4620` / Verify [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721)); **V5 MVP device gate SATISFIED** (D1 — ≥1 real certified connector); HealthKit **IMPLEMENTED / CI VERIFIED**, **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**); production **NOT VERIFIED / NOT PROMOTED**; V5B deferred  
 
 **Highest accepted ADR before this plan:** ADR-045 → V5 ADRs **046–051 Accepted** (2026-09-30 PO lock)  
 **PO decisions:** D1–D14 **LOCKED** 2026-09-30  
@@ -626,7 +626,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 - V4 remains **not** commercially active.
 - Apple/Google **billing** remain **not** sandbox-certified (orthogonal to HealthKit / Health Connect).
 - V5B readiness formula change remains **deferred**.
-- Health Connect Android **DEVICE CERTIFIED — DEVELOP** (§36.11) does **not** imply HealthKit certification, production verification, or commercial activation.
+- Health Connect Android **DEVICE CERTIFIED — DEVELOP** (§36.11–§36.13) does **not** imply HealthKit certification, production verification, or commercial activation.
 
 ---
 
@@ -639,11 +639,11 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
 | F3 UX shell | **COMPLETE** | `2bf16d4` (includes Sonar remediations) | — | Sonar FAIL on `dee885b`; green after remediations on `2bf16d4` | PASS on `2bf16d4` | N/A | Profile → Connected Apps; shared `@uap/connected-apps-contracts` |
 | C1 HealthKit | **COMPLETE (CI)** | `2bf16d4` | — | [36819796718](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36819796718) SUCCESS | PASS | **IMPLEMENTED / CI VERIFIED**; **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**) | Adapter + queue + evidence upload; CI only; physical iOS + Apple path still required for device cert |
-| C2 Health Connect | **COMPLETE (CI)** + **DEVICE CERTIFIED — DEVELOP** | Runtime cert §36.11; CSRF revalidation §36.12 on tip including `3a1878d` / `c839ab1` / `5cc9ece` | — | Verify SUCCESS on tip (e.g. [37144729406](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37144729406)) | PASS | **DEVICE CERTIFIED — DEVELOP** (2026-10-03) | See §36.11–§36.12; READ-only HC; synthetic Toolbox writer only |
+| C2 Health Connect | **COMPLETE (CI)** + **DEVICE CERTIFIED — DEVELOP** | Runtime cert §36.11; CSRF §36.12; final lifecycle §36.13 on tip `b3b4620` | — | [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721) SUCCESS | PASS | **DEVICE CERTIFIED — DEVELOP** | See §36.11–§36.13; READ-only HC; synthetic Toolbox writer only |
 | U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
 | R1 RC | **COMPLETE on develop** (RC-ready develop; **not** production) | `01f8c4e` + HC device cert close-out | V38–V39 | SUCCESS | PASS | HC **DEVICE CERTIFIED — DEVELOP**; **V5 MVP device gate SATISFIED**; HK device cert pending | V5A implementation + CI complete; D1 satisfied by HC Android; no `main`/prod |
 | Phase 0 RC hygiene | **COMPLETE** | `375768d` | — | [36867244813](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36867244813) SUCCESS | PASS | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
-| Device cert gate | **MVP SATISFIED — HC DONE / HK OPEN** | EAS Android Dev Client + Railway develop | V38–V39 | — | — | HC **DEVICE CERTIFIED — DEVELOP**; HK **NOT DEVICE CERTIFIED** | D1 requires ≥1 certified connector — HC satisfies MVP device gate; HK remains provider-completeness follow-up |
+| Device cert gate | **MVP SATISFIED — HC DONE / HK OPEN** | EAS Android Dev Client + Railway develop; tip `b3b4620` | V38–V39 | [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721) SUCCESS | PASS | HC **DEVICE CERTIFIED — DEVELOP**; HK **NOT DEVICE CERTIFIED** | D1 (≥1 certified connector) **SATISFIED** by HC Android; HK remains provider-completeness follow-up |
 
 ---
 
@@ -665,7 +665,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | Check | Result |
 | --- | --- |
 | Railway CLI | Present; **`railway whoami` → Unauthorized** |
-| Develop provider flags enable/restore | Later live cert (§36.11/§36.12) used develop flags **on**; restore-to-`false` remains an **operator follow-up** (docs agents do not mutate Railway) |
+| Develop provider flags enable/restore | Later live cert (§36.11–§36.13) used develop flags **on**; restore-to-`false` remains an **operator follow-up** (docs agents do not mutate Railway) |
 | Health / readiness / Flyway V38–V39 on develop host | **Not verified live** — blocked on CLI auth |
 | Production | **Untouched** |
 
@@ -699,7 +699,7 @@ PO unblock (interactive, local only): from `apps/mobile` run `npx eas-cli@24.8.0
 
 ### 36.6 Android Health Connect
 
-**Historical status (2026-10-01 attempt).** Superseded for Health Connect by **§36.11 DEVICE CERTIFIED — DEVELOP** (2026-10-03). Rows below remain the blocked-attempt record.
+**Historical status (2026-10-01 attempt).** Superseded for Health Connect by **§36.11 DEVICE CERTIFIED — DEVELOP** (2026-10-03; CSRF §36.12; final lifecycle §36.13). Rows below remain the blocked-attempt record.
 
 | Cell | Status (2026-10-01) |
 | --- | --- |
@@ -720,7 +720,7 @@ Material docs note (not a runtime redesign): HC privacy-policy rationale intent 
 | Coach/org non-expansion | **HTTP coach-of-athlete IDOR test PASS** (Phase 0) |
 | State Engine non-mutation | CI contracts unchanged; **no live device ingest** to re-prove |
 | T23–T36 device paths | Applicable device rows **N/A this attempt** (access blocked); OAuth threats remain N/A for OS-hub V5 |
-| Develop provider flags restored OFF | **Historical N/A for 2026-10-01 attempt.** After §36.11/§36.12 live cert, develop flags were **enabled** for ingest — **operator should restore `false`** per §36.9 #3 / §36.11 operator follow-up (not performed by docs agents) |
+| Develop provider flags restored OFF | **Historical N/A for 2026-10-01 attempt.** After §36.11–§36.13 live cert, develop flags were **enabled** for ingest — **operator should restore `false`** per §36.9 #3 / §36.11 operator follow-up (not performed by docs agents) |
 
 ### 36.8 Classification (initial attempt)
 
@@ -890,3 +890,63 @@ Canonical post-E2E guidance (§36.9 PO unblock #3): on Railway **develop** only,
 **V5 MVP device gate:** remains **SATISFIED** (D1). HealthKit device certification remains **pending** and is **not** required to keep the MVP device gate satisfied.
 
 **Locked decisions preserved:** D1–D14; V5A store/map/display only; no readiness formula change; explicit user sync only; 30-day default backfill; one active hub; disconnect stops sync / retains normalized history; no coach raw console; Connected Athlete FREE in V5; OS hubs only.
+
+### 36.13 Health Connect Android — final lifecycle closeout (2026-10-04, tip `b3b4620`)
+
+**Overall result:** Health Connect Android remains **DEVICE CERTIFIED — DEVELOP**.  
+**V5 MVP device gate (D1):** remains **SATISFIED**.  
+**Purpose:** Record the post-CSRF end-to-end grant → sync → revoke → disconnect → reconnect certification on tip `b3b46204462ed1f6f462825c4640b76227b57289` with GitHub Verify [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721) **SUCCESS**. No runtime code change. No new EAS build. No production action. No HealthKit exercise.
+
+| Item | Result |
+| --- | --- |
+| Environment | Railway **develop** healthy; Android **14 / API 34**; **Pixel_7_API_34**; EAS Development Client; native `react-native-health-connect` |
+| Stable connection id | `1a3bb468-ff49-45b8-aba7-2da317e0b2f0` across retry / disconnect / reconnect |
+| Retry-from-PENDING | **PASS** — PENDING hides Connect; retry = Disconnect → Connect; identity stable |
+| Permission sheet | **PASS** — observed after revoke/reconnect and Manage Permissions grant path |
+| Permission scope | **PASS** — READ-only Sleep, Resting HR, HRV, Steps, Active calories, Exercise; no WRITE; OS sheet described past **30 days** |
+| CONNECTED lifecycle | **PASS** — `beginConnect` **201** → `confirm` **200** → UI Connected |
+| Initial sync | **PASS** — `evidence-batches` **202**; `sync` **200**; freshness **Recent**; `lastSuccessfulSyncAt` populated |
+| Backfill | **PASS** — `DEFAULT_BACKFILL_DAYS = 30`; explicit connect-time sync only; no server scheduler |
+| SyncRun | **PASS** — `POST /sync` **200**; OS hub upload-only; evidence-batch is active ingest; `lastSuccessfulSyncAt` advances |
+| Idempotency / replay | **PASS** — disconnect/reconnect accepted; same connection id; no duplicate failure |
+| Incremental sync | **PASS** — synthetic Health Connect Toolbox inserts; reconnect/sync advanced last successful sync |
+| Deduplication | **PASS** — stable external record identity; replayed batches accepted without duplicate failure |
+| READINESS_V1 | **UNCHANGED** — Not assessed before/after; no readiness improvement or formula change claimed |
+| Manual check-in | **PASS** — remained outstanding / authoritative; HC did not auto-complete |
+| Permission revoke | **PASS** — Remove all → sheet → Cancel → **PENDING**; no confirm/evidence after cancel |
+| Disconnect | **PASS** — HTTP **200** → Not connected; freshness Unavailable |
+| Stale upload rejection | **PASS** — contract `disconnectedRejectsIngest` → HTTP **409** / `INTEGRATION_INGEST_NOT_ACCEPTED` |
+| Reconnect | **PASS** — Allow-all → CONNECTED; confirm **200**; evidence-batches **202**; sync **200**; same connection id |
+| Runtime defects | **None** blocking |
+| Code / EAS | No runtime code changed during this cert; no new EAS build required |
+
+**Signal matrix (device):**
+
+| Family | Classification | Nuance |
+| --- | --- | --- |
+| Steps | **DEVICE VERIFIED** | Toolbox synthetic + sync |
+| Resting heart rate | **DEVICE VERIFIED** | Toolbox synthetic + sync |
+| HRV RMSSD | **DEVICE VERIFIED** | Toolbox synthetic + sync |
+| Active calories | **DEVICE VERIFIED** | Toolbox synthetic + sync |
+| Sleep | **DEVICE VERIFIED** | Prior retained / non-empty connect-time evidence; a **new** Sleep insertion was **not** independently logcat-confirmed in this exact session |
+| Exercise | **DEVICE VERIFIED** | READ path + retained data verified; a **new** ExerciseSession insertion was **not** completed in this exact session |
+
+Do **not** overstate Sleep/Exercise as newly inserted samples in this exact session.
+
+**Non-blocking UX observations (not blockers):**
+
+- No visible manual Sync control while CONNECTED (connect/reconnect-triggered explicit sync remains the certified path).
+- PENDING has no Connect button; current retry is Disconnect → Connect.
+
+**Canonical status (unchanged labels):**
+
+| Surface | Status |
+| --- | --- |
+| Health Connect Android | **DEVICE CERTIFIED — DEVELOP** |
+| V5 MVP device gate (D1) | **SATISFIED** |
+| HealthKit | **PENDING / NOT DEVICE CERTIFIED** (**IMPLEMENTED / CI VERIFIED**; physical iOS + EAS path still required) |
+| Production / both OS hubs / commercial activation | **Do not claim** |
+
+**Architecture preserved:** V5A store/map/display only; READINESS_V1 unchanged; manual check-in authoritative; explicit sync only; 30-day default backfill; one active provider/hub; normalized evidence retained after disconnect; credentials/authorization removed on disconnect; stale upload after disconnect rejected.
+
+**Operator follow-up:** if develop integration flags are still `true` after this cert window, restore `UAP_INTEGRATIONS_ENABLED` and Health Connect provider flag to **`false`** (docs agents do not mutate Railway). Production remains untouched.
