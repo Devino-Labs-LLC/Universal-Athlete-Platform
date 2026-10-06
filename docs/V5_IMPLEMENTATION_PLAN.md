@@ -6,7 +6,7 @@
 **Planning tip:** `e955f05da58d230046c265b1b9a42ff5875a1004` (`main` = `develop`, 0/0)  
 **Production schema baseline:** Flyway **V37**  
 **Prior version:** V4 commercialization — G–I **PRODUCTION DEPLOYED / DORMANT VERIFIED**; commercial billing **OFF**; V4 **NOT** commercially active  
-**V5 status:** **V5A IMPLEMENTATION COMPLETE / CI VERIFIED on develop**; Health Connect Android **DEVICE CERTIFIED — DEVELOP** (2026-10-03; CSRF revalidated §36.12; final lifecycle closeout §36.13 on tip `b3b4620` / Verify [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721)); **V5 MVP device gate SATISFIED** (D1 — ≥1 real certified connector); HealthKit **IMPLEMENTED / CI VERIFIED**, **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**); production **NOT VERIFIED / NOT PROMOTED**; V5B deferred  
+**V5 status:** **V5A IMPLEMENTATION COMPLETE / CI VERIFIED on develop**; Health Connect Android **DEVICE CERTIFIED — DEVELOP** (runtime §36.11–§36.13 on `b3b4620`; docs closeout `04d149b` / Verify [37234005789](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37234005789)); **V5 MVP device gate SATISFIED** (D1 — ≥1 real certified connector); HealthKit **PENDING / NOT DEVICE CERTIFIED** (**IMPLEMENTED / CI VERIFIED**; physical iOS + EAS path still required); production **NOT VERIFIED / NOT PROMOTED**; V5B deferred  
 
 **Highest accepted ADR before this plan:** ADR-045 → V5 ADRs **046–051 Accepted** (2026-09-30 PO lock)  
 **PO decisions:** D1–D14 **LOCKED** 2026-09-30  
@@ -543,6 +543,8 @@ Options and rationale remain below for audit. **Locked values** are authoritativ
 
 Foundation + at least one real connected-health connector certified + minimal Connected Apps UX. HealthKit first; Health Connect remains an approved V5 target after HealthKit. OAuth wearables not required for V5 completion.
 
+**Current D1 execution (2026-10-04):** the MVP device gate is **SATISFIED** because Android Health Connect is **DEVICE CERTIFIED — DEVELOP**. D3’s HealthKit-first sequencing remains a locked preference, not a remaining D1 blocker. HealthKit is **PENDING / NOT DEVICE CERTIFIED**. This does **not** mean both OS hubs are certified, production verified, or commercially active.
+
 ### D2 — Modulith home — **LOCKED A**
 
 New `integrations` module. `training` retains State Engine / readiness / recommendations.
@@ -601,7 +603,7 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 
 | ID | Decision | Locked value | Date | Notes |
 | --- | --- | --- | --- | --- |
-| D1 | V5 complete bar | **B** | 2026-09-30 | Foundation + ≥1 certified connector + Connected Apps UX; HealthKit first; Health Connect approved next; OAuth not required |
+| D1 | V5 complete bar | **B** | 2026-09-30 | Foundation + ≥1 certified connector + Connected Apps UX; HealthKit-first was sequencing preference (D3). **Current:** MVP device gate **SATISFIED** by HC Android **DEVICE CERTIFIED — DEVELOP**; HealthKit **PENDING / NOT DEVICE CERTIFIED**; OAuth not required |
 | D2 | Modulith home | **A** | 2026-09-30 | New `integrations` module |
 | D3 | First connector | **A1** | 2026-09-30 | HealthKit → Health Connect; honest platform differences |
 | D4 | Backfill window | **B** | 2026-09-30 | 30 days default; centrally configurable |
@@ -638,12 +640,12 @@ OS hubs only (HealthKit + Health Connect). No WHOOP/Garmin/Fitbit/Oura/Strava/Po
 | F1 Foundation module | **COMPLETE** | `e6d85f1` | **V38** | [36809793740](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36809793740) SUCCESS | PASS | N/A | Flyway tip fix after `0c71b96` |
 | F2 Evidence + inbox | **COMPLETE** | `d59d07b` | **V39** | [36813219849](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36813219849) SUCCESS | PASS | N/A | Artifact cleanup on tip |
 | F3 UX shell | **COMPLETE** | `2bf16d4` (includes Sonar remediations) | — | Sonar FAIL on `dee885b`; green after remediations on `2bf16d4` | PASS on `2bf16d4` | N/A | Profile → Connected Apps; shared `@uap/connected-apps-contracts` |
-| C1 HealthKit | **COMPLETE (CI)** | `2bf16d4` | — | [36819796718](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36819796718) SUCCESS | PASS | **IMPLEMENTED / CI VERIFIED**; **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**) | Adapter + queue + evidence upload; CI only; physical iOS + Apple path still required for device cert |
-| C2 Health Connect | **COMPLETE (CI)** + **DEVICE CERTIFIED — DEVELOP** | Runtime cert §36.11; CSRF §36.12; final lifecycle §36.13 on tip `b3b4620` | — | [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721) SUCCESS | PASS | **DEVICE CERTIFIED — DEVELOP** | See §36.11–§36.13; READ-only HC; synthetic Toolbox writer only |
+| C1 HealthKit | **COMPLETE (CI)** | `2bf16d4` | — | [36819796718](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36819796718) SUCCESS | PASS | **PENDING / NOT DEVICE CERTIFIED** (**IMPLEMENTED / CI VERIFIED**; physical iOS + EAS path still required) | Adapter + queue + evidence upload; CI only; not required to keep the V5 MVP device gate SATISFIED |
+| C2 Health Connect | **COMPLETE (CI)** + **DEVICE CERTIFIED — DEVELOP** | Runtime cert §36.11–§36.13 on `b3b4620`; docs closeout `04d149b` | — | [37234005789](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37234005789) SUCCESS | PASS | **DEVICE CERTIFIED — DEVELOP** | See §36.11–§36.13; READ-only HC; synthetic Toolbox writer only |
 | U1/U2 UX harden | **COMPLETE** | `01f8c4e` | — | [36821461021](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36821461021) SUCCESS | PASS | N/A | Provisional freshness labels (D12) |
 | R1 RC | **COMPLETE on develop** (RC-ready develop; **not** production) | `01f8c4e` + HC device cert close-out | V38–V39 | SUCCESS | PASS | HC **DEVICE CERTIFIED — DEVELOP**; **V5 MVP device gate SATISFIED**; HK device cert pending | V5A implementation + CI complete; D1 satisfied by HC Android; no `main`/prod |
 | Phase 0 RC hygiene | **COMPLETE** | `375768d` | — | [36867244813](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/36867244813) SUCCESS | PASS | N/A | Removed stale U1/U2+R1 NOT STARTED ledger dupes; coach-of-athlete integrations IDOR HTTP test |
-| Device cert gate | **MVP SATISFIED — HC DONE / HK OPEN** | EAS Android Dev Client + Railway develop; tip `b3b4620` | V38–V39 | [37174694721](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37174694721) SUCCESS | PASS | HC **DEVICE CERTIFIED — DEVELOP**; HK **NOT DEVICE CERTIFIED** | D1 (≥1 certified connector) **SATISFIED** by HC Android; HK remains provider-completeness follow-up |
+| Device cert gate | **MVP SATISFIED — HC DONE / HK OPEN** | EAS Android Dev Client + Railway develop; runtime `b3b4620`; docs closeout `04d149b` | V38–V39 | [37234005789](https://github.com/Devino-Labs-LLC/Universal-Athlete-Platform/actions/runs/37234005789) SUCCESS | PASS | HC **DEVICE CERTIFIED — DEVELOP**; HealthKit **PENDING / NOT DEVICE CERTIFIED** | D1 (≥1 certified connector) **SATISFIED** by HC Android; HK remains a separate pending certification item |
 
 ---
 
@@ -834,7 +836,7 @@ Material docs note (not a runtime redesign): HC privacy-policy rationale intent 
 | V5A implementation | **COMPLETE / CI VERIFIED** |
 | Health Connect Android | **DEVICE CERTIFIED — DEVELOP** |
 | V5 MVP device gate (D1) | **SATISFIED** (HC Android is the certified connector) |
-| HealthKit | **IMPLEMENTED / CI VERIFIED**; **DEVICE CERTIFICATION PENDING** (**NOT DEVICE CERTIFIED**) |
+| HealthKit | **PENDING / NOT DEVICE CERTIFIED** (**IMPLEMENTED / CI VERIFIED**; physical iOS + EAS path still required) |
 | Production | **NOT VERIFIED / NOT PROMOTED** |
 | V5 “fully complete” / all OS hubs / commercial activation | **Do not claim** |
 
