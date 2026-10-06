@@ -14,6 +14,7 @@
       "mobile:test:coverage": "pnpm --filter uap_mobile test:coverage",
       "mobile:typecheck": "pnpm --filter uap_mobile typecheck",
       "mobile:lint": "pnpm --filter uap_mobile lint",
-      "mobile:export": "pnpm --filter uap_mobile export"
+      "mobile:export": "pnpm --filter uap_mobile export",
+      "shell:dev": "concurrently \"FE,BE\" -c --kill-others \"pnpm --filter uap_web dev\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\""
     }
   }
