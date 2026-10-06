@@ -1,11 +1,13 @@
 import {
   buildCookieHeader,
   createInMemoryCookieStoreForTests,
+  csrfCookieOriginUrl,
   getXsrfToken,
   hasRefreshableSessionCookies,
   resolveCookieManagerModule,
   sessionCookiePresence,
   withCsrfCookie,
+  xsrfTokenFromSetCookie,
 } from '@/src/core/api/cookieStore';
 
 describe('cookieStore', () => {
@@ -78,5 +80,14 @@ describe('cookieStore', () => {
     expect(resolveCookieManagerModule(cjsShape)).toBe(cjsShape);
     expect(resolveCookieManagerModule({ default: cjsShape })).toBe(cjsShape);
     expect(() => resolveCookieManagerModule(undefined)).toThrow(/unavailable/);
+  });
+
+  it('reads XSRF-TOKEN from a Set-Cookie line without treating other cookies as the token', () => {
+    expect(xsrfTokenFromSetCookie(undefined)).toBeNull();
+    expect(xsrfTokenFromSetCookie('uap_at=access; Path=/api; HttpOnly')).toBeNull();
+    expect(xsrfTokenFromSetCookie('XSRF-TOKEN=issued-token; Path=/; SameSite=Lax')).toBe(
+      'issued-token',
+    );
+    expect(csrfCookieOriginUrl('https://api.example.test/')).toBe('https://api.example.test/');
   });
 });

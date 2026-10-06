@@ -240,7 +240,7 @@ describe('CSRF bootstrap for protected writes', () => {
     mock.restore();
   });
 
-  it('does not CSRF-seed when there are no authenticated cookies', async () => {
+  it('does not fabricate a CSRF token when the identity round-trip is unauthenticated', async () => {
     const store = createPathAwareCookieStore();
     const client = createApiClient({
       baseURL: 'http://127.0.0.1:8080',
@@ -250,11 +250,12 @@ describe('CSRF bootstrap for protected writes', () => {
     let meCalls = 0;
     mock.onGet('/api/v1/identity/me').reply(() => {
       meCalls += 1;
-      return [401];
+      return [401, { code: 'UNAUTHENTICATED', message: 'Authentication is required' }];
     });
-    mock.onPost('/api/v1/integrations/connections').reply(401, {
-      code: 'UNAUTHENTICATED',
-      message: 'Authentication is required',
+    let seenHeader: string | undefined;
+    mock.onPost('/api/v1/integrations/connections').reply((config) => {
+      seenHeader = config.headers?.['X-XSRF-TOKEN'] as string | undefined;
+      return [401, { code: 'UNAUTHENTICATED', message: 'Authentication is required' }];
     });
 
     await expect(
@@ -264,7 +265,8 @@ describe('CSRF bootstrap for protected writes', () => {
       }),
     ).rejects.toMatchObject({ status: 401 });
 
-    expect(meCalls).toBe(0);
+    expect(meCalls).toBe(1);
+    expect(seenHeader).toBeUndefined();
     mock.restore();
   });
 
@@ -291,6 +293,277 @@ describe('CSRF bootstrap for protected writes', () => {
     expect(payload).toContain('"antiForgeryHeader":"attached"');
     expect(payload).not.toContain('secret-xsrf-value');
     expect(payload).not.toContain('secret-access');
+    const presenceLog = debugSpy.mock.calls.find((call) =>
+      String(call[0]).includes('CSRF jar presence before protected write'),
+    );
+    if (presenceLog) {
+      const presencePayload = JSON.stringify(presenceLog[1] ?? {});
+      expect(presencePayload).not.toContain('secret-xsrf-value');
+      expect(presencePayload).not.toContain('secret-access');
+    }
+    mock.restore();
+  });
+
+  it('attaches CSRF from an authenticated identity seed when the jar cannot see session cookies', async () => {
+    const store = createBlindCookieStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    let meCalls = 0;
+    mock.onGet('/api/v1/identity/me').reply(() => {
+      meCalls += 1;
+      return [
+        200,
+        { accountId: 'a1', email: 'a@example.com', status: 'ACTIVE', emailVerifiedAt: null },
+        { 'set-cookie': 'XSRF-TOKEN=seeded-from-me; Path=/' },
+      ];
+    });
+    let seenHeader: string | undefined;
+    let seenCookie: string | undefined;
+    mock.onPost('/api/v1/integrations/connections').reply((config) => {
+      seenHeader = config.headers?.['X-XSRF-TOKEN'] as string | undefined;
+      seenCookie = config.headers?.Cookie as string | undefined;
+      return [
+        201,
+        {
+          connectionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+          provider: 'HEALTH_CONNECT',
+          lifecycleState: 'PENDING',
+          processConsentGranted: false,
+          processConsentGrantedAt: null,
+          connectedAt: null,
+          disconnectedAt: null,
+          lastSuccessfulSyncAt: null,
+          lastAttemptedSyncAt: null,
+        },
+      ];
+    });
+
+    const pending = await beginConnect(client, {
+      requestId: '55555555-5555-4555-8555-555555555555',
+      provider: 'HEALTH_CONNECT',
+    });
+
+    expect(pending.lifecycleState).toBe('PENDING');
+    expect(meCalls).toBe(1);
+    expect(seenHeader).toBe('seeded-from-me');
+    expect(seenCookie).toBeUndefined();
+    expect(store.ensuredToken).toBe('seeded-from-me');
+    mock.restore();
+  });
+
+  it('shares one identity seed across concurrent protected writes', async () => {
+    const store = createBlindCookieStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    let meCalls = 0;
+    let releaseSeed: () => void = () => undefined;
+    const seedGate = new Promise<void>((resolve) => {
+      releaseSeed = resolve;
+    });
+    mock.onGet('/api/v1/identity/me').reply(async () => {
+      meCalls += 1;
+      await seedGate;
+      return [200, { accountId: 'a1' }, { 'set-cookie': 'XSRF-TOKEN=shared-seed; Path=/' }];
+    });
+    mock.onPost('/api/v1/identity/logout').reply(204);
+
+    const both = Promise.all([
+      client.axios.post('/api/v1/identity/logout'),
+      client.axios.post('/api/v1/identity/logout'),
+    ]);
+    await Promise.resolve();
+    releaseSeed();
+    await both;
+
+    expect(meCalls).toBe(1);
+    mock.restore();
+  });
+
+  it('does not seed from refresh and fails closed without waiting on the seed', async () => {
+    const store = createPathAwareCookieStore();
+    store.setRaw('uap_at', 'access', '/api');
+    store.setRaw('uap_rt', 'refresh', '/api/v1/identity');
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    let meCalls = 0;
+    mock.onGet('/api/v1/identity/me').reply(() => {
+      meCalls += 1;
+      return [200, { accountId: 'a1' }, { 'set-cookie': 'XSRF-TOKEN=should-not-run; Path=/' }];
+    });
+
+    const outcome = await Promise.race([
+      client.axios
+        .post('/api/v1/identity/refresh')
+        .then(() => 'sent')
+        .catch((error: { code?: string }) => error.code ?? 'error'),
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve('deadlock'), 500);
+      }),
+    ]);
+
+    expect(outcome).toBe('CSRF_TOKEN_UNAVAILABLE');
+    expect(meCalls).toBe(0);
+    mock.restore();
+  });
+
+  it('does not send the protected write when the csrf bootstrap fails', async () => {
+    const store = createBlindCookieStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    mock.onGet('/api/v1/identity/me').reply(503, {
+      code: 'UNAVAILABLE',
+      message: 'Service unavailable',
+    });
+    let postCalls = 0;
+    mock.onPost('/api/v1/integrations/connections').reply(() => {
+      postCalls += 1;
+      return [201, {}];
+    });
+
+    await expect(
+      beginConnect(client, {
+        requestId: '88888888-8888-4888-8888-888888888888',
+        provider: 'HEALTH_CONNECT',
+      }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'CSRF_TOKEN_UNAVAILABLE',
+    });
+    expect(postCalls).toBe(0);
+    expect(store.ensuredToken).toBeNull();
+    mock.restore();
+  });
+
+  it('fails closed when the identity round-trip is authenticated but no CSRF token is issued', async () => {
+    const store = createBlindCookieStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    mock.onGet('/api/v1/identity/me').reply(200, {
+      accountId: 'a1',
+      email: 'a@example.com',
+      status: 'ACTIVE',
+      emailVerifiedAt: null,
+    });
+    let postCalls = 0;
+    mock.onPost('/api/v1/integrations/connections').reply(() => {
+      postCalls += 1;
+      return [201, {}];
+    });
+
+    await expect(
+      beginConnect(client, {
+        requestId: '66666666-6666-4666-8666-666666666666',
+        provider: 'HEALTH_CONNECT',
+      }),
+    ).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'CSRF_TOKEN_UNAVAILABLE',
+    });
+    expect(postCalls).toBe(0);
+    mock.restore();
+  });
+
+  it('reads an origin-scoped CSRF cookie when the request path cannot see it', async () => {
+    const store = createOriginOnlyCsrfStore();
+    const client = createApiClient({
+      baseURL: 'http://127.0.0.1:8080',
+      cookieStore: store,
+    });
+    const mock = new MockAdapter(client.axios);
+    let meCalls = 0;
+    mock.onGet('/api/v1/identity/me').reply(() => {
+      meCalls += 1;
+      return [200, { accountId: 'a1' }];
+    });
+    let seenHeader: string | undefined;
+    mock.onPost('/api/v1/integrations/connections').reply((config) => {
+      seenHeader = String(config.headers?.['X-XSRF-TOKEN'] ?? '');
+      return [
+        201,
+        {
+          connectionId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+          provider: 'HEALTH_CONNECT',
+          lifecycleState: 'PENDING',
+          processConsentGranted: false,
+          processConsentGrantedAt: null,
+          connectedAt: null,
+          disconnectedAt: null,
+          lastSuccessfulSyncAt: null,
+          lastAttemptedSyncAt: null,
+        },
+      ];
+    });
+
+    await beginConnect(client, {
+      requestId: '77777777-7777-4777-8777-777777777777',
+      provider: 'HEALTH_CONNECT',
+    });
+
+    expect(seenHeader).toBe('origin-xsrf');
+    expect(meCalls).toBe(0);
     mock.restore();
   });
 });
+
+function createBlindCookieStore(): CookieStore & { ensuredToken: string | null } {
+  return {
+    ensuredToken: null,
+    async getCookies() {
+      return {};
+    },
+    async setFromResponse() {
+      return undefined;
+    },
+    async ensureCsrfCookie(_apiBaseUrl: string, token: string) {
+      this.ensuredToken = token;
+    },
+    async clearSession() {
+      return undefined;
+    },
+    async clearAll() {
+      return undefined;
+    },
+  };
+}
+
+function createOriginOnlyCsrfStore(): CookieStore {
+  return {
+    async getCookies(url: string) {
+      const path = new URL(url).pathname || '/';
+      if (path === '/') {
+        return { 'XSRF-TOKEN': 'origin-xsrf' };
+      }
+      if (path.startsWith('/api')) {
+        return { uap_at: 'access' };
+      }
+      return {};
+    },
+    async setFromResponse() {
+      return undefined;
+    },
+    async ensureCsrfCookie() {
+      return undefined;
+    },
+    async clearSession() {
+      return undefined;
+    },
+    async clearAll() {
+      return undefined;
+    },
+  };
+}

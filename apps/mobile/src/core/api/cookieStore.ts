@@ -262,6 +262,41 @@ export function csrfCookieProbeUrl(apiBaseUrl: string): string {
   return sessionCookieProbeUrl(apiBaseUrl);
 }
 
+/** API origin (`/`). Path=/api auth cookies are not visible here; Path=/ XSRF may be. */
+export function csrfCookieOriginUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl.replace(/\/$/, '')}/`;
+}
+
+/**
+ * Read an XSRF-TOKEN value from a Set-Cookie header when the runtime exposes it.
+ * Returns the token for the in-memory double-submit header only — callers must not log it.
+ */
+export function xsrfTokenFromSetCookie(
+  setCookieHeader: string | string[] | undefined,
+): string | null {
+  if (setCookieHeader == null) {
+    return null;
+  }
+  const headers = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+  for (const header of headers) {
+    const pair = header.split(';')[0]?.trim();
+    if (!pair) {
+      continue;
+    }
+    const eq = pair.indexOf('=');
+    if (eq <= 0) {
+      continue;
+    }
+    const name = pair.slice(0, eq).trim();
+    if (name !== 'XSRF-TOKEN' && name !== 'xsrf-token') {
+      continue;
+    }
+    const value = pair.slice(eq + 1).trim();
+    return value.length > 0 ? value : null;
+  }
+  return null;
+}
+
 /** Absolute URL used for native cookie jar get/set for a given Axios request. */
 export function resolveCookieRequestUrl(
   baseURL: string,

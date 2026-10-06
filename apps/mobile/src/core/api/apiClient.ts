@@ -9,6 +9,7 @@ import { buildCsrfHeader, CSRF_COOKIE_NAME, shouldAttachCsrf } from '@/src/core/
 import {
   buildCookieHeader,
   CookieStore,
+  csrfCookieOriginUrl,
   csrfCookieProbeUrl,
   describeSetCookiePresence,
   getXsrfToken,
@@ -17,9 +18,10 @@ import {
   sessionCookiePresence,
   sessionCookieProbeUrl,
   withCsrfCookie,
+  xsrfTokenFromSetCookie,
 } from '@/src/core/api/cookieStore';
 import { describeErrorForDiagnostics, mapAxiosError } from '@/src/core/api/errorMapper';
-import { ApiError } from '@/src/core/api/errors';
+import { ApiError, isApiError } from '@/src/core/api/errors';
 import { createLogger } from '@/src/core/logging/logger';
 
 const log = createLogger('api');
@@ -100,8 +102,15 @@ function readSetCookieHeader(
 export function createApiClient(options: CreateApiClientOptions): ApiClient {
   const { baseURL, cookieStore, onSessionExpired } = options;
   const refreshMutex = new RefreshMutex();
-  /** Single-flight CSRF seed GET — must not be awaited from refresh (deadlock). */
-  let csrfSeedInFlight: Promise<void> | null = null;
+  /**
+   * Single-flight CSRF seed GET — must not be awaited from refresh (deadlock).
+   * Outcome is the authenticated round-trip, not JS-visible auth-cookie presence.
+   */
+  type CsrfSeedResult =
+    | { outcome: 'authenticated'; token: string | null }
+    | { outcome: 'unauthenticated' }
+    | { outcome: 'failed' };
+  let csrfSeedInFlight: Promise<CsrfSeedResult> | null = null;
 
   const client = axios.create({
     baseURL,
@@ -116,12 +125,63 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
   const isRefreshPath = (path: string): boolean =>
     path === REFRESH_PATH || path.endsWith(REFRESH_PATH);
 
+  const loadCookies = async (url: string): Promise<Record<string, string>> => {
+    try {
+      return await cookieStore.getCookies(url);
+    } catch (cookieError) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        log.warn('CSRF cookie read failed', describeErrorForDiagnostics(cookieError));
+      }
+      return {};
+    }
+  };
+
+  const classifyCsrfSeedError = (seedError: unknown): CsrfSeedResult => {
+    if (isAxiosError(seedError) && seedError.response) {
+      const headerToken = xsrfTokenFromSetCookie(readSetCookieHeader(seedError.response.headers));
+      if (headerToken) {
+        return { outcome: 'authenticated', token: headerToken };
+      }
+      if (seedError.response.status === 401) {
+        return { outcome: 'unauthenticated' };
+      }
+    }
+    if (isApiError(seedError) && (seedError.status === 401 || seedError.category === 'unauthorized')) {
+      return { outcome: 'unauthenticated' };
+    }
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      log.warn('CSRF seed GET /identity/me failed', describeErrorForDiagnostics(seedError));
+    }
+    return { outcome: 'failed' };
+  };
+
+  /**
+   * One authenticated GET /identity/me forces the server to issue XSRF-TOKEN.
+   * Not started from refresh or from the seed request itself.
+   */
+  const seedCsrfFromIdentity = (): Promise<CsrfSeedResult> => {
+    if (!csrfSeedInFlight) {
+      csrfSeedInFlight = client
+        .get(ME_PATH, { __uapCsrfSeed: true } as UapAxiosRequestConfig)
+        .then((response) => ({
+          outcome: 'authenticated' as const,
+          token: xsrfTokenFromSetCookie(readSetCookieHeader(response.headers)),
+        }))
+        .catch((seedError: unknown) => classifyCsrfSeedError(seedError))
+        .finally(() => {
+          csrfSeedInFlight = null;
+        });
+    }
+    return csrfSeedInFlight;
+  };
+
   /**
    * Resolve XSRF for protected writes:
-   * 1) request-scoped jar read
-   * 2) identity probe URL (native path-matching quirk)
-   * 3) authenticated GET /me seed (not from refresh / seed itself)
-   * Fail closed when authenticated but still tokenless.
+   * 1) request URL, identity probe, and API origin jar reads
+   * 2) authenticated GET /me seed when the token is still missing
+   *    (native OkHttp can hold HttpOnly session cookies that CookieManager.get hides)
+   * Fail closed when that round-trip proves a session but no token is available.
+   * Do not invent a token when the round-trip is unauthenticated.
    */
   const resolveCsrfTokenForWrite = async (
     requestCookies: Record<string, string>,
@@ -129,8 +189,9 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
     path: string,
   ): Promise<{ cookies: Record<string, string>; token: string | null }> => {
     let cookies = requestCookies;
-    let token = getXsrfToken(cookies);
     const cookieUrl = resolveCookieRequestUrl(baseURL, config.url);
+    const probeUrl = csrfCookieProbeUrl(baseURL);
+    const originUrl = csrfCookieOriginUrl(baseURL);
 
     const promoteCsrfCookie = async (value: string): Promise<{
       cookies: Record<string, string>;
@@ -148,77 +209,84 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
           );
         }
       }
-      try {
-        cookies = await cookieStore.getCookies(cookieUrl);
-      } catch {
-        cookies = withCsrfCookie(cookies, value);
-      }
-      if (!getXsrfToken(cookies)) {
-        cookies = withCsrfCookie(cookies, value);
-      }
+      const reread = await loadCookies(cookieUrl);
+      cookies = withCsrfCookie({ ...cookies, ...reread }, value);
       return { cookies, token: value };
     };
 
-    if (token) {
-      // Already visible for this request URL — no Path=/ promotion needed.
-      return { cookies, token };
-    }
-
-    const probeUrl = csrfCookieProbeUrl(baseURL);
-    let probeCookies: Record<string, string> = {};
-    try {
-      probeCookies = await cookieStore.getCookies(probeUrl);
-    } catch (cookieError) {
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        log.warn(
-          'CSRF probe cookie read failed',
-          describeErrorForDiagnostics(cookieError),
-        );
+    const tokenFromJars = async (): Promise<string | null> => {
+      const requestToken = getXsrfToken(cookies);
+      if (requestToken) {
+        return requestToken;
       }
-    }
-    token = getXsrfToken(probeCookies);
+      const probeCookies = await loadCookies(probeUrl);
+      const probeToken = getXsrfToken(probeCookies);
+      if (probeToken) {
+        return probeToken;
+      }
+      const originCookies = await loadCookies(originUrl);
+      return getXsrfToken(originCookies);
+    };
+
+    let token = await tokenFromJars();
     if (token) {
       return promoteCsrfCookie(token);
     }
 
-    const authenticated =
+    const jsSeesSession =
       hasRefreshableSessionCookies(cookies) ||
-      hasRefreshableSessionCookies(probeCookies);
+      hasRefreshableSessionCookies(await loadCookies(probeUrl));
 
-    if (
-      authenticated &&
-      !config.__uapCsrfSeed &&
-      !isRefreshPath(path)
-    ) {
-      if (!csrfSeedInFlight) {
-        csrfSeedInFlight = client
-          .get(ME_PATH, { __uapCsrfSeed: true } as UapAxiosRequestConfig)
-          .then(() => undefined)
-          .catch((seedError: unknown) => {
-            if (typeof __DEV__ !== 'undefined' && __DEV__) {
-              log.warn(
-                'CSRF seed GET /identity/me failed',
-                describeErrorForDiagnostics(seedError),
-              );
-            }
-          })
-          .finally(() => {
-            csrfSeedInFlight = null;
-          });
-      }
-      await csrfSeedInFlight;
-      try {
-        probeCookies = await cookieStore.getCookies(probeUrl);
-      } catch {
-        probeCookies = {};
-      }
-      token = getXsrfToken(probeCookies);
-      if (token) {
-        return promoteCsrfCookie(token);
-      }
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      log.debug('CSRF jar presence before protected write', {
+        path,
+        method: (config.method ?? 'GET').toUpperCase(),
+        request: sessionCookiePresence(cookies),
+        identityProbe: sessionCookiePresence(await loadCookies(probeUrl)),
+        origin: sessionCookiePresence(await loadCookies(originUrl)),
+        accessOrRefreshVisible: jsSeesSession,
+      });
     }
 
-    if (authenticated) {
+    if (config.__uapCsrfSeed || isRefreshPath(path)) {
+      if (jsSeesSession) {
+        throw new ApiError(
+          'CSRF token is unavailable for this authenticated session',
+          {
+            category: 'unknown',
+            code: 'CSRF_TOKEN_UNAVAILABLE',
+            path,
+          },
+        );
+      }
+      return { cookies, token: null };
+    }
+
+    const seeded = await seedCsrfFromIdentity();
+    token = seeded.outcome === 'authenticated' ? seeded.token : null;
+    if (!token) {
+      cookies = await loadCookies(cookieUrl);
+      token = await tokenFromJars();
+    }
+    if (token) {
+      return promoteCsrfCookie(token);
+    }
+
+    // A failed bootstrap is not proof the session is absent. Do not send the
+    // protected write without a token, and do not invent one.
+    if (seeded.outcome === 'failed') {
+      throw new ApiError(
+        'CSRF token is unavailable for this authenticated session',
+        {
+          category: 'unknown',
+          code: 'CSRF_TOKEN_UNAVAILABLE',
+          path,
+        },
+      );
+    }
+
+    const sessionProven = seeded.outcome === 'authenticated' || jsSeesSession;
+    if (sessionProven) {
       throw new ApiError(
         'CSRF token is unavailable for this authenticated session',
         {
@@ -268,16 +336,20 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
       }
       if (token) {
         Object.assign(config.headers, buildCsrfHeader(token));
-        // Keep canonical cookie name in the explicit Cookie header for double-submit.
+        // Keep canonical cookie name in the explicit Cookie header for double-submit
+        // only when this map already carries the session. A CSRF-only Cookie header
+        // would replace HttpOnly jar cookies the JS store cannot see.
         if (!cookies[CSRF_COOKIE_NAME] && !cookies['xsrf-token']) {
           cookies = withCsrfCookie(cookies, token);
         }
       }
     }
 
-    const cookieHeader = buildCookieHeader(cookies);
-    if (cookieHeader) {
-      config.headers.Cookie = cookieHeader;
+    if (hasRefreshableSessionCookies(cookies)) {
+      const cookieHeader = buildCookieHeader(cookies);
+      if (cookieHeader) {
+        config.headers.Cookie = cookieHeader;
+      }
     }
 
     return config;
@@ -288,10 +360,12 @@ export function createApiClient(options: CreateApiClientOptions): ApiClient {
     const cookieUrl = resolveCookieRequestUrl(baseURL, response.config?.url);
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       const path = resolveRequestPath(response.config ?? { headers: {} }, baseURL);
+      const handoff = describeSetCookiePresence(header);
       log.debug('Response cookie handoff', {
         path,
         status: response.status,
-        ...describeSetCookiePresence(header),
+        responseHeaderPresent: handoff.setCookieHeaderPresent,
+        responseHeaderCount: handoff.setCookieCount,
       });
     }
     await cookieStore.setFromResponse(cookieUrl, header);
