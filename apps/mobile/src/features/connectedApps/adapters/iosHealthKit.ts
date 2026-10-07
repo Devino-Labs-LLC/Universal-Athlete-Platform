@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 import { DEFAULT_BACKFILL_DAYS } from '@/src/features/connectedApps/constants';
 import {
@@ -69,10 +69,35 @@ export type HealthKitReadResult = {
 
 let injectedModule: HealthKitNativeModule | null | undefined;
 
-export function __setHealthKitNativeModuleForTests(module: HealthKitNativeModule | null): void {
+export function __setHealthKitNativeModuleForTests(
+  module: HealthKitNativeModule | null | undefined,
+): void {
   injectedModule = module;
 }
 
+type HealthKitPackageExport = {
+  default?: Partial<HealthKitNativeModule>;
+  Constants?: HealthKitNativeModule['Constants'];
+} & Partial<HealthKitNativeModule>;
+
+function readHealthKitPackage(): HealthKitPackageExport | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('react-native-health') as HealthKitPackageExport;
+  } catch {
+    return null;
+  }
+}
+
+function packageConstants(exported: HealthKitPackageExport | null): HealthKitNativeModule['Constants'] | null {
+  return exported?.Constants ?? exported?.default?.Constants ?? null;
+}
+
+/**
+ * react-native-health copies NativeModules.AppleHealthKit with Object.assign at import time.
+ * On the New Architecture those methods are non-enumerable, so the copy only keeps Constants
+ * and isAvailable is missing. Call the live native module and attach Constants from the package.
+ */
 function loadNativeModule(): HealthKitNativeModule | null {
   if (injectedModule !== undefined) {
     return injectedModule;
@@ -80,13 +105,23 @@ function loadNativeModule(): HealthKitNativeModule | null {
   if (Platform.OS !== 'ios') {
     return null;
   }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('react-native-health') as { default?: HealthKitNativeModule } & HealthKitNativeModule;
-    return (mod.default ?? mod) as HealthKitNativeModule;
-  } catch {
-    return null;
+  const exported = readHealthKitPackage();
+  const native = NativeModules.AppleHealthKit as HealthKitNativeModule | null | undefined;
+  if (native && typeof native.isAvailable === 'function') {
+    if (native.Constants?.Permissions) {
+      return native;
+    }
+    const constants = packageConstants(exported);
+    if (!constants?.Permissions) {
+      return null;
+    }
+    return Object.assign(native, { Constants: constants });
   }
+  const fallback = exported?.default ?? exported;
+  if (fallback && typeof fallback.isAvailable === 'function' && fallback.Constants?.Permissions) {
+    return fallback as HealthKitNativeModule;
+  }
+  return null;
 }
 
 /** READ-only approved types — do not request write or unrelated health data. */

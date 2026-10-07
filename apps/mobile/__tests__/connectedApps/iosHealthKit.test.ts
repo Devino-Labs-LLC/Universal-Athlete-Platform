@@ -7,7 +7,7 @@ import {
   windowForBackfillDays,
   type HealthKitNativeModule,
 } from '@/src/features/connectedApps/adapters/iosHealthKit';
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 function mockKit(overrides: Partial<HealthKitNativeModule> = {}): HealthKitNativeModule {
   return {
@@ -68,6 +68,22 @@ describe('iosHealthKit adapter', () => {
   it('reports available when HealthKit isAvailable succeeds', async () => {
     __setHealthKitNativeModuleForTests(mockKit());
     expect(await isAvailable()).toBe(true);
+  });
+
+  it('uses the live AppleHealthKit module when the package export dropped methods', async () => {
+    const native = mockKit();
+    const previous = NativeModules.AppleHealthKit;
+    NativeModules.AppleHealthKit = {
+      isAvailable: native.isAvailable,
+    };
+    __setHealthKitNativeModuleForTests(undefined);
+    try {
+      expect(await isAvailable()).toBe(true);
+      expect(native.isAvailable).toHaveBeenCalled();
+    } finally {
+      NativeModules.AppleHealthKit = previous;
+      __setHealthKitNativeModuleForTests(null);
+    }
   });
 
   it('treats isAvailable callback errors as unavailable', async () => {

@@ -80,6 +80,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       'expo-secure-store',
       'expo-dev-client',
+      'expo-font',
+      'expo-web-browser',
       // C1: react-native-health Expo config plugin — READ usage only (no clinical records).
       // Requires an iOS development / EAS build; not available in Expo Go.
       [
