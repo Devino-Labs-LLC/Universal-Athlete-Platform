@@ -1,22 +1,25 @@
 {
-    "name": "universal-athlete-platform",
-    "private": true,
-    "packageManager": "pnpm@12.9.1+sha512.06b055fff5cd20dc12781de173ced3310ce0951bf2ec620211a16045d5444d5c93a663210764ef29a653a610459ba0368f0e74f84d80c54723cf95aae7bc0d6d",
-    "scripts": {
-        "web:dev": "pnpm --filter uap_web dev",
-        "web:build": "pnpm --filter uap_web build",
-        "web:lint": "pnpm --filter uap_web lint",
-        "web:test": "pnpm --filter uap_web test",
-        "web:test:coverage": "pnpm --filter uap_web test:coverage",
-        "web:typecheck": "pnpm --filter uap_web typecheck",
-        "mobile:start": "pnpm --filter uap_mobile start",
-        "mobile:test": "pnpm --filter uap_mobile test",
-        "mobile:test:coverage": "pnpm --filter uap_mobile test:coverage",
-        "mobile:typecheck": "pnpm --filter uap_mobile typecheck",
-        "mobile:lint": "pnpm --filter uap_mobile lint",
-        "mobile:export": "pnpm --filter uap_mobile export",
-        "shell:dev-mac": "concurrently \"FE,BE\" -c --kill-others \"pnpm --filter uap_web dev\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\"",
-        "shell:dev-win": "concurrently \"FE,BE\" -c --kill-others \"pnpm --filter uap_web dev\" \"powershell -NoProfile -Command \\\"cd backend/uap-server; Get-Content .env | ForEach-Object { if ($_ -match '^\\\\s*([^#][^=]*)=(.*)$') { [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process') } }; $env:SPRING_DATASOURCE_URL = 'jdbc:mysql://' + $env:DB_HOST + ':' + $env:DB_PORT + '/' + $env:DB_NAME; .\\\\gradlew.bat bootRun --no-daemon\\\"\"",
-        "shell:dev-linux": "concurrently \"FE,BE\" -c --kill-others \"pnpm --filter uap_web dev\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\""
-    }
+  "name": "universal-athlete-platform",
+  "private": true,
+  "packageManager": "pnpm@12.9.1+sha512.06b055fff5cd20dc12781de173ced3310ce0951bf2ec620211a16045d5444d5c93a663210764ef29a653a610459ba0368f0e74f84d80c54723cf95aae7bc0d6d",
+  "scripts": {
+    "web:dev": "pnpm --filter uap_web dev",
+    "web:build": "pnpm --filter uap_web build",
+    "web:lint": "pnpm --filter uap_web lint",
+    "web:test": "pnpm --filter uap_web test",
+    "web:test:coverage": "pnpm --filter uap_web test:coverage",
+    "web:typecheck": "pnpm --filter uap_web typecheck",
+    "mobile:start": "pnpm --filter uap_mobile start",
+    "mobile:test": "pnpm --filter uap_mobile test",
+    "mobile:test:coverage": "pnpm --filter uap_mobile test:coverage",
+    "mobile:typecheck": "pnpm --filter uap_mobile typecheck",
+    "mobile:lint": "pnpm --filter uap_mobile lint",
+    "mobile:export": "pnpm --filter uap_mobile export",
+    "shell:web-server-mac": "concurrently -n \"FE,BE\" --kill-others \"pnpm --filter uap_web dev\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\"",
+    "shell:web-server-win": "concurrently -n \"FE,BE\" --kill-others \"pnpm --filter uap_web dev\" \"powershell -NoProfile -Command \\\"cd backend/uap-server; Get-Content .env | ForEach-Object { if ($_ -match '^\\\\s*([^#][^=]*)=(.*)$') { [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process') } }; $env:SPRING_DATASOURCE_URL = 'jdbc:mysql://' + $env:DB_HOST + ':' + $env:DB_PORT + '/' + $env:DB_NAME; .\\\\gradlew.bat bootRun --no-daemon\\\"\"",
+    "shell:web-server-linux": "concurrently -n \"FE,BE\" --kill-others \"pnpm --filter uap_web dev\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\"",
+    "shell:mobile-server-mac": "concurrently -n \"MOBILE,BE\" --kill-others \"pnpm --filter uap_mobile exec expo start --dev-client --clear\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\"",
+    "shell:mobile-server-win": "concurrently -n \"MOBILE,BE\" --kill-others \"pnpm --filter uap_mobile exec expo start --dev-client --clear\" \"powershell -NoProfile -Command \\\"cd backend/uap-server; Get-Content .env | ForEach-Object { if ($_ -match '^\\\\s*([^#][^=]*)=(.*)$') { [System.Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), 'Process') } }; $env:SPRING_DATASOURCE_URL = 'jdbc:mysql://' + $env:DB_HOST + ':' + $env:DB_PORT + '/' + $env:DB_NAME; .\\\\gradlew.bat bootRun --no-daemon\\\"\"",
+    "shell:mobile-server-linux": "concurrently -n \"MOBILE,BE\" --kill-others \"pnpm --filter uap_mobile exec expo start --dev-client --clear\" \"cd backend/uap-server && set -a && . ./.env && set +a && ./gradlew bootRun --no-daemon\""
+  }
 }
