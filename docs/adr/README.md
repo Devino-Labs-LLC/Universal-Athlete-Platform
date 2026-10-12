@@ -70,3 +70,11 @@ Product Owner decisions D1–D14 locked 2026-09-30: [`docs/V5_IMPLEMENTATION_PLA
 | [049](049-explicit-connected-sync.md) | Connected sync is explicit (no hidden sync on GET) | **Accepted** |
 | [050](050-connected-consent-layers.md) | Connected consent layers (connect ≠ share) | **Accepted** |
 | [051](051-health-integration-idempotency.md) | Health integration webhook/job idempotency | **Accepted** |
+
+## Index (V6 AI Coach — Accepted)
+
+Product Owner lock: [`docs/V6_IMPLEMENTATION_PLAN.md`](../V6_IMPLEMENTATION_PLAN.md). The deterministic State Engine stays authoritative. Generative coaching is a separate read-only module.
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [052](052-ai-coach-model-gateway.md) | AI Coach model gateway (provider-neutral, Groq first) | **Accepted** |

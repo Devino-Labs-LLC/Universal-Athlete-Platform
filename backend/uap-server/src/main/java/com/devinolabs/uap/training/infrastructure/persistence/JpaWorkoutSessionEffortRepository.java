@@ -1,11 +1,14 @@
 package com.devinolabs.uap.training.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.devinolabs.uap.training.application.RecentSessionEffort;
 import com.devinolabs.uap.training.application.WorkoutSessionEffortAlreadyExistsException;
 import com.devinolabs.uap.training.application.WorkoutSessionEffortRepository;
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -57,6 +60,18 @@ class JpaWorkoutSessionEffortRepository implements WorkoutSessionEffortRepositor
 	@Override
 	public boolean existsByOccurrenceId(WorkoutOccurrenceId occurrenceId) {
 		return jpaRepository.existsByWorkoutOccurrenceId(occurrenceId.value());
+	}
+
+	@Override
+	public List<RecentSessionEffort> findRecentByAthleteId(AthleteId athleteId, int limit) {
+		int size = Math.max(1, Math.min(limit, 8));
+		return jpaRepository.findByAthleteIdOrderBySubmittedAtDesc(athleteId.value(), PageRequest.of(0, size))
+				.stream()
+				.map(entity -> new RecentSessionEffort(
+						entity.getSessionRpe(),
+						entity.getSessionDurationMinutes(),
+						entity.getSubmittedAt()))
+				.toList();
 	}
 
 	private static RuntimeException mapConstraint(DataIntegrityViolationException ex) {

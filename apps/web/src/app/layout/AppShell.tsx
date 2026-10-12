@@ -8,6 +8,7 @@ import { LoadingView } from '@/core/components/LoadingView';
 
 const PAGE_TITLES: Record<string, string> = {
   '/app/home': 'Home',
+  '/app/coach': 'AI Coach',
   '/app/training': 'Training',
   '/app/training/plans': 'Training plans',
   '/app/training/plans/new': 'Create plan',

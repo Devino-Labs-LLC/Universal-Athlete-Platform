@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("39");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("40");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create integration evidence and ingest");
+				.isEqualTo("create ai coach conversations");
 	}
 
 	@Test
@@ -926,6 +926,23 @@ class UapServerApplicationTests {
 			assertThat(ingestEvents.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create integration evidence and ingest");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesAiCoachConversationsMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet conversations = connection.getMetaData().getTables(
+						null, null, "ai_coach_conversations", new String[] { "TABLE" });
+				ResultSet messages = connection.getMetaData().getTables(
+						null, null, "ai_coach_messages", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '40'")) {
+			assertThat(conversations.next()).isTrue();
+			assertThat(messages.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create ai coach conversations");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

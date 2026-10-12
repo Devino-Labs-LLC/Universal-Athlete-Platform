@@ -60,4 +60,10 @@ export const NAV_ICONS: Record<string, ReactNode> = {
       <path d="M5 20a7 7 0 0 1 14 0" />
     </svg>
   ),
+  coach: (
+    <svg {...iconProps}>
+      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />
+      <path d="M18 14l.7 1.8L20.5 16.5 18.7 17.2 18 19l-.7-1.8-1.8-.7.7-1.8L18 14z" />
+    </svg>
+  ),
 };

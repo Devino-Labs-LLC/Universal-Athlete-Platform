@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/app/recovery', label: 'Recovery', icon: 'recovery' },
   { to: '/app/performance', label: 'Performance', icon: 'performance' },
   { to: '/app/profile', label: 'Profile', icon: 'profile' },
+  { to: '/app/coach', label: 'AI Coach', icon: 'coach', tone: 'ai' },
 ] as const;
 
 interface SidebarProps {
@@ -33,7 +34,13 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              [styles.navLink, isActive ? styles.navLinkActive : ''].filter(Boolean).join(' ')
+              [
+                styles.navLink,
+                'tone' in item && item.tone === 'ai' ? styles.coachLink : '',
+                isActive ? styles.navLinkActive : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
             }
             onClick={onNavigate}
           >

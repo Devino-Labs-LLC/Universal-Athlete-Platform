@@ -9,6 +9,7 @@ import { Screen } from '@/src/core/components/Screen';
 import { isApiError } from '@/src/core/api/errors';
 import { AdaptationCard } from '@/src/features/home/components/AdaptationCard';
 import { HomeQuickActions } from '@/src/features/home/components/HomeQuickActions';
+import { CoachHomeEntry } from '@/src/features/coach/components/CoachHomeEntry';
 import { HomeSkeleton } from '@/src/features/home/components/HomeSkeleton';
 import { PrimaryWorkoutCard } from '@/src/features/home/components/PrimaryWorkoutCard';
 import { ReadinessCard } from '@/src/features/home/components/ReadinessCard';
@@ -202,6 +203,8 @@ export function HomeScreen() {
       ) : null}
 
       <RecentPerformanceCard records={data.recentPerformance ?? []} />
+
+      <CoachHomeEntry />
 
       <HomeQuickActions
         actions={data.actions}

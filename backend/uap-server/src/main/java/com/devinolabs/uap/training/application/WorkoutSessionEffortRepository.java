@@ -1,5 +1,6 @@
 package com.devinolabs.uap.training.application;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.devinolabs.uap.training.domain.AthleteId;
@@ -18,5 +19,7 @@ public interface WorkoutSessionEffortRepository {
 	Optional<WorkoutSessionEffort> findByIdAndAthleteId(WorkoutSessionEffortId id, AthleteId athleteId);
 
 	boolean existsByOccurrenceId(WorkoutOccurrenceId occurrenceId);
+
+	List<RecentSessionEffort> findRecentByAthleteId(AthleteId athleteId, int limit);
 
 }

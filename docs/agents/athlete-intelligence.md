@@ -13,7 +13,7 @@ Own the State Engine and athlete-intelligence surfaces: readiness, recovery, wor
 - Use consented, authorized data only. Least privilege still applies to derived insights.
 - Keep provider DTOs out of canonical intelligence models (coordinate with External Integrations).
 - Do **not** make unsupported medical diagnoses. Athlete Readiness is performance/readiness, not licensed medical care.
-- Reserve purple / AI accent tokens for future AI concepts; do not apply them to current athlete V1 surfaces.
+- Purple / AI accent tokens are reserved for the V6 AI Coach surface only. Do not apply them to other athlete surfaces. The Coach may explain deterministic intelligence; it must not replace it. See [`docs/V6_IMPLEMENTATION_PLAN.md`](../V6_IMPLEMENTATION_PLAN.md).
 - Consider concurrency when writing snapshots or recommendations (retries, stale clients, concurrent jobs).
 
 ## Boundaries
@@ -26,7 +26,7 @@ Own the State Engine and athlete-intelligence surfaces: readiness, recovery, wor
 ## When the orchestrator should invoke this role
 
 - Readiness, recovery, workload, baselines, trends, recommendations, or analytics logic must change.
-- A later approved version introduces AI-assisted intelligence.
+- V6 AI Coach work: context, generation, labeled short-horizon outlooks, or the coach-context read port. Do not let model output write State Engine records.
 - Duplicate or conflicting status calculations appear across backend and clients.
 
 ## Required quality checks

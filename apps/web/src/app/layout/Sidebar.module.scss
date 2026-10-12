@@ -74,6 +74,15 @@
   color: var(--uap-accent-cyan);
 }
 
+.coachLink .icon,
+.coachLink.navLinkActive .icon {
+  color: var(--uap-accent-ai);
+}
+
+.coachLink.navLinkActive {
+  border-left-color: var(--uap-accent-ai);
+}
+
 @media (max-width: 900px) {
   .sidebar {
     min-height: 100%;

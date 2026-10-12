@@ -1,0 +1,125 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-4);
+  max-width: 760px;
+}
+
+.intro {
+  margin: 0;
+  color: var(--uap-text-muted);
+}
+
+.facts,
+.thread,
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  padding: var(--uap-space-4);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  background: var(--uap-surface);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--uap-font-size-md);
+}
+
+.fact {
+  margin: 0;
+}
+
+.topic {
+  font-weight: 700;
+}
+
+.stale,
+.unavailable,
+.notice {
+  margin: 0;
+  color: var(--uap-text-muted);
+}
+
+.user,
+.assistant,
+.forecast {
+  margin: 0;
+  padding: var(--uap-space-3);
+  border-radius: var(--uap-radius-md);
+}
+
+.user {
+  background: var(--uap-surface-muted, transparent);
+}
+
+.assistant {
+  border: 1px solid var(--uap-border-subtle);
+}
+
+.forecast {
+  border: 1px solid var(--uap-accent-ai);
+}
+
+.kind {
+  display: block;
+  margin-bottom: var(--uap-space-1);
+  color: var(--uap-accent-ai);
+  font-size: var(--uap-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+}
+
+.starter {
+  border: 1px solid var(--uap-accent-ai);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--uap-accent-ai);
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  gap: var(--uap-space-2);
+}
+
+.input {
+  flex: 1;
+  min-height: 44px;
+  border-radius: var(--uap-radius-md);
+  border: 1px solid var(--uap-border-subtle);
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  color: inherit;
+}
+
+.send {
+  border: 0;
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-accent-ai);
+  color: #fff;
+  padding: 0 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

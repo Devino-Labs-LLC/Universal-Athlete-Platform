@@ -3,7 +3,7 @@
  * (`apps/web/src/styles/tokens/_tokens.scss`), expressed for React Native.
  *
  * Brand roles: lime = primary action; cyan = nav/selection/info/focus;
- * purple/AI = reserved (defined, unused on current athlete surfaces).
+ * purple/AI = reserved for the AI Coach surface only.
  * Navy is the cool-neutral chrome family (no warm cream SaaS palette).
  */
 
@@ -43,7 +43,7 @@ export const typography = {
 
 /**
  * Brand scales shared across themes (exact Web V1 / UAP hex values).
- * AI purple is reserved for future AI concepts only.
+ * AI purple is for the AI Coach surface only.
  */
 export const brand = {
   lime400: '#bef264',

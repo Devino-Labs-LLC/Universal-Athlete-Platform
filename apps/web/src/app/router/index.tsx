@@ -27,6 +27,9 @@ const VerifyEmailPage = lazy(() =>
 const HomePage = lazy(() =>
   import('@/features/home/pages/HomePage').then((m) => ({ default: m.HomePage })),
 );
+const CoachPage = lazy(() =>
+  import('@/features/coach-ai/pages/CoachPage').then((m) => ({ default: m.CoachPage })),
+);
 const OnboardingProfilePage = lazy(() =>
   import('@/features/onboarding/pages/OnboardingProfilePage').then((m) => ({ default: m.OnboardingProfilePage })),
 );
@@ -249,6 +252,7 @@ export function AppRouter() {
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
+              <Route path="coach" element={<CoachPage />} />
               <Route path="training" element={<TrainingLandingPage />} />
               <Route path="training/plans" element={<PlanListPage />} />
               <Route path="training/plans/new" element={<CreatePlanPage />} />
