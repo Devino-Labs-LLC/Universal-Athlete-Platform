@@ -6,6 +6,10 @@ import { TrainingLandingPage } from '@/features/training/pages/TrainingLandingPa
 
 const useTrainingOverview = vi.fn();
 
+vi.mock('@/features/sponsorship/components/SponsorPlacementSlot', () => ({
+  SponsorPlacementSlot: () => null,
+}));
+
 vi.mock('@/features/training/hooks/usePlans', () => ({
   useTrainingOverview: (...args: unknown[]) => useTrainingOverview(...args),
   usePlans: () => ({ data: [] }),

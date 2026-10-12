@@ -16,6 +16,10 @@ jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
 }));
 
+jest.mock('@/src/features/sponsorship/components/SponsorPlacementSlot', () => ({
+  SponsorPlacementSlot: () => null,
+}));
+
 jest.mock('@/src/features/training/hooks/useTrainingOverview', () => ({
   useTrainingOverview: jest.fn(),
 }));

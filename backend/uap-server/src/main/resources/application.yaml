@@ -73,6 +73,9 @@ uap:
       api-key: ${UAP_AI_GROQ_API_KEY:}
       model: ${UAP_AI_GROQ_MODEL:llama-3.3-70b-versatile}
       base-url: ${UAP_AI_GROQ_BASE_URL:https://api.groq.com/openai/v1}
+  sponsorship:
+    # V7 operators. Empty means no one can administer sponsors. Comma-separated account UUIDs.
+    operator-account-ids: ${UAP_SPONSORSHIP_OPERATOR_ACCOUNT_IDS:}
   billing:
     entitlement-enforcement:
       # Product-edge 402s. Independent of Stripe. Production launch requires an explicit gate.

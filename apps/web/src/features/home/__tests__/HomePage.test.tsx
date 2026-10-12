@@ -25,6 +25,10 @@ vi.mock('@/features/home/hooks/useTodayDashboard', () => ({
   }),
 }));
 
+vi.mock('@/features/sponsorship/components/SponsorPlacementSlot', () => ({
+  SponsorPlacementSlot: () => null,
+}));
+
 vi.mock('@/features/home/hooks/useDerivedStateMutations', () => ({
   useDerivedStateMutations: () => ({
     athleteStateMutation: { isPending: false, mutate: vi.fn() },

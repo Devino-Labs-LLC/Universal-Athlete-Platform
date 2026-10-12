@@ -30,6 +30,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/profile/goals': 'Manage goals',
   '/app/invitations': 'Invitations',
   '/app/sharing': 'Sharing',
+  '/app/platform/sponsors': 'Partners',
 };
 
 function resolvePageTitle(pathname: string): string {

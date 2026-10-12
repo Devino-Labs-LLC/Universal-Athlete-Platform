@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 import { NAV_ICONS } from '@/app/layout/navIcons';
 import styles from '@/app/layout/Sidebar.module.scss';
+import { useSponsorshipOperator } from '@/features/sponsorship/hooks/useSponsorship';
 
 const NAV_ITEMS = [
   { to: '/app/home', label: 'Home', icon: 'home' },
@@ -20,6 +21,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className, onNavigate }: SidebarProps) {
+  const operator = useSponsorshipOperator();
+  const items = operator.data
+    ? [...NAV_ITEMS, { to: '/app/platform/sponsors', label: 'Partners', icon: 'partners' as const }]
+    : NAV_ITEMS;
   return (
     <aside className={[styles.sidebar, className].filter(Boolean).join(' ')} aria-label="Primary">
       <div className={styles.brandBlock}>
@@ -29,7 +34,7 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       </div>
 
       <nav className={styles.nav}>
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

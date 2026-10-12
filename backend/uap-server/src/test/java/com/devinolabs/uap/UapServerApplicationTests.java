@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("40");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("41");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create ai coach conversations");
+				.isEqualTo("create sponsorship catalog");
 	}
 
 	@Test
@@ -943,6 +943,29 @@ class UapServerApplicationTests {
 			assertThat(messages.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create ai coach conversations");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesSponsorshipCatalogMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet sponsors = connection.getMetaData().getTables(
+						null, null, "sponsors", new String[] { "TABLE" });
+				ResultSet campaigns = connection.getMetaData().getTables(
+						null, null, "sponsorship_campaigns", new String[] { "TABLE" });
+				ResultSet placements = connection.getMetaData().getTables(
+						null, null, "sponsorship_placements", new String[] { "TABLE" });
+				ResultSet events = connection.getMetaData().getTables(
+						null, null, "sponsorship_events", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '41'")) {
+			assertThat(sponsors.next()).isTrue();
+			assertThat(campaigns.next()).isTrue();
+			assertThat(placements.next()).isTrue();
+			assertThat(events.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create sponsorship catalog");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

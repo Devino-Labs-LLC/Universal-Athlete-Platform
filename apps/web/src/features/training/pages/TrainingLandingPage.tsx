@@ -11,6 +11,7 @@ import { TrainingStatusBadge } from '@/features/training/components/TrainingStat
 import { useTrainingOverview } from '@/features/training/hooks/usePlans';
 import { planTypeLabel } from '@/features/training/models/labels';
 import type { TrainingOverview } from '@/features/training/models/schemas';
+import { SponsorPlacementSlot } from '@/features/sponsorship/components/SponsorPlacementSlot';
 import styles from '@/features/training/pages/TrainingLandingPage.module.scss';
 
 type OverviewOccurrence = NonNullable<TrainingOverview['upcomingOccurrences']>[number];
@@ -100,6 +101,7 @@ export function TrainingLandingPage() {
         </div>
       }
     >
+      <SponsorPlacementSlot surface="TRAINING" />
       <div className={styles.hub}>
         <section className={styles.hero} aria-labelledby="next-training-heading">
           <p className={styles.eyebrow} id="next-training-heading">

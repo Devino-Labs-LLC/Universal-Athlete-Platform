@@ -8,6 +8,7 @@ import { Page } from '@/core/components/Page';
 import { useTeamReadiness } from '@/features/coach/hooks/useCoachQueries';
 import { coachErrorMessage, isCoachNotFoundError } from '@/features/coach/models/errors';
 import type { TeamReadiness } from '@/features/coach/models/schemas';
+import { SponsorPlacementSlot } from '@/features/sponsorship/components/SponsorPlacementSlot';
 import styles from '@/features/coach/pages/CoachPages.module.scss';
 
 /**
@@ -37,6 +38,7 @@ export function TeamReadinessPage() {
         </Link>
       }
     >
+      <SponsorPlacementSlot surface="TEAM" teamId={teamId} />
       <label className={styles.field}>
         <span className={styles.fieldLabel}>Date</span>
         <input

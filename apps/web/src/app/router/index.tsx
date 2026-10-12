@@ -30,6 +30,11 @@ const HomePage = lazy(() =>
 const CoachPage = lazy(() =>
   import('@/features/coach-ai/pages/CoachPage').then((m) => ({ default: m.CoachPage })),
 );
+const PlatformSponsorsPage = lazy(() =>
+  import('@/features/sponsorship/pages/PlatformSponsorsPage').then((m) => ({
+    default: m.PlatformSponsorsPage,
+  })),
+);
 const OnboardingProfilePage = lazy(() =>
   import('@/features/onboarding/pages/OnboardingProfilePage').then((m) => ({ default: m.OnboardingProfilePage })),
 );
@@ -253,6 +258,14 @@ export function AppRouter() {
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<HomePage />} />
               <Route path="coach" element={<CoachPage />} />
+              <Route
+                path="platform/sponsors"
+                element={
+                  <LazyPage>
+                    <PlatformSponsorsPage />
+                  </LazyPage>
+                }
+              />
               <Route path="training" element={<TrainingLandingPage />} />
               <Route path="training/plans" element={<PlanListPage />} />
               <Route path="training/plans/new" element={<CreatePlanPage />} />

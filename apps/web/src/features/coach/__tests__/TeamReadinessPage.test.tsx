@@ -7,6 +7,10 @@ import { TeamReadinessPage } from '@/features/coach/pages/TeamReadinessPage';
 
 const useTeamReadiness = vi.fn();
 
+vi.mock('@/features/sponsorship/components/SponsorPlacementSlot', () => ({
+  SponsorPlacementSlot: () => null,
+}));
+
 vi.mock('@/features/coach/hooks/useCoachQueries', () => ({
   useTeamReadiness: (...args: unknown[]) => useTeamReadiness(...args),
 }));

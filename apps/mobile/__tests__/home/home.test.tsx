@@ -20,6 +20,10 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
 }));
 
+jest.mock('@/src/features/sponsorship/components/SponsorPlacementSlot', () => ({
+  SponsorPlacementSlot: () => null,
+}));
+
 jest.mock('@/src/features/home/hooks/useTodayDashboard', () => ({
   useTodayDashboard: jest.fn(),
 }));

@@ -23,6 +23,7 @@ import {
 import {
   navigateToAdaptationProposal,
 } from '@/src/features/adaptation/utils/proposalNavigation';
+import { SponsorPlacementSlot } from '@/src/features/sponsorship/components/SponsorPlacementSlot';
 import {
   navigateToCreatePersonalPlan,
   navigateToOccurrenceLaunch,
@@ -101,6 +102,7 @@ export function TrainingOverviewScreen() {
       testID="training-overview-screen"
       refreshing={overviewQuery.isFetching}
       onRefresh={() => overviewQuery.refetch()}>
+      <SponsorPlacementSlot surface="TRAINING" />
       {nextOccurrence ? (
         <WorkoutOccurrenceCard
           testID="next-workout-card"

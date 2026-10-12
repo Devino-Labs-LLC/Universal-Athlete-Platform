@@ -1,0 +1,50 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-2);
+  border: 1px dashed var(--uap-border-subtle);
+  border-radius: var(--uap-radius-lg);
+  padding: var(--uap-space-4);
+  background: var(--uap-surface);
+}
+
+.label {
+  margin: 0;
+  font-size: var(--uap-font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uap-text-secondary);
+}
+
+.sponsor {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  font-weight: 600;
+  color: var(--uap-text-secondary);
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--uap-font-size-md);
+  font-weight: 600;
+  color: var(--uap-text-primary);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--uap-font-size-sm);
+  color: var(--uap-text-secondary);
+}
+
+.creative {
+  max-width: 160px;
+  max-height: 64px;
+  object-fit: contain;
+}
+
+.cta {
+  align-self: flex-start;
+  color: var(--uap-text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}

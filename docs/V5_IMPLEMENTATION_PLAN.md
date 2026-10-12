@@ -516,7 +516,7 @@ cd apps/web && npm install --install-links && cd /app && mkdir -p node_modules &
 | Version | Scope | V5 stance |
 | --- | --- | --- |
 | V6 | Generative / predictive AI coach | Do not implement; no purple AI chrome on Connected Apps |
-| V7 | Marketplace / social / ecosystem | Do not implement |
+| V7 | Marketplace / social / ecosystem | Historic deferral; superseded by Product Owner lock in [`docs/V7_IMPLEMENTATION_PLAN.md`](V7_IMPLEMENTATION_PLAN.md) (sponsor/partner presentation, not a marketplace) |
 
 ---
 

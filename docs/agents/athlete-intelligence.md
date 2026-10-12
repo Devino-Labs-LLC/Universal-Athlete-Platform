@@ -14,6 +14,7 @@ Own the State Engine and athlete-intelligence surfaces: readiness, recovery, wor
 - Keep provider DTOs out of canonical intelligence models (coordinate with External Integrations).
 - Do **not** make unsupported medical diagnoses. Athlete Readiness is performance/readiness, not licensed medical care.
 - Purple / AI accent tokens are reserved for the V6 AI Coach surface only. Do not apply them to other athlete surfaces. The Coach may explain deterministic intelligence; it must not replace it. See [`docs/V6_IMPLEMENTATION_PLAN.md`](../V6_IMPLEMENTATION_PLAN.md).
+- V7 sponsorship is presentation-only. Do not feed sponsor copy, eligibility, or reporting into the State Engine, recommendations, evidence, CoachContext, or ModelGateway. See [`docs/V7_IMPLEMENTATION_PLAN.md`](../V7_IMPLEMENTATION_PLAN.md).
 - Consider concurrency when writing snapshots or recommendations (retries, stale clients, concurrent jobs).
 
 ## Boundaries

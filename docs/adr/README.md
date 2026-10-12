@@ -78,3 +78,11 @@ Product Owner lock: [`docs/V6_IMPLEMENTATION_PLAN.md`](../V6_IMPLEMENTATION_PLAN
 | ADR | Title | Status |
 | --- | --- | --- |
 | [052](052-ai-coach-model-gateway.md) | AI Coach model gateway (provider-neutral, Groq first) | **Accepted** |
+
+## Index (V7 Sponsor & Partner — Accepted)
+
+Product Owner lock: [`docs/V7_IMPLEMENTATION_PLAN.md`](../V7_IMPLEMENTATION_PLAN.md). Sponsorship is presentation-only. It does not enter the State Engine, recommendations, connected evidence, or AI Coach context.
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [053](053-sponsorship-presentation-boundary.md) | Sponsorship as a presentation boundary | **Accepted** |

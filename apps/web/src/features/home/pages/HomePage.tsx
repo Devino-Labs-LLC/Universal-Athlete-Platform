@@ -15,6 +15,7 @@ import { RecoveryCard } from '@/features/home/components/RecoveryCard';
 import { TrainingLoadCard } from '@/features/home/components/TrainingLoadCard';
 import { useDerivedStateMutations } from '@/features/home/hooks/useDerivedStateMutations';
 import { useTodayDashboard } from '@/features/home/hooks/useTodayDashboard';
+import { SponsorPlacementSlot } from '@/features/sponsorship/components/SponsorPlacementSlot';
 import styles from '@/features/home/pages/HomePage.module.scss';
 
 export function HomePage() {
@@ -104,6 +105,10 @@ export function HomePage() {
       </div>
       <div className={styles.spanSix}>
         <RecentPerformanceCard records={data.recentPerformance} />
+      </div>
+
+      <div className={styles.spanFull}>
+        <SponsorPlacementSlot surface="HOME" />
       </div>
 
       <div className={styles.spanFull}>
