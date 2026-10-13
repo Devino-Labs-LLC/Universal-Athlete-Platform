@@ -1,37 +1,31 @@
 package com.devinolabs.uap.sponsorship.application;
 
+import com.devinolabs.uap.sponsorship.api.PartnerPresentationRules;
+
 public final class SponsorCopy {
 
 	private SponsorCopy() {
 	}
 
 	public static String requirePlain(String value, String field, int maxLength) {
-		if (value == null || value.isBlank()) {
-			throw new SponsorInputInvalidException(field + " is required");
+		try {
+			return PartnerPresentationRules.requirePlain(value, field, maxLength);
 		}
-		String trimmed = value.trim();
-		if (trimmed.length() > maxLength) {
-			throw new SponsorInputInvalidException(field + " is too long");
+		catch (IllegalArgumentException ex) {
+			throw new SponsorInputInvalidException(ex.getMessage());
 		}
-		if (containsMarkup(trimmed)) {
-			throw new SponsorInputInvalidException(field + " must be plain text");
-		}
-		return trimmed;
 	}
 
 	public static String optionalPlain(String value, String field, int maxLength) {
-		if (value == null || value.isBlank()) {
-			return null;
+		try {
+			return PartnerPresentationRules.optionalPlain(value, field, maxLength);
 		}
-		return requirePlain(value, field, maxLength);
+		catch (IllegalArgumentException ex) {
+			throw new SponsorInputInvalidException(ex.getMessage());
+		}
 	}
 
 	static boolean containsMarkup(String value) {
-		String lower = value.toLowerCase();
-		return value.indexOf('<') >= 0
-				|| value.indexOf('>') >= 0
-				|| lower.contains("javascript:")
-				|| lower.contains("onerror=")
-				|| lower.contains("onload=");
+		return PartnerPresentationRules.containsMarkup(value);
 	}
 }

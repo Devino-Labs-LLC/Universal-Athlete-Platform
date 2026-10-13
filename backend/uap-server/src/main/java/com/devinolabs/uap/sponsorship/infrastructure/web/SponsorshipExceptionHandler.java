@@ -10,14 +10,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.devinolabs.uap.sponsorship.api.CatalogAccessDeniedException;
 import com.devinolabs.uap.sponsorship.application.SponsorCatalogNotFoundException;
 import com.devinolabs.uap.sponsorship.application.SponsorInputInvalidException;
 
 @RestControllerAdvice(assignableTypes = {PlacementController.class, PlatformSponsorshipController.class})
 class SponsorshipExceptionHandler {
 
-	@ExceptionHandler(SponsorCatalogNotFoundException.class)
-	ResponseEntity<SponsorshipApiError> missing(SponsorCatalogNotFoundException ex, HttpServletRequest request) {
+	@ExceptionHandler({ SponsorCatalogNotFoundException.class, CatalogAccessDeniedException.class })
+	ResponseEntity<SponsorshipApiError> missing(RuntimeException ex, HttpServletRequest request) {
 		return status(HttpStatus.NOT_FOUND, "SPONSORSHIP_NOT_FOUND", "Sponsorship resource was not found", request);
 	}
 

@@ -1,0 +1,68 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+  margin-bottom: var(--uap-space-4);
+}
+
+.input,
+.select {
+  min-height: 2.5rem;
+  padding: 0 var(--uap-space-3);
+  border: 1px solid var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+  background: var(--uap-surface);
+  color: var(--uap-text-primary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--uap-space-3);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uap-space-3);
+  max-width: 40rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--uap-space-2);
+}
+
+.offer {
+  padding: var(--uap-space-3);
+  border: 1px dashed var(--uap-border-subtle);
+  border-radius: var(--uap-radius-md);
+}
+
+.form {
+  display: grid;
+  gap: var(--uap-space-2);
+  max-width: 32rem;
+}
+
+.section {
+  margin-bottom: var(--uap-space-6);
+}
+
+.notice {
+  color: var(--uap-danger);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--uap-font-size-sm);
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: var(--uap-space-2);
+  border-bottom: 1px solid var(--uap-border-subtle);
+}

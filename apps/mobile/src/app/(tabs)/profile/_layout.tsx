@@ -6,6 +6,8 @@ export default function ProfileStackLayout() {
       <Stack.Screen name="index" options={{ title: 'Profile' }} />
       <Stack.Screen name="billing" options={{ title: 'Premium billing' }} />
       <Stack.Screen name="connected-apps" options={{ title: 'Connected Apps' }} />
+      <Stack.Screen name="marketplace/index" options={{ title: 'Marketplace' }} />
+      <Stack.Screen name="marketplace/[listingId]" options={{ title: 'Listing' }} />
       <Stack.Screen name="environments/index" options={{ title: 'Training Environments' }} />
       <Stack.Screen name="environments/create" options={{ title: 'Create Environment' }} />
       <Stack.Screen

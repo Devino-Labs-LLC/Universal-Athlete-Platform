@@ -63,6 +63,8 @@ class IdentitySecurityConfiguration {
 	static final String COACH_API = "/api/v1/coach/**";
 	static final String SPONSORSHIPS_API = "/api/v1/sponsorships/**";
 	static final String PLATFORM_SPONSORSHIPS_API = "/api/v1/platform/sponsorships/**";
+	static final String MARKETPLACE_API = "/api/v1/marketplace/**";
+	static final String PLATFORM_MARKETPLACE_API = "/api/v1/platform/marketplace/**";
 	static final String STRIPE_WEBHOOK_PATH = "/api/v1/billing/webhooks/stripe";
 	static final String APPLE_WEBHOOK_PATH = "/api/v1/billing/webhooks/apple";
 	static final String GOOGLE_PLAY_WEBHOOK_PATH = "/api/v1/billing/webhooks/google-play";
@@ -166,6 +168,8 @@ class IdentitySecurityConfiguration {
 						.requestMatchers(COACH_API).authenticated()
 						.requestMatchers(SPONSORSHIPS_API).authenticated()
 						.requestMatchers(PLATFORM_SPONSORSHIPS_API).authenticated()
+						.requestMatchers(MARKETPLACE_API).authenticated()
+						.requestMatchers(PLATFORM_MARKETPLACE_API).authenticated()
 						.anyRequest().denyAll())
 				.addFilterBefore(new BillingWebhookCsrfSkipFilter(), CsrfFilter.class)
 				.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

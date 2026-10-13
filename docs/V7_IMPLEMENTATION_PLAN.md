@@ -116,7 +116,7 @@ Web operator directory under `/app/platform/sponsors` is **not** in the athlete 
 
 ## Non-goals
 
-Auctions, RTB, sponsor self-signup, impression billing, health data for advertisers, behavioral profiles, readiness/injury/Coach targeting, third-party pixels, sponsor HTML/JS, sponsor influence on recommendations or Coach, sponsor AI agents, V8+.
+Auctions, RTB, sponsor self-signup, impression billing, health data for advertisers, behavioral profiles, readiness/injury/Coach targeting, third-party pixels, sponsor HTML/JS, sponsor influence on recommendations or Coach, sponsor AI agents. Athlete Marketplace is V8 (`docs/V8_IMPLEMENTATION_PLAN.md`), not this plan.
 
 ## Certification
 

@@ -86,3 +86,11 @@ Product Owner lock: [`docs/V7_IMPLEMENTATION_PLAN.md`](../V7_IMPLEMENTATION_PLAN
 | ADR | Title | Status |
 | --- | --- | --- |
 | [053](053-sponsorship-presentation-boundary.md) | Sponsorship as a presentation boundary | **Accepted** |
+
+## Index (V8 Athlete Marketplace — Accepted)
+
+Product Owner lock: [`docs/V8_IMPLEMENTATION_PLAN.md`](../V8_IMPLEMENTATION_PLAN.md). The Marketplace is curated discovery. It does not process seller payments and does not enter the State Engine, recommendations, evidence, or AI Coach.
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [054](054-marketplace-curated-discovery.md) | Curated Athlete Marketplace as discovery, not commerce infrastructure | **Accepted** |

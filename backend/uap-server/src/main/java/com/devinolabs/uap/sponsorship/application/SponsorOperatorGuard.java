@@ -4,10 +4,12 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.devinolabs.uap.sponsorship.api.CatalogAccessDeniedException;
+import com.devinolabs.uap.sponsorship.api.SponsorOperatorPort;
 import com.devinolabs.uap.sponsorship.infrastructure.config.SponsorshipProperties;
 
 @Component
-public class SponsorOperatorGuard {
+public class SponsorOperatorGuard implements SponsorOperatorPort {
 
 	private final SponsorshipProperties properties;
 
@@ -17,7 +19,7 @@ public class SponsorOperatorGuard {
 
 	public void requireOperator(UUID accountId) {
 		if (!properties.isOperator(accountId)) {
-			throw new SponsorCatalogNotFoundException();
+			throw new CatalogAccessDeniedException();
 		}
 	}
 

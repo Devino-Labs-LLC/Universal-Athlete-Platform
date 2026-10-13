@@ -66,6 +66,12 @@ export const NAV_ICONS: Record<string, ReactNode> = {
       <path d="M8 7V5h8v2" />
     </svg>
   ),
+  marketplace: (
+    <svg {...iconProps}>
+      <path d="M4 7h16l-1 12H5L4 7z" />
+      <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+    </svg>
+  ),
   coach: (
     <svg {...iconProps}>
       <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />

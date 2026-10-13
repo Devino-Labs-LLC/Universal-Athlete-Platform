@@ -31,6 +31,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/app/invitations': 'Invitations',
   '/app/sharing': 'Sharing',
   '/app/platform/sponsors': 'Partners',
+  '/app/marketplace': 'Marketplace',
+  '/app/platform/marketplace': 'Marketplace catalog',
 };
 
 function resolvePageTitle(pathname: string): string {
@@ -60,6 +62,9 @@ function resolvePageTitle(pathname: string): string {
   }
   if (pathname.includes('/environments/') && pathname.endsWith('/edit')) {
     return 'Edit environment';
+  }
+  if (pathname.startsWith('/app/marketplace/')) {
+    return 'Marketplace listing';
   }
   if (pathname.includes('/environments/')) {
     return 'Environment details';

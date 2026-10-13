@@ -35,6 +35,21 @@ const PlatformSponsorsPage = lazy(() =>
     default: m.PlatformSponsorsPage,
   })),
 );
+const MarketplacePage = lazy(() =>
+  import('@/features/marketplace/pages/MarketplacePage').then((m) => ({
+    default: m.MarketplacePage,
+  })),
+);
+const MarketplaceListingPage = lazy(() =>
+  import('@/features/marketplace/pages/MarketplaceListingPage').then((m) => ({
+    default: m.MarketplaceListingPage,
+  })),
+);
+const PlatformMarketplacePage = lazy(() =>
+  import('@/features/marketplace/pages/PlatformMarketplacePage').then((m) => ({
+    default: m.PlatformMarketplacePage,
+  })),
+);
 const OnboardingProfilePage = lazy(() =>
   import('@/features/onboarding/pages/OnboardingProfilePage').then((m) => ({ default: m.OnboardingProfilePage })),
 );
@@ -263,6 +278,30 @@ export function AppRouter() {
                 element={
                   <LazyPage>
                     <PlatformSponsorsPage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="platform/marketplace"
+                element={
+                  <LazyPage>
+                    <PlatformMarketplacePage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="marketplace"
+                element={
+                  <LazyPage>
+                    <MarketplacePage />
+                  </LazyPage>
+                }
+              />
+              <Route
+                path="marketplace/:listingId"
+                element={
+                  <LazyPage>
+                    <MarketplaceListingPage />
                   </LazyPage>
                 }
               />

@@ -161,6 +161,15 @@ export default function ProfileScreen() {
         />
       </HomeCard>
 
+      <HomeCard eyebrow="Marketplace" title="Partner listings">
+        <Button
+          variant="secondary"
+          label="Marketplace"
+          testID="profile-marketplace-link"
+          onPress={() => router.push('/(tabs)/profile/marketplace' as Href)}
+        />
+      </HomeCard>
+
       <HomeCard eyebrow="Integrations" title="Connected Apps">
         <Button
           variant="secondary"

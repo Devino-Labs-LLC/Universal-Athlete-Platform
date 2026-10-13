@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/app/recovery', label: 'Recovery', icon: 'recovery' },
   { to: '/app/performance', label: 'Performance', icon: 'performance' },
   { to: '/app/profile', label: 'Profile', icon: 'profile' },
+  { to: '/app/marketplace', label: 'Marketplace', icon: 'marketplace' },
   { to: '/app/coach', label: 'AI Coach', icon: 'coach', tone: 'ai' },
 ] as const;
 
@@ -23,7 +24,11 @@ interface SidebarProps {
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const operator = useSponsorshipOperator();
   const items = operator.data
-    ? [...NAV_ITEMS, { to: '/app/platform/sponsors', label: 'Partners', icon: 'partners' as const }]
+    ? [
+        ...NAV_ITEMS,
+        { to: '/app/platform/sponsors', label: 'Partners', icon: 'partners' as const },
+        { to: '/app/platform/marketplace', label: 'Marketplace catalog', icon: 'marketplace' as const },
+      ]
     : NAV_ITEMS;
   return (
     <aside className={[styles.sidebar, className].filter(Boolean).join(' ')} aria-label="Primary">
