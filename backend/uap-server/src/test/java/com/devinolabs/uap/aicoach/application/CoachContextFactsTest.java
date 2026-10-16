@@ -42,7 +42,10 @@ class CoachContextFactsTest {
 						null,
 						null,
 						0,
-						List.of()))));
+						List.of(),
+						"UNKNOWN",
+						false,
+						true))));
 		assertTrue(rendered.contains("Readiness | PRESENT | STALE |"));
 		assertTrue(rendered.contains("Connected evidence | UNAVAILABLE | STALE |"));
 		assertTrue(rendered.contains("Freshness STALE"));

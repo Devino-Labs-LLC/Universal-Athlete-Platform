@@ -13,3 +13,19 @@ export function connectionsListQueryBase(enabled: boolean) {
 export function connectionsInvalidationTarget() {
   return { queryKey: connectedAppsQueryKeys.connections() };
 }
+
+export function devicesListQueryBase(enabled: boolean) {
+  return {
+    queryKey: connectedAppsQueryKeys.devices(),
+    enabled,
+    retry: false as const,
+  };
+}
+
+export function qualityNoticesQueryBase(enabled: boolean) {
+  return {
+    queryKey: connectedAppsQueryKeys.quality(),
+    enabled,
+    retry: false as const,
+  };
+}

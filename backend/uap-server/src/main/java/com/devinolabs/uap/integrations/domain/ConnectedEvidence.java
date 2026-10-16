@@ -33,6 +33,7 @@ public class ConnectedEvidence {
 	private Instant ingestedAt;
 	private SyncRunId syncRunId;
 	private ProvenanceClass provenanceClass;
+	private UUID deviceId;
 	private String sourceDeviceOrApp;
 	private String qualityCode;
 	private EvidenceStatus status;
@@ -58,6 +59,7 @@ public class ConnectedEvidence {
 			Instant ingestedAt,
 			SyncRunId syncRunId,
 			ProvenanceClass provenanceClass,
+			UUID deviceId,
 			String sourceDeviceOrApp,
 			String qualityCode,
 			EvidenceStatus status,
@@ -77,6 +79,7 @@ public class ConnectedEvidence {
 		this.valueNumeric = valueNumeric;
 		this.valueText = normalizeNullable(valueText);
 		this.unitCode = EvidenceUnitCodes.normalizeAndRequire(unitCode);
+		EvidenceUnitCodes.assertUnitMatchesFamily(this.signalFamily, this.unitCode);
 		this.periodStart = periodStart;
 		this.periodEnd = periodEnd;
 		this.observedAt = Objects.requireNonNull(observedAt, "observedAt must not be null");
@@ -84,8 +87,9 @@ public class ConnectedEvidence {
 		this.ingestedAt = Objects.requireNonNull(ingestedAt, "ingestedAt must not be null");
 		this.syncRunId = syncRunId;
 		this.provenanceClass = Objects.requireNonNull(provenanceClass, "provenanceClass must not be null");
+		this.deviceId = deviceId;
 		this.sourceDeviceOrApp = normalizeNullable(sourceDeviceOrApp);
-		this.qualityCode = normalizeNullable(qualityCode);
+		this.qualityCode = EvidenceQuality.parseOrUnknown(qualityCode).name();
 		this.status = Objects.requireNonNull(status, "status must not be null");
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt must not be null");
@@ -114,6 +118,7 @@ public class ConnectedEvidence {
 			Instant providerUpdatedAt,
 			SyncRunId syncRunId,
 			ProvenanceClass provenanceClass,
+			UUID deviceId,
 			String sourceDeviceOrApp,
 			String qualityCode,
 			Clock clock) {
@@ -137,6 +142,7 @@ public class ConnectedEvidence {
 				now,
 				syncRunId,
 				provenanceClass,
+				deviceId,
 				sourceDeviceOrApp,
 				qualityCode,
 				EvidenceStatus.ACTIVE,
@@ -163,6 +169,7 @@ public class ConnectedEvidence {
 			Instant ingestedAt,
 			SyncRunId syncRunId,
 			ProvenanceClass provenanceClass,
+			UUID deviceId,
 			String sourceDeviceOrApp,
 			String qualityCode,
 			EvidenceStatus status,
@@ -187,6 +194,7 @@ public class ConnectedEvidence {
 				ingestedAt,
 				syncRunId,
 				provenanceClass,
+				deviceId,
 				sourceDeviceOrApp,
 				qualityCode,
 				status,
@@ -228,6 +236,7 @@ public class ConnectedEvidence {
 		this.ingestedAt = now;
 		this.syncRunId = incoming.syncRunId;
 		this.provenanceClass = incoming.provenanceClass;
+		this.deviceId = incoming.deviceId;
 		this.sourceDeviceOrApp = incoming.sourceDeviceOrApp;
 		this.qualityCode = incoming.qualityCode;
 		this.status = EvidenceStatus.ACTIVE;
@@ -363,6 +372,10 @@ public class ConnectedEvidence {
 
 	public ProvenanceClass provenanceClass() {
 		return provenanceClass;
+	}
+
+	public UUID deviceId() {
+		return deviceId;
 	}
 
 	public String sourceDeviceOrApp() {

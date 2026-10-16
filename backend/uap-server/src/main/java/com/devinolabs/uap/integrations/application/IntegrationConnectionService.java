@@ -29,6 +29,10 @@ public class IntegrationConnectionService {
 	private final SyncRunRepository syncRunRepository;
 	private final AthleteContextPort athleteContextPort;
 	private final IntegrationsProperties properties;
+	private final WearableCertificationService certificationService;
+	private final List<WearableProviderAdapter> wearableAdapters;
+	private final DeviceService deviceService;
+	private final WearableOpsService opsService;
 	private final SecurityAuditWriter auditWriter;
 	private final Clock clock;
 
@@ -37,12 +41,20 @@ public class IntegrationConnectionService {
 			SyncRunRepository syncRunRepository,
 			AthleteContextPort athleteContextPort,
 			IntegrationsProperties properties,
+			WearableCertificationService certificationService,
+			List<WearableProviderAdapter> wearableAdapters,
+			DeviceService deviceService,
+			WearableOpsService opsService,
 			SecurityAuditWriter auditWriter,
 			Clock clock) {
 		this.connectionRepository = Objects.requireNonNull(connectionRepository);
 		this.syncRunRepository = Objects.requireNonNull(syncRunRepository);
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.properties = Objects.requireNonNull(properties);
+		this.certificationService = Objects.requireNonNull(certificationService);
+		this.wearableAdapters = wearableAdapters == null ? List.of() : List.copyOf(wearableAdapters);
+		this.deviceService = Objects.requireNonNull(deviceService);
+		this.opsService = Objects.requireNonNull(opsService);
 		this.auditWriter = Objects.requireNonNull(auditWriter);
 		this.clock = Objects.requireNonNull(clock);
 	}
@@ -148,6 +160,7 @@ public class IntegrationConnectionService {
 		assertModuleEnabled();
 		Connection connection = requireOwnedConnection(accountId, connectionId, true);
 		connection.disconnect(clock);
+		deviceService.disconnectForConnection(connection);
 		Connection saved = connectionRepository.save(connection);
 		audit(accountId, saved.athleteId(), saved.id().value(), "INTEGRATION_DISCONNECTED",
 				"{\"provider\":\"" + saved.provider().name() + "\"}");
@@ -181,14 +194,26 @@ public class IntegrationConnectionService {
 		}
 
 		try {
-			// OS hubs are upload-only (evidence-batch). Pull sync fails honestly — never fake SUCCEEDED.
 			if (connection.provider().isOsHub()) {
 				syncRun.completeOsHubUploadOnlyPipeline(clock);
 			}
+			else if (connection.provider().isDirectSensorChannel()) {
+				syncRun.completeDirectSensorUploadOnlyPipeline(clock);
+			}
 			else {
-				syncRun.completeNoAdapterPipeline(clock);
+				WearableProviderAdapter adapter = wearableAdapters.stream()
+						.filter(item -> item.provider() == connection.provider())
+						.findFirst()
+						.orElse(null);
+				if (adapter == null) {
+					syncRun.completeNoAdapterPipeline(clock);
+				}
+				else {
+					adapter.applyPull(connection, syncRun, clock);
+				}
 			}
 			connection.recordSyncAttempt(clock);
+			opsService.recordSync(connection.provider(), syncRun, 0);
 		}
 		catch (IllegalStateException ex) {
 			throw new IntegrationConflictException("INTEGRATION_SYNC_INVALID_STATE", ex.getMessage());
@@ -223,7 +248,7 @@ public class IntegrationConnectionService {
 	}
 
 	private void assertProviderEnabled(HealthProviderKey provider) {
-		if (!properties.isProviderEnabled(provider)) {
+		if (!properties.isProviderEnabled(provider) || !certificationService.allowsConnect(provider)) {
 			throw new IntegrationProviderDisabledException(
 					"INTEGRATION_PROVIDER_DISABLED",
 					"Provider " + provider.name() + " is disabled");

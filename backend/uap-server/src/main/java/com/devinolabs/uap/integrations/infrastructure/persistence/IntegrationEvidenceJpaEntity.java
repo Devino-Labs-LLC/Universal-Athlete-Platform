@@ -41,6 +41,10 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 	@Column(name = "connection_id", nullable = false, updatable = false, columnDefinition = "BINARY(16)")
 	private UUID connectionId;
 
+	@JdbcTypeCode(SqlTypes.UUID)
+	@Column(name = "device_id", columnDefinition = "BINARY(16)")
+	private UUID deviceId;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "provider", nullable = false, updatable = false, length = 40)
 	private HealthProviderKey provider;
@@ -117,6 +121,7 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 			UUID id,
 			UUID athleteId,
 			UUID connectionId,
+			UUID deviceId,
 			HealthProviderKey provider,
 			SignalFamily signalFamily,
 			String signalType,
@@ -141,6 +146,7 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 		this.id = id;
 		this.athleteId = athleteId;
 		this.connectionId = connectionId;
+		this.deviceId = deviceId;
 		this.provider = provider;
 		this.signalFamily = signalFamily;
 		this.signalType = signalType;
@@ -186,6 +192,10 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 
 	UUID getConnectionId() {
 		return connectionId;
+	}
+
+	UUID getDeviceId() {
+		return deviceId;
 	}
 
 	HealthProviderKey getProvider() {
@@ -281,6 +291,7 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 			Instant ingestedAt,
 			UUID syncRunId,
 			ProvenanceClass provenanceClass,
+			UUID deviceId,
 			String sourceDeviceOrApp,
 			String qualityCode,
 			EvidenceStatus status,
@@ -297,6 +308,7 @@ class IntegrationEvidenceJpaEntity implements Persistable<UUID> {
 		this.ingestedAt = ingestedAt;
 		this.syncRunId = syncRunId;
 		this.provenanceClass = provenanceClass;
+		this.deviceId = deviceId;
 		this.sourceDeviceOrApp = sourceDeviceOrApp;
 		this.qualityCode = qualityCode;
 		this.status = status;

@@ -19,6 +19,8 @@ import com.devinolabs.uap.integrations.api.connections.AthleteConnectionStatusPo
 import com.devinolabs.uap.integrations.api.connections.ConnectionView;
 import com.devinolabs.uap.integrations.api.evidence.ConnectedEvidencePort;
 import com.devinolabs.uap.integrations.api.evidence.ConnectedEvidenceView;
+import com.devinolabs.uap.integrations.api.evidence.FusedEvidenceView;
+import com.devinolabs.uap.integrations.api.evidence.FusedSensorPort;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextPort;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextView;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextView.Fact;
@@ -30,6 +32,7 @@ public class CoachContextBuilder {
 	private final TrainingCoachContextPort trainingPort;
 	private final AthleteConnectionStatusPort connectionPort;
 	private final ConnectedEvidencePort evidencePort;
+	private final FusedSensorPort fusedSensorPort;
 	private final Clock clock;
 
 	public CoachContextBuilder(
@@ -37,11 +40,13 @@ public class CoachContextBuilder {
 			TrainingCoachContextPort trainingPort,
 			AthleteConnectionStatusPort connectionPort,
 			ConnectedEvidencePort evidencePort,
+			FusedSensorPort fusedSensorPort,
 			Clock clock) {
 		this.profilePort = Objects.requireNonNull(profilePort);
 		this.trainingPort = Objects.requireNonNull(trainingPort);
 		this.connectionPort = Objects.requireNonNull(connectionPort);
 		this.evidencePort = Objects.requireNonNull(evidencePort);
+		this.fusedSensorPort = Objects.requireNonNull(fusedSensorPort);
 		this.clock = Objects.requireNonNull(clock);
 	}
 
@@ -67,13 +72,17 @@ public class CoachContextBuilder {
 	private List<ConnectedSignalSummary> signals(UUID accountId, UUID athleteId, Instant now) {
 		Instant from = now.minus(java.time.Duration.ofDays(7));
 		List<ConnectedEvidenceView> evidence = evidencePort.listEvidence(athleteId, from, now, null);
+		List<FusedEvidenceView> fused = fusedSensorPort.listFused(athleteId, from, now, null);
 		List<ConnectionView> connections = connectionPort.listForAccount(accountId);
 		List<ConnectedSignalSummary> summaries = new ArrayList<>();
 		for (ConnectionView connection : connections.stream().limit(8).toList()) {
 			List<ConnectedEvidenceView> owned = evidence.stream()
 					.filter(item -> connection.connectionId().equals(item.connectionId()))
 					.toList();
-			summaries.add(summarize(connection, owned, now));
+			List<FusedEvidenceView> ownedFused = fused.stream()
+					.filter(item -> connection.provider().equals(item.provider()))
+					.toList();
+			summaries.add(summarize(connection, owned, ownedFused, now));
 		}
 		return List.copyOf(summaries);
 	}
@@ -81,13 +90,28 @@ public class CoachContextBuilder {
 	private static ConnectedSignalSummary summarize(
 			ConnectionView connection,
 			List<ConnectedEvidenceView> evidence,
+			List<FusedEvidenceView> fused,
 			Instant now) {
 		Map<String, Integer> families = new LinkedHashMap<>();
 		Instant newest = null;
-		for (ConnectedEvidenceView item : evidence) {
+		boolean conflict = false;
+		String quality = "UNKNOWN";
+		for (FusedEvidenceView item : fused) {
 			families.merge(item.signalFamily(), 1, Integer::sum);
 			if (item.observedAt() != null && (newest == null || item.observedAt().isAfter(newest))) {
 				newest = item.observedAt();
+				quality = item.quality();
+			}
+			if (item.consideredEvidenceIds() != null && item.consideredEvidenceIds().size() > 1) {
+				conflict = true;
+			}
+		}
+		if (families.isEmpty()) {
+			for (ConnectedEvidenceView item : evidence) {
+				families.merge(item.signalFamily(), 1, Integer::sum);
+				if (item.observedAt() != null && (newest == null || item.observedAt().isAfter(newest))) {
+					newest = item.observedAt();
+				}
 			}
 		}
 		return new ConnectedSignalSummary(
@@ -96,8 +120,11 @@ public class CoachContextBuilder {
 				CoachFreshness.label(connection.lastSuccessfulSyncAt(), now),
 				connection.lastSuccessfulSyncAt(),
 				newest,
-				evidence.size(),
-				List.copyOf(families.keySet()));
+				fused.isEmpty() ? evidence.size() : fused.size(),
+				List.copyOf(families.keySet()),
+				quality,
+				conflict,
+				fused.isEmpty() && evidence.isEmpty());
 	}
 
 	private static boolean sufficient(TrainingCoachContextView training, List<ConnectedSignalSummary> signals) {

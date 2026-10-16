@@ -116,7 +116,15 @@ class IntegrationConnectionsController {
 						item.observedAt(),
 						item.providerUpdatedAt(),
 						item.sourceDeviceOrApp(),
-						item.provenanceClass()))
+						item.provenanceClass(),
+						item.deviceId(),
+						item.externalDeviceId(),
+						item.deviceType(),
+						item.manufacturer(),
+						item.model(),
+						item.firmwareVersion(),
+						item.capabilities(),
+						item.qualityCode()))
 				.toList();
 		return evidenceService.uploadEvidenceBatch(
 				accountId(authentication),

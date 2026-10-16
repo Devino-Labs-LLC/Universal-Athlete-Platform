@@ -17,10 +17,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.devinolabs.uap.athlete.api.AthleteNotFoundException;
 import com.devinolabs.uap.integrations.application.IntegrationConflictException;
 import com.devinolabs.uap.integrations.application.IntegrationConnectionNotFoundException;
+import com.devinolabs.uap.integrations.application.IntegrationDeviceNotFoundException;
 import com.devinolabs.uap.integrations.application.IntegrationProviderDisabledException;
 import com.devinolabs.uap.integrations.application.IntegrationValidationException;
 
-@RestControllerAdvice(basePackageClasses = IntegrationConnectionsController.class)
+@RestControllerAdvice(basePackages = "com.devinolabs.uap.integrations.infrastructure.web")
 class IntegrationsExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -38,6 +39,14 @@ class IntegrationsExceptionHandler {
 	ResponseEntity<IntegrationsApiErrorResponse> handleNotFound(RuntimeException ex, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(error("CONNECTION_NOT_FOUND", "Integration connection was not found", request, List.of()));
+	}
+
+	@ExceptionHandler(IntegrationDeviceNotFoundException.class)
+	ResponseEntity<IntegrationsApiErrorResponse> handleDeviceNotFound(
+			IntegrationDeviceNotFoundException ex,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(error("DEVICE_NOT_FOUND", "Connected device was not found", request, List.of()));
 	}
 
 	@ExceptionHandler(IntegrationConflictException.class)

@@ -26,5 +26,6 @@ public record ConnectedEvidenceView(
 		String provenanceClass,
 		String sourceDeviceOrApp,
 		String qualityCode,
-		String status) {
+		String status,
+		UUID deviceId) {
 }

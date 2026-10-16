@@ -28,5 +28,13 @@ record EvidenceBatchItemRequest(
 		@NotNull Instant observedAt,
 		Instant providerUpdatedAt,
 		@Size(max = 128) String sourceDeviceOrApp,
-		String provenanceClass) {
+		String provenanceClass,
+		UUID deviceId,
+		@Size(max = 191) String externalDeviceId,
+		@Size(max = 40) String deviceType,
+		@Size(max = 80) String manufacturer,
+		@Size(max = 80) String model,
+		@Size(max = 64) String firmwareVersion,
+		List<String> capabilities,
+		@Size(max = 32) String qualityCode) {
 }

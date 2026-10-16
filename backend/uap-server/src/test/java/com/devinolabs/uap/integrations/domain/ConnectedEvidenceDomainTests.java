@@ -111,6 +111,7 @@ class ConnectedEvidenceDomainTests {
 						ProvenanceClass.CLIENT_DEVICE,
 						null,
 						null,
+						null,
 						CLOCK))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("periodEnd");
@@ -135,6 +136,7 @@ class ConnectedEvidenceDomainTests {
 						null,
 						null,
 						ProvenanceClass.CLIENT_DEVICE,
+						null,
 						null,
 						null,
 						CLOCK))
@@ -188,6 +190,7 @@ class ConnectedEvidenceDomainTests {
 				providerUpdatedAt,
 				null,
 				ProvenanceClass.CLIENT_DEVICE,
+				null,
 				"Watch",
 				null,
 				CLOCK);

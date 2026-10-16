@@ -7,20 +7,17 @@ import com.devinolabs.uap.integrations.domain.HealthProviderKey;
 @ConfigurationProperties(prefix = "uap.integrations")
 public class IntegrationsProperties {
 
-	/**
-	 * Module presence flag. Default true — integrations boots without secrets.
-	 * Per-provider flags remain fail-closed until explicitly enabled.
-	 */
 	private boolean enabled = true;
-
-	/**
-	 * Centrally owned initial backfill window (days). F2 evidence ingest rejects
-	 * {@code observedAt} older than this window (ADR-051 / D4 = B).
-	 */
 	private int backfillDays = 30;
 
 	private final ProviderToggle appleHealthkit = new ProviderToggle();
 	private final ProviderToggle healthConnect = new ProviderToggle();
+	private final ProviderToggle garmin = new ProviderToggle();
+	private final ProviderToggle fitbit = new ProviderToggle();
+	private final ProviderToggle whoop = new ProviderToggle();
+	private final ProviderToggle oura = new ProviderToggle();
+	private final ProviderToggle polar = new ProviderToggle();
+	private final ProviderToggle bleDirect = new ProviderToggle();
 
 	public boolean isEnabled() {
 		return enabled;
@@ -49,16 +46,47 @@ public class IntegrationsProperties {
 		return healthConnect;
 	}
 
+	public ProviderToggle getGarmin() {
+		return garmin;
+	}
+
+	public ProviderToggle getFitbit() {
+		return fitbit;
+	}
+
+	public ProviderToggle getWhoop() {
+		return whoop;
+	}
+
+	public ProviderToggle getOura() {
+		return oura;
+	}
+
+	public ProviderToggle getPolar() {
+		return polar;
+	}
+
+	public ProviderToggle getBleDirect() {
+		return bleDirect;
+	}
+
 	public boolean isProviderEnabled(HealthProviderKey provider) {
 		return switch (provider) {
 			case APPLE_HEALTHKIT -> appleHealthkit.isEnabled();
 			case HEALTH_CONNECT -> healthConnect.isEnabled();
+			case GARMIN -> garmin.isEnabled();
+			case FITBIT -> fitbit.isEnabled();
+			case WHOOP -> whoop.isEnabled();
+			case OURA -> oura.isEnabled();
+			case POLAR -> polar.isEnabled();
+			case BLE_DIRECT -> bleDirect.isEnabled();
 		};
 	}
 
 	public static class ProviderToggle {
 
 		private boolean enabled = false;
+		private boolean mock = false;
 
 		public boolean isEnabled() {
 			return enabled;
@@ -67,6 +95,13 @@ public class IntegrationsProperties {
 		public void setEnabled(boolean enabled) {
 			this.enabled = enabled;
 		}
-	}
 
+		public boolean isMock() {
+			return mock;
+		}
+
+		public void setMock(boolean mock) {
+			this.mock = mock;
+		}
+	}
 }

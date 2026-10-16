@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Canonical unit codes accepted at the integrations boundary (V5 plan §14).
+ * Canonical unit codes accepted at the integrations boundary (V5 plan §14 / V9).
  * Adapters convert; provider-native unit strings do not leak.
  */
 public final class EvidenceUnitCodes {
@@ -17,7 +17,11 @@ public final class EvidenceUnitCodes {
 			"KCAL",
 			"METER",
 			"COUNT",
-			"KILOGRAM");
+			"KILOGRAM",
+			"WATT",
+			"RPM",
+			"CELSIUS",
+			"BREATH_PER_MIN");
 
 	private EvidenceUnitCodes() {
 	}
@@ -38,5 +42,23 @@ public final class EvidenceUnitCodes {
 			return false;
 		}
 		return ALL.contains(unitCode.trim().toUpperCase(Locale.ROOT));
+	}
+
+	public static void assertUnitMatchesFamily(SignalFamily family, String unitCode) {
+		String unit = normalizeAndRequire(unitCode);
+		boolean ok = switch (family) {
+			case HEART, HRV -> unit.equals("BPM") || unit.equals("MS");
+			case SLEEP -> unit.equals("MINUTE") || unit.equals("SECOND");
+			case ACTIVITY -> unit.equals("COUNT") || unit.equals("METER") || unit.equals("KCAL");
+			case WORKOUT -> unit.equals("MINUTE") || unit.equals("SECOND") || unit.equals("METER")
+					|| unit.equals("KCAL") || unit.equals("BPM");
+			case POWER -> unit.equals("WATT");
+			case CADENCE -> unit.equals("RPM") || unit.equals("COUNT");
+			case RESPIRATORY -> unit.equals("BREATH_PER_MIN");
+			case TEMPERATURE -> unit.equals("CELSIUS");
+		};
+		if (!ok) {
+			throw new IllegalArgumentException("unitCode " + unit + " is not valid for " + family);
+		}
 	}
 }

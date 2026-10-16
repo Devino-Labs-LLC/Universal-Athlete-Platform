@@ -33,9 +33,9 @@ class UapServerApplicationTests {
 	@Test
 	void flywayStartsAndAppliesInitialMigration() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("42");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("43");
 		assertThat(flyway.info().current().getDescription())
-				.isEqualTo("create marketplace catalog");
+				.isEqualTo("create integration devices and wearables");
 	}
 
 	@Test
@@ -966,6 +966,26 @@ class UapServerApplicationTests {
 			assertThat(events.next()).isTrue();
 			assertThat(versions.next()).isTrue();
 			assertThat(versions.getString("description")).isEqualTo("create marketplace catalog");
+			assertThat(versions.getBoolean("success")).isTrue();
+		}
+	}
+
+	@Test
+	void flywayAppliesIntegrationDevicesMigration() throws Exception {
+		try (Connection connection = dataSource.getConnection();
+				ResultSet devices = connection.getMetaData().getTables(
+						null, null, "integration_devices", new String[] { "TABLE" });
+				ResultSet certs = connection.getMetaData().getTables(
+						null, null, "integration_provider_certification", new String[] { "TABLE" });
+				ResultSet ops = connection.getMetaData().getTables(
+						null, null, "integration_ops_counters", new String[] { "TABLE" });
+				ResultSet versions = connection.createStatement()
+						.executeQuery("SELECT version, description, success FROM flyway_schema_history WHERE version = '43'")) {
+			assertThat(devices.next()).isTrue();
+			assertThat(certs.next()).isTrue();
+			assertThat(ops.next()).isTrue();
+			assertThat(versions.next()).isTrue();
+			assertThat(versions.getString("description")).isEqualTo("create integration devices and wearables");
 			assertThat(versions.getBoolean("success")).isTrue();
 		}
 	}

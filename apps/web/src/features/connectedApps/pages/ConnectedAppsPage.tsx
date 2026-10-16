@@ -8,7 +8,10 @@ import { LoadingView } from '@/core/components/LoadingView';
 import { Page } from '@/core/components/Page';
 import {
   useConnectionsList,
+  useDeviceQualityNotices,
+  useDevicesList,
   useDisconnectConnectionMutation,
+  useDisconnectDeviceMutation,
 } from '@/features/connectedApps/hooks/useConnections';
 import { canDisconnect, type ConnectionView } from '@/features/connectedApps/models/connection';
 import { connectedAppsErrorMessage } from '@/features/connectedApps/models/errors';
@@ -22,6 +25,12 @@ import {
   classifySyncFreshness,
   syncFreshnessLabel,
 } from '@/features/connectedApps/models/providers';
+import {
+  deviceLastDataCopy,
+  providerVsDeviceCopy,
+  wearableProviderDisplayName,
+  type DeviceView,
+} from '@uap/connected-apps-contracts';
 import styles from '@/features/connectedApps/pages/ConnectedAppsPage.module.scss';
 
 function ConnectionCard({
@@ -67,13 +76,62 @@ function ConnectionCard({
   );
 }
 
+function DeviceCard({
+  device,
+  disconnecting,
+  onDisconnect,
+}: {
+  device: DeviceView;
+  disconnecting: boolean;
+  onDisconnect: (deviceId: string) => void;
+}) {
+  const lastData = formatInstant(device.lastSuccessfulDataAt);
+  return (
+    <li className={styles.card}>
+      <div className={styles.cardHeader}>
+        <h2 className={styles.providerName}>{device.displayName}</h2>
+        <Badge tone={device.lifecycleState === 'ACTIVE' ? 'success' : 'muted'}>
+          {device.lifecycleState === 'STALE' ? 'Stale' : device.lifecycleState === 'ACTIVE' ? 'Device' : 'Removed'}
+        </Badge>
+      </div>
+      <p className={styles.meta}>
+        {providerVsDeviceCopy(wearableProviderDisplayName(device.provider), true)}
+      </p>
+      <p className={styles.meta}>
+        {device.deviceType.replaceAll('_', ' ')}
+        {device.model ? ` · ${device.model}` : ''}
+      </p>
+      <p className={styles.meta}>
+        Capabilities: {device.capabilities.length === 0 ? 'Unknown' : device.capabilities.join(', ')}
+      </p>
+      <p className={styles.meta}>{deviceLastDataCopy(lastData)}</p>
+      {device.lifecycleState !== 'DISCONNECTED' ? (
+        <div className={styles.actions}>
+          <Button type="button" variant="secondary" disabled={disconnecting} onClick={() => onDisconnect(device.deviceId)}>
+            Remove device
+          </Button>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
 export function ConnectedAppsPage() {
   const connectionsQuery = useConnectionsList();
+  const devicesQuery = useDevicesList();
+  const qualityQuery = useDeviceQualityNotices();
   const disconnectMutation = useDisconnectConnectionMutation();
+  const disconnectDeviceMutation = useDisconnectDeviceMutation();
   const [actionError, setActionError] = useState<unknown>(null);
 
   const connections = connectionsQuery.data ?? [];
-  const loadError = connectionsQuery.isError ? connectionsQuery.error : null;
+  const devices = devicesQuery.data ?? [];
+  const notices = qualityQuery.data ?? [];
+  const loadError = connectionsQuery.isError
+    ? connectionsQuery.error
+    : devicesQuery.isError
+      ? devicesQuery.error
+      : null;
   const visibleError = actionError ?? loadError;
   const busy = disconnectMutation.isPending;
 
@@ -95,7 +153,7 @@ export function ConnectedAppsPage() {
   return (
     <Page
       title="Connected Apps"
-      description="Link health data from Apple Health or Health Connect. Connections are separate from Premium billing."
+      description="Provider accounts and physical devices are listed separately. A connected app is not the same as live device data."
       actions={
         <Link to="/app/profile" className={styles.backLink}>
           Back to profile
@@ -108,7 +166,9 @@ export function ConnectedAppsPage() {
           mobile app — this web app cannot grant those OS permissions or fake a browser connect.
         </p>
 
-        {connectionsQuery.isLoading ? <LoadingView message="Loading connected apps…" /> : null}
+        {connectionsQuery.isLoading || devicesQuery.isLoading ? (
+          <LoadingView message="Loading connected apps…" />
+        ) : null}
 
         {visibleError ? (
           <ErrorView
@@ -144,6 +204,37 @@ export function ConnectedAppsPage() {
             ))}
           </ul>
         ) : null}
+
+        <section className={styles.catalog} aria-label="Connected devices">
+          <h2 className={styles.catalogTitle}>Devices</h2>
+          {notices.map((notice) => (
+            <p key={`${notice.deviceId}-${notice.code}`} className={styles.meta} role="status">
+              {notice.message}
+            </p>
+          ))}
+          {!devicesQuery.isLoading && !devicesQuery.isError && devices.length === 0 ? (
+            <p className={styles.empty} role="status">
+              No registered devices yet. Linking Apple Health does not mean a watch is sending data.
+            </p>
+          ) : null}
+          {devices.length > 0 ? (
+            <ul className={styles.list} aria-label="Your connected devices">
+              {devices.map((device) => (
+                <DeviceCard
+                  key={device.deviceId}
+                  device={device}
+                  disconnecting={disconnectDeviceMutation.isPending}
+                  onDisconnect={(deviceId) => {
+                    setActionError(null);
+                    disconnectDeviceMutation.mutate(deviceId, {
+                      onError: (cause) => setActionError(cause),
+                    });
+                  }}
+                />
+              ))}
+            </ul>
+          ) : null}
+        </section>
 
         <section className={styles.catalog} aria-label="Supported health providers">
           <h2 className={styles.catalogTitle}>Supported on mobile</h2>

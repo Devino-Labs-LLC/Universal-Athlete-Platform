@@ -94,3 +94,11 @@ Product Owner lock: [`docs/V8_IMPLEMENTATION_PLAN.md`](../V8_IMPLEMENTATION_PLAN
 | ADR | Title | Status |
 | --- | --- | --- |
 | [054](054-marketplace-curated-discovery.md) | Curated Athlete Marketplace as discovery, not commerce infrastructure | **Accepted** |
+
+## Index (V9 Advanced Wearables — Accepted)
+
+Product Owner lock: [`docs/V9_IMPLEMENTATION_PLAN.md`](../V9_IMPLEMENTATION_PLAN.md). Wearable vendors never write the State Engine. Fusion is deterministic. Original evidence is preserved.
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [055](055-advanced-wearables-sensor-fusion.md) | Advanced wearable provider boundary, devices, and sensor fusion | **Accepted** |

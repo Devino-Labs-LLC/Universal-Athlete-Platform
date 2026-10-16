@@ -2,8 +2,12 @@ import type { ApiClient } from '@/src/core/api/apiClient';
 import {
   beginConnectWithAxios,
   confirmConnectionWithAxios,
+  connectionsHttpFromAxios,
   disconnectConnectionWithAxios,
+  disconnectDevice,
   listConnectionsWithAxios,
+  listDeviceQualityNotices,
+  listDevices,
   requestConnectionSyncWithAxios,
   type HealthProviderKey,
 } from '@uap/connected-apps-contracts';
@@ -30,3 +34,12 @@ export const requestConnectionSync = (
   connectionId: string,
   requestId: string,
 ) => requestConnectionSyncWithAxios(client.axios, connectionId, requestId);
+
+export const listConnectedDevices = (client: ApiClient) =>
+  listDevices(connectionsHttpFromAxios(client.axios));
+
+export const listConnectedDeviceQuality = (client: ApiClient) =>
+  listDeviceQualityNotices(connectionsHttpFromAxios(client.axios));
+
+export const disconnectConnectedDevice = (client: ApiClient, deviceId: string) =>
+  disconnectDevice(connectionsHttpFromAxios(client.axios), deviceId);

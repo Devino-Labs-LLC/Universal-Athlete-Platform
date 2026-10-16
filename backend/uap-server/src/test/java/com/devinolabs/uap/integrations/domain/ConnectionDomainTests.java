@@ -177,6 +177,8 @@ class ConnectionDomainTests {
 	void osHubProvidersAreUploadOnly() {
 		assertThat(HealthProviderKey.APPLE_HEALTHKIT.isOsHub()).isTrue();
 		assertThat(HealthProviderKey.HEALTH_CONNECT.isOsHub()).isTrue();
+		assertThat(HealthProviderKey.GARMIN.isOsHub()).isFalse();
+		assertThat(HealthProviderKey.BLE_DIRECT.isDirectSensorChannel()).isTrue();
 	}
 
 	@Test

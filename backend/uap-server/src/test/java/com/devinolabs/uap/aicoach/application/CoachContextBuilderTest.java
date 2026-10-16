@@ -22,6 +22,7 @@ import com.devinolabs.uap.integrations.api.connections.AthleteConnectionStatusPo
 import com.devinolabs.uap.integrations.api.connections.ConnectionView;
 import com.devinolabs.uap.integrations.api.evidence.ConnectedEvidencePort;
 import com.devinolabs.uap.integrations.api.evidence.ConnectedEvidenceView;
+import com.devinolabs.uap.integrations.api.evidence.FusedSensorPort;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextPort;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextView;
 import com.devinolabs.uap.training.api.coachcontext.TrainingCoachContextView.Fact;
@@ -37,6 +38,8 @@ class CoachContextBuilderTest {
 	private AthleteConnectionStatusPort connectionPort;
 	@Mock
 	private ConnectedEvidencePort evidencePort;
+	@Mock
+	private FusedSensorPort fusedSensorPort;
 
 	@Test
 	void withholdsRawEvidenceValuesAndIds() {
@@ -50,12 +53,15 @@ class CoachContextBuilderTest {
 		when(connectionPort.listForAccount(accountId)).thenReturn(List.of(connection(connectionId, now)));
 		when(evidencePort.listEvidence(athleteId, now.minus(java.time.Duration.ofDays(7)), now, null))
 				.thenReturn(List.of(evidence(connectionId, now)));
+		when(fusedSensorPort.listFused(athleteId, now.minus(java.time.Duration.ofDays(7)), now, null))
+				.thenReturn(List.of());
 
 		CoachContextBuilder builder = new CoachContextBuilder(
 				profilePort,
 				trainingPort,
 				connectionPort,
 				evidencePort,
+				fusedSensorPort,
 				Clock.fixed(now, ZoneOffset.UTC));
 		CoachContext context = builder.build(accountId);
 		String rendered = String.join("\n", context.deterministicFacts());
@@ -114,7 +120,8 @@ class CoachContextBuilderTest {
 				"OS_HUB",
 				null,
 				null,
-				"ACTIVE");
+				"ACTIVE",
+				null);
 	}
 
 }

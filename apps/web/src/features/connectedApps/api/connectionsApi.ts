@@ -8,4 +8,7 @@ export const {
   confirmConnection,
   disconnectConnection,
   requestConnectionSync,
+  listDevices,
+  listDeviceQualityNotices,
+  disconnectDevice,
 } = bindApiClientConnections<ApiClient>();

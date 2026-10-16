@@ -6,6 +6,7 @@
 				"organization :: membership",
 				"consent :: grants",
 				"audit :: writer",
-				"entitlements"
+				"entitlements",
+				"integrations :: evidence"
 		})
 package com.devinolabs.uap.training;

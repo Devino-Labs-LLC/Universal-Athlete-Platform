@@ -42,6 +42,9 @@ class IntegrationConnectionServiceTests {
 	private SyncRunRepository syncRunRepository;
 	private AthleteContextPort athleteContextPort;
 	private IntegrationsProperties properties;
+	private WearableCertificationService certificationService;
+	private DeviceService deviceService;
+	private WearableOpsService opsService;
 	private SecurityAuditWriter auditWriter;
 	private IntegrationConnectionService service;
 
@@ -54,12 +57,20 @@ class IntegrationConnectionServiceTests {
 		properties.setEnabled(true);
 		properties.getAppleHealthkit().setEnabled(true);
 		properties.getHealthConnect().setEnabled(true);
+		certificationService = mock(WearableCertificationService.class);
+		when(certificationService.allowsConnect(any())).thenReturn(true);
+		deviceService = mock(DeviceService.class);
+		opsService = mock(WearableOpsService.class);
 		auditWriter = mock(SecurityAuditWriter.class);
 		service = new IntegrationConnectionService(
 				connectionRepository,
 				syncRunRepository,
 				athleteContextPort,
 				properties,
+				certificationService,
+				List.of(),
+				deviceService,
+				opsService,
 				auditWriter,
 				CLOCK);
 	}

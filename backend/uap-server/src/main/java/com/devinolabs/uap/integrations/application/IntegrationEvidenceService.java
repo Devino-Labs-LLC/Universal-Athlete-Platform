@@ -48,6 +48,8 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 	private final IntegrationEvidencePersistenceGateway persistenceGateway;
 	private final AthleteContextPort athleteContextPort;
 	private final IntegrationsProperties properties;
+	private final DeviceService deviceService;
+	private final WearableOpsService opsService;
 	private final SecurityAuditWriter auditWriter;
 	private final Clock clock;
 
@@ -59,6 +61,8 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 			IntegrationEvidencePersistenceGateway persistenceGateway,
 			AthleteContextPort athleteContextPort,
 			IntegrationsProperties properties,
+			DeviceService deviceService,
+			WearableOpsService opsService,
 			SecurityAuditWriter auditWriter,
 			Clock clock) {
 		this.connectionRepository = Objects.requireNonNull(connectionRepository);
@@ -68,6 +72,8 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 		this.persistenceGateway = Objects.requireNonNull(persistenceGateway);
 		this.athleteContextPort = Objects.requireNonNull(athleteContextPort);
 		this.properties = Objects.requireNonNull(properties);
+		this.deviceService = Objects.requireNonNull(deviceService);
+		this.opsService = Objects.requireNonNull(opsService);
 		this.auditWriter = Objects.requireNonNull(auditWriter);
 		this.clock = Objects.requireNonNull(clock);
 	}
@@ -195,6 +201,7 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 		ingestEvent.markProcessed(savedRun.id(), clock);
 		persistenceGateway.saveIngestEvent(ingestEvent);
 
+		opsService.recordIngest(connection.provider(), accepted, rejected, 0);
 		audit(accountId, connection.athleteId(), connection.id().value(), "INTEGRATION_EVIDENCE_BATCH",
 				"{\"syncRunId\":\"" + savedRun.id().value()
 						+ "\",\"accepted\":" + accepted
@@ -236,6 +243,27 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 				clock,
 				properties.getBackfillDays());
 
+		com.devinolabs.uap.integrations.domain.ConnectedDevice device = deviceService.resolveForIngest(
+				connection,
+				item.externalDeviceId(),
+				item.deviceType(),
+				item.manufacturer(),
+				item.model(),
+				item.sourceDeviceOrApp(),
+				item.firmwareVersion(),
+				item.capabilities());
+		java.util.UUID deviceId = device == null ? item.deviceId() : device.id().value();
+		java.util.Set<com.devinolabs.uap.integrations.domain.DeviceCapability> caps =
+				device == null ? java.util.Set.of() : device.capabilities();
+		com.devinolabs.uap.integrations.domain.EvidenceQuality quality =
+				com.devinolabs.uap.integrations.domain.EvidenceQualityPolicy.derive(
+						provenance,
+						com.devinolabs.uap.integrations.domain.EvidenceQuality.parseOrUnknown(item.qualityCode()),
+						family,
+						item.observedAt(),
+						java.time.Instant.now(clock),
+						caps);
+
 		ConnectedEvidence candidate = ConnectedEvidence.create(
 				EvidenceId.generate(),
 				connection.athleteId(),
@@ -253,8 +281,9 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 				item.providerUpdatedAt(),
 				syncRunId,
 				provenance,
+				deviceId,
 				item.sourceDeviceOrApp(),
-				null,
+				quality.name(),
 				clock);
 
 		persistenceGateway.upsertEvidence(connection, candidate);
@@ -313,7 +342,8 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 				evidence.provenanceClass().name(),
 				evidence.sourceDeviceOrApp(),
 				evidence.qualityCode(),
-				evidence.status().name());
+				evidence.status().name(),
+				evidence.deviceId());
 	}
 
 	private static EvidenceBatchResultView toBatchResult(UUID requestId, SyncRun syncRun, boolean replayed) {
@@ -373,6 +403,14 @@ public class IntegrationEvidenceService implements ConnectedEvidencePort {
 			Instant observedAt,
 			Instant providerUpdatedAt,
 			String sourceDeviceOrApp,
-			String provenanceClass) {
+			String provenanceClass,
+			UUID deviceId,
+			String externalDeviceId,
+			String deviceType,
+			String manufacturer,
+			String model,
+			String firmwareVersion,
+			List<String> capabilities,
+			String qualityCode) {
 	}
 }

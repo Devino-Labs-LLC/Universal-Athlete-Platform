@@ -10,5 +10,8 @@ public record ConnectedSignalSummary(
 		Instant lastSuccessfulSyncAt,
 		Instant newestObservedAt,
 		int observationCount,
-		List<String> signalFamilies) {
+		List<String> signalFamilies,
+		String quality,
+		boolean conflictingSources,
+		boolean unavailable) {
 }

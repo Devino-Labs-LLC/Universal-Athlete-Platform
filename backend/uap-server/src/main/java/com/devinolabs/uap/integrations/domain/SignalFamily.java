@@ -1,12 +1,16 @@
 package com.devinolabs.uap.integrations.domain;
 
 /**
- * V5A store-capable signal families (ADR-047). Body metrics and proprietary recovery stay deferred.
+ * Provider-neutral sensor families. Not every family is a readiness input (ADR-047 / ADR-055).
  */
 public enum SignalFamily {
 	SLEEP,
 	ACTIVITY,
 	HEART,
 	HRV,
-	WORKOUT
+	WORKOUT,
+	POWER,
+	CADENCE,
+	RESPIRATORY,
+	TEMPERATURE
 }

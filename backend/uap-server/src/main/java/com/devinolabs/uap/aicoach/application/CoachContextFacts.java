@@ -62,7 +62,12 @@ final class CoachContextFacts {
 						stale,
 						signal.provider() + " is " + signal.lifecycleState()
 								+ ". Freshness " + signal.freshness()
-								+ ". Observations in the last 7 days: " + signal.observationCount()
+								+ ". Quality " + signal.quality()
+								+ (signal.unavailable() ? ". Wearable data is unavailable." : "")
+								+ (signal.conflictingSources()
+										? " Heart-rate data is available from multiple sources."
+										: "")
+								+ ". Fused observations in the last 7 days: " + signal.observationCount()
 								+ ". Families: " + (signal.signalFamilies().isEmpty()
 										? "none"
 										: String.join(", ", signal.signalFamilies()))

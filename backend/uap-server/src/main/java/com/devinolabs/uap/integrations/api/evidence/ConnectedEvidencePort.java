@@ -1,11 +1,9 @@
 package com.devinolabs.uap.integrations.api.evidence;
 
 /**
- * V5A Connected Athlete evidence seam (ADR-046 / ADR-047 / ADR-049).
+ * Connected evidence seam (ADR-046 / ADR-047 / ADR-055).
  *
- * <p>Store-only in V5A: implementations persist provider-neutral observations with provenance.
- * This port intentionally exposes <strong>no</strong> methods that mutate readiness, State Engine
- * snapshots, or derived training projections. Training may depend on these reads in later slices.
+ * <p>Implementations persist provider-neutral observations. This port does not mutate readiness.
  */
 public interface ConnectedEvidencePort {
 

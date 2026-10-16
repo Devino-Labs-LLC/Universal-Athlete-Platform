@@ -63,6 +63,8 @@ class IntegrationEvidenceServiceTests {
 		properties = new IntegrationsProperties();
 		properties.setEnabled(true);
 		properties.setBackfillDays(30);
+		DeviceService deviceService = mock(DeviceService.class);
+		WearableOpsService opsService = mock(WearableOpsService.class);
 		auditWriter = mock(SecurityAuditWriter.class);
 		service = new IntegrationEvidenceService(
 				connectionRepository,
@@ -72,6 +74,8 @@ class IntegrationEvidenceServiceTests {
 				persistenceGateway,
 				athleteContextPort,
 				properties,
+				deviceService,
+				opsService,
 				auditWriter,
 				CLOCK);
 	}
@@ -290,6 +294,14 @@ class IntegrationEvidenceServiceTests {
 				observedAt,
 				observedAt,
 				"Apple Health",
-				"CLIENT_DEVICE");
+				"CLIENT_DEVICE",
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null);
 	}
 }

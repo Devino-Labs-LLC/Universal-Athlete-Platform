@@ -6,6 +6,9 @@ import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 
 const listConnections = vi.fn();
 const disconnectConnection = vi.fn();
+const listDevices = vi.fn();
+const listDeviceQualityNotices = vi.fn();
+const disconnectDevice = vi.fn();
 
 vi.mock('@/features/connectedApps/api/connectionsApi', () => ({
   listConnections: (...args: unknown[]) => listConnections(...args),
@@ -13,6 +16,9 @@ vi.mock('@/features/connectedApps/api/connectionsApi', () => ({
   confirmConnection: vi.fn(),
   disconnectConnection: (...args: unknown[]) => disconnectConnection(...args),
   requestConnectionSync: vi.fn(),
+  listDevices: (...args: unknown[]) => listDevices(...args),
+  listDeviceQualityNotices: (...args: unknown[]) => listDeviceQualityNotices(...args),
+  disconnectDevice: (...args: unknown[]) => disconnectDevice(...args),
 }));
 
 vi.mock('@/app/providers/AuthSessionProvider', () => ({
@@ -39,7 +45,11 @@ describe('ConnectedAppsPage', () => {
   beforeEach(() => {
     listConnections.mockReset();
     disconnectConnection.mockReset();
+    listDevices.mockReset();
+    listDeviceQualityNotices.mockReset();
     listConnections.mockResolvedValue([]);
+    listDevices.mockResolvedValue([]);
+    listDeviceQualityNotices.mockResolvedValue([]);
     disconnectConnection.mockResolvedValue({
       ...connected,
       lifecycleState: 'DISCONNECTED',
@@ -55,6 +65,41 @@ describe('ConnectedAppsPage', () => {
     expect(screen.getByText('Health Connect')).toBeInTheDocument();
     expect(screen.getAllByText('Mobile only').length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole('button', { name: /connect/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/No registered devices yet/i)).toBeInTheDocument();
+  });
+
+  it('lists a physical device separately from the provider connection', async () => {
+    listConnections.mockResolvedValue([connected]);
+    listDevices.mockResolvedValue([
+      {
+        deviceId: '99999999-2222-4333-8444-555555555555',
+        connectionId: connected.connectionId,
+        provider: 'APPLE_HEALTHKIT',
+        externalDeviceId: 'watch-1',
+        deviceType: 'SMARTWATCH',
+        manufacturer: 'Apple',
+        model: 'Watch',
+        displayName: 'Apple Watch',
+        firmwareVersion: '1',
+        capabilities: ['HEART_RATE', 'SLEEP'],
+        lifecycleState: 'STALE',
+        firstSeenAt: '2026-09-01T12:00:00Z',
+        lastSeenAt: '2026-09-01T12:00:00Z',
+        lastSuccessfulDataAt: null,
+      },
+    ]);
+    listDeviceQualityNotices.mockResolvedValue([
+      {
+        deviceId: '99999999-2222-4333-8444-555555555555',
+        code: 'SLEEP_STALE',
+        message: "Your sleep data hasn't updated recently.",
+      },
+    ]);
+    renderWithProviders(<ConnectedAppsPage />);
+    expect(await screen.findByText('Apple Watch')).toBeInTheDocument();
+    expect(screen.getByText(/Apple Health — Connected/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your sleep data hasn't updated recently/i)).toBeInTheDocument();
+    expect(screen.getByText(/HEART_RATE/i)).toBeInTheDocument();
   });
 
   it('lists connection status chips, sync times, and disconnect', async () => {

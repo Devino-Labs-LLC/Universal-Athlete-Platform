@@ -45,6 +45,7 @@ class JpaEvidenceRepository implements EvidenceRepository {
 					evidence.ingestedAt(),
 					evidence.syncRunId() == null ? null : evidence.syncRunId().value(),
 					evidence.provenanceClass(),
+					evidence.deviceId(),
 					evidence.sourceDeviceOrApp(),
 					evidence.qualityCode(),
 					evidence.status(),

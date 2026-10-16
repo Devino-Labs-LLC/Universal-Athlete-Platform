@@ -145,6 +145,18 @@ public class SyncRun {
 		fail("NO_ADAPTER", clock);
 	}
 
+	/** OAuth wearable without live credentials / CERTIFIED production access. */
+	public void completeProviderLiveUnavailable(Clock clock) {
+		markRunning(clock);
+		fail("PROVIDER_LIVE_UNAVAILABLE", clock);
+	}
+
+	/** BLE / direct sensors upload from the client; server pull is not supported. */
+	public void completeDirectSensorUploadOnlyPipeline(Clock clock) {
+		markRunning(clock);
+		fail("BLE_CLIENT_UPLOAD_ONLY", clock);
+	}
+
 	/**
 	 * Evidence-batch upload outcome (F2). Does not mutate readiness — counts only.
 	 * Zero rejects → SUCCEEDED; any rejects with accepts → PARTIAL; all rejects → PARTIAL.

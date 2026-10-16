@@ -6,6 +6,13 @@ import {
   type HealthProviderKey,
   type SyncRunView,
 } from './connection';
+import {
+  disconnectDevice,
+  listDeviceQualityNotices,
+  listDevices,
+  type DeviceQualityNotice,
+  type DeviceView,
+} from './devices';
 
 export const CONNECTIONS_PATH = '/api/v1/integrations/connections';
 
@@ -145,5 +152,11 @@ export function bindApiClientConnections<TClient extends AxiosClientHolder>() {
       requestId: string,
     ): Promise<SyncRunView> =>
       requestConnectionSyncWithAxios(client.axios, connectionId, requestId),
+    listDevices: (client: TClient): Promise<DeviceView[]> =>
+      listDevices(connectionsHttpFromAxios(client.axios)),
+    listDeviceQualityNotices: (client: TClient): Promise<DeviceQualityNotice[]> =>
+      listDeviceQualityNotices(connectionsHttpFromAxios(client.axios)),
+    disconnectDevice: (client: TClient, deviceId: string): Promise<DeviceView> =>
+      disconnectDevice(connectionsHttpFromAxios(client.axios), deviceId),
   };
 }

@@ -15,6 +15,8 @@ import { isAvailable as isHealthKitAvailable } from '@/src/features/connectedApp
 import {
   useAppleHealthConnectMutation,
   useConnectionsList,
+  useDeviceQualityNotices,
+  useDevicesList,
   useDisconnectConnectionMutation,
   useHealthConnectConnectMutation,
 } from '@/src/features/connectedApps/hooks/useConnections';
@@ -37,6 +39,7 @@ import {
   syncFreshnessLabel,
   type ConnectorAvailability,
 } from '@/src/features/connectedApps/models/providers';
+import { wearableProviderDisplayName } from '@uap/connected-apps-contracts';
 import { drainEvidenceUploadQueue } from '@/src/features/connectedApps/queue/evidenceUploadQueue';
 
 function primaryProviderForPlatform(): HealthProviderKey {
@@ -51,6 +54,8 @@ export function ConnectedAppsScreen() {
   const theme = useAppTheme();
   const { apiClient, status } = useAuthSession();
   const connectionsQuery = useConnectionsList();
+  const devicesQuery = useDevicesList();
+  const qualityQuery = useDeviceQualityNotices();
   const disconnectMutation = useDisconnectConnectionMutation();
   const appleConnectMutation = useAppleHealthConnectMutation();
   const healthConnectMutation = useHealthConnectConnectMutation();
@@ -253,6 +258,44 @@ export function ConnectedAppsScreen() {
           />
         </>
       ) : null}
+
+      <HomeCard eyebrow="Devices" title="Physical sources">
+        {(qualityQuery.data ?? []).map((notice) => (
+          <Text
+            key={`${notice.deviceId}-${notice.code}`}
+            style={{ color: theme.colors.textMuted }}
+            testID={`connected-apps-quality-${notice.code}`}
+          >
+            {notice.message}
+          </Text>
+        ))}
+        {(devicesQuery.data ?? []).length === 0 ? (
+          <Text style={{ color: theme.colors.textMuted }} testID="connected-apps-devices-empty">
+            No registered devices yet. A connected provider is not the same as live watch data.
+            Direct Bluetooth sensors are not paired in this build.
+          </Text>
+        ) : (
+          (devicesQuery.data ?? []).map((device) => (
+            <View key={device.deviceId} testID={`connected-apps-device-${device.deviceId}`}>
+              <CompactInfoRow label="Device" value={device.displayName} />
+              <CompactInfoRow
+                label="Provider"
+                value={wearableProviderDisplayName(device.provider)}
+              />
+              <CompactInfoRow label="Type" value={device.deviceType} />
+              <CompactInfoRow
+                label="Capabilities"
+                value={device.capabilities.length === 0 ? 'Unknown' : device.capabilities.join(', ')}
+              />
+              <CompactInfoRow
+                label="Last data"
+                value={formatInstant(device.lastSuccessfulDataAt) ?? 'No data yet'}
+              />
+              <CompactInfoRow label="Status" value={device.lifecycleState} />
+            </View>
+          ))
+        )}
+      </HomeCard>
 
       {connectError ? (
         <ErrorView

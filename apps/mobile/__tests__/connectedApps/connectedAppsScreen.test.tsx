@@ -42,6 +42,8 @@ jest.mock('@/src/features/connectedApps/hooks/useConnections', () => ({
   useDisconnectConnectionMutation: jest.fn(),
   useAppleHealthConnectMutation: jest.fn(),
   useHealthConnectConnectMutation: jest.fn(),
+  useDevicesList: jest.fn(),
+  useDeviceQualityNotices: jest.fn(),
 }));
 
 const {
@@ -49,6 +51,8 @@ const {
   useDisconnectConnectionMutation,
   useAppleHealthConnectMutation,
   useHealthConnectConnectMutation,
+  useDevicesList,
+  useDeviceQualityNotices,
 } = jest.requireMock('@/src/features/connectedApps/hooks/useConnections');
 
 function renderScreen() {
@@ -95,6 +99,22 @@ describe('ConnectedAppsScreen', () => {
       error: null,
       data: undefined,
     });
+    useDevicesList.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    useDeviceQualityNotices.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    });
   });
 
   afterEach(() => {
@@ -106,6 +126,7 @@ describe('ConnectedAppsScreen', () => {
 
     expect(getByTestId('connected-apps-screen')).toBeTruthy();
     expect(getByTestId('connected-apps-empty')).toBeTruthy();
+    expect(getByTestId('connected-apps-devices-empty')).toBeTruthy();
     expect(getByText(/No connections yet/i)).toBeTruthy();
     expect(getByTestId('connected-apps-provider-APPLE_HEALTHKIT')).toBeTruthy();
     expect(getByTestId('connected-apps-provider-HEALTH_CONNECT')).toBeTruthy();
@@ -202,5 +223,51 @@ describe('ConnectedAppsScreen', () => {
     fireEvent.press(getByTestId('connected-apps-connect-HEALTH_CONNECT'));
     expect(mockHealthConnectMutate).toHaveBeenCalled();
     expect(mockAppleConnectMutate).not.toHaveBeenCalled();
+  });
+
+  it('shows stale device quality copy without implying the provider is the device', async () => {
+    useDevicesList.mockReturnValue({
+      data: [
+        {
+          deviceId: '99999999-2222-4333-8444-555555555555',
+          connectionId: '11111111-2222-4333-8444-555555555555',
+          provider: 'APPLE_HEALTHKIT',
+          externalDeviceId: 'watch-1',
+          deviceType: 'SMARTWATCH',
+          manufacturer: 'Apple',
+          model: 'Watch',
+          displayName: 'Apple Watch',
+          firmwareVersion: '1',
+          capabilities: ['HEART_RATE'],
+          lifecycleState: 'STALE',
+          firstSeenAt: '2026-09-01T12:00:00Z',
+          lastSeenAt: '2026-09-01T12:00:00Z',
+          lastSuccessfulDataAt: null,
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    useDeviceQualityNotices.mockReturnValue({
+      data: [
+        {
+          deviceId: '99999999-2222-4333-8444-555555555555',
+          code: 'SLEEP_STALE',
+          message: "Your sleep data hasn't updated recently.",
+        },
+      ],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    const { getByTestId, getByText } = await renderScreen();
+    expect(getByTestId('connected-apps-device-99999999-2222-4333-8444-555555555555')).toBeTruthy();
+    expect(getByText(/Your sleep data hasn't updated recently/i)).toBeTruthy();
+    expect(getByText('STALE')).toBeTruthy();
   });
 });

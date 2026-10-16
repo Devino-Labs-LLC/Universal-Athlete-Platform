@@ -1,5 +1,6 @@
 export * from './connection';
 export * from './connectionsApi';
+export * from './devices';
 export * from './errors';
 export * from './freshness';
 export * from './providers';

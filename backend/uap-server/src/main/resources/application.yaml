@@ -56,6 +56,23 @@ uap:
     health-connect:
       # Explicit opt-in. Default off until connector certification (C2).
       enabled: ${UAP_INTEGRATIONS_HEALTH_CONNECT_ENABLED:false}
+    garmin:
+      enabled: ${UAP_INTEGRATIONS_GARMIN_ENABLED:false}
+      mock: ${UAP_INTEGRATIONS_GARMIN_MOCK:false}
+    fitbit:
+      enabled: ${UAP_INTEGRATIONS_FITBIT_ENABLED:false}
+      mock: ${UAP_INTEGRATIONS_FITBIT_MOCK:false}
+    whoop:
+      enabled: ${UAP_INTEGRATIONS_WHOOP_ENABLED:false}
+      mock: ${UAP_INTEGRATIONS_WHOOP_MOCK:false}
+    oura:
+      enabled: ${UAP_INTEGRATIONS_OURA_ENABLED:false}
+      mock: ${UAP_INTEGRATIONS_OURA_MOCK:false}
+    polar:
+      enabled: ${UAP_INTEGRATIONS_POLAR_ENABLED:false}
+      mock: ${UAP_INTEGRATIONS_POLAR_MOCK:false}
+    ble-direct:
+      enabled: ${UAP_INTEGRATIONS_BLE_DIRECT_ENABLED:false}
   ai:
     # V6 AI Coach. Default off so boot and CI do not require a provider key.
     # When enabled, UAP_AI_GROQ_API_KEY is required and must stay on the server.
